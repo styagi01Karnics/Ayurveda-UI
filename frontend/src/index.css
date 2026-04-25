@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #F5EFE0;
+    color: #2D1B00;
+  }
+}
+
+@layer components {
+  .btn-gold {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+    background-color: #B8860B;
+  }
+  .btn-gold:hover:not(:disabled) { background-color: #8B6914; }
+
+  .btn-outline {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 border;
+    border-color: #EDE5D0;
+    color: #6B4C1E;
+    background: white;
+  }
+  .btn-outline:hover { background-color: #F0E8D6; }
+
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm text-white transition-all duration-200;
+    background-color: #dc2626;
+  }
+  .btn-danger:hover { background-color: #b91c1c; }
+
+  .card { @apply bg-white rounded-xl shadow-sm border; border-color: #EDE5D0; }
+
+  .input-field {
+    @apply w-full px-3 py-2.5 rounded-lg border text-sm transition-all duration-200 focus:outline-none focus:ring-2;
+    border-color: #EDE5D0;
+    color: #2D1B00;
+    background: white;
+  }
+  .input-field:focus {
+    --tw-ring-color: rgba(184, 134, 11, 0.25);
+    border-color: #B8860B;
+  }
+  .input-field.error { border-color: #ef4444 !important; }
+
+  .select-field {
+    @apply w-full px-3 py-2.5 rounded-lg border text-sm transition-all duration-200 focus:outline-none focus:ring-2 appearance-none;
+    border-color: #EDE5D0;
+    color: #2D1B00;
+    background: white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B4C1E' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  }
+  .select-field:focus {
+    --tw-ring-color: rgba(184, 134, 11, 0.25);
+    border-color: #B8860B;
+  }
+
+  .label { @apply block text-sm font-medium mb-1.5; color: #6B4C1E; }
+  .error-msg { @apply text-xs mt-1; color: #ef4444; }
+
+  .page-header {
+    @apply bg-white border-b px-6 py-4 flex items-center justify-between;
+    border-color: #EDE5D0;
+  }
+
+  .table-head { @apply bg-ayur-cream; }
+  .th { @apply text-xs font-semibold uppercase tracking-wider text-left px-4 py-3; color: #9C7040; }
+  .td { @apply px-4 py-3 text-sm border-b; border-color: #F0E8D6; color: #2D1B00; }
+  .tr:hover { background-color: #FDFAF5; }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-green { background: #dcfce7; color: #166534; }
+  .badge-red { background: #fee2e2; color: #991b1b; }
+  .badge-yellow { background: #fef9c3; color: #854d0e; }
+  .badge-blue { background: #dbeafe; color: #1e40af; }
+  .badge-gray { background: #f3f4f6; color: #374151; }
+  .badge-gold { background: #fef3c7; color: #92400e; }
+  .badge-purple { background: #ede9fe; color: #5b21b6; }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 w-full;
+    color: #6B4C1E;
+  }
+  .sidebar-link:hover { background: #F0E8D6; color: #2D1B00; }
+  .sidebar-link-active { background: #FFF9EE; color: #B8860B; font-weight: 600; }
+  .sidebar-link-active:hover { background: #FFF9EE; }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #FAF6EE; }
+::-webkit-scrollbar-thumb { background: #EDE5D0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #B8860B; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.2s ease-out; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.7s linear infinite; }
+
+@keyframes dash {
+  from { stroke-dashoffset: 283; }
+  to { stroke-dashoffset: var(--target); }
+}
+.animated-circle { animation: dash 1s ease-out forwards; }

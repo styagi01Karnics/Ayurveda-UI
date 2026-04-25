@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.figma.com)",
+      "Bash(npm install *)",
+      "Bash(npm --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/rajeshyadav/.nvm/versions/**)",
+      "Read(//opt/homebrew/opt/**)",
+      "Bash(/opt/homebrew/bin/node --version)",
+      "Bash(/opt/homebrew/bin/npm --version)",
+      "Bash(/usr/local/bin/node --version)",
+      "Bash(/usr/local/bin/npm --version)",
+      "Bash(docker compose *)",
+      "Bash(docker exec *)",
+      "Bash(mvn spring-boot:run -q)",
+      "Bash(echo \"Backend PID: $!\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@ganesha.com\",\"password\":\"admin123\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' -d '{\"email\":\"dr.sheekha@ganesha.com\",\"password\":\"doctor123\",\"fullName\":\"Dr. Sheekha Verma\",\"role\":\"DOCTOR\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"dr.sheekha@ganesha.com\",\"password\":\"doctor123\"}')",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(m['name'], '|', m['stockStatus']\\) for m in d['content']]\")",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"admin@ganesha.com\",\"password\":\"admin123\"}')",
+      "Bash(grep -E \"^date-fns$|^formik$|^yup$|^recharts$\")",
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(export PATH=\"/opt/homebrew/Cellar/node@18/18.20.8/bin:$PATH\")",
+      "Bash(npx tsc *)",
+      "Bash(export NODE18=\"/opt/homebrew/Cellar/node@18/18.20.8/bin\")",
+      "Bash(export PATH=\"$NODE18:$PATH\")",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(xargs kill *)",
+      "Bash(curl -s 'http://localhost:5173/src/App.tsx?v=1')",
+      "Bash(curl -s 'http://localhost:5173/src/pages/DashboardPage.tsx')",
+      "Bash(curl -s 'http://localhost:5173/src/App.tsx')",
+      "Bash(xargs ls *)",
+      "Bash(xargs cat *)"
+    ]
+  }
+}
