@@ -115,9 +115,9 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen overflow-auto" style={{ background: '#F5EFE0' }}>
-      {/* Header */}
-      <div className="bg-white border-b px-6 py-5" style={{ borderColor: '#EDE5D0' }}>
+    <div className="flex-1 flex flex-col overflow-auto" style={{ background: '#F5EFE0' }}>
+      {/* Greeting bar */}
+      <div className="bg-white border-b px-6 py-4" style={{ borderColor: '#EDE5D0' }}>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold" style={{ color: '#2D1B00', fontFamily: 'Cormorant Garamond, serif' }}>
@@ -127,17 +127,15 @@ export default function DashboardPage() {
               {format(new Date(), 'EEEE, MMMM d, yyyy')} · Here's your clinic overview
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
-                 style={{ background: '#F0E8D6', color: '#B8860B' }}>
-              <Activity size={14} />
-              Clinic Active
-            </div>
+          <div className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5"
+               style={{ background: '#F0E8D6', color: '#B8860B' }}>
+            <Activity size={14} />
+            Clinic Active
           </div>
         </div>
       </div>
 
-      <div className="flex-1 p-6 space-y-6">
+      <div className="flex-1 p-6 space-y-5">
         {/* Stat Cards */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard

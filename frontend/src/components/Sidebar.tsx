@@ -1,9 +1,8 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserRound, CalendarDays,
-  Stethoscope, Pill, BarChart3, ClipboardList, Receipt, Settings, LogOut,
+  Stethoscope, Pill, BarChart3, ClipboardList, Receipt, Settings,
 } from 'lucide-react';
 
 const navItems = [
@@ -13,22 +12,21 @@ const navItems = [
   { to: '/appointments', icon: CalendarDays, label: 'Appointments' },
   { to: '/treatments', icon: Stethoscope, label: 'Treatments' },
   { to: '/medicines', icon: Pill, label: 'Medicines' },
-  { to: '/billing', icon: Receipt, label: 'Billing' },
   { to: '/sales', icon: BarChart3, label: 'Sales' },
   { to: '/activity-logs', icon: ClipboardList, label: 'Activity Logs' },
+  { to: '/billing', icon: Receipt, label: 'Billing' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => { logout(); navigate('/login'); };
-
   return (
     <aside
-      className="w-64 min-h-screen flex flex-col py-6 px-4 flex-shrink-0"
-      style={{ background: '#FAF6EE', borderRight: '1px solid #EDE5D0' }}
+      className="w-56 min-h-screen flex flex-col py-6 px-3 flex-shrink-0"
+      style={{
+        background: '#FAF6EE',
+        borderRight: '1px solid #EDE5D0',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4A843' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+      }}
     >
       {/* Logo */}
       <div className="flex flex-col items-center mb-8 pb-6" style={{ borderBottom: '1px solid #EDE5D0' }}>
@@ -46,38 +44,15 @@ export default function Sidebar() {
           </svg>
         </div>
         <h2
-          className="font-bold text-sm tracking-widest text-center"
-          style={{ color: '#2D1B00', fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.12em' }}
+          className="font-bold text-xs tracking-widest text-center"
+          style={{ color: '#2D1B00', fontFamily: 'Cormorant Garamond, serif', letterSpacing: '0.15em' }}
         >
           GANESHA AYURVEDAA
         </h2>
-        <p className="text-xs font-medium mt-0.5" style={{ color: '#B8860B' }}>
+        <p className="text-xs font-medium mt-0.5 italic" style={{ color: '#B8860B' }}>
           A Journey of Healing
         </p>
       </div>
-
-      {/* User info */}
-      {user && (
-        <div
-          className="flex items-center gap-3 mb-6 px-3 py-3 rounded-xl"
-          style={{ background: '#F0E8D6' }}
-        >
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-            style={{ background: '#B8860B' }}
-          >
-            {user.fullName.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold truncate" style={{ color: '#2D1B00' }}>
-              {user.fullName}
-            </p>
-            <p className="text-xs truncate" style={{ color: '#9C7040' }}>
-              {user.role.replace('_', ' ')}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Navigation */}
       <nav className="flex-1 space-y-0.5">
@@ -94,18 +69,6 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 font-medium text-sm mt-4 w-full text-left"
-        style={{ color: '#dc2626' }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-      >
-        <LogOut size={17} />
-        Logout
-      </button>
     </aside>
   );
 }

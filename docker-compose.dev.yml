@@ -1,0 +1,85 @@
+version: '3.9'
+
+# Development compose — single command, full hot-reload for all services
+#
+# Usage:
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# Frontend : http://localhost:5173  (Vite HMR — edits reload instantly)
+# Backend  : http://localhost:8080  (Spring DevTools — restarts on .java changes)
+# Postgres : localhost:5432
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ganesha_postgres_dev
+    environment:
+      POSTGRES_DB: ganesha_ayurvedaa
+      POSTGRES_USER: ganesha_user
+      POSTGRES_PASSWORD: ganesha123
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ganesha_user -d ganesha_ayurvedaa"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Spring Boot Backend (hot-reload via Spring DevTools) ─────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: ganesha_backend_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ganesha_ayurvedaa
+      SPRING_DATASOURCE_USERNAME: ganesha_user
+      SPRING_DATASOURCE_PASSWORD: ganesha123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      APP_JWT_SECRET: GaneshaAyurvedaaSecretKey2024SuperLongKeyForHS256AlgorithmSecurity
+      APP_JWT_EXPIRATION: 86400000
+      # Allow requests from the Vite dev server
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:5173
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount source so the in-container watcher sees your edits immediately
+      - ./backend/src:/app/src
+      # Cache Maven dependencies between restarts (huge speed-up)
+      - maven_cache:/root/.m2
+
+  # ─── React + Vite Frontend (HMR — instant hot-reload) ────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: ganesha_frontend_dev
+    depends_on:
+      - backend
+    environment:
+      # Tells vite.config.ts to proxy /api → backend container
+      BACKEND_URL: http://backend:8080
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount src so Vite HMR picks up every save instantly
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+      # Prevent host node_modules from overwriting the container's
+      - /app/node_modules
+
+volumes:
+  postgres_dev_data:
+  maven_cache:
+
+networks:
+  default:
+    name: ganesha_dev_network

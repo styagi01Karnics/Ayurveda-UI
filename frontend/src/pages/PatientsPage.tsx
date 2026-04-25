@@ -106,6 +106,7 @@ export default function PatientsPage() {
         resetForm();
         setModalOpen(false);
         setEditing(null);
+        setPage(0);
         fetchPatients();
       } catch (err: unknown) {
         const e = err as { response?: { data?: { message?: string } } };
@@ -142,6 +143,7 @@ export default function PatientsPage() {
     try {
       await patientsApi.delete(deleteTarget.id);
       setDeleteTarget(null);
+      setPage(0);
       fetchPatients();
     } catch {
       setDeleteTarget(null);
@@ -160,7 +162,7 @@ export default function PatientsPage() {
               Patients
             </h1>
             <p className="text-sm mt-0.5" style={{ color: '#9C7040' }}>
-              {patients.length} total patients registered
+              {data?.totalElements ?? patients.length} total patients registered
             </p>
           </div>
           <button onClick={openAdd} className="btn-gold">

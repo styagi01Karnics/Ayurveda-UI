@@ -1,0 +1,13 @@
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+# Source is mounted as a volume at runtime — copy here only for the initial layer
+COPY . .
+
+EXPOSE 5173
+
+# --host 0.0.0.0 makes Vite listen on all interfaces so Docker can reach it
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
