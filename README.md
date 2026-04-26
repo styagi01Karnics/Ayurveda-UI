@@ -46,3 +46,45 @@ Frontend runs on: http://localhost:5173
 ## Default Login
 - Email: admin@ganesha.com
 - Password: admin123
+
+---
+
+## Demo / Docker (Recommended)
+
+Run the entire stack on any machine with only Docker installed — no Node, Java, or PostgreSQL required.
+
+### Start everything
+```bash
+# First time or after code changes (builds images)
+docker compose -f docker-compose.dev.yml up --build
+
+# Subsequent runs (reuse existing images, faster)
+docker compose -f docker-compose.dev.yml up
+```
+
+Open **http://localhost:5173** in the browser.
+
+### Stop everything
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+### Stop and wipe the database (clean slate)
+```bash
+docker compose -f docker-compose.dev.yml down -v
+```
+
+### Demo credentials
+| Role   | Email                        | Password    |
+|--------|------------------------------|-------------|
+| Admin  | admin@ganesha.com            | admin123    |
+| Doctor | dr.sheekha@ganesha.com       | doctor123   |
+
+### Services
+| Service  | URL                      |
+|----------|--------------------------|
+| Frontend | http://localhost:5173    |
+| Backend  | http://localhost:8080    |
+| Postgres | localhost:5432           |
+
+> **Prerequisite:** [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.

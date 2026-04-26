@@ -132,34 +132,6 @@ export default function TreatmentsPage() {
     finally { setDeleting(false); }
   };
 
-  const S = ({ name, label, children }: { name: string; label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="label">{label}</label>
-      <select name={name}
-        value={(formik.values as Record<string, string>)[name]}
-        onChange={formik.handleChange} onBlur={formik.handleBlur}
-        className={`select-field ${(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] ? 'error' : ''}`}>
-        {children}
-      </select>
-      {(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] && (
-        <p className="error-msg">{(formik.errors as Record<string, string>)[name]}</p>
-      )}
-    </div>
-  );
-
-  const F = ({ name, label, type = 'text', placeholder }: { name: string; label: string; type?: string; placeholder?: string }) => (
-    <div>
-      <label className="label">{label}</label>
-      <input type={type} name={name} placeholder={placeholder}
-        value={(formik.values as Record<string, string>)[name]}
-        onChange={formik.handleChange} onBlur={formik.handleBlur}
-        className={`input-field ${(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] ? 'error' : ''}`} />
-      {(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] && (
-        <p className="error-msg">{(formik.errors as Record<string, string>)[name]}</p>
-      )}
-    </div>
-  );
-
   return (
     <div className="flex-1 flex flex-col min-h-screen overflow-auto" style={{ background: '#F5EFE0' }}>
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between" style={{ borderColor: '#EDE5D0' }}>
@@ -248,25 +220,46 @@ export default function TreatmentsPage() {
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           {submitError && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{submitError}</div>}
           <div className="grid grid-cols-2 gap-4">
-            <S name="patientId" label="Patient *">
-              <option value="">Select patient</option>
-              {patients.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-            </S>
-            <S name="doctorId" label="Doctor">
-              <option value="">Select doctor</option>
-              {doctors.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </S>
-            <S name="treatmentType" label="Treatment Type *">
-              <option value="">Select type</option>
-              {TREATMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-            </S>
-            <S name="status" label="Status *">
-              <option value="ONGOING">Ongoing</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="PAUSED">Paused</option>
-            </S>
-            <F name="startDate" label="Start Date *" type="date" />
-            <F name="endDate" label="End Date" type="date" />
+            <div>
+              <label className="label">Patient *</label>
+              <select name="patientId" value={formik.values.patientId} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`select-field ${formik.touched.patientId && formik.errors.patientId ? 'error' : ''}`}>
+                <option value="">Select patient</option>
+                {patients.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+              </select>
+              {formik.touched.patientId && formik.errors.patientId && <p className="error-msg">{formik.errors.patientId}</p>}
+            </div>
+            <div>
+              <label className="label">Doctor</label>
+              <select name="doctorId" value={formik.values.doctorId} onChange={formik.handleChange} onBlur={formik.handleBlur} className="select-field">
+                <option value="">Select doctor</option>
+                {doctors.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Treatment Type *</label>
+              <select name="treatmentType" value={formik.values.treatmentType} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`select-field ${formik.touched.treatmentType && formik.errors.treatmentType ? 'error' : ''}`}>
+                <option value="">Select type</option>
+                {TREATMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {formik.touched.treatmentType && formik.errors.treatmentType && <p className="error-msg">{formik.errors.treatmentType}</p>}
+            </div>
+            <div>
+              <label className="label">Status *</label>
+              <select name="status" value={formik.values.status} onChange={formik.handleChange} onBlur={formik.handleBlur} className="select-field">
+                <option value="ONGOING">Ongoing</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="PAUSED">Paused</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Start Date *</label>
+              <input type="date" name="startDate" value={formik.values.startDate} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.startDate && formik.errors.startDate ? 'error' : ''}`} />
+              {formik.touched.startDate && formik.errors.startDate && <p className="error-msg">{formik.errors.startDate}</p>}
+            </div>
+            <div>
+              <label className="label">End Date</label>
+              <input type="date" name="endDate" value={formik.values.endDate} onChange={formik.handleChange} onBlur={formik.handleBlur} className="input-field" />
+            </div>
             <div className="col-span-2">
               <label className="label">Description</label>
               <textarea name="description" placeholder="Treatment description" value={formik.values.description}

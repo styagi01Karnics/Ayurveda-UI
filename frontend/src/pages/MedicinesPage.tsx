@@ -132,19 +132,6 @@ export default function MedicinesPage() {
     finally { setDeleting(false); }
   };
 
-  const F = ({ name, label, type = 'text', placeholder }: { name: string; label: string; type?: string; placeholder?: string }) => (
-    <div>
-      <label className="label">{label}</label>
-      <input type={type} name={name} placeholder={placeholder}
-        value={(formik.values as Record<string, string>)[name]}
-        onChange={formik.handleChange} onBlur={formik.handleBlur}
-        className={`input-field ${(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] ? 'error' : ''}`} />
-      {(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] && (
-        <p className="error-msg">{(formik.errors as Record<string, string>)[name]}</p>
-      )}
-    </div>
-  );
-
   return (
     <div className="flex-1 flex flex-col min-h-screen overflow-auto" style={{ background: '#F5EFE0' }}>
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between" style={{ borderColor: '#EDE5D0' }}>
@@ -262,22 +249,42 @@ export default function MedicinesPage() {
              title={editing ? 'Edit Medicine' : 'Add Medicine'} size="md">
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           {submitError && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{submitError}</div>}
-          <F name="name" label="Medicine Name *" placeholder="e.g. Triphala Churna" />
+          <div>
+            <label className="label">Medicine Name *</label>
+            <input type="text" name="name" placeholder="e.g. Triphala Churna" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.name && formik.errors.name ? 'error' : ''}`} />
+            {formik.touched.name && formik.errors.name && <p className="error-msg">{formik.errors.name}</p>}
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label">Type *</label>
-              <select name="type" value={formik.values.type} onChange={formik.handleChange} onBlur={formik.handleBlur}
-                className={`select-field ${formik.touched.type && formik.errors.type ? 'error' : ''}`}>
+              <select name="type" value={formik.values.type} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`select-field ${formik.touched.type && formik.errors.type ? 'error' : ''}`}>
                 {MED_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
               {formik.touched.type && formik.errors.type && <p className="error-msg">{formik.errors.type}</p>}
             </div>
-            <F name="quantity" label="Quantity *" type="number" placeholder="50" />
-            <F name="lowStockThreshold" label="Low Stock Threshold *" type="number" placeholder="10" />
-            <F name="price" label="Price (₹)" type="number" placeholder="200" />
+            <div>
+              <label className="label">Quantity *</label>
+              <input type="number" name="quantity" placeholder="50" value={formik.values.quantity} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.quantity && formik.errors.quantity ? 'error' : ''}`} />
+              {formik.touched.quantity && formik.errors.quantity && <p className="error-msg">{formik.errors.quantity}</p>}
+            </div>
+            <div>
+              <label className="label">Low Stock Threshold *</label>
+              <input type="number" name="lowStockThreshold" placeholder="10" value={formik.values.lowStockThreshold} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.lowStockThreshold && formik.errors.lowStockThreshold ? 'error' : ''}`} />
+              {formik.touched.lowStockThreshold && formik.errors.lowStockThreshold && <p className="error-msg">{formik.errors.lowStockThreshold}</p>}
+            </div>
+            <div>
+              <label className="label">Price (₹)</label>
+              <input type="number" name="price" placeholder="200" value={formik.values.price} onChange={formik.handleChange} onBlur={formik.handleBlur} className="input-field" />
+            </div>
           </div>
-          <F name="manufacturer" label="Manufacturer" placeholder="e.g. Dabur, Himalaya" />
-          <F name="batchNumber" label="Batch Number" placeholder="e.g. B001" />
+          <div>
+            <label className="label">Manufacturer</label>
+            <input type="text" name="manufacturer" placeholder="e.g. Dabur, Himalaya" value={formik.values.manufacturer} onChange={formik.handleChange} onBlur={formik.handleBlur} className="input-field" />
+          </div>
+          <div>
+            <label className="label">Batch Number</label>
+            <input type="text" name="batchNumber" placeholder="e.g. B001" value={formik.values.batchNumber} onChange={formik.handleChange} onBlur={formik.handleBlur} className="input-field" />
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => { setModalOpen(false); setEditing(null); }} className="btn-outline">Cancel</button>
             <button type="submit" disabled={formik.isSubmitting} className="btn-gold">

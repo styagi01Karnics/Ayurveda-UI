@@ -37,13 +37,13 @@ export default function Layout() {
         {promoBanner && (
           <div
             className="flex items-center justify-between px-6 py-2.5 text-sm font-medium flex-shrink-0"
-            style={{ background: '#F0E8D6', borderBottom: '1px solid #E5D5B0' }}
+            style={{ background: '#F7EFE2', borderBottom: '1px solid #E5D5B0' }}
           >
             <div />
             <p style={{ color: '#6B4C1E' }}>
               Get Up to 50% Off on Ayurvedic Medicines &amp; Wellness Products{' '}
-              <span style={{ color: '#B8860B' }}>──→</span>{' '}
-              <span className="underline cursor-pointer font-semibold" style={{ color: '#B8860B' }}>
+              <span style={{ color: '#BE880B' }}>──→</span>{' '}
+              <span className="underline cursor-pointer font-semibold" style={{ color: '#BE880B' }}>
                 Claim Offer
               </span>
             </p>
@@ -56,7 +56,7 @@ export default function Layout() {
         {/* Top Header */}
         <div
           className="flex items-center justify-between px-6 py-3 bg-white flex-shrink-0"
-          style={{ borderBottom: '1px solid #EDE5D0' }}
+          style={{ borderBottom: '1px solid #EDE2CA' }}
         >
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm">
@@ -70,7 +70,7 @@ export default function Layout() {
             {pageLabel !== 'Dashboard' && (
               <>
                 <span style={{ color: '#C4A97A' }}>/</span>
-                <span className="font-medium" style={{ color: '#2D1B00' }}>{pageLabel}</span>
+                <span className="font-medium" style={{ color: '#422C23' }}>{pageLabel}</span>
               </>
             )}
           </div>
@@ -80,7 +80,7 @@ export default function Layout() {
             {/* Bell */}
             <button
               className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-amber-50"
-              style={{ border: '1px solid #EDE5D0' }}
+              style={{ border: '1px solid #EDE2CA' }}
             >
               <Bell size={16} style={{ color: '#6B4C1E' }} />
             </button>
@@ -88,17 +88,17 @@ export default function Layout() {
             {/* User info */}
             <button
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl transition-colors hover:bg-amber-50"
-              style={{ border: '1px solid #EDE5D0' }}
+              style={{ border: '1px solid #EDE2CA' }}
               onClick={() => setUserMenuOpen((v) => !v)}
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                style={{ background: '#B8860B' }}
+                style={{ background: '#BE880B' }}
               >
                 {user?.fullName?.charAt(0).toUpperCase() ?? 'A'}
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-sm font-semibold leading-none" style={{ color: '#2D1B00' }}>
+                <p className="text-sm font-semibold leading-none" style={{ color: '#422C23' }}>
                   {user?.fullName ?? 'Admin'}
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: '#9C7040' }}>
@@ -113,7 +113,7 @@ export default function Layout() {
               onClick={handleLogout}
               title="Logout"
               className="w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-red-50"
-              style={{ border: '1px solid #EDE5D0' }}
+              style={{ border: '1px solid #EDE2CA' }}
             >
               <LogOut size={16} style={{ color: '#9C7040' }} />
             </button>

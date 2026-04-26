@@ -4,7 +4,9 @@ import com.ganesha.ayurvedaa.model.Doctor;
 import com.ganesha.ayurvedaa.repository.DoctorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +19,10 @@ public class DoctorController {
 
     @GetMapping
     public ResponseEntity<Page<Doctor>> getAll(Pageable pageable) {
-        return ResponseEntity.ok(doctorRepository.findAll(pageable));
+        PageRequest sorted = PageRequest.of(
+                pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by("createdAt").descending());
+        return ResponseEntity.ok(doctorRepository.findAll(sorted));
     }
 
     @GetMapping("/{id}")

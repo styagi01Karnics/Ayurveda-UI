@@ -148,21 +148,6 @@ export default function AppointmentsPage() {
     finally { setDeleting(false); }
   };
 
-  const S = ({ name, label, children }: { name: string; label: string; children: React.ReactNode }) => (
-    <div>
-      <label className="label">{label}</label>
-      <select name={name}
-        value={(formik.values as Record<string, string>)[name]}
-        onChange={formik.handleChange} onBlur={formik.handleBlur}
-        className={`select-field ${(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] ? 'error' : ''}`}>
-        {children}
-      </select>
-      {(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] && (
-        <p className="error-msg">{(formik.errors as Record<string, string>)[name]}</p>
-      )}
-    </div>
-  );
-
   return (
     <div className="flex-1 flex flex-col min-h-screen overflow-auto" style={{ background: '#F5EFE0' }}>
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between" style={{ borderColor: '#EDE5D0' }}>
@@ -274,14 +259,21 @@ export default function AppointmentsPage() {
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           {submitError && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{submitError}</div>}
           <div className="grid grid-cols-2 gap-4">
-            <S name="patientId" label="Patient *">
-              <option value="">Select patient</option>
-              {patients.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-            </S>
-            <S name="doctorId" label="Doctor">
-              <option value="">Select doctor</option>
-              {doctors.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </S>
+            <div>
+              <label className="label">Patient *</label>
+              <select name="patientId" value={formik.values.patientId} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`select-field ${formik.touched.patientId && formik.errors.patientId ? 'error' : ''}`}>
+                <option value="">Select patient</option>
+                {patients.map((p) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+              </select>
+              {formik.touched.patientId && formik.errors.patientId && <p className="error-msg">{formik.errors.patientId}</p>}
+            </div>
+            <div>
+              <label className="label">Doctor</label>
+              <select name="doctorId" value={formik.values.doctorId} onChange={formik.handleChange} onBlur={formik.handleBlur} className="select-field">
+                <option value="">Select doctor</option>
+                {doctors.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
             <div>
               <label className="label">Appointment Date & Time *</label>
               <input type="datetime-local" name="appointmentDate"
@@ -291,12 +283,19 @@ export default function AppointmentsPage() {
                 <p className="error-msg">{formik.errors.appointmentDate}</p>
               )}
             </div>
-            <S name="visitType" label="Visit Type *">
-              {VISIT_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
-            </S>
-            <S name="status" label="Status *">
-              {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-            </S>
+            <div>
+              <label className="label">Visit Type *</label>
+              <select name="visitType" value={formik.values.visitType} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`select-field ${formik.touched.visitType && formik.errors.visitType ? 'error' : ''}`}>
+                {VISIT_TYPES.map((t) => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}
+              </select>
+              {formik.touched.visitType && formik.errors.visitType && <p className="error-msg">{formik.errors.visitType}</p>}
+            </div>
+            <div>
+              <label className="label">Status *</label>
+              <select name="status" value={formik.values.status} onChange={formik.handleChange} onBlur={formik.handleBlur} className="select-field">
+                {STATUSES.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+              </select>
+            </div>
             <div className="col-span-2">
               <label className="label">Chief Complaint *</label>
               <input type="text" name="chiefComplaint" placeholder="Patient's main concern"

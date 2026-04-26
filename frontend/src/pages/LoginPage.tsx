@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Eye, EyeOff, Leaf } from 'lucide-react';
@@ -87,66 +87,37 @@ export default function LoginPage() {
           {/* Dosha triangle */}
           <div className="relative mb-10" style={{ width: 220, height: 220 }}>
             <svg viewBox="0 0 220 220" fill="none" className="w-full h-full">
-              {/* Outer glow */}
               <circle cx="110" cy="110" r="105" stroke="#B8860B" strokeWidth="0.5" strokeDasharray="4 4" opacity="0.4" />
-              {/* Triangle */}
-              <polygon
-                points="110,20 200,175 20,175"
-                stroke="#B8860B"
-                strokeWidth="1.5"
-                fill="rgba(184,134,11,0.08)"
-              />
-              {/* Inner triangle */}
-              <polygon
-                points="110,55 175,155 45,155"
-                stroke="#D4A017"
-                strokeWidth="1"
-                fill="rgba(212,160,23,0.06)"
-              />
-              {/* Center lotus */}
+              <polygon points="110,20 200,175 20,175" stroke="#B8860B" strokeWidth="1.5" fill="rgba(184,134,11,0.08)" />
+              <polygon points="110,55 175,155 45,155" stroke="#D4A017" strokeWidth="1" fill="rgba(212,160,23,0.06)" />
               <g transform="translate(110,115)">
                 {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
-                  <ellipse
-                    key={i}
-                    cx={0} cy={-14}
-                    rx={5} ry={10}
-                    fill="#B8860B"
-                    opacity={0.6 + (i % 2) * 0.2}
-                    transform={`rotate(${angle})`}
-                  />
+                  <ellipse key={i} cx={0} cy={-14} rx={5} ry={10} fill="#B8860B"
+                    opacity={0.6 + (i % 2) * 0.2} transform={`rotate(${angle})`} />
                 ))}
                 <circle cx="0" cy="0" r="8" fill="#D4A017" />
                 <circle cx="0" cy="0" r="4" fill="#FAF6EE" />
               </g>
-              {/* Vertex labels */}
               <text x="110" y="14" textAnchor="middle" fill="#D4A017" fontSize="11" fontFamily="Cormorant Garamond, serif" fontWeight="600">VATA</text>
               <text x="208" y="186" textAnchor="middle" fill="#D4A017" fontSize="11" fontFamily="Cormorant Garamond, serif" fontWeight="600">PITTA</text>
               <text x="12" y="186" textAnchor="middle" fill="#D4A017" fontSize="11" fontFamily="Cormorant Garamond, serif" fontWeight="600">KAPHA</text>
             </svg>
           </div>
 
-          <h1
-            className="text-4xl font-bold mb-3 tracking-wide"
-            style={{ color: '#F0E8D6', fontFamily: 'Cormorant Garamond, serif' }}
-          >
+          <h1 className="text-4xl font-bold mb-3 tracking-wide" style={{ color: '#F0E8D6', fontFamily: 'Cormorant Garamond, serif' }}>
             Ganesha Ayurvedaa
           </h1>
           <div className="w-16 h-0.5 mb-4" style={{ background: '#B8860B' }} />
-          <p className="text-lg font-medium mb-2" style={{ color: '#D4A017' }}>
-            A Journey of Healing
-          </p>
+          <p className="text-lg font-medium mb-2" style={{ color: '#D4A017' }}>A Journey of Healing</p>
           <p className="text-sm leading-relaxed max-w-sm" style={{ color: '#C4A882' }}>
             Holistic Ayurvedic care management — bringing ancient wisdom to modern healthcare.
           </p>
 
-          {/* Bottom pillars */}
           <div className="flex gap-8 mt-10">
             {['Vata', 'Pitta', 'Kapha'].map((dosha) => (
               <div key={dosha} className="flex flex-col items-center gap-2">
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(184,134,11,0.2)', border: '1px solid rgba(184,134,11,0.4)' }}
-                >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(184,134,11,0.2)', border: '1px solid rgba(184,134,11,0.4)' }}>
                   <Leaf size={16} style={{ color: '#D4A017' }} />
                 </div>
                 <span className="text-xs font-medium" style={{ color: '#C4A882' }}>{dosha}</span>
@@ -161,10 +132,8 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="lg:hidden flex flex-col items-center mb-8">
-            <div
-              className="w-16 h-16 rounded-full border-2 flex items-center justify-center mb-3"
-              style={{ borderColor: '#B8860B', background: '#FFF9EE' }}
-            >
+            <div className="w-16 h-16 rounded-full border-2 flex items-center justify-center mb-3"
+              style={{ borderColor: '#B8860B', background: '#FFF9EE' }}>
               <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
                 <path d="M18 3 Q23 9 20 17 Q26 12 31 17 Q25 23 23 29 Q21 33 18 33 Q15 33 13 29 Q11 23 5 17 Q10 12 16 17 Q13 9 18 3Z" fill="#B8860B" opacity="0.9" />
                 <path d="M18 7 Q20 13 18 19 Q16 13 18 7Z" fill="#8B6914" />
@@ -190,42 +159,24 @@ export default function LoginPage() {
             )}
 
             <form onSubmit={formik.handleSubmit} className="space-y-5">
-              {/* Email */}
               <div>
                 <label className="label">Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="admin@ganesha.com"
-                  value={formik.values.email}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className={`input-field ${formik.touched.email && formik.errors.email ? 'error' : ''}`}
-                />
+                <input type="email" name="email" placeholder="admin@ganesha.com"
+                  value={formik.values.email} onChange={formik.handleChange} onBlur={formik.handleBlur}
+                  className={`input-field ${formik.touched.email && formik.errors.email ? 'error' : ''}`} />
                 {formik.touched.email && formik.errors.email && (
                   <p className="error-msg">{formik.errors.email}</p>
                 )}
               </div>
 
-              {/* Password */}
               <div>
                 <label className="label">Password</label>
                 <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder="••••••••"
-                    value={formik.values.password}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className={`input-field pr-10 ${formik.touched.password && formik.errors.password ? 'error' : ''}`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2"
-                    style={{ color: '#9C7040' }}
-                  >
+                  <input type={showPassword ? 'text' : 'password'} name="password" placeholder="••••••••"
+                    value={formik.values.password} onChange={formik.handleChange} onBlur={formik.handleBlur}
+                    className={`input-field pr-10 ${formik.touched.password && formik.errors.password ? 'error' : ''}`} />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#9C7040' }}>
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
@@ -234,11 +185,7 @@ export default function LoginPage() {
                 )}
               </div>
 
-              <button
-                type="submit"
-                disabled={formik.isSubmitting}
-                className="btn-gold w-full justify-center py-3 text-base"
-              >
+              <button type="submit" disabled={formik.isSubmitting} className="btn-gold w-full justify-center py-3 text-base">
                 {formik.isSubmitting ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-t-transparent spinner" style={{ borderColor: 'white', borderTopColor: 'transparent' }} />
@@ -248,7 +195,7 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* Demo credentials hint */}
+            {/* Demo credentials */}
             <div className="mt-6 pt-5 border-t" style={{ borderColor: '#EDE5D0' }}>
               <p className="text-xs text-center mb-3" style={{ color: '#9C7040' }}>Demo Credentials</p>
               <div className="grid grid-cols-2 gap-2">
@@ -256,16 +203,10 @@ export default function LoginPage() {
                   { label: 'Admin', email: 'admin@ganesha.com', password: 'admin123' },
                   { label: 'Doctor', email: 'dr.sheekha@ganesha.com', password: 'doctor123' },
                 ].map((cred) => (
-                  <button
-                    key={cred.label}
-                    type="button"
-                    onClick={() => {
-                      formik.setFieldValue('email', cred.email);
-                      formik.setFieldValue('password', cred.password);
-                    }}
+                  <button key={cred.label} type="button"
+                    onClick={() => { formik.setFieldValue('email', cred.email); formik.setFieldValue('password', cred.password); }}
                     className="px-3 py-2 rounded-lg text-xs font-medium transition-colors border text-center"
-                    style={{ borderColor: '#EDE5D0', color: '#6B4C1E', background: '#FAF6EE' }}
-                  >
+                    style={{ borderColor: '#EDE5D0', color: '#6B4C1E', background: '#FAF6EE' }}>
                     {cred.label}<br />
                     <span style={{ color: '#9C7040', fontSize: 10 }}>{cred.email}</span>
                   </button>
@@ -274,7 +215,14 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-xs mt-6" style={{ color: '#9C7040' }}>
+          <p className="text-center text-sm mt-5" style={{ color: '#9C7040' }}>
+            Don't have an account?{' '}
+            <Link to="/signup" className="font-semibold hover:underline" style={{ color: '#B8860B' }}>
+              Sign Up
+            </Link>
+          </p>
+
+          <p className="text-center text-xs mt-3" style={{ color: '#9C7040' }}>
             © 2024 Ganesha Ayurvedaa. All rights reserved.
           </p>
         </div>

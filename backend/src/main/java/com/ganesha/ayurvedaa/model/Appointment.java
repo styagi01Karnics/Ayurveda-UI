@@ -1,5 +1,7 @@
 package com.ganesha.ayurvedaa.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
@@ -21,12 +23,14 @@ public class Appointment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "patient_id", nullable = false)
     private Patient patient;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "doctor_id", nullable = false)
+    @JoinColumn(name = "doctor_id")
     private Doctor doctor;
 
     @Column(nullable = false)
@@ -47,6 +51,11 @@ public class Appointment {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    @JsonProperty public Long getPatientId()   { return patient != null ? patient.getId()       : null; }
+    @JsonProperty public String getPatientName() { return patient != null ? patient.getFullName() : null; }
+    @JsonProperty public Long getDoctorId()    { return doctor  != null ? doctor.getId()        : null; }
+    @JsonProperty public String getDoctorName()  { return doctor  != null ? doctor.getName()      : null; }
 
     public enum VisitType {
         CONSULTATION, FOLLOW_UP, TREATMENT, PANCHAKARMA

@@ -4,7 +4,9 @@ import com.ganesha.ayurvedaa.model.Medicine;
 import com.ganesha.ayurvedaa.repository.MedicineRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +21,10 @@ public class MedicineController {
 
     @GetMapping
     public ResponseEntity<Page<Medicine>> getAll(Pageable pageable) {
-        return ResponseEntity.ok(medicineRepository.findAll(pageable));
+        PageRequest sorted = PageRequest.of(
+                pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by("createdAt").descending());
+        return ResponseEntity.ok(medicineRepository.findAll(sorted));
     }
 
     @GetMapping("/low-stock")

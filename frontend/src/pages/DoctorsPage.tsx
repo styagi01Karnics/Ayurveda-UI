@@ -105,21 +105,6 @@ export default function DoctorsPage() {
     finally { setDeleting(false); }
   };
 
-  const F = ({ name, label, placeholder, type = 'text' }: { name: string; label: string; placeholder?: string; type?: string }) => (
-    <div>
-      <label className="label">{label}</label>
-      <input
-        type={type} name={name} placeholder={placeholder}
-        value={(formik.values as Record<string, string | boolean>)[name] as string}
-        onChange={formik.handleChange} onBlur={formik.handleBlur}
-        className={`input-field ${(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] ? 'error' : ''}`}
-      />
-      {(formik.touched as Record<string, boolean>)[name] && (formik.errors as Record<string, string>)[name] && (
-        <p className="error-msg">{(formik.errors as Record<string, string>)[name]}</p>
-      )}
-    </div>
-  );
-
   return (
     <div className="flex-1 flex flex-col min-h-screen overflow-auto" style={{ background: '#F5EFE0' }}>
       <div className="bg-white border-b px-6 py-4 flex items-center justify-between" style={{ borderColor: '#EDE5D0' }}>
@@ -197,14 +182,37 @@ export default function DoctorsPage() {
              title={editing ? 'Edit Doctor' : 'Add Doctor'} size="md">
         <form onSubmit={formik.handleSubmit} className="space-y-4">
           {submitError && <div className="px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{submitError}</div>}
-          <F name="name" label="Full Name *" placeholder="Dr. John Doe" />
-          <F name="specialization" label="Specialization *" placeholder="e.g. Panchakarma & Detox" />
-          <F name="qualification" label="Qualification *" placeholder="e.g. BAMS, MD (Ayu)" />
-          <div className="grid grid-cols-2 gap-4">
-            <F name="phone" label="Phone *" type="tel" placeholder="9876543210" />
-            <F name="email" label="Email" type="email" placeholder="doctor@email.com" />
+          <div>
+            <label className="label">Full Name *</label>
+            <input type="text" name="name" placeholder="Dr. John Doe" value={formik.values.name} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.name && formik.errors.name ? 'error' : ''}`} />
+            {formik.touched.name && formik.errors.name && <p className="error-msg">{formik.errors.name}</p>}
           </div>
-          <F name="registrationNumber" label="Registration Number" placeholder="REG-001" />
+          <div>
+            <label className="label">Specialization *</label>
+            <input type="text" name="specialization" placeholder="e.g. Panchakarma & Detox" value={formik.values.specialization} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.specialization && formik.errors.specialization ? 'error' : ''}`} />
+            {formik.touched.specialization && formik.errors.specialization && <p className="error-msg">{formik.errors.specialization}</p>}
+          </div>
+          <div>
+            <label className="label">Qualification *</label>
+            <input type="text" name="qualification" placeholder="e.g. BAMS, MD (Ayu)" value={formik.values.qualification} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.qualification && formik.errors.qualification ? 'error' : ''}`} />
+            {formik.touched.qualification && formik.errors.qualification && <p className="error-msg">{formik.errors.qualification}</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Phone *</label>
+              <input type="tel" name="phone" placeholder="9876543210" value={formik.values.phone} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.phone && formik.errors.phone ? 'error' : ''}`} />
+              {formik.touched.phone && formik.errors.phone && <p className="error-msg">{formik.errors.phone}</p>}
+            </div>
+            <div>
+              <label className="label">Email</label>
+              <input type="email" name="email" placeholder="doctor@email.com" value={formik.values.email} onChange={formik.handleChange} onBlur={formik.handleBlur} className={`input-field ${formik.touched.email && formik.errors.email ? 'error' : ''}`} />
+              {formik.touched.email && formik.errors.email && <p className="error-msg">{formik.errors.email}</p>}
+            </div>
+          </div>
+          <div>
+            <label className="label">Registration Number</label>
+            <input type="text" name="registrationNumber" placeholder="REG-001" value={formik.values.registrationNumber} onChange={formik.handleChange} onBlur={formik.handleBlur} className="input-field" />
+          </div>
           <div className="flex items-center gap-3">
             <input type="checkbox" id="available" name="available" checked={formik.values.available}
                    onChange={formik.handleChange}
