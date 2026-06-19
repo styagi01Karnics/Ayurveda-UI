@@ -1,0 +1,77 @@
+﻿@import "tailwindcss";
+
+@theme {
+  --color-cream: #fffef7;
+  --color-gold: #be880b;
+  --color-gold-light: #f8efdf;
+  --color-brown: #422c23;
+  --color-brown-muted: rgba(66, 44, 35, 0.8);
+  --color-muted: #838a9a;
+  --color-text-secondary: #737373;
+  --color-stroke: #eff0f6;
+  --color-success: #327120;
+  --color-success-text: #2e7d32;
+  --color-dosha: #005c96;
+  --color-danger: #c62828;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Inria Serif", Georgia, serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-cream);
+  color: var(--color-brown);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Figma MCP exports use style-specific font-family names; map to loaded Inter */
+@layer utilities {
+  .font-\[\'Inter\:Regular\'\],
+  .font-\[\\\'Inter\:Regular\\\'\] {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  .font-\[\'Inter\:Medium\'\],
+  .font-\[\\\'Inter\:Medium\\\'\] {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  .font-\[\'Inter\:Semi_Bold\'\],
+  .font-\[\\\'Inter\:Semi_Bold\\\'\] {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  .font-\[\'Satoshi\:Medium\'\] {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  /* Figma design tokens with invalid CSS var names → explicit fallbacks */
+  .text-\[color\:var\(--color\\\/grey\\\/500\,\#737373\)\] {
+    color: #737373;
+  }
+
+  .text-\[color\:var\(--color\\\/grey\\\/700\,\#404040\)\] {
+    color: #404040;
+  }
+
+  .text-\[color\:var\(--color\\\/grey\\\/0\,white\)\] {
+    color: #fff;
+  }
+
+  .bg-\[var\(--color\\\/grey\\\/0\,white\)\] {
+    background-color: #fff;
+  }
+
+  .border-\[var\(--color\\\/grey\\\/300\,\#d4d4d4\)\] {
+    border-color: #d4d4d4;
+  }
+}

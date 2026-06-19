@@ -1,0 +1,26 @@
+{
+  "name": "Ganesha Ayurvedaa",
+  "fileKey": "yCc3B8nXqtu9xUQ4lacJ11",
+  "designUrl": "https://www.figma.com/design/yCc3B8nXqtu9xUQ4lacJ11/Ganesha-Ayurveda-Final-File",
+  "prototypeUrl": "https://www.figma.com/design/yCc3B8nXqtu9xUQ4lacJ11/Ganesha-Ayurveda-Final-File?node-id=0-1",
+  "nodes": {
+    "page": "0:1",
+    "login": "1:16429",
+    "signup": "1:16469",
+    "dashboard": "1:5032",
+    "billing": "1:8849",
+    "billingService": "1:9915",
+    "billingMedicine": "1:9993",
+    "billingTherapy": "1:10073",
+    "billingSummary": "1:10172",
+    "settings": "1:9360"
+  },
+  "mcp": {
+    "server": "figma",
+    "tools": {
+      "designContext": "get_design_context",
+      "screenshot": "get_screenshot",
+      "metadata": "get_metadata"
+    }
+  }
+}

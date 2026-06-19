@@ -1,0 +1,125 @@
+      <div className="absolute bg-[rgba(255,255,255,0.8)] h-[851px] left-[321px] overflow-clip rounded-[10px] shadow-[0px_0px_3px_1px_rgba(190,136,11,0.1)] top-[142px] w-[1095px]" data-node-id="1:9539">
+        <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[16px] not-italic text-[#422c23] text-[14px] top-[24px] whitespace-nowrap" data-node-id="1:9540">
+          <p className="leading-[1.5]">Clinic Settings</p>
+        </a>
+        <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[235px] not-italic text-[#422c23] text-[14px] top-[24px] whitespace-nowrap" data-node-id="1:9541">
+          <p className="leading-[1.5]">User Management</p>
+        </a>
+        <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[479px] not-italic text-[#422c23] text-[14px] top-[24px] whitespace-nowrap" data-node-id="1:9542">
+          <p className="leading-[1.5]">Role Management</p>
+        </a>
+        <p className="[word-break:break-word] absolute font-['Inter:Semi_Bold'] font-semibold leading-[1.5] left-[720px] not-italic text-[#be880b] text-[14px] top-[24px] whitespace-nowrap" data-node-id="1:9543">
+          System Preference
+        </p>
+        <div className="absolute h-0 left-[16px] top-[63px] w-[1063px]" data-node-id="1:9544">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine449} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[720px] top-[63px] w-[122px]" data-node-id="1:9545">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine450} />
+          </div>
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[1.5] left-[16px] not-italic text-[#422c23] text-[16px] top-[87px] whitespace-nowrap" data-node-id="1:9546">{`Appointment Settings `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[1.5] left-[16px] not-italic text-[#422c23] text-[16px] top-[203px] whitespace-nowrap" data-node-id="1:9547">{`Billing Settings `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[1.5] left-[16px] not-italic text-[#422c23] text-[16px] top-[319px] whitespace-nowrap" data-node-id="1:9548">{`Notification Settings `}</p>
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[16px] rounded-[6px] top-[131px] w-[344px]" data-node-id="1:9549" />
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[16px] rounded-[6px] top-[247px] w-[344px]" data-node-id="1:9550" />
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[16px] rounded-[6px] top-[363px] w-[344px]" data-node-id="1:9551" />
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[376px] rounded-[6px] top-[131px] w-[344px]" data-node-id="1:9552" />
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[376px] rounded-[6px] top-[247px] w-[344px]" data-node-id="1:9553" />
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[376px] rounded-[6px] top-[363px] w-[344px]" data-node-id="1:9554" />
+        <div className="absolute bg-[#faf9f5] h-[40px] left-[736px] rounded-[6px] top-[131px] w-[344px]" data-node-id="1:9555" />
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[28px] not-italic text-[#422c23] text-[14px] top-[151px] whitespace-nowrap" data-node-id="1:9556">
+          <p className="leading-[20px]">SMS</p>
+        </div>
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[28px] not-italic text-[#422c23] text-[14px] top-[267px] whitespace-nowrap" data-node-id="1:9557">
+          <p className="leading-[20px]">Enable GST</p>
+        </div>
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[28px] not-italic text-[#422c23] text-[14px] top-[383px] whitespace-nowrap" data-node-id="1:9558">
+          <p className="leading-[20px]">{`Patient Appointment Reminder `}</p>
+        </div>
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[388px] not-italic text-[#422c23] text-[14px] top-[151px] whitespace-nowrap" data-node-id="1:9559">
+          <p className="leading-[20px]">Whatsapp</p>
+        </div>
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[388px] not-italic text-[#422c23] text-[14px] top-[267px] whitespace-nowrap" data-node-id="1:9560">
+          <p className="leading-[20px]">Partial Payment</p>
+        </div>
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[388px] not-italic text-[#422c23] text-[14px] top-[383px] whitespace-nowrap" data-node-id="1:9561">
+          <p className="leading-[20px]">Follow up reminder</p>
+        </div>
+        <div className="-translate-y-1/2 [word-break:break-word] absolute flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] left-[748px] not-italic text-[#422c23] text-[14px] top-[151px] whitespace-nowrap" data-node-id="1:9562">
+          <p className="leading-[20px]">Email</p>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[288px] top-[142px]" data-node-id="1:9563" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9563;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9563;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9563;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[288px] top-[258px]" data-node-id="1:9564" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9564;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9564;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9564;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[288px] top-[374px]" data-node-id="1:9565" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9565;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9565;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9565;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[648px] top-[142px]" data-node-id="1:9566" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9566;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9566;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9566;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[648px] top-[258px]" data-node-id="1:9567" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9567;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9567;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9567;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[648px] top-[374px]" data-node-id="1:9568" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9568;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9568;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9568;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+        <div className="absolute content-stretch flex gap-[8px] items-center left-[1008px] top-[142px]" data-node-id="1:9569" data-name="Toggle small">
+          <div className="bg-[#24a148] cursor-pointer h-[16px] relative rounded-[24px] shrink-0 w-[32px]" data-node-id="I1:9569;2598:188389" data-name="Toggle">
+            <div className="-translate-y-1/2 absolute left-[19px] size-[10px] top-1/2" data-node-id="I1:9569;2598:188393" data-name="Handle">
+              <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHandle} />
+            </div>
+          </div>
+          <div className="[word-break:break-word] flex flex-col font-['Inter:Medium'] font-medium justify-center leading-[0] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:9569;2598:188394">
+            <p className="leading-[18px]">On</p>
+          </div>
+        </div>
+      </div>

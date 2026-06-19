@@ -1,0 +1,447 @@
+const imgImage = "https://www.figma.com/api/mcp/asset/5c96b307-b4e7-4e4f-bd55-2ae636ab9fe5";
+const imgRectangle1 = "https://www.figma.com/api/mcp/asset/cfc76564-63a4-4bfc-b5d9-177e637c5b43";
+const imgLogo21 = "https://www.figma.com/api/mcp/asset/9d458aba-7364-44db-8703-647556df4df0";
+const imgEllipse3704 = "https://www.figma.com/api/mcp/asset/60778be5-5c7b-4333-8605-298445492748";
+const imgEllipse3705 = "https://www.figma.com/api/mcp/asset/311e23cb-c2dd-4213-92a1-13a1f7ab2b24";
+const imgLine477 = "https://www.figma.com/api/mcp/asset/6df4e87a-fe78-4b17-ab5c-c497d2eff560";
+const imgChevron = "https://www.figma.com/api/mcp/asset/7f246e3c-b0d4-40ac-88a7-91834fbafa58";
+const imgFrame = "https://www.figma.com/api/mcp/asset/2089d3a9-6ae6-4525-8a3f-81040ece9b3e";
+const imgGroup = "https://www.figma.com/api/mcp/asset/0b2a9364-3721-495e-985e-d5a943713b73";
+const imgArrowExit = "https://www.figma.com/api/mcp/asset/8cc874a2-23a5-4b2b-86aa-92216d449bb4";
+const imgAlert = "https://www.figma.com/api/mcp/asset/b0df0f71-812e-41f1-9ec9-3603ade365bb";
+const imgBounds = "https://www.figma.com/api/mcp/asset/2d7ab9df-f029-4142-83f5-762463df92c8";
+const imgAdd = "https://www.figma.com/api/mcp/asset/95913719-a7eb-4fcf-a025-0cef7600a392";
+const imgLine355 = "https://www.figma.com/api/mcp/asset/225b919b-1cf9-4531-bcc7-186d080b79c9";
+const imgBounds1 = "https://www.figma.com/api/mcp/asset/a6cddaad-963c-4b5a-96f8-498249c545b5";
+const imgBounds2 = "https://www.figma.com/api/mcp/asset/e686ff72-9c9a-4066-9269-34944075abf7";
+const imgSearch = "https://www.figma.com/api/mcp/asset/50b9b047-1a76-4a10-a4bf-e8a6e29ded45";
+const imgBounds3 = "https://www.figma.com/api/mcp/asset/514e6911-bf96-41a9-9fa0-84631e10f840";
+const imgBounds4 = "https://www.figma.com/api/mcp/asset/1b83175e-ecec-4bab-8298-64fd40358e19";
+const imgChevron1 = "https://www.figma.com/api/mcp/asset/ee6ab32c-34b2-4cdf-a907-efd44f71b4d6";
+const imgCalendar = "https://www.figma.com/api/mcp/asset/bd48d12d-5b46-4cdd-b737-9a2f1228182d";
+const imgAppsList = "https://www.figma.com/api/mcp/asset/7416e9ad-4be8-4ec0-a40f-05b4882e536d";
+const imgCalendar1 = "https://www.figma.com/api/mcp/asset/365ca3f2-7eb8-4370-ac8a-84d897a6e648";
+const imgLine478 = "https://www.figma.com/api/mcp/asset/90c25730-4a8a-45df-ae10-1cb5bd2dc869";
+const imgLine479 = "https://www.figma.com/api/mcp/asset/fe1d16bc-0277-439e-a7a2-ce9947265415";
+const imgLine483 = "https://www.figma.com/api/mcp/asset/97111443-3ff5-4aca-a55b-16225370685f";
+const imgDoctor = "https://www.figma.com/api/mcp/asset/2ef90490-807b-49b0-b30a-8929f4f5b9a4";
+const imgPerson = "https://www.figma.com/api/mcp/asset/8b94cbca-a445-4db4-ba6d-aa565e55107a";
+const imgBriefcaseMedical = "https://www.figma.com/api/mcp/asset/84cbe47d-d837-4aa0-83d8-44dcaa7c5f71";
+const imgSettings = "https://www.figma.com/api/mcp/asset/f8647d0b-b2c7-453a-8ded-e2e0b35cd631";
+const imgHistory = "https://www.figma.com/api/mcp/asset/8a87c78f-2836-45f0-8233-9153654afde0";
+const imgDocumentBulletList = "https://www.figma.com/api/mcp/asset/f3c54d2b-7f45-4a6c-85a1-c1867c4940d2";
+const imgDataHistogram = "https://www.figma.com/api/mcp/asset/24d7bc4b-3d62-44ff-8056-912a4fb9cef9";
+const imgHeartPulse = "https://www.figma.com/api/mcp/asset/7f098587-8f1f-486c-8dda-c5ff4598b82d";
+const imgGrid = "https://www.figma.com/api/mcp/asset/35c12cee-c6f5-4f92-8797-2c0c1b6fdbf3";
+const imgCalendarPerson = "https://www.figma.com/api/mcp/asset/21864bc2-33dc-45d1-b61b-a30e8eb51397";
+
+export default function Appoinmnets2GridView() {
+  return (
+    <div className="bg-[#fffef7] relative size-full" data-node-id="1:11131" data-name="Appoinmnets 2 Grid View">
+      <a className="absolute block cursor-pointer left-[1384px] size-[32px] top-[86px]" data-node-id="1:11132">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEllipse3704} />
+      </a>
+      <div className="absolute left-[1136px] size-[32px] top-[86px]" data-node-id="1:11133">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgEllipse3705} />
+      </div>
+      <div className="absolute flex h-[32px] items-center justify-center left-[1368px] top-[86px] w-0">
+        <div className="flex-none rotate-90">
+          <div className="h-0 relative w-[32px]" data-node-id="1:11134">
+            <div className="absolute inset-[-0.5px_0_0_0]">
+              <img alt="" className="block max-w-none size-full" src={imgLine477} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="absolute flex h-[32px] items-center justify-center left-[1184px] top-[86px] w-0">
+        <div className="flex-none rotate-90">
+          <div className="h-0 relative w-[32px]" data-node-id="1:11135">
+            <div className="absolute inset-[-0.5px_0_0_0]">
+              <img alt="" className="block max-w-none size-full" src={imgLine477} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <a className="-translate-x-1/2 -translate-y-1/2 absolute block cursor-pointer left-[calc(50%+624px)] size-[16px] top-[calc(50%-410px)]" data-node-id="1:11136" data-name="Chevron">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgChevron} />
+      </a>
+      <div className="absolute bg-[#eee4cc] h-[38px] left-[321px] overflow-clip rounded-[10px] top-[24px] w-[1095px]" data-node-id="1:11137">
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute contents left-[calc(50%-27.5px)] top-[calc(50%+0.5px)]" data-node-id="1:11138">
+          <p className="[word-break:break-word] absolute font-['Satoshi:Medium'] leading-[0] left-[calc(50%-300.5px)] not-italic text-[#422c23] text-[14px] top-[calc(50%-8px)] whitespace-pre" data-node-id="1:11139">
+            <span className="font-['Inter:Medium'] font-medium leading-[normal]">{`Get Up to 50% Off on Ayurvedic Medicines & Wellness Products          `}</span>
+            <span className="font-['Inter:Semi_Bold'] font-semibold leading-[normal] text-[#be880b]">{`  `}</span>
+            <span className="[text-decoration-skip-ink:none] [text-underline-position:from-font] decoration-from-font decoration-solid font-['Inter:Semi_Bold'] font-semibold leading-[normal] text-[#be880b] underline">Claim Offer</span>
+          </p>
+        </div>
+        <div className="-translate-y-1/2 absolute left-[1063px] size-[20px] top-1/2" data-node-id="1:11140" data-name="Frame">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgFrame} />
+        </div>
+        <div className="absolute inset-[36.84%_35.61%_32.17%_61.72%]" data-node-id="1:11142" data-name="Group">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgGroup} />
+        </div>
+      </div>
+      <div className="absolute left-[1200px] size-[32px] top-[86px]" data-node-id="1:11144" data-name="Image">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" height="32" src={imgImage} width="32" />
+      </div>
+      <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[1240px] not-italic text-[#422c23] text-[13px] top-[86px] whitespace-nowrap" data-node-id="1:11145">
+        Rahul Sharma
+      </p>
+      <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[1240px] not-italic text-[#737373] text-[11px] top-[107px] whitespace-nowrap" data-node-id="1:11146">
+        Super Admin
+      </p>
+      <a className="-translate-x-1/2 -translate-y-1/2 absolute block cursor-pointer left-[calc(50%+680px)] size-[20px] top-[calc(50%-410px)]" data-node-id="1:11147" data-name="Arrow Exit">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgArrowExit} />
+      </a>
+      <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+432px)] size-[20px] top-[calc(50%-410px)]" data-node-id="1:11148" data-name="Alert">
+        <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgAlert} />
+      </div>
+      <div className="absolute content-stretch flex items-center left-[321px] top-[93px]" data-node-id="1:11149" data-name="Breadcrumb Group">
+        <div className="content-stretch flex gap-[8px] items-end relative shrink-0" data-node-id="1:11150" data-name="item 1">
+          <div className="content-stretch flex items-center px-px relative shrink-0" data-node-id="I1:11150;70:24394" data-name="Link">
+            <p className="[word-break:break-word] font-['Inter:Medium'] font-medium leading-[18px] not-italic relative shrink-0 text-[#422c23] text-[14px] tracking-[0.16px] whitespace-nowrap" data-node-id="I1:11150;70:24394;0:7611">
+              Breadcrumb 1
+            </p>
+          </div>
+        </div>
+      </div>
+      <a className="absolute contents cursor-pointer left-[939px] top-[86px]" data-node-id="1:11151">
+        <div className="absolute inset-[8.4%_22.22%_88.48%_65.21%]" data-node-id="1:11152" data-name="Bounds">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBounds} />
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Semi_Bold'] font-semibold leading-[24px] left-[984px] not-italic text-[14px] text-white top-[90px] whitespace-nowrap" data-node-id="1:11153">
+          Book Follow Ups
+        </p>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute h-[14px] left-[calc(50%+250px)] top-[calc(50%-409px)] w-[16px]" data-node-id="1:11154" data-name="Add">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgAdd} />
+        </div>
+      </a>
+      <div className="absolute bg-[rgba(255,255,255,0.8)] h-[696px] left-[321px] overflow-clip rounded-[10px] shadow-[0px_0px_3px_1px_rgba(190,136,11,0.1)] top-[142px] w-[1095px]" data-node-id="1:11155">
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[785px] whitespace-nowrap" data-node-id="1:11156">
+          09:30 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[860px] whitespace-nowrap" data-node-id="1:11157">
+          09:30 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[215px] not-italic text-[#422c23] text-[14px] top-[785px] whitespace-nowrap" data-node-id="1:11158">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[215px] not-italic text-[#422c23] text-[14px] top-[860px] whitespace-nowrap" data-node-id="1:11159">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[448px] not-italic text-[#be880b] text-[14px] top-[785px] whitespace-nowrap" data-node-id="1:11160">
+          Consultation
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[448px] not-italic text-[#be880b] text-[14px] top-[860px] whitespace-nowrap" data-node-id="1:11161">
+          Consultation
+        </p>
+        <div className="absolute h-0 left-[17px] top-[756px] w-[1062px]" data-node-id="1:11162">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine355} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[831px] w-[1062px]" data-node-id="1:11163">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine355} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[906px] w-[1062px]" data-node-id="1:11164">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine355} />
+          </div>
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[637px] not-italic text-[#2e7d32] text-[14px] top-[785px] whitespace-nowrap" data-node-id="1:11165">
+          Completed
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[637px] not-italic text-[#2e7d32] text-[14px] top-[860px] whitespace-nowrap" data-node-id="1:11166">
+          Completed
+        </p>
+        <div className="absolute inset-[3.45%_71.51%_91.38%_14.98%]" data-node-id="1:11167" data-name="Bounds">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBounds1} />
+        </div>
+        <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[32px] not-italic text-[#422c23] text-[14px] top-[30px] whitespace-nowrap" data-node-id="1:11168">
+          <p className="leading-[24px]">All Appointments</p>
+        </a>
+        <p className="[word-break:break-word] absolute font-['Inter:Semi_Bold'] font-semibold leading-[24px] left-[191px] not-italic text-[#422c23] text-[14px] top-[30px] whitespace-nowrap" data-node-id="1:11169">
+          All Follow Ups
+        </p>
+        <div className="absolute inset-[12.07%_46.76%_82.76%_36.99%]" data-node-id="1:11170" data-name="Bounds">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBounds2} />
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[24px] left-[417px] not-italic text-[#67554d] text-[12px] top-[90px] whitespace-nowrap" data-node-id="1:11171">
+          Patient ID
+        </p>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+15.5px)] size-[16px] top-[calc(50%-246px)]" data-node-id="1:11172" data-name="Search">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgSearch} />
+        </div>
+        <div className="absolute inset-[12.07%_31.05%_82.76%_54.34%]" data-node-id="1:11173" data-name="Bounds">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBounds3} />
+        </div>
+        <div className="absolute inset-[12.07%_14.98%_82.76%_70.41%]" data-node-id="1:11174" data-name="Bounds">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBounds3} />
+        </div>
+        <div className="absolute inset-[12.07%_1.37%_82.76%_86.48%]" data-node-id="1:11175" data-name="Bounds">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBounds4} />
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[24px] left-[607px] not-italic text-[#422c23] text-[12px] top-[90px] whitespace-nowrap" data-node-id="1:11176">
+          Status
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[24px] left-[783px] not-italic text-[#422c23] text-[12px] top-[90px] whitespace-nowrap" data-node-id="1:11177">
+          Visit type
+        </p>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+187.5px)] size-[16px] top-[calc(50%-246px)]" data-node-id="1:11178" data-name="Chevron">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgChevron1} />
+        </div>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+349.5px)] size-[16px] top-[calc(50%-245px)]" data-node-id="1:11179" data-name="Chevron">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgChevron1} />
+        </div>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+419.5px)] size-[16px] top-[calc(50%-246px)]" data-node-id="1:11180" data-name="Calendar">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgCalendar} />
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[24px] left-[991px] not-italic text-[#67554d] text-[12px] top-[90px] whitespace-nowrap" data-node-id="1:11181">
+          Date Created
+        </p>
+        <a className="absolute contents cursor-pointer left-[991px] top-[24px]" data-node-id="1:11182">
+          <div className="absolute bg-white h-[36px] left-[991px] rounded-[8px] shadow-[0px_0px_3px_1px_rgba(190,136,11,0.15)] top-[24px] w-[80px]" data-node-id="1:11183" />
+          <div className="absolute bg-[#be880b] h-[36px] left-[991px] rounded-[8px] top-[24px] w-[40px]" data-node-id="1:11184" />
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+463.5px)] size-[20px] top-[calc(50%-306px)]" data-node-id="1:11185" data-name="Apps List">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgAppsList} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%+503.5px)] size-[20px] top-[calc(50%-306px)]" data-node-id="1:11186" data-name="Calendar">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgCalendar1} />
+          </div>
+        </a>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[292px] whitespace-nowrap" data-node-id="1:11187">
+          #PT458652
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[357px] whitespace-nowrap" data-node-id="1:11188">
+          #PT458652
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[422px] whitespace-nowrap" data-node-id="1:11189">
+          #PT458652
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[487px] whitespace-nowrap" data-node-id="1:11190">
+          #PT458652
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[552px] whitespace-nowrap" data-node-id="1:11191">
+          #PT458652
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[16px] not-italic text-[#422c23] text-[14px] top-[222px] whitespace-nowrap" data-node-id="1:11192">
+          #PT458652
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[726px] not-italic text-[#422c23] text-[14px] top-[222px] whitespace-nowrap" data-node-id="1:11193">
+          15 Oct 2026, 01:05 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[726px] not-italic text-[#422c23] text-[14px] top-[292px] whitespace-nowrap" data-node-id="1:11194">
+          15 Oct 2026, 01:05 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[726px] not-italic text-[#422c23] text-[14px] top-[357px] whitespace-nowrap" data-node-id="1:11195">
+          15 Oct 2026, 01:05 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[726px] not-italic text-[#422c23] text-[14px] top-[422px] whitespace-nowrap" data-node-id="1:11196">
+          15 Oct 2026, 01:05 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[726px] not-italic text-[#422c23] text-[14px] top-[487px] whitespace-nowrap" data-node-id="1:11197">
+          15 Oct 2026, 01:05 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[726px] not-italic text-[#422c23] text-[14px] top-[552px] whitespace-nowrap" data-node-id="1:11198">
+          15 Oct 2026, 01:05 AM
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[185px] not-italic text-[#422c23] text-[14px] top-[292px] whitespace-nowrap" data-node-id="1:11199">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[185px] not-italic text-[#422c23] text-[14px] top-[357px] whitespace-nowrap" data-node-id="1:11200">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[185px] not-italic text-[#422c23] text-[14px] top-[422px] whitespace-nowrap" data-node-id="1:11201">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[185px] not-italic text-[#422c23] text-[14px] top-[487px] whitespace-nowrap" data-node-id="1:11202">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[185px] not-italic text-[#422c23] text-[14px] top-[552px] whitespace-nowrap" data-node-id="1:11203">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[185px] not-italic text-[#422c23] text-[14px] top-[222px] whitespace-nowrap" data-node-id="1:11204">
+          Khushi Shroff
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Regular'] font-normal leading-[normal] left-[185px] not-italic text-[14px] text-[rgba(66,44,35,0.8)] top-[168px] whitespace-nowrap" data-node-id="1:11205">
+          Patient
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Regular'] font-normal leading-[normal] left-[16px] not-italic text-[14px] text-[rgba(66,44,35,0.8)] top-[168px] whitespace-nowrap" data-node-id="1:11206">
+          UHID No.
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[398px] not-italic text-[#422c23] text-[14px] top-[292px] whitespace-nowrap" data-node-id="1:11207">{`Dr. Sheekha `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[398px] not-italic text-[#422c23] text-[14px] top-[357px] whitespace-nowrap" data-node-id="1:11208">{`Dr. Sheekha `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[398px] not-italic text-[#422c23] text-[14px] top-[422px] whitespace-nowrap" data-node-id="1:11209">{`Dr. Sheekha `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[398px] not-italic text-[#422c23] text-[14px] top-[487px] whitespace-nowrap" data-node-id="1:11210">{`Dr. Sheekha `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[398px] not-italic text-[#422c23] text-[14px] top-[552px] whitespace-nowrap" data-node-id="1:11211">{`Dr. Sheekha `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[398px] not-italic text-[#422c23] text-[14px] top-[222px] whitespace-nowrap" data-node-id="1:11212">{`Dr. Sheekha `}</p>
+        <p className="[word-break:break-word] absolute font-['Inter:Regular'] font-normal leading-[normal] left-[398px] not-italic text-[14px] text-[rgba(66,44,35,0.8)] top-[168px] whitespace-nowrap" data-node-id="1:11213">
+          Doctor
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[560px] not-italic text-[#be880b] text-[14px] top-[222px] whitespace-nowrap" data-node-id="1:11214">
+          Consultation
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[560px] not-italic text-[#be880b] text-[14px] top-[292px] whitespace-nowrap" data-node-id="1:11215">
+          Therapy
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[560px] not-italic text-[#be880b] text-[14px] top-[357px] whitespace-nowrap" data-node-id="1:11216">
+          Therapy
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[560px] not-italic text-[#be880b] text-[14px] top-[422px] whitespace-nowrap" data-node-id="1:11217">
+          Therapy
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[560px] not-italic text-[#be880b] text-[14px] top-[487px] whitespace-nowrap" data-node-id="1:11218">
+          Therapy
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[560px] not-italic text-[#be880b] text-[14px] top-[552px] whitespace-nowrap" data-node-id="1:11219">
+          Therapy
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Regular'] font-normal leading-[normal] left-[559px] not-italic text-[14px] text-[rgba(66,44,35,0.8)] top-[168px] whitespace-nowrap" data-node-id="1:11220">
+          Visit Type
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Regular'] font-normal leading-[normal] left-[967px] not-italic text-[14px] text-[rgba(66,44,35,0.8)] top-[168px] whitespace-nowrap" data-node-id="1:11221">
+          Status
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Regular'] font-normal leading-[normal] left-[726px] not-italic text-[14px] text-[rgba(66,44,35,0.8)] top-[168px] whitespace-nowrap" data-node-id="1:11222">
+          Appointment Date
+        </p>
+        <div className="absolute h-0 left-[17px] top-[268px] w-[1055px]" data-node-id="1:11223">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine478} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[333px] w-[1055px]" data-node-id="1:11224">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine479} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[398px] w-[1055px]" data-node-id="1:11225">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine479} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[463px] w-[1055px]" data-node-id="1:11226">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine479} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[528px] w-[1055px]" data-node-id="1:11227">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine479} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[593px] w-[1055px]" data-node-id="1:11228">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine479} />
+          </div>
+        </div>
+        <div className="absolute h-0 left-[17px] top-[144px] w-[1055px]" data-node-id="1:11229">
+          <div className="absolute inset-[-1px_0_0_0]">
+            <img alt="" className="block max-w-none size-full" src={imgLine483} />
+          </div>
+        </div>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[967px] not-italic text-[#eab308] text-[14px] top-[222px] whitespace-nowrap" data-node-id="1:11230">
+          Upcoming
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[967px] not-italic text-[#d64545] text-[14px] top-[292px] whitespace-nowrap" data-node-id="1:11231">
+          Missed
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[967px] not-italic text-[#2e7d32] text-[14px] top-[357px] whitespace-nowrap" data-node-id="1:11232">
+          Completed
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[967px] not-italic text-[#2e7d32] text-[14px] top-[422px] whitespace-nowrap" data-node-id="1:11233">
+          Completed
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[967px] not-italic text-[#2e7d32] text-[14px] top-[487px] whitespace-nowrap" data-node-id="1:11234">
+          Completed
+        </p>
+        <p className="[word-break:break-word] absolute font-['Inter:Medium'] font-medium leading-[normal] left-[967px] not-italic text-[#2e7d32] text-[14px] top-[552px] whitespace-nowrap" data-node-id="1:11235">
+          Completed
+        </p>
+      </div>
+      <div className="absolute bg-white h-[969px] left-[24px] overflow-clip rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[30px] top-[24px] w-[273px]" data-node-id="1:11236">
+        <div className="absolute contents left-0 top-0" data-node-id="I1:11236;509:17118">
+          <div className="-translate-y-1/2 absolute h-[969px] left-0 rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[30px] top-1/2 w-[273px]" data-node-id="I1:11236;509:17119">
+            <div aria-hidden className="absolute inset-0 pointer-events-none rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[30px]">
+              <div className="absolute bg-white inset-0 rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[30px]" />
+              <img alt="" className="absolute max-w-none object-cover opacity-68 rounded-bl-[24px] rounded-tl-[24px] rounded-tr-[30px] size-full" src={imgRectangle1} />
+            </div>
+          </div>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[257px] whitespace-nowrap" data-node-id="I1:11236;509:17120">
+            <p className="leading-[normal]">Patients</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[321px] whitespace-nowrap" data-node-id="I1:11236;509:17121">
+            <p className="leading-[normal]">Doctors</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[577px] whitespace-nowrap" data-node-id="I1:11236;509:17122">
+            <p className="leading-[normal]">Sales</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[641px] whitespace-nowrap" data-node-id="I1:11236;509:17123">
+            <p className="leading-[normal]">Activity Logs</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[448px] whitespace-nowrap" data-node-id="I1:11236;509:17124">
+            <p className="leading-[normal]">Treatments</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[705px] whitespace-nowrap" data-node-id="I1:11236;509:17125">
+            <p className="leading-[normal]">Billing</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[513px] whitespace-nowrap" data-node-id="I1:11236;509:17126">
+            <p className="leading-[normal]">Medicines</p>
+          </a>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[769px] whitespace-nowrap" data-node-id="I1:11236;509:17127">
+            <p className="leading-[normal]">Settings</p>
+          </a>
+          <p className="[word-break:break-word] absolute font-['Inter:Semi_Bold'] font-semibold leading-[normal] left-[81px] not-italic text-[#be880b] text-[12px] top-[120px] whitespace-nowrap" data-node-id="I1:11236;509:17128">
+            A Journey of Healing
+          </p>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%-154.5px)]" data-node-id="I1:11236;509:17129" data-name="Doctor">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDoctor} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%-218.5px)]" data-node-id="I1:11236;509:17130" data-name="Person">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgPerson} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%+37.5px)]" data-node-id="I1:11236;509:17131" data-name="Briefcase Medical">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgBriefcaseMedical} />
+          </div>
+          <div className="absolute bg-[#fffef7] h-[56px] left-[18px] rounded-bl-[10px] rounded-tl-[10px] top-[366px] w-[255px]" data-node-id="I1:11236;509:17132" />
+          <p className="[word-break:break-word] absolute font-['Inter:Semi_Bold'] font-semibold leading-[normal] left-[74px] not-italic text-[#be880b] text-[16px] top-[385px] whitespace-nowrap" data-node-id="I1:11236;509:17133">
+            Appointments
+          </p>
+          <div className="-translate-x-1/2 absolute border-[#be880b] border-[0.813px] border-solid left-[calc(50%-1px)] rounded-[57.846px] size-[47px] top-[40px]" data-node-id="I1:11236;509:17134" data-name="logo (2) 1">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-[57.846px]">
+              <img alt="" className="absolute left-[-73.08%] max-w-none size-[242.31%] top-[-26.92%]" src={imgLogo21} />
+            </div>
+          </div>
+          <p className="[word-break:break-word] absolute font-['Inter:Semi_Bold'] font-semibold leading-[normal] left-[46px] not-italic text-[#422c23] text-[16px] top-[97px] whitespace-nowrap" data-node-id="I1:11236;509:17135">
+            GANESHA AYURVEDAA
+          </p>
+          <a className="[word-break:break-word] absolute block cursor-pointer font-['Inter:Medium'] font-medium leading-[0] left-[74px] not-italic text-[#422c23] text-[16px] top-[193px] whitespace-nowrap" data-node-id="I1:11236;509:17136">
+            <p className="leading-[normal]">Dashboard</p>
+          </a>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%+293.5px)]" data-node-id="I1:11236;509:17137" data-name="Settings">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgSettings} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%+165.5px)]" data-node-id="I1:11236;509:17138" data-name="History">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHistory} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%+229.5px)]" data-node-id="I1:11236;509:17139" data-name="Document Bullet List">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDocumentBulletList} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%+101.5px)]" data-node-id="I1:11236;509:17140" data-name="Data Histogram">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgDataHistogram} />
+          </div>
+          <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%-26.5px)]" data-node-id="I1:11236;509:17141" data-name="Heart Pulse">
+            <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgHeartPulse} />
+          </div>
+        </div>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%-282.5px)]" data-node-id="I1:11236;509:17142" data-name="Grid">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgGrid} />
+        </div>
+        <div className="-translate-x-1/2 -translate-y-1/2 absolute left-[calc(50%-90.5px)] size-[24px] top-[calc(50%-90.5px)]" data-node-id="I1:11236;509:17143" data-name="Calendar Person">
+          <img alt="" className="absolute block inset-0 max-w-none size-full" src={imgCalendarPerson} />
+        </div>
+      </div>
+    </div>
+  );
+}

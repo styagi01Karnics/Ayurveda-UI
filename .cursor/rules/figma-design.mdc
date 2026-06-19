@@ -1,0 +1,33 @@
+---
+description: Ganesha Ayurvedaa — Figma Design
+globs:
+alwaysApply: true
+---
+
+# Ganesha Ayurvedaa — Figma Design
+
+Use the Figma MCP server (`figma`) to read design context from this file.
+
+## File reference
+
+| Field | Value |
+|-------|-------|
+| File key | `yCc3B8nXqtu9xUQ4lacJ11` |
+| Design URL | https://www.figma.com/design/yCc3B8nXqtu9xUQ4lacJ11/Ganesha-Ayurveda-Final-File |
+| Prototype URL | https://www.figma.com/design/yCc3B8nXqtu9xUQ4lacJ11/Ganesha-Ayurveda-Final-File?node-id=0-1 |
+
+## Node IDs
+
+- **Page:** `0:1`
+- **Login:** `1:16429`
+- **Sign Up:** `1:16469`
+- **Dashboard:** `1:5032`
+
+## MCP workflow
+
+1. Call `get_design_context` with `fileKey` and `nodeId` from the table above.
+2. Adapt returned reference code to this project's stack (React + TypeScript + Tailwind).
+3. Use `get_screenshot` for visual verification when implementing layouts.
+4. Use `get_metadata` to explore the file structure and discover additional screens.
+
+Structured config lives in `figma.config.json` at the project root.
