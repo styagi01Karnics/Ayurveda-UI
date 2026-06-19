@@ -1,0 +1,37 @@
+---
+description: Figma MCP design-to-code rules for Ganesha Ayurvedaa UI
+alwaysApply: false
+globs: src/**/*
+---
+
+# Figma MCP — Ganesha Ayurvedaa
+
+When implementing designs from Figma via MCP:
+
+## Getting design context
+
+- Paste a **Figma frame/layer link** in chat (required for remote MCP server).
+- Prefer `get_design_context` and `get_variable_defs` to match tokens before hardcoding colors/spacing.
+- Use existing project components from `src/components/ui/` and theme tokens from `src/styles/index.css` (`--color-gold`, `--color-cream`, etc.).
+
+## Code conventions
+
+- **Stack**: React 19 + TypeScript + Tailwind CSS v4 + React Hook Form + Zod.
+- **Fonts**: Inter (sans), Playfair Display (serif) — already configured.
+- **API**: Use mock data in `src/data/mock/` until backend is integrated; do not add real API calls unless requested.
+
+## Assets
+
+- Use `download_assets` for icons/images needed in the repo; save to `public/` or `src/assets/`.
+- Do not inline large base64 images in components.
+
+## Desktop fallback
+
+If remote Figma MCP auth fails, enable Dev Mode MCP in the **Figma desktop app** and use the `figma-desktop` server (`http://127.0.0.1:3845/mcp`).
+
+## Auth setup (one-time)
+
+1. Open **Cursor Settings → MCP**.
+2. Find **figma** under project MCP servers.
+3. Click **Connect** and complete Figma OAuth.
+4. Confirm tools like `get_design_context` appear before prompting with Figma links.
