@@ -26,6 +26,12 @@ const pageTitles: Record<string, string> = {
   '/profile': 'My Profile',
 };
 
+function getPageTitle(pathname: string): string {
+  if (pathname.startsWith('/patients/')) return 'Patients';
+  if (pathname.startsWith('/doctors/patient/')) return 'Doctors';
+  return pageTitles[pathname] ?? 'Dashboard';
+}
+
 export function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -35,7 +41,7 @@ export function DashboardLayout() {
   const [logoutOpen, setLogoutOpen] = useState(false);
   const [couponOpen, setCouponOpen] = useState(false);
   const { pathname } = useLocation();
-  const title = pageTitles[pathname] ?? 'Dashboard';
+  const title = getPageTitle(pathname);
   const contextValue = useMemo(
     () => ({ setHeaderAction }),
     [setHeaderAction],

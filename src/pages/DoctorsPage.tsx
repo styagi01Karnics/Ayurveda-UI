@@ -3,6 +3,7 @@ import { Plus, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
+import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
 import { DoctorStatCards } from '@/components/doctors/DoctorStatCards';
 import { DoctorScheduleTable } from '@/components/doctors/DoctorScheduleTable';
 import { Select } from '@/components/ui/Select';
@@ -12,7 +13,7 @@ import {
   DOCTOR_FILTER_OPTIONS,
   initialDoctorSchedule,
 } from '@/data/mock/doctors';
-import type { VisitType } from '@/types';
+import type { DoctorScheduleItem, VisitType } from '@/types';
 
 export function DoctorsPage() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export function DoctorsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [visitTypeFilter, setVisitTypeFilter] = useState('');
+  const [cancelTarget, setCancelTarget] = useState<DoctorScheduleItem | null>(null);
 
   const headerAction = useMemo(
     () => (
@@ -52,23 +54,27 @@ export function DoctorsPage() {
   }, [schedule, searchQuery, statusFilter, visitTypeFilter]);
 
   const handleStart = (id: string) => {
-    setSchedule((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, status: 'Completed' as const } : item,
-      ),
-    );
+    const item = schedule.find((s) => s.id === id);
+    if (item) {
+      navigate(`/doctors/patient/${item.patientDetailId}`);
+    }
   };
 
-  const handleCancel = (id: string) => {
+  const handleCancelRequest = (id: string) => {
     const item = schedule.find((s) => s.id === id);
-    setSchedule((prev) => prev.filter((item) => item.id !== id));
     if (item) {
-      showToast({
-        title: 'Appointment Cancelled',
-        message: `${item.patient} has cancelled her ${item.time} appointment for ${item.visitType}.`,
-        time: '3 Minutes Ago',
-      });
+      setCancelTarget(item);
     }
+  };
+
+  const handleCancelConfirm = () => {
+    if (!cancelTarget) return;
+    setSchedule((prev) => prev.filter((item) => item.id !== cancelTarget.id));
+    showToast({
+      title: 'Appointment has been cancelled',
+      message: `${cancelTarget.patient}'s ${cancelTarget.time} ${cancelTarget.visitType} appointment was cancelled.`,
+    });
+    setCancelTarget(null);
   };
 
   return (
@@ -103,7 +109,13 @@ export function DoctorsPage() {
       <DoctorScheduleTable
         items={filteredSchedule}
         onStart={handleStart}
-        onCancel={handleCancel}
+        onCancel={handleCancelRequest}
+      />
+
+      <CancelAppointmentModal
+        open={Boolean(cancelTarget)}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelConfirm}
       />
     </div>
   );

@@ -1,9 +1,9 @@
 import type {
   DashboardStats,
   LowStockItem,
-  PatientRecord,
   ScheduleAppointment,
 } from '@/types';
+import { allPatients } from './patients';
 
 export const dashboardStats: DashboardStats = {
   totalPatients: 1000,
@@ -60,53 +60,4 @@ export const nextAppointment: ScheduleAppointment = {
   reason: 'Back Pain Consultation',
 };
 
-export const recentPatientRecords: PatientRecord[] = [
-  {
-    id: '#PT458652',
-    secondaryId: 'GAN2025-0129',
-    name: 'Khushi Shroff',
-    phone: '+91-9205061339',
-    doctor: 'Dr. Sheekha',
-    visitType: 'Consultation',
-    appointmentDate: '15 Oct 2026, 01:05 AM',
-    dosha: 'Vata',
-    status: 'Completed',
-    isActive: true,
-  },
-  {
-    id: '#PT458653',
-    secondaryId: 'GAN2025-0130',
-    name: 'Amit Verma',
-    phone: '+91-9876543210',
-    doctor: 'Dr. Sharma',
-    visitType: 'Follow-Up',
-    appointmentDate: '14 Oct 2026, 11:30 AM',
-    dosha: 'Pitta',
-    status: 'Pending',
-    isActive: true,
-  },
-  {
-    id: '#PT458654',
-    secondaryId: 'GAN2025-0131',
-    name: 'Priya Nair',
-    phone: '+91-9123456789',
-    doctor: 'Dr. Sheekha',
-    visitType: 'Consultation',
-    appointmentDate: '13 Oct 2026, 04:15 PM',
-    dosha: 'Kapha',
-    status: 'Completed',
-    isActive: false,
-  },
-  {
-    id: '#PT458655',
-    secondaryId: 'GAN2025-0132',
-    name: 'Rahul Patel',
-    phone: '+91-9988776655',
-    doctor: 'Dr. Gupta',
-    visitType: 'Treatment',
-    appointmentDate: '12 Oct 2026, 09:00 AM',
-    dosha: 'Vata',
-    status: 'Follow-Up',
-    isActive: true,
-  },
-];
+export const recentPatientRecords = allPatients.slice(0, 4);

@@ -1,10 +1,20 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PageActionContext } from '@/app/PageActionContext';
 import { ToastProvider } from '@/app/ToastContext';
 import { DoctorsPage } from '@/pages/DoctorsPage';
+
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom');
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  };
+});
 
 function renderDoctors() {
   return render(
@@ -26,12 +36,24 @@ describe('DoctorsPage', () => {
     expect(screen.getAllByText('Khushi Shroff').length).toBeGreaterThan(0);
   });
 
-  it('marks appointment as completed on start', async () => {
+  it('navigates to patient details on start', async () => {
     const user = userEvent.setup();
+    mockNavigate.mockClear();
     renderDoctors();
     const startButtons = screen.getAllByRole('button', { name: 'Start' });
     await user.click(startButtons[0]);
-    expect(screen.getAllByText('Completed').length).toBeGreaterThan(0);
+    expect(mockNavigate).toHaveBeenCalledWith('/doctors/patient/37944397');
+  });
+
+  it('shows cancel confirmation modal', async () => {
+    const user = userEvent.setup();
+    renderDoctors();
+    const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
+    await user.click(cancelButtons[0]);
+    expect(screen.getByText('Cancel Appointment')).toBeInTheDocument();
+    expect(
+      screen.getByText('Are you sure you want to delete this appointment?'),
+    ).toBeInTheDocument();
   });
 
   it('filters by visit type', async () => {

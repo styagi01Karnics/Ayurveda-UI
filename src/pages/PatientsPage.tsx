@@ -1,19 +1,30 @@
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable';
+import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
+import { PatientsTable } from '@/components/patients/PatientsTable';
+import { UploadReportsModal } from '@/components/patients/UploadReportsModal';
 import { Select } from '@/components/ui/Select';
-import { Tabs } from '@/components/ui/Tabs';
-import { allPatients, FILTER_OPTIONS } from '@/data/mock/patients';
-import type { Dosha, PatientStatus, VisitType } from '@/types';
+import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
+import {
+  allPatients,
+  FILTER_OPTIONS,
+  getPatientByDetailId,
+  getPatientByRecordId,
+} from '@/data/mock/patients';
+import type { Dosha, PatientRecord, PatientStatus, VisitType } from '@/types';
 
 type PatientTab = 'active' | 'inactive';
 
 export function PatientsPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<PatientTab>('active');
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [visitTypeFilter, setVisitTypeFilter] = useState('');
   const [doshaFilter, setDoshaFilter] = useState('');
+  const [uploadPatient, setUploadPatient] = useState<PatientRecord | null>(null);
+  const [billPatientId, setBillPatientId] = useState<string | null>(null);
 
   const filteredPatients = useMemo(() => {
     return allPatients.filter((patient) => {
@@ -22,7 +33,8 @@ export function PatientsPage() {
       const matchesId =
         !patientIdQuery ||
         patient.id.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
-        patient.secondaryId.toLowerCase().includes(patientIdQuery.toLowerCase());
+        patient.secondaryId.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
+        patient.detailId.includes(patientIdQuery);
       const matchesStatus =
         !statusFilter || patient.status === (statusFilter as PatientStatus);
       const matchesVisit =
@@ -47,52 +59,81 @@ export function PatientsPage() {
     doshaFilter,
   ]);
 
+  const billPatient =
+    billPatientId
+      ? getPatientByDetailId(billPatientId) ?? getPatientByRecordId(billPatientId) ?? null
+      : null;
+
+  const handleRowClick = (record: PatientRecord) => {
+    navigate(`/patients/${record.detailId}`);
+  };
+
+  const handleDownloadBill = (record: PatientRecord) => {
+    setBillPatientId(record.detailId);
+  };
+
   return (
     <div className="space-y-5">
-      <Tabs
-        tabs={[
-          { id: 'active' as const, label: 'Active Patients' },
-          { id: 'inactive' as const, label: 'Inactive Patients' },
-        ]}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      />
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <UnderlineTabs
+          tabs={[
+            { id: 'active' as const, label: 'Active Patients' },
+            { id: 'inactive' as const, label: 'Inactive Patients' },
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          className="border-none"
+        />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Patient ID"
-            value={patientIdQuery}
-            onChange={(e) => setPatientIdQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              type="search"
+              placeholder="Patient ID"
+              value={patientIdQuery}
+              onChange={(e) => setPatientIdQuery(e.target.value)}
+              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
+            />
+          </div>
+          <Select
+            placeholder="Status"
+            options={[...FILTER_OPTIONS.status]}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          />
+          <Select
+            placeholder="Visit type"
+            options={[...FILTER_OPTIONS.visitType]}
+            value={visitTypeFilter}
+            onChange={(e) => setVisitTypeFilter(e.target.value)}
+          />
+          <Select
+            placeholder="Dosha"
+            options={[...FILTER_OPTIONS.dosha]}
+            value={doshaFilter}
+            onChange={(e) => setDoshaFilter(e.target.value)}
           />
         </div>
-        <Select
-          placeholder="Status"
-          options={FILTER_OPTIONS.status}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        />
-        <Select
-          placeholder="Visit type"
-          options={FILTER_OPTIONS.visitType}
-          value={visitTypeFilter}
-          onChange={(e) => setVisitTypeFilter(e.target.value)}
-        />
-        <Select
-          placeholder="Dosha"
-          options={FILTER_OPTIONS.dosha}
-          value={doshaFilter}
-          onChange={(e) => setDoshaFilter(e.target.value)}
-        />
       </div>
 
-      <PatientRecordsTable
+      <PatientsTable
         records={filteredPatients}
-        title=""
-        showActions
+        onRowClick={handleRowClick}
+        onDownloadBill={handleDownloadBill}
+        onUploadReport={setUploadPatient}
+      />
+
+      <UploadReportsModal
+        open={Boolean(uploadPatient)}
+        onClose={() => setUploadPatient(null)}
+        patient={uploadPatient}
+      />
+
+      <BillInvoiceModal
+        open={Boolean(billPatient)}
+        onClose={() => setBillPatientId(null)}
+        patient={billPatient}
       />
     </div>
   );
