@@ -1,4 +1,4 @@
-import type { AppointmentRecord, CalendarEvent, FollowUpRecord } from '@/types';
+import type { AppointmentRecord, CalendarEvent, CalendarEventDetail, FollowUpRecord } from '@/types';
 
 export const initialAppointments: AppointmentRecord[] = [
   {
@@ -129,7 +129,7 @@ export const initialFollowUps: FollowUpRecord[] = [
 export const calendarEvents: CalendarEvent[] = [
   {
     id: 'ce-1',
-    title: 'Monday Wake-Up Hour',
+    title: 'Quarterly Health Checkup',
     day: 0,
     startHour: 8,
     durationHours: 1,
@@ -193,13 +193,46 @@ export const calendarEvents: CalendarEvent[] = [
   },
   {
     id: 'ce-9',
-    title: 'Webinar: Figma...',
+    title: 'Concept Design Review II',
     day: 6,
     startHour: 11,
     durationHours: 1,
     color: 'bg-sky-100 border-sky-300',
   },
 ];
+
+export const calendarEventDetails: Record<string, CalendarEventDetail> = {
+  'ce-1': {
+    id: 'ce-1',
+    title: 'Quarterly Health Checkup',
+    appointmentDate: '15 Oct 2026, 01:05 AM',
+    doctorName: 'Dr. Reena Singh',
+    doctorRole: 'Dietician',
+    patientName: 'Raj Patel',
+    patientAge: '50yrs',
+    patientGender: 'Male',
+    visitType: 'Consultation',
+    dosha: 'Pitta-Kapha',
+    condition: 'Joint Pain',
+    lastVisit: '10 Sep, 2025',
+    nextVisit: '10 Oct, 2025',
+  },
+  'ce-3': {
+    id: 'ce-3',
+    title: 'Design Review',
+    appointmentDate: '22 Oct 2026, 10:00 AM',
+    doctorName: 'Dr. Sheekha',
+    doctorRole: 'Ayurvedic Physician',
+    patientName: 'Khushi Shroff',
+    patientAge: '23yrs',
+    patientGender: 'Female',
+    visitType: 'Consultation',
+    dosha: 'Vata',
+    condition: 'Joint stiffness',
+    lastVisit: '15 Sep, 2025',
+    nextVisit: '30 Oct, 2025',
+  },
+};
 
 export const APPOINTMENT_FILTER_OPTIONS = {
   status: ['Scheduled', 'Completed', 'Cancelled'],

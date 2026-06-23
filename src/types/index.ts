@@ -199,6 +199,73 @@ export interface CalendarEvent {
   color: string;
 }
 
+export interface CalendarEventDetail {
+  id: string;
+  title: string;
+  appointmentDate: string;
+  doctorName: string;
+  doctorRole: string;
+  patientName: string;
+  patientAge: string;
+  patientGender: string;
+  visitType: string;
+  dosha: string;
+  condition: string;
+  lastVisit: string;
+  nextVisit: string;
+}
+
+export interface TreatmentRecord {
+  id: string;
+  patient: string;
+  patientDetailId: string;
+  treatmentCategory: string;
+  therapyType: string;
+  assignedTherapist: string;
+  therapistSchedule: string;
+  totalSessions: number;
+  status: 'Ongoing' | 'Completed';
+  dateCreated: string;
+}
+
+export type MedicineStatus = 'In Stock' | 'Low Stock' | 'Out of Stock';
+
+export interface MedicineRecord {
+  id: string;
+  name: string;
+  category: string;
+  stockQuantity: number;
+  expiryDate: string;
+  price: number;
+  status: MedicineStatus;
+}
+
+export type BillingStatus = 'Ongoing' | 'Completed';
+
+export interface BillingRecord {
+  id: string;
+  invoiceId: string;
+  patientId: string;
+  secondaryPatientId: string;
+  invoiceDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  leftAmount: number;
+  status: BillingStatus;
+}
+
+export type InvoiceStep = 'service' | 'medicine' | 'therapy' | 'summary';
+
+export interface InvoiceLineItem {
+  id: string;
+  name: string;
+  quantity: number;
+  amount: number;
+  type: 'service' | 'medicine' | 'therapy';
+}
+
+export type PaymentModeId = 'upi' | 'card' | 'wallet' | 'partial' | 'emi';
+
 export interface DashboardStats {
   totalPatients: number;
   patientGrowth: number;
@@ -246,4 +313,66 @@ export interface SignupFormData {
   userId: string;
   password: string;
   confirmPassword: string;
+}
+
+export type SettingsTab = 'clinic' | 'users' | 'roles' | 'system';
+
+export type ClinicStatus = 'Active' | 'Inactive';
+
+export interface ClinicDoctorRecord {
+  id: string;
+  name: string;
+  specialization: string;
+  status: ClinicStatus;
+  consultationFees: number;
+  followUpFees: number;
+  availability: string;
+}
+
+export interface ClinicTherapyRecord {
+  id: string;
+  name: string;
+  category: string;
+  status: ClinicStatus;
+  duration: string;
+  price: number;
+  assignedTherapist: string;
+}
+
+export interface ClinicTherapistRecord {
+  id: string;
+  name: string;
+  status: ClinicStatus;
+  assignedTherapies: string[];
+}
+
+export type UserStatus = 'Active' | 'Inactive';
+
+export interface SettingsUserRecord {
+  id: string;
+  userId: string;
+  fullName: string;
+  phone: string;
+  email: string;
+  status: UserStatus;
+  assignedRole: string;
+}
+
+export interface SettingsRoleRecord {
+  id: string;
+  name: string;
+  status: ClinicStatus;
+  accessLevel: string;
+  permissions: string[];
+  userCount: number;
+}
+
+export interface SystemPreferences {
+  appointmentSms: boolean;
+  appointmentWhatsapp: boolean;
+  appointmentEmail: boolean;
+  billingGst: boolean;
+  billingPartialPayment: boolean;
+  notificationAppointmentReminder: boolean;
+  notificationFollowUpReminder: boolean;
 }

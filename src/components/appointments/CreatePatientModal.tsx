@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { CloudUpload, FileText, Folder, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
@@ -8,6 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Stepper } from '@/components/ui/Stepper';
 import { TagInput } from '@/components/ui/TagInput';
+import { Badge } from '@/components/ui/Badge';
 import {
   CONSTITUTION_OPTIONS,
   CONSULTATION_TYPES,
@@ -238,30 +240,35 @@ export function CreatePatientModal({
                 options={CONSTITUTION_OPTIONS}
                 error={step3Form.formState.errors.bodyConstitution?.message}
               />
-              <Input label="Current Imbalance" placeholder="Current Imbalance" error={step3Form.formState.errors.currentImbalance?.message} {...step3Form.register('currentImbalance')} />
+              <Input label="Current Imbalances" placeholder="Current Imbalances" error={step3Form.formState.errors.currentImbalance?.message} {...step3Form.register('currentImbalance')} />
             </div>
           </FormSection>
 
           <FormSection title="Physical Examination">
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-              {(['height', 'weight', 'bmi', 'pulse', 'bp'] as const).map((field) => (
+              {(
+                [
+                  'weight', 'height', 'bmi', 'ibw', 'pulse', 'bp', 'temperature', 'pallor',
+                  'icterus', 'cyanosis', 'lymphNodes', 'oedema', 'sensorium',
+                  'acidityGas', 'motion', 'micturition',
+                ] as const
+              ).map((field) => (
                 <Input
                   key={field}
-                  label={field.charAt(0).toUpperCase() + field.slice(1)}
-                  placeholder={field.toUpperCase()}
+                  label={field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
+                  placeholder={field}
                   error={step3Form.formState.errors[field]?.message}
                   {...step3Form.register(field)}
                 />
               ))}
-              <Input label="Temperature" placeholder="Temp" {...step3Form.register('temperature')} />
             </div>
           </FormSection>
 
           <FormSection title="Medical History">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Textarea label="Past Medical Conditions" rows={2} {...step3Form.register('pastMedicalConditions')} />
-              <Textarea label="Past Surgeries" rows={2} {...step3Form.register('pastSurgeries')} />
-              <Input label="Current Medications" placeholder="Current Medications" {...step3Form.register('currentMedications')} />
+              <Select label="Past Medical Conditions" placeholder="Select" options={['Hypertension', 'Diabetes', 'None']} {...step3Form.register('pastMedicalConditions')} />
+              <Select label="Past Surgeries" placeholder="Select" options={['Yes', 'No', 'None']} {...step3Form.register('pastSurgeries')} />
+              <Select label="Current Medications" placeholder="Select" options={['BP tablets', 'None', 'Other']} {...step3Form.register('currentMedications')} />
               <TagInput
                 label="Allergies"
                 value={step3Form.watch('allergies') ?? []}
@@ -274,22 +281,82 @@ export function CreatePatientModal({
 
           <FormSection title="Lifestyle Information">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Input label="Diet Type" placeholder="Diet Type" {...step3Form.register('dietType')} />
+              <Select label="Diet Type" placeholder="Select" options={['Vegetarian', 'Non-Vegetarian', 'Vegan']} {...step3Form.register('dietType')} />
               <Input label="Sleep Pattern" placeholder="Sleep Pattern" {...step3Form.register('sleepPattern')} />
-              <Input label="Exercise Habits" placeholder="Exercise Habits" {...step3Form.register('exerciseHabits')} />
-              <Input label="Addictions" placeholder="Addictions" {...step3Form.register('addictions')} />
+              <Select label="Exercise Habits" placeholder="Select" options={['Daily', 'Occasional walking', 'None']} {...step3Form.register('exerciseHabits')} />
+              <Input label="Addiction" placeholder="Addiction" {...step3Form.register('addictions')} />
+            </div>
+          </FormSection>
+
+          <FormSection title="Systemic Examination">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              <Input label="Cardiovascular" {...step3Form.register('cardiovascular')} />
+              <Input label="Respiratory" {...step3Form.register('respiratory')} />
+              <Input label="Nervous" {...step3Form.register('nervous')} />
+              <Input label="Abdomen & GI" {...step3Form.register('abdomenGi')} />
+              <Input label="Locomotor" {...step3Form.register('locomotor')} />
             </div>
           </FormSection>
 
           <FormSection title="Treatment Plan">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Textarea label="Investigation & Plan Suggested" rows={3} {...step3Form.register('investigationPlan')} />
-              <Textarea label="Plan Details" rows={3} {...step3Form.register('planDetails')} />
+              <Input label="Investigation & Plan Suggested" {...step3Form.register('investigationPlan')} />
+              <Input label="Plan Taken" {...step3Form.register('planDetails')} />
             </div>
+          </FormSection>
+
+          <FormSection title="Upload Reports">
+            <UploadReportsSection />
           </FormSection>
         </div>
       )}
     </Modal>
+  );
+}
+
+function UploadReportsSection() {
+  const mockFiles = [
+    { name: 'Stock Photos', size: '2.20GB', time: '3m ago', type: 'folder' as const },
+    { name: 'user-journey-01.pdf', size: '604KB', time: '2m ago', type: 'file' as const },
+    { name: 'Optimised Photos', size: '1.46MB', time: '3 days ago', type: 'folder' as const },
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-4 border-b border-gray-100 pb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+        <span className="text-gold">Past Medical Reports</span>
+        <span>Prescriptions</span>
+        <span>Lab Reports</span>
+      </div>
+      <div className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-8 text-center">
+        <CloudUpload className="h-8 w-8 text-gold" />
+        <p className="text-sm font-medium text-brown">Tap to upload photo</p>
+        <p className="text-xs text-text-muted">Only Supported: .jpg, .jpeg, .png</p>
+      </div>
+      <div className="space-y-2">
+        {mockFiles.map((file) => (
+          <div key={file.name} className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              {file.type === 'folder' ? (
+                <Folder className="h-5 w-5 text-gold" />
+              ) : (
+                <FileText className="h-5 w-5 text-gold" />
+              )}
+              <div>
+                <p className="text-sm font-medium text-brown">{file.name}</p>
+                <p className="text-xs text-text-muted">{file.time}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="gold">{file.size}</Badge>
+              <button type="button" className="text-text-muted hover:text-danger" aria-label="Delete file">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -302,7 +369,16 @@ function FormSection({
 }) {
   return (
     <section className="rounded-xl border border-gray-100 p-4">
-      <h3 className="mb-4 text-sm font-semibold text-brown">{title}</h3>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-brown">{title}</h3>
+        <button
+          type="button"
+          className="rounded p-1 text-text-muted hover:bg-brown/5"
+          aria-label={`Close ${title}`}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
       {children}
     </section>
   );

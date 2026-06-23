@@ -29,6 +29,8 @@ const pageTitles: Record<string, string> = {
 function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/patients/')) return 'Patients';
   if (pathname.startsWith('/doctors/patient/')) return 'Doctors';
+  if (pathname.startsWith('/treatments/patient/')) return 'Treatments';
+  if (pathname.startsWith('/billing/')) return 'Billing';
   return pageTitles[pathname] ?? 'Dashboard';
 }
 

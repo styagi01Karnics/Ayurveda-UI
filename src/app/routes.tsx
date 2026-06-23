@@ -10,7 +10,13 @@ import { MyProfilePage } from '@/pages/MyProfilePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PatientDetailPage } from '@/pages/PatientDetailPage';
 import { PatientsPage } from '@/pages/PatientsPage';
+import { BillingPage } from '@/pages/BillingPage';
+import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage';
+import { MedicinesPage } from '@/pages/MedicinesPage';
+import { TreatmentPatientDetailPage } from '@/pages/TreatmentPatientDetailPage';
+import { TreatmentsPage } from '@/pages/TreatmentsPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { SettingsPage } from '@/pages/SettingsPage';
 import { SignupPage } from '@/pages/SignupPage';
 
 export function AppRoutes() {
@@ -31,24 +37,9 @@ export function AppRoutes() {
             <Route path="/doctors/patient/:patientId" element={<DoctorPatientDetailPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/profile" element={<MyProfilePage />} />
-            <Route
-              path="/treatments"
-              element={
-                <PlaceholderPage
-                  title="Treatments"
-                  description="Treatment management coming soon."
-                />
-              }
-            />
-            <Route
-              path="/medicines"
-              element={
-                <PlaceholderPage
-                  title="Medicines"
-                  description="Medicine inventory will be available after API integration."
-                />
-              }
-            />
+            <Route path="/treatments" element={<TreatmentsPage />} />
+            <Route path="/treatments/patient/:patientId" element={<TreatmentPatientDetailPage />} />
+            <Route path="/medicines" element={<MedicinesPage />} />
             <Route
               path="/sales"
               element={
@@ -67,24 +58,9 @@ export function AppRoutes() {
                 />
               }
             />
-            <Route
-              path="/billing"
-              element={
-                <PlaceholderPage
-                  title="Billing"
-                  description="Billing module coming soon."
-                />
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <PlaceholderPage
-                  title="Settings"
-                  description="Clinic settings will be available after API integration."
-                />
-              }
-            />
+            <Route path="/billing" element={<BillingPage />} />
+            <Route path="/billing/generate" element={<GenerateInvoicePage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>

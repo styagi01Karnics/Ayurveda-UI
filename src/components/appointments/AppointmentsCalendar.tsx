@@ -6,9 +6,10 @@ const HOURS = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
 interface AppointmentsCalendarProps {
   events: CalendarEvent[];
+  onEventClick?: (eventId: string) => void;
 }
 
-export function AppointmentsCalendar({ events }: AppointmentsCalendarProps) {
+export function AppointmentsCalendar({ events, onEventClick }: AppointmentsCalendarProps) {
   return (
     <Card className="overflow-hidden p-0">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -45,9 +46,11 @@ export function AppointmentsCalendar({ events }: AppointmentsCalendarProps) {
                 {events
                   .filter((e) => e.startHour === hour)
                   .map((event) => (
-                    <div
+                    <button
                       key={event.id}
-                      className={`absolute z-10 m-0.5 overflow-hidden rounded border px-1.5 py-1 text-[10px] font-medium leading-tight text-brown ${event.color}`}
+                      type="button"
+                      onClick={() => onEventClick?.(event.id)}
+                      className={`absolute z-10 m-0.5 overflow-hidden rounded border px-1.5 py-1 text-left text-[10px] font-medium leading-tight text-brown transition-opacity hover:opacity-90 ${event.color}`}
                       style={{
                         left: `${(event.day / 7) * 100}%`,
                         width: `calc(${100 / 7}% - 4px)`,
@@ -56,7 +59,7 @@ export function AppointmentsCalendar({ events }: AppointmentsCalendarProps) {
                     >
                       {hour <= 12 ? `${hour}:00 AM` : `${hour - 12}:00 PM`}{' '}
                       {event.title}
-                    </div>
+                    </button>
                   ))}
               </div>
               <span className="px-2 py-2 text-xs text-text-muted">

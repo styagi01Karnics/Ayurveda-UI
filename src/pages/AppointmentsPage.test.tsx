@@ -3,14 +3,17 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { PageActionContext } from '@/app/PageActionContext';
+import { ToastProvider } from '@/app/ToastContext';
 import { AppointmentsPage } from '@/pages/AppointmentsPage';
 
 function renderAppointments() {
   return render(
     <MemoryRouter>
-      <PageActionContext.Provider value={{ setHeaderAction: () => {} }}>
-        <AppointmentsPage />
-      </PageActionContext.Provider>
+      <ToastProvider>
+        <PageActionContext.Provider value={{ setHeaderAction: () => {} }}>
+          <AppointmentsPage />
+        </PageActionContext.Provider>
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
@@ -37,12 +40,18 @@ describe('AppointmentsPage', () => {
     expect(screen.getAllByText('Khushi Shroff').length).toBeGreaterThan(0);
   });
 
-  it('opens create patient modal', async () => {
+  it('shows cancel confirmation modal', async () => {
     const user = userEvent.setup();
     renderAppointments();
-    await user.click(screen.getByText('All Appointments'));
-    // Modal opened via header action - test modal trigger via direct state isn't available
-    // Verify modal component exists when we simulate - skip if no button in page body
-    expect(screen.getByPlaceholderText('Patient ID')).toBeInTheDocument();
+    const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
+    await user.click(cancelButtons[0]);
+    expect(screen.getByText('Cancel Appointment')).toBeInTheDocument();
+  });
+
+  it('opens calendar view', async () => {
+    const user = userEvent.setup();
+    renderAppointments();
+    await user.click(screen.getByLabelText('Calendar view'));
+    expect(screen.getByText('EST GMT-5')).toBeInTheDocument();
   });
 });
