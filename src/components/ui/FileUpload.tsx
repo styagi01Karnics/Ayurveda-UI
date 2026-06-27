@@ -42,6 +42,8 @@ export function FileUpload({
     if (file) handleFile(file);
   };
 
+  const shortLabel = label.replace(/^Your /, '');
+
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm font-semibold text-brown">{label}</p>
@@ -69,19 +71,28 @@ export function FileUpload({
             className="text-left font-medium text-gold hover:underline"
             onClick={() => inputRef.current?.click()}
           >
-            Edit your {label}
+            Edit your {shortLabel}
           </button>
-          <button
-            type="button"
-            className="flex items-center gap-1 text-left text-text-muted hover:text-danger"
-            onClick={() => {
-              handleFile(undefined);
-              if (inputRef.current) inputRef.current.value = '';
-            }}
-          >
-            <Trash2 className="h-3 w-3" />
-            Delete Update
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex items-center gap-1 text-left text-text-muted hover:text-danger"
+              onClick={() => {
+                handleFile(undefined);
+                if (inputRef.current) inputRef.current.value = '';
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete
+            </button>
+            <button
+              type="button"
+              className="text-left font-medium text-gold hover:underline"
+              onClick={() => inputRef.current?.click()}
+            >
+              Update
+            </button>
+          </div>
         </div>
       </div>
 
@@ -103,8 +114,8 @@ export function FileUpload({
         )}
       >
         <CloudUpload className="h-8 w-8 text-gold" />
-        <p className="text-sm font-medium text-brown">
-          Click to upload or drag and drop
+        <p className="text-sm text-brown">
+          <span className="font-medium text-gold">Click to upload</span> or drag and drop
         </p>
         <p className="text-xs text-text-muted">
           SVG, PNG, JPG or GIF (max. 800x400px)

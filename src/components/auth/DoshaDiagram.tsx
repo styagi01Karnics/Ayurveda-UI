@@ -1,56 +1,27 @@
-function VataIcon() {
-  return (
-    <svg viewBox="0 0 32 32" className="h-8 w-8 text-white" fill="currentColor">
-      <path d="M4 20c6-2 10-6 12-12 2 6 6 10 12 12-6 2-10 6-12 12-2-6-6-10-12-12z" opacity="0.9" />
-      <path d="M8 14c3-1 5-3 6-6 1 3 3 5 6 6-3 1-5 3-6 6-1-3-3-5-6-6z" opacity="0.7" />
-    </svg>
-  );
-}
-
-function PittaIcon() {
-  return (
-    <svg viewBox="0 0 32 32" className="h-8 w-8 text-white" fill="currentColor">
-      <path d="M16 6c-2 6-6 10-6 16 0 3.3 2.7 6 6 6s6-2.7 6-6c0-6-4-10-6-16z" />
-    </svg>
-  );
-}
-
-function KaphaIcon() {
-  return (
-    <svg viewBox="0 0 32 32" className="h-8 w-8 text-white" fill="currentColor">
-      <path d="M16 8c-4 6-8 8-8 14 0 2.2 1.8 4 4 4h8c2.2 0 4-1.8 4-4 0-6-4-8-8-14z" />
-      <path d="M16 6c-1 2-2 3-3 4 1-1 2-2 3-4z" opacity="0.8" />
-    </svg>
-  );
-}
-
 const doshas = [
   {
     name: 'Vata',
-    icon: VataIcon,
-    bg: 'bg-[#b8d9ea]',
-    position: 'top-[2%] left-1/2 -translate-x-1/2',
+    image: '/assets/vata.png',
+    position: 'top-[4%] left-1/2 -translate-x-1/2',
   },
   {
     name: 'Pitta',
-    icon: PittaIcon,
-    bg: 'bg-[#e8b896]',
-    position: 'bottom-[8%] right-[2%]',
+    image: '/assets/pitta.png',
+    position: 'bottom-[6%] right-[4%]',
   },
   {
     name: 'Kapha',
-    icon: KaphaIcon,
-    bg: 'bg-[#b8d4a8]',
-    position: 'bottom-[8%] left-[2%]',
+    image: '/assets/kapha.png',
+    position: 'bottom-[6%] left-[4%]',
   },
 ] as const;
 
 export function DoshaDiagram() {
   return (
-    <div className="relative mx-auto h-[min(480px,75vh)] w-[min(520px,90vw)]">
+    <div className="relative mx-auto h-[min(520px,78vh)] w-full max-w-[560px]">
       <svg
         className="absolute inset-0 h-full w-full"
-        viewBox="0 0 520 480"
+        viewBox="0 0 560 520"
         aria-hidden
       >
         <defs>
@@ -62,57 +33,57 @@ export function DoshaDiagram() {
             refY="5"
             orient="auto"
           >
-            <polygon points="0 0, 10 5, 0 10" fill="#3c2a21" opacity="0.45" />
+            <polygon points="0 0, 10 5, 0 10" fill="#3c2a21" opacity="0.5" />
           </marker>
         </defs>
         <path
-          d="M 260 90 L 430 360 L 90 360 Z"
+          d="M 280 100 L 470 390 L 90 390 Z"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1.2"
-          strokeOpacity="0.3"
+          strokeOpacity="0.35"
         />
         <path
-          d="M 260 90 L 430 360"
+          d="M 280 100 L 470 390"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1"
-          strokeOpacity="0.35"
+          strokeOpacity="0.4"
           markerEnd="url(#dosha-arrow)"
         />
         <path
-          d="M 430 360 L 90 360"
+          d="M 470 390 L 90 390"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1"
-          strokeOpacity="0.35"
+          strokeOpacity="0.4"
           markerEnd="url(#dosha-arrow)"
         />
         <path
-          d="M 90 360 L 260 90"
+          d="M 90 390 L 280 100"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1"
-          strokeOpacity="0.35"
+          strokeOpacity="0.4"
           markerEnd="url(#dosha-arrow)"
         />
       </svg>
 
-      <p className="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-base italic text-text-muted/80">
-        know your dosha
+      <p className="absolute left-1/2 top-[52%] z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-[15px] italic text-brown/70">
+        Know your Dosha
       </p>
 
-      {doshas.map(({ name, icon: Icon, bg, position }) => (
+      {doshas.map(({ name, image, position }) => (
         <div
           key={name}
-          className={`absolute ${position} z-10 flex flex-col items-center gap-2.5`}
+          className={`absolute ${position} z-10 flex flex-col items-center gap-2`}
         >
-          <div
-            className={`flex h-[88px] w-[88px] items-center justify-center rounded-full shadow-[0_4px_20px_rgba(60,42,33,0.12)] sm:h-[100px] sm:w-[100px] ${bg}`}
-          >
-            <Icon />
-          </div>
-          <span className="font-serif text-lg font-medium text-brown">{name}</span>
+          <img
+            src={image}
+            alt=""
+            className="h-[96px] w-[96px] object-contain sm:h-[108px] sm:w-[108px]"
+          />
+          <span className="font-serif text-lg text-brown">{name}</span>
         </div>
       ))}
     </div>

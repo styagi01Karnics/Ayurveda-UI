@@ -65,16 +65,16 @@ export function LoginPage() {
             <Input
               label="Password"
               type="password"
-              placeholder="PASSWORD"
+              placeholder="Password"
               error={errors.password?.message}
               {...register('password')}
             />
             <div className="mt-2 text-right">
               <button
                 type="button"
-                className="text-xs text-text-muted hover:text-gold"
+                className="text-xs text-brown hover:text-gold"
               >
-                Forgot password?
+                Forgot password
               </button>
             </div>
           </div>
