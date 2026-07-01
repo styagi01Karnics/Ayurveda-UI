@@ -1,4 +1,5 @@
-import { CheckCircle, X } from 'lucide-react';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { assets } from '@/lib/assets';
 
 interface PasswordSuccessModalProps {
   open: boolean;
@@ -23,11 +24,12 @@ export function PasswordSuccessModal({ open, onClose }: PasswordSuccessModalProp
           className="absolute right-4 top-4 rounded p-1 text-text-muted hover:bg-brown/5"
           aria-label="Close"
         >
-          <X className="h-4 w-4" />
+          <AppIcon src={assets.icons.close} className="h-4 w-4" />
         </button>
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/15">
-          <CheckCircle className="h-8 w-8 text-success" />
-        </div>
+        <AppIcon
+          src={assets.icons.confirmSuccess}
+          className="mx-auto h-16 w-16"
+        />
         <h2 className="mt-5 text-xl font-bold text-brown">Password Updated</h2>
         <p className="mt-2 text-sm text-text-muted">
           Your password has been changed successfully.

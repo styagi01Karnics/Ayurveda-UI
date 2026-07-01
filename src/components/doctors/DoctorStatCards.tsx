@@ -42,7 +42,7 @@ export function DoctorStatCards({ stats }: DoctorStatCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="dash-grid">
       {cards.map((card) => (
         <Card key={card.title}>
           <p className="text-sm text-text-muted">{card.title}</p>

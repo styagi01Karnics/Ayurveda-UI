@@ -1,5 +1,6 @@
-import { Download } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { DataTableShell } from '@/components/ui/DataTableShell';
+import { assets } from '@/lib/assets';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { BillingRecord } from '@/types';
 
@@ -10,9 +11,8 @@ interface BillingTableProps {
 
 export function BillingTable({ records, onDownload }: BillingTableProps) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] text-left text-sm">
+    <DataTableShell>
+      <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">Invoice ID</th>
@@ -64,7 +64,7 @@ export function BillingTable({ records, onDownload }: BillingTableProps) {
                       className="rounded-lg border border-gray-200 bg-cream p-2 text-gold hover:bg-gold/10"
                       aria-label="Download bill"
                     >
-                      <Download className="h-4 w-4" />
+                      <AppIcon src={assets.icons.download} className="h-4 w-4" />
                     </button>
                   </td>
                 </tr>
@@ -72,8 +72,7 @@ export function BillingTable({ records, onDownload }: BillingTableProps) {
             )}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </DataTableShell>
   );
 }
 

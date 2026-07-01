@@ -1,27 +1,29 @@
+import { assets } from '@/lib/assets';
+
 const doshas = [
   {
     name: 'Vata',
-    image: '/assets/vata.png',
-    position: 'top-[4%] left-1/2 -translate-x-1/2',
+    image: assets.dosha.vata,
+    position: 'top-[6%] left-1/2 -translate-x-1/2',
   },
   {
     name: 'Pitta',
-    image: '/assets/pitta.png',
-    position: 'bottom-[6%] right-[4%]',
+    image: assets.dosha.pitta,
+    position: 'bottom-[4%] right-[6%]',
   },
   {
     name: 'Kapha',
-    image: '/assets/kapha.png',
-    position: 'bottom-[6%] left-[4%]',
+    image: assets.dosha.kapha,
+    position: 'bottom-[4%] left-[6%]',
   },
 ] as const;
 
 export function DoshaDiagram() {
   return (
-    <div className="relative mx-auto h-[min(520px,78vh)] w-full max-w-[560px]">
+    <div className="relative mx-auto h-[min(540px,80vh)] w-full max-w-[580px]">
       <svg
         className="absolute inset-0 h-full w-full"
-        viewBox="0 0 560 520"
+        viewBox="0 0 580 540"
         aria-hidden
       >
         <defs>
@@ -33,55 +35,55 @@ export function DoshaDiagram() {
             refY="5"
             orient="auto"
           >
-            <polygon points="0 0, 10 5, 0 10" fill="#3c2a21" opacity="0.5" />
+            <polygon points="0 0, 10 5, 0 10" fill="#3c2a21" opacity="0.45" />
           </marker>
         </defs>
         <path
-          d="M 280 100 L 470 390 L 90 390 Z"
+          d="M 290 108 L 480 400 L 100 400 Z"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1.2"
+          strokeOpacity="0.3"
+        />
+        <path
+          d="M 290 108 L 480 400"
+          fill="none"
+          stroke="#3c2a21"
+          strokeWidth="1"
           strokeOpacity="0.35"
-        />
-        <path
-          d="M 280 100 L 470 390"
-          fill="none"
-          stroke="#3c2a21"
-          strokeWidth="1"
-          strokeOpacity="0.4"
           markerEnd="url(#dosha-arrow)"
         />
         <path
-          d="M 470 390 L 90 390"
+          d="M 480 400 L 100 400"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1"
-          strokeOpacity="0.4"
+          strokeOpacity="0.35"
           markerEnd="url(#dosha-arrow)"
         />
         <path
-          d="M 90 390 L 280 100"
+          d="M 100 400 L 290 108"
           fill="none"
           stroke="#3c2a21"
           strokeWidth="1"
-          strokeOpacity="0.4"
+          strokeOpacity="0.35"
           markerEnd="url(#dosha-arrow)"
         />
       </svg>
 
-      <p className="absolute left-1/2 top-[52%] z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-[15px] italic text-brown/70">
+      <p className="absolute left-1/2 top-[53%] z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-[15px] italic text-brown/65">
         Know your Dosha
       </p>
 
       {doshas.map(({ name, image, position }) => (
         <div
           key={name}
-          className={`absolute ${position} z-10 flex flex-col items-center gap-2`}
+          className={`absolute ${position} z-10 flex flex-col items-center gap-2.5`}
         >
           <img
             src={image}
             alt=""
-            className="h-[96px] w-[96px] object-contain sm:h-[108px] sm:w-[108px]"
+            className="h-[100px] w-[100px] object-contain sm:h-[112px] sm:w-[112px]"
           />
           <span className="font-serif text-lg text-brown">{name}</span>
         </div>

@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { PatientsTable } from '@/components/patients/PatientsTable';
 import { UploadReportsModal } from '@/components/patients/UploadReportsModal';
+import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import {
@@ -73,29 +74,23 @@ export function PatientsPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <UnderlineTabs
-          tabs={[
-            { id: 'active' as const, label: 'Active Patients' },
-            { id: 'inactive' as const, label: 'Inactive Patients' },
-          ]}
-          activeTab={activeTab}
-          onChange={setActiveTab}
-          className="border-none"
-        />
+    <PageShell>
+      <UnderlineTabs
+        tabs={[
+          { id: 'active' as const, label: 'Active Patients' },
+          { id: 'inactive' as const, label: 'Inactive Patients' },
+        ]}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        className="border-none"
+      />
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Patient ID"
-              value={patientIdQuery}
-              onChange={(e) => setPatientIdQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-            />
-          </div>
+      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <SearchField
+            placeholder="Patient ID"
+            value={patientIdQuery}
+            onChange={(e) => setPatientIdQuery(e.target.value)}
+          />
           <Select
             placeholder="Status"
             options={[...FILTER_OPTIONS.status]}
@@ -114,7 +109,6 @@ export function PatientsPage() {
             value={doshaFilter}
             onChange={(e) => setDoshaFilter(e.target.value)}
           />
-        </div>
       </div>
 
       <PatientsTable
@@ -135,6 +129,6 @@ export function PatientsPage() {
         onClose={() => setBillPatientId(null)}
         patient={billPatient}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
+import { AuthCard, AuthFormSection } from '@/components/auth/AuthCard';
 import { BrandHeader } from '@/components/auth/BrandHeader';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +17,8 @@ import {
   signupSchema,
   type SignupFormValues,
 } from '@/lib/validation/signup.schema';
+
+const authField = { fieldVariant: 'auth' as const };
 
 export function SignupPage() {
   const navigate = useNavigate();
@@ -69,7 +72,7 @@ export function SignupPage() {
 
   return (
     <AuthLayout variant="signup">
-      <div className="w-full rounded-2xl bg-white px-6 py-8 shadow-[0_8px_40px_rgba(60,42,33,0.08)] sm:px-10 sm:py-10">
+      <AuthCard className="px-6 py-8 sm:px-10 sm:py-10">
         <BrandHeader className="mb-6" />
 
         <div className="mb-8">
@@ -82,20 +85,22 @@ export function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
-          <FormSection
+          <AuthFormSection
             title="Clinic Information"
             subtitle="Basic Information about your company"
           >
-            <div className="grid gap-6 lg:grid-cols-[1fr_240px]">
+            <div className="grid gap-6 lg:grid-cols-[1fr_250px]">
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
+                    {...authField}
                     label="Clinic Name"
                     placeholder="Clinic Name"
                     error={errors.clinicName?.message}
                     {...register('clinicName')}
                   />
                   <Select
+                    {...authField}
                     label="Clinic Type"
                     placeholder="Clinic Type"
                     options={[...CLINIC_TYPES]}
@@ -106,6 +111,7 @@ export function SignupPage() {
 
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Select
+                    {...authField}
                     label="State"
                     placeholder="Select State"
                     options={[...INDIAN_STATES]}
@@ -113,6 +119,7 @@ export function SignupPage() {
                     {...register('state')}
                   />
                   <Select
+                    {...authField}
                     label="City"
                     placeholder="Select City"
                     options={cityOptions}
@@ -121,6 +128,7 @@ export function SignupPage() {
                     {...register('city')}
                   />
                   <Input
+                    {...authField}
                     label="PIN Code"
                     placeholder="Pin Code"
                     error={errors.pinCode?.message}
@@ -130,12 +138,14 @@ export function SignupPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
+                    {...authField}
                     label="Address Line 1"
                     placeholder="Address Line 1"
                     error={errors.addressLine1?.message}
                     {...register('addressLine1')}
                   />
                   <Input
+                    {...authField}
                     label="Address Line 2"
                     placeholder="Address Line 2"
                     {...register('addressLine2')}
@@ -143,6 +153,7 @@ export function SignupPage() {
                 </div>
 
                 <Input
+                  {...authField}
                   label="Registration Number/ GST"
                   placeholder="Registration Number/ GST"
                   error={errors.registrationNumber?.message}
@@ -158,27 +169,30 @@ export function SignupPage() {
                 }
               />
             </div>
-          </FormSection>
+          </AuthFormSection>
 
-          <FormSection
+          <AuthFormSection
             title="Contact Information"
             subtitle="Primary contact information for your company"
           >
-            <div className="grid gap-6 lg:grid-cols-[1fr_240px]">
+            <div className="grid gap-6 lg:grid-cols-[1fr_250px]">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
+                  {...authField}
                   label="Full Name"
                   placeholder="Full Name"
                   error={errors.fullName?.message}
                   {...register('fullName')}
                 />
                 <Input
+                  {...authField}
                   label="Mobile Number"
                   placeholder="Mobile Number"
                   error={errors.mobileNumber?.message}
                   {...register('mobileNumber')}
                 />
                 <Input
+                  {...authField}
                   label="Email"
                   placeholder="Email"
                   type="email"
@@ -186,12 +200,14 @@ export function SignupPage() {
                   {...register('email')}
                 />
                 <Input
+                  {...authField}
                   label="User ID"
                   placeholder="User ID"
                   error={errors.userId?.message}
                   {...register('userId')}
                 />
                 <Input
+                  {...authField}
                   label="Password"
                   placeholder="Password"
                   type="password"
@@ -199,6 +215,7 @@ export function SignupPage() {
                   {...register('password')}
                 />
                 <Input
+                  {...authField}
                   label="Confirm Password"
                   placeholder="Confirm Password"
                   type="password"
@@ -215,14 +232,14 @@ export function SignupPage() {
                 }
               />
             </div>
-          </FormSection>
+          </AuthFormSection>
 
           <div className="space-y-4 pt-2">
             <Button
               type="submit"
               fullWidth
               disabled={isSubmitting}
-              className="rounded-xl py-3.5 text-base"
+              className="rounded-xl py-3.5 text-base font-semibold"
             >
               {isSubmitting ? 'Creating account...' : 'Signup'}
             </Button>
@@ -234,25 +251,7 @@ export function SignupPage() {
             </p>
           </div>
         </form>
-      </div>
+      </AuthCard>
     </AuthLayout>
-  );
-}
-
-function FormSection({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-xl border border-[#ebe6dc] bg-[#faf8f4] p-5 sm:p-6">
-      <h3 className="text-base font-bold text-brown">{title}</h3>
-      <p className="mb-5 text-sm text-text-muted">{subtitle}</p>
-      {children}
-    </section>
   );
 }

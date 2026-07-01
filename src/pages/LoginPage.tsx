@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
+import { AuthCard } from '@/components/auth/AuthCard';
 import { BrandHeader } from '@/components/auth/BrandHeader';
 import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
@@ -41,11 +42,11 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <div className="w-full max-w-[440px] rounded-2xl bg-white px-8 py-10 shadow-[0_8px_40px_rgba(60,42,33,0.08)] sm:px-10 sm:py-12">
+      <AuthCard className="max-w-[440px] px-8 py-10 sm:px-10 sm:py-12">
         <BrandHeader className="mb-10" />
 
         <div className="mb-8">
-          <h2 className="text-[28px] font-bold leading-tight text-brown">
+          <h2 className="font-serif text-[28px] font-bold leading-tight text-brown">
             Welcome back!
           </h2>
           <p className="mt-2 text-sm text-text-muted">
@@ -55,6 +56,7 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
           <Input
+            fieldVariant="auth"
             label="Enter your username or email address"
             placeholder="Enter your username or email address"
             error={errors.emailOrUsername?.message}
@@ -63,6 +65,7 @@ export function LoginPage() {
 
           <div>
             <Input
+              fieldVariant="auth"
               label="Password"
               type="password"
               placeholder="Password"
@@ -89,7 +92,7 @@ export function LoginPage() {
             type="submit"
             fullWidth
             disabled={isSubmitting}
-            className="mt-2 rounded-xl py-3.5 text-base"
+            className="mt-2 rounded-xl py-3.5 text-base font-semibold"
           >
             {isSubmitting ? 'Logging in...' : 'Login'}
           </Button>
@@ -101,7 +104,7 @@ export function LoginPage() {
             Sign Up
           </Link>
         </p>
-      </div>
+      </AuthCard>
     </AuthLayout>
   );
 }

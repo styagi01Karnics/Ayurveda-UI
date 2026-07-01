@@ -57,29 +57,18 @@ export function DashboardLayout() {
   return (
     <ToastProvider>
       <PageActionContext.Provider value={contextValue}>
-        <div className="flex min-h-screen flex-col bg-cream-light">
+        <div className="app-shell flex h-screen flex-col overflow-hidden bg-cream-light">
           <TopBanner onClaimOffer={() => setCouponOpen(true)} />
-          <div className="flex flex-1 overflow-hidden">
-            <div className="hidden lg:block">
-              <Sidebar />
+
+          <div className="flex min-h-0 flex-1">
+            {/* Sidebar — fixed width, clipped so bg doesn't bleed into header */}
+            <div className="sidebar-slot hidden shrink-0 lg:block">
+              <Sidebar className="h-full" />
             </div>
 
-            {mobileOpen && (
-              <div className="fixed inset-0 z-50 lg:hidden">
-                <button
-                  type="button"
-                  className="absolute inset-0 bg-black/40"
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Close menu"
-                />
-                <div className="relative z-10 h-full w-64">
-                  <Sidebar onNavigate={() => setMobileOpen(false)} />
-                </div>
-              </div>
-            )}
-
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="flex items-center gap-3 border-b border-gray-100 bg-cream-light px-4 py-3 lg:hidden">
+            {/* Main column — header + page content */}
+            <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-cream-light">
+              <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-4 py-3 lg:hidden">
                 <button
                   type="button"
                   onClick={() => setMobileOpen(true)}
@@ -92,7 +81,7 @@ export function DashboardLayout() {
                     <Menu className="h-5 w-5" />
                   )}
                 </button>
-                <span className="font-semibold text-brown">{title}</span>
+                <span className="truncate font-semibold text-brown">{title}</span>
               </div>
 
               <Header
@@ -101,11 +90,29 @@ export function DashboardLayout() {
                 onChangePassword={() => setChangePasswordOpen(true)}
                 onLogout={() => setLogoutOpen(true)}
               />
-              <main className="flex-1 overflow-auto p-4 sm:p-6">
+
+              <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
                 <Outlet />
               </main>
             </div>
           </div>
+
+          {mobileOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/40"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+              />
+              <div className="sidebar-slot relative z-10 h-full p-3 pl-4">
+                <Sidebar
+                  className="h-full"
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <ChangePasswordModal

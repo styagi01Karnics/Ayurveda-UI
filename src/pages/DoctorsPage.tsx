@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
+import { PageShell } from '@/components/layout/PageShell';
 import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
 import { DoctorStatCards } from '@/components/doctors/DoctorStatCards';
 import { DoctorScheduleTable } from '@/components/doctors/DoctorScheduleTable';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { assets } from '@/lib/assets';
 import {
   doctorStats,
   DOCTOR_FILTER_OPTIONS,
@@ -30,7 +33,7 @@ export function DoctorsPage() {
         className="gap-1.5 px-4 py-2 text-sm"
         onClick={() => navigate('/appointments')}
       >
-        <Plus className="h-4 w-4" />
+        <AppIcon src={assets.icons.add} className="h-4 w-4" />
         Book Appointment
       </Button>
     ),
@@ -78,20 +81,15 @@ export function DoctorsPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <PageShell>
       <DoctorStatCards stats={doctorStats} />
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Search patient"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-          />
-        </div>
+        <SearchField
+          placeholder="Search patient"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
         <Select
           placeholder="Status"
           options={[...DOCTOR_FILTER_OPTIONS.status]}
@@ -117,6 +115,6 @@ export function DoctorsPage() {
         onClose={() => setCancelTarget(null)}
         onConfirm={handleCancelConfirm}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -5,6 +5,7 @@ import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable'
 import { PatientTrendsChart } from '@/components/dashboard/PatientTrendsChart';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { TodayScheduleCard } from '@/components/dashboard/TodayScheduleCard';
+import { PageShell } from '@/components/layout/PageShell';
 import {
   dashboardStats,
   lowStockItems,
@@ -19,8 +20,8 @@ export function DashboardPage() {
   const [chartOpen, setChartOpen] = useState(false);
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <PageShell className="space-y-6">
+      <div className="dash-grid">
         <StatCard title="Total Patients" stats={dashboardStats} type="patients" />
         <StatCard
           title="Total Appointments"
@@ -30,7 +31,7 @@ export function DashboardPage() {
         <StatCard title="Billing" stats={dashboardStats} type="billing" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="dash-grid-wide">
         <PatientTrendsChart
           data={patientTrendsData}
           onExpand={() => setChartOpen(true)}
@@ -57,6 +58,6 @@ export function DashboardPage() {
         onClose={() => setChartOpen(false)}
         data={patientTrendsFullYear}
       />
-    </div>
+    </PageShell>
   );
 }

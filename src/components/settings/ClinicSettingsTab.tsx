@@ -185,12 +185,12 @@ function DoctorsSection({
   };
 
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="min-w-0 overflow-hidden p-0">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Doctors" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
@@ -302,12 +302,12 @@ function TherapySection({
   };
 
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="min-w-0 overflow-hidden p-0">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Therapy" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px] text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
@@ -430,12 +430,12 @@ function TherapistSection({
   };
 
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="min-w-0 overflow-hidden p-0">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Therapist" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[800px] text-left text-sm">
+        <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>

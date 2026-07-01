@@ -1,5 +1,5 @@
 import { Settings2 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { DataTableShell } from '@/components/ui/DataTableShell';
 import { Select } from '@/components/ui/Select';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
 import { cn } from '@/lib/utils';
@@ -12,9 +12,8 @@ interface UsersTableProps {
 
 export function UsersTable({ records, onRoleChange }: UsersTableProps) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
+    <DataTableShell>
+      <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">User ID</th>
@@ -82,7 +81,6 @@ export function UsersTable({ records, onRoleChange }: UsersTableProps) {
             )}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </DataTableShell>
   );
 }

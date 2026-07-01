@@ -7,6 +7,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
   placeholder?: string;
   options: readonly string[] | string[];
+  fieldVariant?: 'default' | 'auth';
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
@@ -18,19 +19,21 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       id,
       placeholder = 'Select',
       options,
+      fieldVariant = 'default',
       ...props
     },
     ref,
   ) => {
     const selectId = id ?? props.name;
+    const labelClass =
+      fieldVariant === 'auth'
+        ? 'text-xs font-medium text-brown'
+        : 'text-xs font-medium text-text-muted';
 
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label
-            htmlFor={selectId}
-            className="text-xs font-medium text-brown"
-          >
+          <label htmlFor={selectId} className={labelClass}>
             {label}
           </label>
         )}

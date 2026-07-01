@@ -1,6 +1,7 @@
-import { Leaf, Mail, MapPin, Phone } from 'lucide-react';
+import { Mail, MapPin, Phone } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
+import { assets } from '@/lib/assets';
 import { formatCurrency } from '@/lib/utils';
 import type { PatientDetail } from '@/types';
 
@@ -20,8 +21,8 @@ export function BillInvoiceModal({ open, onClose, patient }: BillInvoiceModalPro
       <div className="space-y-5 text-sm">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-100 pb-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gold">
-              <Leaf className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gold">
+              <img src={assets.brandLogo} alt="" className="h-8 w-8 object-contain" />
             </div>
             <div>
               <p className="font-bold text-brown">{invoice.clinicName}</p>

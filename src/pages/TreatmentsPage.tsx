@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PageShell } from '@/components/layout/PageShell';
 import { TreatmentsTable } from '@/components/treatments/TreatmentsTable';
+import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import {
   initialTreatments,
@@ -29,18 +30,13 @@ export function TreatmentsPage() {
   }, [searchQuery, statusFilter, visitTypeFilter, dateFilter]);
 
   return (
-    <div className="space-y-5">
+    <PageShell>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Patient"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-          />
-        </div>
+        <SearchField
+          placeholder="Patient"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
         <Select
           placeholder="Status"
           options={[...TREATMENT_FILTER_OPTIONS.status]}
@@ -74,6 +70,6 @@ export function TreatmentsPage() {
           navigate(`/treatments/patient/${record.patientDetailId}`)
         }
       />
-    </div>
+    </PageShell>
   );
 }

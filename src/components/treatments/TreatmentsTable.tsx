@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/Card';
+import { DataTableShell } from '@/components/ui/DataTableShell';
 import { cn } from '@/lib/utils';
 import type { TreatmentRecord } from '@/types';
 
@@ -9,9 +9,8 @@ interface TreatmentsTableProps {
 
 export function TreatmentsTable({ records, onRowClick }: TreatmentsTableProps) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
+    <DataTableShell>
+      <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">Patient</th>
@@ -61,8 +60,7 @@ export function TreatmentsTable({ records, onRowClick }: TreatmentsTableProps) {
             )}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </DataTableShell>
   );
 }
 

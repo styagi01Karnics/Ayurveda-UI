@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/Card';
+import { DataTableShell } from '@/components/ui/DataTableShell';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { DoctorScheduleItem, VisitType } from '@/types';
@@ -15,9 +15,8 @@ export function DoctorScheduleTable({
   onCancel,
 }: DoctorScheduleTableProps) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px] text-left text-sm">
+    <DataTableShell>
+      <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">Time</th>
@@ -69,8 +68,7 @@ export function DoctorScheduleTable({
             ))}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </DataTableShell>
   );
 }
 

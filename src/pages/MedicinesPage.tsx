@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
+import { PageShell } from '@/components/layout/PageShell';
 import { DeleteMedicineModal } from '@/components/medicines/DeleteMedicineModal';
 import { MedicineFormModal } from '@/components/medicines/MedicineFormModal';
 import { MedicinesTable } from '@/components/medicines/MedicinesTable';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { assets } from '@/lib/assets';
 import { initialMedicines, MEDICINE_FILTER_OPTIONS } from '@/data/mock/medicines';
 import type { MedicineFormValues } from '@/lib/validation/medicine.schema';
 import type { MedicineRecord } from '@/types';
@@ -35,7 +38,7 @@ export function MedicinesPage() {
           setFormOpen(true);
         }}
       >
-        <Plus className="h-4 w-4" />
+        <AppIcon src={assets.icons.add} className="h-4 w-4" />
         Add Medicine
       </Button>
     ),
@@ -96,18 +99,13 @@ export function MedicinesPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <PageShell>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Medicine Name"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-          />
-        </div>
+        <SearchField
+          placeholder="Medicine Name"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
         <Select
           placeholder="Category"
           options={[...MEDICINE_FILTER_OPTIONS.category]}
@@ -141,6 +139,6 @@ export function MedicinesPage() {
         onConfirm={handleDeleteConfirm}
         medicineName={deleteTarget?.name}
       />
-    </div>
+    </PageShell>
   );
 }

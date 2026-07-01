@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { Maximize2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { cn } from '@/lib/utils';
 
 interface PatientTrendsChartProps {
   data: { month: string; newPatients: number; followUps: number }[];
@@ -21,7 +22,7 @@ export function PatientTrendsChart({
   compact = false,
 }: PatientTrendsChartProps) {
   return (
-    <Card className="flex flex-col">
+    <Card className="flex min-w-0 flex-col overflow-hidden">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex gap-4 text-xs">
           <span className="flex items-center gap-1.5">
@@ -45,8 +46,8 @@ export function PatientTrendsChart({
         )}
       </div>
 
-      <div className={compact ? 'h-48' : 'h-64'}>
-        <ResponsiveContainer width="100%" height="100%">
+      <div className={cn('chart-wrap', compact ? 'h-48' : 'h-64')}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart data={data} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
             <XAxis
               dataKey="month"

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
+import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { BillingTable } from '@/components/billing/BillingTable';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { assets } from '@/lib/assets';
 import {
   BILLING_FILTER_OPTIONS,
   initialBillingRecords,
@@ -26,7 +29,7 @@ export function BillingPage() {
         className="gap-1.5 px-4 py-2 text-sm"
         onClick={() => navigate('/billing/generate')}
       >
-        <Plus className="h-4 w-4" />
+        <AppIcon src={assets.icons.add} className="h-4 w-4" />
         Generate Invoice
       </Button>
     ),
@@ -55,18 +58,13 @@ export function BillingPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <PageShell>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <input
-            type="search"
-            placeholder="Patient ID"
-            value={patientIdQuery}
-            onChange={(e) => setPatientIdQuery(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-          />
-        </div>
+        <SearchField
+          placeholder="Patient ID"
+          value={patientIdQuery}
+          onChange={(e) => setPatientIdQuery(e.target.value)}
+        />
         <Select
           placeholder="Status"
           options={[...BILLING_FILTER_OPTIONS.status]}
@@ -82,6 +80,6 @@ export function BillingPage() {
         onClose={() => setInvoicePatientId(null)}
         patient={invoicePatient ?? null}
       />
-    </div>
+    </PageShell>
   );
 }

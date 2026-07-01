@@ -43,7 +43,7 @@ export function AuthLayout({
       <div className="paper-texture relative min-h-screen">
         <SignupDecorations />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[980px] items-center px-4 py-10 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1060px] items-center px-4 py-10 sm:px-6 lg:px-8">
           <div className="w-full">{children}</div>
         </div>
       </div>

@@ -4,19 +4,21 @@ import { cn } from '@/lib/utils';
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  fieldVariant?: 'default' | 'auth';
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, id, ...props }, ref) => {
+  ({ className, label, error, fieldVariant = 'default', id, ...props }, ref) => {
     const inputId = id ?? props.name;
+    const labelClass =
+      fieldVariant === 'auth'
+        ? 'text-xs font-medium text-brown'
+        : 'text-xs font-medium text-text-muted';
 
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="text-xs font-medium text-brown"
-          >
+          <label htmlFor={inputId} className={labelClass}>
             {label}
           </label>
         )}

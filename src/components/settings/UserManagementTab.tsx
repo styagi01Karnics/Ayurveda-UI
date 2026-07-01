@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AddUserModal } from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
 import { UsersTable } from '@/components/settings/UsersTable';
+import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { initialSettingsUsers, USER_FILTER_OPTIONS } from '@/data/mock/settings';
 import type { AddUserFormValues } from '@/lib/validation/settings.schema';
@@ -79,16 +79,11 @@ export function UserManagementTab({
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="relative sm:col-start-2 sm:grid sm:grid-cols-2 sm:gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="User ID"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-            />
-          </div>
+          <SearchField
+            placeholder="User ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
           <Select
             placeholder="Status"
             options={[...USER_FILTER_OPTIONS.status]}

@@ -1,5 +1,6 @@
-import { Pencil, Trash2 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
+import { AppIcon } from '@/components/ui/AppIcon';
+import { DataTableShell } from '@/components/ui/DataTableShell';
+import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import type { MedicineRecord } from '@/types';
@@ -12,9 +13,8 @@ interface MedicinesTableProps {
 
 export function MedicinesTable({ records, onEdit, onDelete }: MedicinesTableProps) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
+    <DataTableShell>
+      <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">Medicine Name</th>
@@ -56,7 +56,7 @@ export function MedicinesTable({ records, onEdit, onDelete }: MedicinesTableProp
                         className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-gold/10"
                         aria-label={`Edit ${record.name}`}
                       >
-                        <Pencil className="h-4 w-4" />
+                        <AppIcon src={assets.icons.edit} className="h-4 w-4" />
                       </button>
                       <button
                         type="button"
@@ -64,7 +64,7 @@ export function MedicinesTable({ records, onEdit, onDelete }: MedicinesTableProp
                         className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
                         aria-label={`Delete ${record.name}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <AppIcon src={assets.icons.trash} className="h-4 w-4" />
                       </button>
                     </div>
                   </td>
@@ -73,8 +73,7 @@ export function MedicinesTable({ records, onEdit, onDelete }: MedicinesTableProp
             )}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </DataTableShell>
   );
 }
 

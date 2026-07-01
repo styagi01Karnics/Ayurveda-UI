@@ -11,7 +11,7 @@ interface AppointmentsCalendarProps {
 
 export function AppointmentsCalendar({ events, onEventClick }: AppointmentsCalendarProps) {
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="min-w-0 overflow-hidden p-0">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
         <div className="flex flex-1 justify-around text-xs font-medium text-brown">
           {DAYS.map((day) => (
@@ -24,7 +24,7 @@ export function AppointmentsCalendar({ events, onEventClick }: AppointmentsCalen
       </div>
 
       <div className="overflow-x-auto">
-        <div className="relative min-w-[800px]">
+        <div className="relative w-full min-w-0">
           {HOURS.map((hour) => (
             <div
               key={hour}

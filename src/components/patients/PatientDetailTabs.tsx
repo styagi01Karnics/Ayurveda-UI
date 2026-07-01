@@ -1,6 +1,7 @@
-import { FileText, Folder } from 'lucide-react';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { Badge } from '@/components/ui/Badge';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
+import { assets } from '@/lib/assets';
 import type { PatientDetail } from '@/types';
 import type { PatientDetailTab } from '@/types/patientDetail';
 
@@ -230,9 +231,9 @@ function ReportRow({
     <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
       <div className="flex items-center gap-3">
         {type === 'folder' ? (
-          <Folder className="h-5 w-5 text-gold" />
+          <AppIcon src={assets.icons.folder} className="h-5 w-5" />
         ) : (
-          <FileText className="h-5 w-5 text-gold" />
+          <AppIcon src={assets.icons.pdf} className="h-5 w-5" />
         )}
         <div>
           <p className="text-sm font-medium text-brown">{name}</p>
@@ -251,7 +252,7 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
     <div className="space-y-8">
       <SectionBlock title="Active Treatment Plan">
         <div className="overflow-x-auto rounded-xl bg-gray-50">
-          <table className="w-full min-w-[640px] text-sm">
+          <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="text-xs text-text-muted">
                 <th className="px-4 py-3 text-left font-medium">Treatment Name</th>
@@ -290,7 +291,7 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
 
       <SectionBlock title="Appointment History">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-sm">
+          <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="border-b border-gray-100 text-xs text-text-muted">
                 <th className="py-2 text-left font-medium">Visit Type</th>

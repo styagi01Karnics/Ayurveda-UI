@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/Card';
+import { DataTableShell } from '@/components/ui/DataTableShell';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, VisitType } from '@/types';
 
@@ -9,9 +9,8 @@ interface AppointmentsTableProps {
 
 export function AppointmentsTable({ items, onCancel }: AppointmentsTableProps) {
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
+    <DataTableShell>
+      <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">UHID No.</th>
@@ -58,8 +57,7 @@ export function AppointmentsTable({ items, onCancel }: AppointmentsTableProps) {
             ))}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </DataTableShell>
   );
 }
 

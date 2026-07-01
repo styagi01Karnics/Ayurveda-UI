@@ -69,14 +69,12 @@ export function StatCard({ title, stats, type }: StatCardProps) {
 
       {isPatients ? (
         <div className="mt-4">
-          <div className="mb-2 flex justify-between text-xs text-text-muted">
-            <span>
-              {stats.activePatients} Active Patients (
-              {Math.round((stats.activePatients / total) * 100)}%)
+          <div className="mb-2 flex flex-col gap-1 text-xs text-text-muted sm:flex-row sm:justify-between">
+            <span className="truncate">
+              {stats.activePatients} Active ({Math.round((stats.activePatients / total) * 100)}%)
             </span>
-            <span>
-              {stats.inactivePatients} Inactive Patients (
-              {Math.round((stats.inactivePatients / total) * 100)}%)
+            <span className="truncate">
+              {stats.inactivePatients} Inactive ({Math.round((stats.inactivePatients / total) * 100)}%)
             </span>
           </div>
           <div className="flex h-2 overflow-hidden rounded-full bg-gray-100">
@@ -89,7 +87,7 @@ export function StatCard({ title, stats, type }: StatCardProps) {
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex justify-between gap-2">
+        <div className="mt-4 flex min-w-0 justify-between gap-1">
           {(['Confirmed', 'Cancelled', 'Follow-Up'] as const).map(
             (label, index) => (
               <GaugeMini
@@ -125,7 +123,7 @@ function PeriodDropdown() {
 
 function GaugeMini({ label, color }: { label: string; color: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center">
+    <div className="flex min-w-0 flex-1 flex-col items-center">
       <div className="relative h-10 w-16 overflow-hidden">
         <div className="absolute inset-x-0 bottom-0 h-8 rounded-t-full border-4 border-gray-100" />
         <div

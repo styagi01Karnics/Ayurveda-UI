@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, KeyRound, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { assets } from '@/lib/assets';
 import { getStoredUser } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -30,18 +31,22 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2 rounded-xl bg-white px-2 py-1.5 shadow-sm"
+          className="flex max-w-[200px] items-center gap-2 rounded-xl bg-white px-2 py-1.5 shadow-sm sm:max-w-none"
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gold/20 text-sm font-semibold text-gold">
-            {user?.fullName?.charAt(0) ?? 'R'}
+          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gold/20">
+            <img
+              src={assets.avatar}
+              alt=""
+              className="h-full w-full object-cover"
+            />
           </div>
-          <div className="hidden text-left sm:block">
-            <p className="text-sm font-semibold text-brown">
+          <div className="hidden min-w-0 text-left sm:block">
+            <p className="truncate text-sm font-semibold text-brown">
               {user?.fullName ?? 'Rahul Sharma'}
             </p>
-            <p className="text-xs text-text-muted">{user?.role ?? 'Super Admin'}</p>
+            <p className="truncate text-xs text-text-muted">{user?.role ?? 'Super Admin'}</p>
           </div>
           <ChevronDown
             className={cn(

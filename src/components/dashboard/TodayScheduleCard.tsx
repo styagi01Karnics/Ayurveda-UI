@@ -1,6 +1,6 @@
-import { Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { assets } from '@/lib/assets';
 import type { ScheduleAppointment } from '@/types';
 
 interface TodayScheduleCardProps {
@@ -23,7 +23,7 @@ export function TodayScheduleCard({
           <h3 className="text-sm font-semibold text-brown">Today&apos;s Schedule</h3>
           <p className="mt-1 text-xs text-text-muted">{dateLabel}</p>
         </div>
-        <Leaf className="h-5 w-5 text-kapha" strokeWidth={1.5} />
+        <img src={assets.brandLogo} alt="" className="h-5 w-5 object-contain opacity-80" />
       </div>
 
       <ScheduleBlock title="Ongoing Appointment" appointment={ongoing} />
