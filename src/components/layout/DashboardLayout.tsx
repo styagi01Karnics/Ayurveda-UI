@@ -57,44 +57,40 @@ export function DashboardLayout() {
   return (
     <ToastProvider>
       <PageActionContext.Provider value={contextValue}>
-        <div className="app-shell flex h-screen flex-col overflow-hidden bg-cream-light">
-          <TopBanner onClaimOffer={() => setCouponOpen(true)} />
+        <div className="app-shell flex h-screen w-screen max-w-[100vw] overflow-hidden bg-cream-light">
+          <div className="sidebar-slot hidden shrink-0 lg:block">
+            <Sidebar className="h-full" />
+          </div>
 
-          <div className="flex min-h-0 flex-1">
-            {/* Sidebar — fixed width, clipped so bg doesn't bleed into header */}
-            <div className="sidebar-slot hidden shrink-0 lg:block">
-              <Sidebar className="h-full" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-cream-light">
+            <TopBanner onClaimOffer={() => setCouponOpen(true)} />
+
+            <div className="flex shrink-0 items-center gap-3 border-b border-[#f0ebe3] px-4 py-3 lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="rounded-lg p-2 hover:bg-brown/5"
+                aria-label="Open menu"
+              >
+                {mobileOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
+              <span className="truncate font-semibold text-brown">{title}</span>
             </div>
 
-            {/* Main column — header + page content */}
-            <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-cream-light">
-              <div className="flex shrink-0 items-center gap-3 border-b border-gray-100 px-4 py-3 lg:hidden">
-                <button
-                  type="button"
-                  onClick={() => setMobileOpen(true)}
-                  className="rounded-lg p-2 hover:bg-brown/5"
-                  aria-label="Open menu"
-                >
-                  {mobileOpen ? (
-                    <X className="h-5 w-5" />
-                  ) : (
-                    <Menu className="h-5 w-5" />
-                  )}
-                </button>
-                <span className="truncate font-semibold text-brown">{title}</span>
-              </div>
+            <Header
+              title={title}
+              action={headerAction}
+              onChangePassword={() => setChangePasswordOpen(true)}
+              onLogout={() => setLogoutOpen(true)}
+            />
 
-              <Header
-                title={title}
-                action={headerAction}
-                onChangePassword={() => setChangePasswordOpen(true)}
-                onLogout={() => setLogoutOpen(true)}
-              />
-
-              <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-                <Outlet />
-              </main>
-            </div>
+            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6">
+              <Outlet />
+            </main>
           </div>
 
           {mobileOpen && (

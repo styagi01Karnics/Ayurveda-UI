@@ -16,7 +16,7 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   return (
-    <header className="flex min-w-0 items-center justify-between gap-3 border-b border-gray-100 bg-cream-light px-4 py-4 sm:px-6">
+    <header className="flex w-full min-w-0 shrink-0 items-center justify-between gap-3 bg-cream-light px-4 py-4 sm:px-6">
       <h1 className="min-w-0 truncate text-lg font-semibold text-brown sm:text-xl">
         {title}
       </h1>

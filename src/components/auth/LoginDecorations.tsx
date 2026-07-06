@@ -7,13 +7,13 @@ export function LoginDecorations() {
         src={assets.auth.loginDecorTopRight}
         alt=""
         aria-hidden
-        className="pointer-events-none absolute right-0 top-0 z-[1] w-[200px] sm:w-[240px] lg:w-[280px] xl:w-[320px]"
+        className="pointer-events-none absolute right-0 top-0 z-[1] w-[160px] sm:w-[200px] lg:w-[220px]"
       />
       <img
         src={assets.auth.loginDecorBottomLeft}
         alt=""
         aria-hidden
-        className="pointer-events-none absolute bottom-0 left-0 z-[1] w-[240px] md:w-[300px] lg:w-[340px] xl:w-[380px]"
+        className="pointer-events-none absolute bottom-0 left-0 z-[1] w-[180px] md:w-[220px] lg:w-[260px]"
       />
     </>
   );

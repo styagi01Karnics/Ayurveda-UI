@@ -1,60 +1,64 @@
-import { ChevronDown, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import {
+  DashDivider,
+  PeriodDropdown,
+  SemiCircleGauge,
+} from '@/components/dashboard/DashboardPrimitives';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import type { DashboardStats } from '@/types';
 
 interface StatCardProps {
   title: string;
   stats: DashboardStats;
-  type: 'patients' | 'appointments' | 'billing';
+  type: 'appointments' | 'billing';
 }
 
 export function StatCard({ title, stats, type }: StatCardProps) {
   if (type === 'billing') {
     return (
-      <Card>
-        <div className="mb-4 flex items-start justify-between">
+      <Card className="dashboard-card">
+        <div className="mb-3 flex items-start justify-between">
           <h3 className="text-sm font-medium text-text-muted">{title}</h3>
           <PeriodDropdown />
         </div>
-        <p className="text-2xl font-bold text-brown sm:text-3xl">
+        <p className="text-2xl font-bold text-brown lg:text-[28px]">
           {formatCurrency(stats.billingTotal)}
         </p>
-        <span className="mt-2 inline-block rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
+        <span className="mt-2 inline-block rounded-full bg-[#f3e8d4] px-3 py-1 text-xs font-medium text-gold">
           Total Bills Generated: {stats.billsGenerated}
         </span>
-        <div className="mt-4 space-y-2 text-sm">
-          <p>
-            <span className="text-text-muted">Pending Payments: </span>
-            <span className="font-semibold text-gold">
+        <div className="mt-4 flex flex-col gap-2">
+          <div className="rounded-xl bg-[#fffbf2] px-3 py-2.5">
+            <p className="text-xs text-text-muted">Pending Payments</p>
+            <p className="mt-0.5 text-sm font-semibold text-brown">
               {formatCurrency(stats.pendingPayments)}
-            </span>
-          </p>
-          <p>
-            <span className="text-text-muted">Collected Payments: </span>
-            <span className="font-semibold text-success">
+            </p>
+          </div>
+          <div className="rounded-xl bg-[#fffbf2] px-3 py-2.5">
+            <p className="text-xs text-text-muted">Collected Payments</p>
+            <p className="mt-0.5 text-sm font-semibold text-brown">
               {formatCurrency(stats.collectedPayments)}
-            </span>
-          </p>
+            </p>
+          </div>
         </div>
       </Card>
     );
   }
 
-  const isPatients = type === 'patients';
-  const total = isPatients ? stats.totalPatients : stats.totalAppointments;
-  const growth = isPatients ? stats.patientGrowth : stats.appointmentGrowth;
-  const today = isPatients ? stats.patientsToday : stats.appointmentsToday;
+  const total = stats.totalAppointments;
+  const growth = stats.appointmentGrowth;
+  const today = stats.appointmentsToday;
 
   return (
-    <Card>
-      <div className="mb-4 flex items-start justify-between">
+    <Card className="dashboard-card">
+      <div className="mb-3 flex items-start justify-between">
         <h3 className="text-sm font-medium text-text-muted">{title}</h3>
         <PeriodDropdown />
       </div>
 
       <div className="flex items-end gap-2">
-        <p className="text-2xl font-bold text-brown sm:text-3xl">
+        <p className="text-2xl font-bold text-brown lg:text-[28px]">
           {formatNumber(total)}
         </p>
         <span className="mb-1 flex items-center gap-0.5 text-sm font-medium text-success">
@@ -63,76 +67,30 @@ export function StatCard({ title, stats, type }: StatCardProps) {
         </span>
       </div>
 
-      <p className="mt-1 text-sm font-medium text-gold">
-        +{today} Today
-      </p>
+      <p className="mt-1 text-sm font-medium text-gold">+{today} Today</p>
 
-      {isPatients ? (
-        <div className="mt-4">
-          <div className="mb-2 flex flex-col gap-1 text-xs text-text-muted sm:flex-row sm:justify-between">
-            <span className="truncate">
-              {stats.activePatients} Active ({Math.round((stats.activePatients / total) * 100)}%)
-            </span>
-            <span className="truncate">
-              {stats.inactivePatients} Inactive ({Math.round((stats.inactivePatients / total) * 100)}%)
-            </span>
-          </div>
-          <div className="flex h-2 overflow-hidden rounded-full bg-gray-100">
-            <div
-              className="bg-gold"
-              style={{
-                width: `${(stats.activePatients / total) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 flex min-w-0 justify-between gap-1">
-          {(['Confirmed', 'Cancelled', 'Follow-Up'] as const).map(
-            (label, index) => (
-              <GaugeMini
-                key={label}
-                label={label}
-                color={
-                  index === 0
-                    ? 'text-success'
-                    : index === 1
-                      ? 'text-danger'
-                      : 'text-gold'
-                }
-              />
-            ),
-          )}
-        </div>
-      )}
-    </Card>
-  );
-}
+      <DashDivider className="my-4" />
 
-function PeriodDropdown() {
-  return (
-    <button
-      type="button"
-      className="flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-xs text-text-muted"
-    >
-      Monthly
-      <ChevronDown className="h-3 w-3" />
-    </button>
-  );
-}
-
-function GaugeMini({ label, color }: { label: string; color: string }) {
-  return (
-    <div className="flex min-w-0 flex-1 flex-col items-center">
-      <div className="relative h-10 w-16 overflow-hidden">
-        <div className="absolute inset-x-0 bottom-0 h-8 rounded-t-full border-4 border-gray-100" />
-        <div
-          className={`absolute inset-x-0 bottom-0 h-8 rounded-t-full border-4 border-current ${color}`}
-          style={{ clipPath: 'inset(40% 0 0 0)' }}
+      <div className="flex justify-between gap-1">
+        <SemiCircleGauge
+          label="Confirmed"
+          percent={60}
+          count={60}
+          stroke="#3d8f5a"
+        />
+        <SemiCircleGauge
+          label="Cancelled"
+          percent={60}
+          count={60}
+          stroke="#c94c4c"
+        />
+        <SemiCircleGauge
+          label="Follow-Up"
+          percent={60}
+          count={60}
+          stroke="#be880b"
         />
       </div>
-      <span className={`mt-1 text-[10px] font-medium ${color}`}>{label}</span>
-      <span className="text-[10px] text-text-muted">60%</span>
-    </div>
+    </Card>
   );
 }

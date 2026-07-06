@@ -20,7 +20,7 @@ const doshas = [
 
 export function DoshaDiagram() {
   return (
-    <div className="relative mx-auto h-[min(540px,80vh)] w-full max-w-[580px]">
+    <div className="relative mx-auto h-[min(380px,62vh)] w-full max-w-[480px]">
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox="0 0 580 540"
@@ -83,7 +83,7 @@ export function DoshaDiagram() {
           <img
             src={image}
             alt=""
-            className="h-[100px] w-[100px] object-contain sm:h-[112px] sm:w-[112px]"
+            className="h-[72px] w-[72px] object-contain sm:h-[80px] sm:w-[80px]"
           />
           <span className="font-serif text-lg text-brown">{name}</span>
         </div>

@@ -1,5 +1,6 @@
 /** Centralized static asset paths — public PNGs + Figma-export SVGs from src/assets */
 
+import scheduleDecor from '@/assets/signup/tulsi.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
 import gridIcon from '@/assets/appointments/grid.svg';
@@ -44,6 +45,7 @@ export const assets = {
     signupDecorBottomRight: '/assets/signup-decor-right.png',
   },
   sidebarBg,
+  scheduleDecor,
   avatar,
   icons: {
     nav: {

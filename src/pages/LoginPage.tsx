@@ -42,11 +42,11 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="max-w-[440px] px-8 py-10 sm:px-10 sm:py-12">
-        <BrandHeader className="mb-10" />
+      <AuthCard className="max-w-[400px] px-7 py-8 sm:px-9 sm:py-9">
+        <BrandHeader className="mb-8" />
 
-        <div className="mb-8">
-          <h2 className="font-serif text-[28px] font-bold leading-tight text-brown">
+        <div className="mb-6">
+          <h2 className="font-serif text-2xl font-bold leading-tight text-brown sm:text-[26px]">
             Welcome back!
           </h2>
           <p className="mt-2 text-sm text-text-muted">
@@ -54,7 +54,7 @@ export function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <Input
             fieldVariant="auth"
             label="Enter your username or email address"
@@ -92,13 +92,13 @@ export function LoginPage() {
             type="submit"
             fullWidth
             disabled={isSubmitting}
-            className="mt-2 rounded-xl py-3.5 text-base font-semibold"
+            className="mt-1 rounded-xl py-3 text-base font-semibold"
           >
             {isSubmitting ? 'Logging in...' : 'Login'}
           </Button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-text-muted">
+        <p className="mt-6 text-center text-sm text-text-muted">
           Don&apos;t have an account?{' '}
           <Link to="/signup" className="font-semibold text-gold hover:underline">
             Sign Up

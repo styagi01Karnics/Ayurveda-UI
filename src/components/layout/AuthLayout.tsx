@@ -15,32 +15,26 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   if (variant === 'login') {
     return (
-      <div className="paper-texture relative min-h-screen">
+      <div className="paper-texture relative h-screen overflow-hidden">
         <LoginDecorations />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1449px] items-center px-5 py-10 sm:px-8 lg:px-14 xl:px-20">
-          <div className="grid w-full items-center gap-10 lg:grid-cols-[440px_1fr] lg:gap-16 xl:gap-24">
+        <div className="relative z-10 mx-auto flex h-full w-full max-w-[1200px] items-center px-4 py-4 sm:px-8 lg:px-10">
+          <div className="grid w-full items-center gap-6 lg:grid-cols-[minmax(0,400px)_1fr] lg:gap-10">
             <div className="flex justify-center lg:justify-start">{children}</div>
             {aside && (
-              <div className="hidden lg:flex lg:items-center lg:justify-center">
+              <div className="hidden min-w-0 lg:flex lg:items-center lg:justify-center">
                 {aside}
               </div>
             )}
           </div>
         </div>
-
-        {aside && (
-          <div className="relative z-10 flex justify-center px-4 pb-12 lg:hidden">
-            {aside}
-          </div>
-        )}
       </div>
     );
   }
 
   if (variant === 'signup') {
     return (
-      <div className="paper-texture relative min-h-screen">
+      <div className="paper-texture relative min-h-screen overflow-x-hidden">
         <SignupDecorations />
 
         <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1060px] items-center px-4 py-10 sm:px-6 lg:px-8">

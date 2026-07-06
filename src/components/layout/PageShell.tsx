@@ -9,8 +9,6 @@ interface PageShellProps {
 /** Constrains page content to the available main area — prevents horizontal page scroll. */
 export function PageShell({ children, className }: PageShellProps) {
   return (
-    <div className={cn('w-full min-w-0 max-w-full overflow-x-clip', className)}>
-      {children}
-    </div>
+    <div className={cn('w-full min-w-0', className)}>{children}</div>
   );
 }

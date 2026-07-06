@@ -21,10 +21,9 @@ export const dashboardStats: DashboardStats = {
 };
 
 export const patientTrendsData = [
-  { month: 'Sep', newPatients: 120, followUps: 80 },
-  { month: 'Oct', newPatients: 800, followUps: 150 },
-  { month: 'Nov', newPatients: 180, followUps: 120 },
-  { month: 'Dec', newPatients: 220, followUps: 140 },
+  { month: 'Sep', newPatients: 95, followUps: 72 },
+  { month: 'Oct', newPatients: 190, followUps: 138 },
+  { month: 'Nov', newPatients: 108, followUps: 96 },
 ];
 
 export const patientTrendsFullYear = [
@@ -56,7 +55,7 @@ export const ongoingAppointment: ScheduleAppointment = {
 
 export const nextAppointment: ScheduleAppointment = {
   patientName: 'Rahul Patel',
-  time: '02:30 AM',
+  time: '10:30 AM',
   reason: 'Back Pain Consultation',
 };
 

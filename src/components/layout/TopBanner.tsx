@@ -11,9 +11,9 @@ export function TopBanner({ onClaimOffer }: TopBannerProps) {
   if (!visible) return null;
 
   return (
-    <div className="flex items-center justify-between gap-4 bg-gold/20 px-4 py-2 text-xs text-brown sm:px-6 sm:text-sm">
-      <p className="min-w-0 flex-1 truncate text-center sm:text-left">
-        Get Up to 50% Off on Ayurvedic Medicines & Wellness Products{' '}
+    <div className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-[#ebe4d8] bg-[#f3e8d4] px-4 py-2.5 sm:px-6">
+      <p className="flex-1 text-center text-xs text-brown sm:text-sm">
+        Get Up to 50% Off on Ayurvedic Medicines &amp; Wellness Products{' '}
         <button
           type="button"
           onClick={onClaimOffer}
@@ -25,7 +25,7 @@ export function TopBanner({ onClaimOffer }: TopBannerProps) {
       <button
         type="button"
         onClick={() => setVisible(false)}
-        className="shrink-0 rounded p-1 hover:bg-brown/10"
+        className="shrink-0 rounded p-1 text-brown-muted hover:bg-brown/10"
         aria-label="Close banner"
       >
         <X className="h-4 w-4" />
