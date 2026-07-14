@@ -3,16 +3,6 @@
 import scheduleDecor from '@/assets/signup/tulsi.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
-import gridIcon from '@/assets/appointments/grid.svg';
-import peopleIcon from '@/assets/appointments/people.svg';
-import doctorIcon from '@/assets/appointments/doctor.svg';
-import calendarIcon from '@/assets/appointments/calendar-icon.svg';
-import heartIcon from '@/assets/appointments/heart.svg';
-import pillIcon from '@/assets/appointments/pill.svg';
-import briefcaseIcon from '@/assets/appointments/briefcase.svg';
-import histogramIcon from '@/assets/appointments/histogram.svg';
-import documentIcon from '@/assets/appointments/document.svg';
-import settingsIcon from '@/assets/appointments/settings.svg';
 import searchIcon from '@/assets/appointments/search.svg';
 import downloadIcon from '@/assets/appointments/arrow-download.svg';
 import uploadIcon from '@/assets/doctors/upload-cloud.svg';
@@ -31,6 +21,9 @@ import medicineCalendarIcon from '@/assets/medicines/medicine-calendar.svg';
 import folderIcon from '@/assets/appointments/book/icon-folder.svg';
 import pdfIcon from '@/assets/appointments/book/icon-pdf.svg';
 import checkmarkIcon from '@/assets/doctors/checkmark.svg';
+import { navIconSet, type NavIconKey } from '@/lib/nav-icons';
+
+export { navIconSet, type NavIconKey };
 
 export const assets = {
   brandLogo: '/assets/brand-logo.png',
@@ -48,18 +41,7 @@ export const assets = {
   scheduleDecor,
   avatar,
   icons: {
-    nav: {
-      dashboard: gridIcon,
-      patients: peopleIcon,
-      doctors: doctorIcon,
-      appointments: calendarIcon,
-      treatments: heartIcon,
-      medicines: pillIcon,
-      sales: briefcaseIcon,
-      activityLogs: histogramIcon,
-      billing: documentIcon,
-      settings: settingsIcon,
-    },
+    nav: navIconSet,
     search: searchIcon,
     download: downloadIcon,
     upload: uploadIcon,
@@ -80,5 +62,3 @@ export const assets = {
     checkmark: checkmarkIcon,
   },
 } as const;
-
-export type NavIconKey = keyof typeof assets.icons.nav;

@@ -43,7 +43,7 @@ export function PatientsStatCard({ stats }: PatientsStatCardProps) {
             <span className="text-sm text-text-muted">{activePct}%</span>
           </div>
           <p className="mt-0.5 text-[11px] text-text-muted">Active Patients</p>
-          <div className="mt-2 h-1.5 w-full rounded-sm bg-gold" />
+          <div className="mt-2 h-4.5 w-full rounded-sm bg-gold" />
         </div>
         <div>
           <div className="flex items-baseline gap-1.5">
@@ -53,7 +53,7 @@ export function PatientsStatCard({ stats }: PatientsStatCardProps) {
             <span className="text-sm text-text-muted">{inactivePct}%</span>
           </div>
           <p className="mt-0.5 text-[11px] text-text-muted">Inactive Patients</p>
-          <div className="mt-2 h-1.5 w-full rounded-sm bg-[#ebe4d8] patient-inactive-bar" />
+          <div className="mt-2 h-4.5 w-full rounded-sm bg-[#ebe4d8] patient-inactive-bar" />
         </div>
       </div>
     </Card>

@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { assets, type NavIconKey } from '@/lib/assets';
-import { AppIcon } from '@/components/ui/AppIcon';
+import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
 
 const navItems: { to: string; label: string; icon: NavIconKey }[] = [
@@ -25,12 +25,12 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'sidebar-panel flex h-full w-full flex-col px-5 py-8',
+        'sidebar-panel flex h-full w-full flex-col px-4 py-8',
         className,
       )}
       style={{ backgroundImage: `url(${assets.sidebarBg})` }}
     >
-      <div className="mb-10 flex flex-col items-center gap-2 text-center">
+      <div className="mb-10 flex flex-col items-center gap-2 px-1 text-center">
         <img
           src={assets.brandLogo}
           alt="Ganesha Ayurvedaa"
@@ -44,26 +44,27 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
         </p>
       </div>
 
-      <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto">
+      <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
         {navItems.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
+            end={to === '/dashboard'}
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all',
                 isActive
-                  ? 'bg-white text-gold shadow-sm'
-                  : 'text-brown-muted hover:bg-white/40 hover:text-brown',
+                  ? 'bg-white font-semibold text-gold shadow-[0_2px_12px_rgba(66,44,35,0.08)]'
+                  : 'font-medium text-brown hover:bg-white/45',
               )
             }
           >
             {({ isActive }) => (
               <>
-                <AppIcon
-                  src={assets.icons.nav[icon]}
-                  className="h-5 w-5 shrink-0"
+                <NavIcon
+                  outline={assets.icons.nav[icon].outline}
+                  filled={assets.icons.nav[icon].filled}
                   active={isActive}
                 />
                 <span className="truncate">{label}</span>
