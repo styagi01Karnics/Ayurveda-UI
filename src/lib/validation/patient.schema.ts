@@ -25,7 +25,8 @@ export const patientStep1Schema = z.object({
     .string()
     .min(1, 'Emergency phone is required')
     .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit phone number'),
-  patientId: z.string().min(1, 'Patient ID is required'),
+  /** Optional — backend generates patientCode on create. */
+  patientId: z.string().optional(),
   idProofType: z.string().min(1, 'ID proof type is required'),
   idNumber: z.string().min(1, 'ID number is required'),
   occupation: z.string().min(1, 'Occupation is required'),
@@ -39,8 +40,14 @@ export const patientStep2Schema = z.object({
     .min(1, 'Select at least one recommended therapy'),
   scheduleDate: z.string().min(1, 'Schedule date is required'),
   scheduleTime: z.string().min(1, 'Schedule time is required'),
-  sessionDuration: z.string().min(1, 'Session duration is required'),
-  sessionFrequency: z.string().min(1, 'Session frequency is required'),
+  sessionDuration: z
+    .string()
+    .min(1, 'Session duration is required')
+    .regex(/^\d+/, 'Enter duration in minutes (e.g. 45)'),
+  sessionFrequency: z
+    .string()
+    .min(1, 'Session frequency is required')
+    .regex(/^\d+/, 'Enter number of sessions (e.g. 7)'),
   assignedTherapist: z.string().min(1, 'Assigned therapist is required'),
   therapyInstructions: z.string().min(1, 'Therapy instructions are required'),
 });

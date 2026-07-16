@@ -27,10 +27,10 @@ describe('SettingsPage', () => {
     expect(screen.getByText('System Preference')).toBeInTheDocument();
   });
 
-  it('renders clinic doctors section by default', () => {
+  it('renders clinic doctors section by default', async () => {
     renderSettings();
-    expect(screen.getByText('Doctors')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Shweta Arya')).toBeInTheDocument();
+    expect(await screen.findByText('Doctors')).toBeInTheDocument();
+    expect(await screen.findByText('Dr. Shweta Arya')).toBeInTheDocument();
     expect(screen.getByText('Therapy')).toBeInTheDocument();
     expect(screen.getAllByText('Therapist').length).toBeGreaterThan(0);
   });
@@ -63,7 +63,9 @@ describe('SettingsPage', () => {
   it('shows delete confirmation for therapist', async () => {
     const user = userEvent.setup();
     renderSettings();
-    await user.click(screen.getByLabelText('Delete Dr. Narendra Jain'));
+    await screen.findAllByText('Dr. Narendra Jain');
+    const deleteButtons = screen.getAllByLabelText('Delete Dr. Narendra Jain');
+    await user.click(deleteButtons[0]);
     expect(screen.getByText('Delete Therapist')).toBeInTheDocument();
   });
 });

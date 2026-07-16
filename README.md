@@ -9,6 +9,15 @@ npm install
 npm run dev
 ```
 
+API base URLs are configured in `.env` (see `.env.example`). In development, Vite proxies:
+
+| Prefix | Service | Port |
+|--------|---------|------|
+| `/patient-api` | Patients | 8101 |
+| `/doctor-api` | Doctors | 8102 |
+| `/appointment-api` | Appointments / therapies / doshas | 8103 |
+| `/therapist-api` | Therapists | 8104 |
+
 ## Patients Module (Figma-aligned)
 
 | Route | Screen |

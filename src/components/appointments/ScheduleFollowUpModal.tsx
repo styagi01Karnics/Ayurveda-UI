@@ -15,12 +15,14 @@ interface ScheduleFollowUpModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: FollowUpFormValues) => void;
+  doctorOptions?: string[];
 }
 
 export function ScheduleFollowUpModal({
   open,
   onClose,
   onSubmit,
+  doctorOptions,
 }: ScheduleFollowUpModalProps) {
   const {
     register,
@@ -98,7 +100,11 @@ export function ScheduleFollowUpModal({
           <Select
             label="Doctor"
             placeholder="Doctor"
-            options={[...DOCTORS_LIST]}
+            options={
+              doctorOptions && doctorOptions.length > 0
+                ? doctorOptions
+                : [...DOCTORS_LIST]
+            }
             error={errors.doctor?.message}
             {...register('doctor')}
           />

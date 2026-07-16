@@ -5,15 +5,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Select, type SelectOption } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Stepper } from '@/components/ui/Stepper';
-import { TagInput } from '@/components/ui/TagInput';
+import { TagInput, type TagOption } from '@/components/ui/TagInput';
 import { Badge } from '@/components/ui/Badge';
 import {
   CONSTITUTION_OPTIONS,
   CONSULTATION_TYPES,
-  DOSHA_OPTIONS,
   GENDER_OPTIONS,
   ID_PROOF_TYPES,
   LANGUAGE_OPTIONS,
@@ -22,9 +21,6 @@ import {
   patientStep2Schema,
   patientStep3Schema,
   RELATION_OPTIONS,
-  THERAPIST_OPTIONS,
-  THERAPY_OPTIONS,
-  TREATMENT_CATEGORIES,
   type CreatePatientValues,
   type PatientStep1Values,
   type PatientStep2Values,
@@ -38,16 +34,28 @@ const STEPS = [
   { id: 3, label: 'Medical Assessment' },
 ];
 
+export interface BookingLookupOptions {
+  doctors: SelectOption[];
+  therapists: SelectOption[];
+  categories: SelectOption[];
+  therapies: TagOption[];
+  doshas: SelectOption[];
+}
+
 interface CreatePatientModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreatePatientValues) => void;
+  onSubmit: (data: CreatePatientValues) => void | Promise<void>;
+  lookupOptions: BookingLookupOptions;
+  submitting?: boolean;
 }
 
 export function CreatePatientModal({
   open,
   onClose,
   onSubmit,
+  lookupOptions,
+  submitting = false,
 }: CreatePatientModalProps) {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<Partial<CreatePatientValues>>({});
@@ -65,6 +73,8 @@ export function CreatePatientModal({
     resolver: zodResolver(patientStep2Schema),
     defaultValues: {
       recommendedTherapies: [],
+      sessionDuration: '45',
+      sessionFrequency: '7',
       therapyInstructions:
         'Patient should avoid cold food during therapy and maintain warm diet.',
       ...formData,
@@ -81,6 +91,7 @@ export function CreatePatientModal({
   });
 
   const handleClose = () => {
+    if (submitting) return;
     setStep(1);
     setFormData({});
     step1Form.reset();
@@ -99,13 +110,24 @@ export function CreatePatientModal({
     setStep(3);
   });
 
-  const handleStep3 = step3Form.handleSubmit((data) => {
+  const handleStep3 = step3Form.handleSubmit(async (data) => {
     const complete = { ...formData, ...data } as CreatePatientValues;
-    onSubmit(complete);
-    handleClose();
+    await onSubmit(complete);
   });
 
   const selectedState = step1Form.watch('state');
+  const selectedCategory = step2Form.watch('treatmentCategory');
+
+  const therapyOptions = selectedCategory
+    ? lookupOptions.therapies.filter((option) => {
+        if (typeof option === 'string') return true;
+        return (
+          (option as TagOption & { categoryId?: string }).categoryId ===
+            undefined ||
+          (option as { categoryId?: string }).categoryId === selectedCategory
+        );
+      })
+    : lookupOptions.therapies;
 
   useEffect(() => {
     if (selectedState && CITIES_BY_STATE[selectedState]) {
@@ -114,6 +136,23 @@ export function CreatePatientModal({
       setCityOptions([]);
     }
   }, [selectedState]);
+
+  useEffect(() => {
+    if (!open) {
+      setStep(1);
+      setFormData({});
+      step1Form.reset({ consultationTypes: [] });
+      step2Form.reset({
+        recommendedTherapies: [],
+        sessionDuration: '45',
+        sessionFrequency: '7',
+        therapyInstructions:
+          'Patient should avoid cold food during therapy and maintain warm diet.',
+      });
+      step3Form.reset({ bodyConstitution: [], allergies: [] });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when modal opens/closes
+  }, [open]);
 
   return (
     <Modal
@@ -124,20 +163,26 @@ export function CreatePatientModal({
       size="xl"
       footer={
         step === 1 ? (
-          <Button onClick={handleStep1}>Next</Button>
+          <Button onClick={handleStep1} disabled={submitting}>
+            Next
+          </Button>
         ) : step === 2 ? (
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep(1)}>
+            <Button variant="outline" onClick={() => setStep(1)} disabled={submitting}>
               Back
             </Button>
-            <Button onClick={handleStep2}>Next</Button>
+            <Button onClick={handleStep2} disabled={submitting}>
+              Next
+            </Button>
           </div>
         ) : (
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep(2)}>
+            <Button variant="outline" onClick={() => setStep(2)} disabled={submitting}>
               Back
             </Button>
-            <Button onClick={handleStep3}>Confirm</Button>
+            <Button onClick={handleStep3} disabled={submitting}>
+              {submitting ? 'Booking…' : 'Confirm'}
+            </Button>
           </div>
         )
       }
@@ -161,7 +206,13 @@ export function CreatePatientModal({
                 error={step1Form.formState.errors.consultationTypes?.message}
               />
               <Input label="Registration Date" type="date" error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
-              <Select label="Assigned Doctor" placeholder="Select Doctor" options={[...THERAPIST_OPTIONS]} error={step1Form.formState.errors.assignedDoctor?.message} {...step1Form.register('assignedDoctor')} />
+              <Select
+                label="Assigned Doctor"
+                placeholder="Select Doctor"
+                options={lookupOptions.doctors}
+                error={step1Form.formState.errors.assignedDoctor?.message}
+                {...step1Form.register('assignedDoctor')}
+              />
             </div>
           </FormSection>
 
@@ -185,7 +236,7 @@ export function CreatePatientModal({
 
           <FormSection title="Identification & Admin">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Input label="Patient ID" placeholder="Patient ID" error={step1Form.formState.errors.patientId?.message} {...step1Form.register('patientId')} />
+              <Input label="Patient ID (optional)" placeholder="Auto-generated if empty" error={step1Form.formState.errors.patientId?.message} {...step1Form.register('patientId')} />
               <Select label="ID Proof Type" placeholder="Select" options={[...ID_PROOF_TYPES]} error={step1Form.formState.errors.idProofType?.message} {...step1Form.register('idProofType')} />
               <Input label="ID No." placeholder="ID No." error={step1Form.formState.errors.idNumber?.message} {...step1Form.register('idNumber')} />
               <Select label="Occupation" placeholder="Select" options={[...OCCUPATION_OPTIONS]} error={step1Form.formState.errors.occupation?.message} {...step1Form.register('occupation')} />
@@ -199,12 +250,24 @@ export function CreatePatientModal({
         <div className="space-y-6">
           <FormSection title="Therapy Treatment">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Treatment Category" placeholder="Select" options={[...TREATMENT_CATEGORIES]} error={step2Form.formState.errors.treatmentCategory?.message} {...step2Form.register('treatmentCategory')} />
+              <Select
+                label="Treatment Category"
+                placeholder="Select"
+                options={lookupOptions.categories}
+                error={step2Form.formState.errors.treatmentCategory?.message}
+                {...step2Form.register('treatmentCategory', {
+                  onChange: () => {
+                    step2Form.setValue('recommendedTherapies', [], {
+                      shouldValidate: true,
+                    });
+                  },
+                })}
+              />
               <TagInput
                 label="Recommended Therapy"
                 value={step2Form.watch('recommendedTherapies') ?? []}
                 onChange={(tags) => step2Form.setValue('recommendedTherapies', tags, { shouldValidate: true })}
-                options={THERAPY_OPTIONS}
+                options={therapyOptions}
                 error={step2Form.formState.errors.recommendedTherapies?.message}
               />
             </div>
@@ -214,14 +277,20 @@ export function CreatePatientModal({
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Input label="Schedule Date" type="date" error={step2Form.formState.errors.scheduleDate?.message} {...step2Form.register('scheduleDate')} />
               <Input label="Schedule Time" type="time" error={step2Form.formState.errors.scheduleTime?.message} {...step2Form.register('scheduleTime')} />
-              <Input label="Session Duration" placeholder="e.g. 60 mins" error={step2Form.formState.errors.sessionDuration?.message} {...step2Form.register('sessionDuration')} />
-              <Input label="Session Frequency" placeholder="e.g. Weekly" error={step2Form.formState.errors.sessionFrequency?.message} {...step2Form.register('sessionFrequency')} />
+              <Input label="Session Duration (mins)" placeholder="e.g. 45" error={step2Form.formState.errors.sessionDuration?.message} {...step2Form.register('sessionDuration')} />
+              <Input label="Session Frequency (count)" placeholder="e.g. 7" error={step2Form.formState.errors.sessionFrequency?.message} {...step2Form.register('sessionFrequency')} />
             </div>
           </FormSection>
 
           <FormSection title="Therapy Assignment">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Assigned Therapist" placeholder="Select" options={[...THERAPIST_OPTIONS]} error={step2Form.formState.errors.assignedTherapist?.message} {...step2Form.register('assignedTherapist')} />
+              <Select
+                label="Assigned Therapist"
+                placeholder="Select"
+                options={lookupOptions.therapists}
+                error={step2Form.formState.errors.assignedTherapist?.message}
+                {...step2Form.register('assignedTherapist')}
+              />
               <Textarea label="Therapy Instructions" rows={4} error={step2Form.formState.errors.therapyInstructions?.message} {...step2Form.register('therapyInstructions')} />
             </div>
           </FormSection>
@@ -232,7 +301,17 @@ export function CreatePatientModal({
         <div className="space-y-6">
           <FormSection title="Ayurvedic Assessment">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Select label="Dosha Type" placeholder="Select" options={[...DOSHA_OPTIONS]} error={step3Form.formState.errors.doshaType?.message} {...step3Form.register('doshaType')} />
+              <Select
+                label="Dosha Type"
+                placeholder="Select"
+                options={
+                  lookupOptions.doshas.length > 0
+                    ? lookupOptions.doshas
+                    : ['Vata', 'Pitta', 'Kapha']
+                }
+                error={step3Form.formState.errors.doshaType?.message}
+                {...step3Form.register('doshaType')}
+              />
               <TagInput
                 label="Body Constitution"
                 value={step3Form.watch('bodyConstitution') ?? []}

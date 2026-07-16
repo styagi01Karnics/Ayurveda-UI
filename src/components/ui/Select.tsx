@@ -2,12 +2,21 @@ import { forwardRef, type SelectHTMLAttributes } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export type SelectOption = string | { value: string; label: string };
+
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   placeholder?: string;
-  options: readonly string[] | string[];
+  options: readonly SelectOption[] | SelectOption[];
   fieldVariant?: 'default' | 'auth';
+}
+
+function normalizeOption(option: SelectOption): { value: string; label: string } {
+  if (typeof option === 'string') {
+    return { value: option, label: option };
+  }
+  return option;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
@@ -51,11 +60,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {...props}
           >
             <option value="">{placeholder}</option>
-            {options.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+            {options.map((option) => {
+              const { value, label: optionLabel } = normalizeOption(option);
+              return (
+                <option key={value} value={value}>
+                  {optionLabel}
+                </option>
+              );
+            })}
           </select>
           <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         </div>

@@ -3,16 +3,27 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Plus, Trash2, X } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
+import { THERAPY_ASSIGNMENT_OPTIONS } from '@/data/mock/settings';
+import { useAsyncData } from '@/hooks/useAsyncData';
 import {
-  initialClinicDoctors,
-  initialClinicTherapists,
-  initialClinicTherapies,
-  THERAPY_ASSIGNMENT_OPTIONS,
-} from '@/data/mock/settings';
+  createTherapy,
+  createTreatmentCategory,
+  getAllTherapies,
+  getAllTreatmentCategories,
+} from '@/lib/api/appointments';
+import { ApiError } from '@/lib/api/client';
+import { createDoctor, getAllDoctors } from '@/lib/api/doctors';
+import {
+  mapDoctorToClinicRecord,
+  mapTherapistToClinicRecord,
+  mapTherapyToClinicRecord,
+} from '@/lib/api/mappers';
+import { createTherapist, getAllTherapists } from '@/lib/api/therapists';
 import {
   CLINIC_STATUS_OPTIONS,
   clinicDoctorSchema,
@@ -35,115 +46,238 @@ type DeleteTarget =
   | { type: 'Therapist'; record: ClinicTherapistRecord }
   | null;
 
+function emailFromName(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '');
+  return `${slug || 'user'}@ganeshaayurvedaa.com`;
+}
+
 export function ClinicSettingsTab() {
   const { showToast } = useToast();
-  const [doctors, setDoctors] = useState(initialClinicDoctors);
-  const [therapies, setTherapies] = useState(initialClinicTherapies);
-  const [therapists, setTherapists] = useState(initialClinicTherapists);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [doctorsOverride, setDoctorsOverride] = useState<
+    ClinicDoctorRecord[] | null
+  >(null);
+  const [therapiesOverride, setTherapiesOverride] = useState<
+    ClinicTherapyRecord[] | null
+  >(null);
+  const [therapistsOverride, setTherapistsOverride] = useState<
+    ClinicTherapistRecord[] | null
+  >(null);
 
+  const { data, loading, error, reload } = useAsyncData(async () => {
+    const [doctors, therapists, therapies, categories] = await Promise.all([
+      getAllDoctors(),
+      getAllTherapists(),
+      getAllTherapies(),
+      getAllTreatmentCategories(),
+    ]);
+
+    const categoriesById = new Map(categories.map((c) => [c.id, c]));
+
+    return {
+      doctors: doctors.map(mapDoctorToClinicRecord),
+      therapists: therapists.map(mapTherapistToClinicRecord),
+      therapies: therapies.map((therapy) =>
+        mapTherapyToClinicRecord(therapy, categoriesById),
+      ),
+      categories,
+    };
+  }, {
+    doctors: [] as ClinicDoctorRecord[],
+    therapists: [] as ClinicTherapistRecord[],
+    therapies: [] as ClinicTherapyRecord[],
+    categories: [],
+  });
+
+  const doctors = doctorsOverride ?? data.doctors;
+  const therapies = therapiesOverride ?? data.therapies;
+  const therapists = therapistsOverride ?? data.therapists;
   const therapistNames = therapists.map((t) => t.name);
 
   const handleDeleteConfirm = () => {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'Doctor') {
-      setDoctors((prev) => prev.filter((d) => d.id !== deleteTarget.record.id));
+      setDoctorsOverride((prev) =>
+        (prev ?? doctors).filter((d) => d.id !== deleteTarget.record.id),
+      );
       showToast({
         title: 'Doctor has been deleted',
-        message: `${deleteTarget.record.name} was removed.`,
+        message: `${deleteTarget.record.name} was removed locally. Delete is not available on the API yet.`,
       });
     } else if (deleteTarget.type === 'Therapy') {
-      setTherapies((prev) => prev.filter((t) => t.id !== deleteTarget.record.id));
+      setTherapiesOverride((prev) =>
+        (prev ?? therapies).filter((t) => t.id !== deleteTarget.record.id),
+      );
       showToast({
         title: 'Therapy has been deleted',
-        message: `${deleteTarget.record.name} was removed.`,
+        message: `${deleteTarget.record.name} was removed locally. Delete is not available on the API yet.`,
       });
     } else {
-      setTherapists((prev) => prev.filter((t) => t.id !== deleteTarget.record.id));
+      setTherapistsOverride((prev) =>
+        (prev ?? therapists).filter((t) => t.id !== deleteTarget.record.id),
+      );
       showToast({
         title: 'Therapist has been deleted',
-        message: `${deleteTarget.record.name} was removed.`,
+        message: `${deleteTarget.record.name} was removed locally. Delete is not available on the API yet.`,
       });
     }
     setDeleteTarget(null);
   };
 
   return (
-    <div className="space-y-6">
-      <DoctorsSection
-        doctors={doctors}
-        onAdd={(values) => {
-          setDoctors((prev) => [
-            ...prev,
-            {
-              id: `doc-${Date.now()}`,
-              name: values.name,
-              specialization: values.specialization,
-              status: values.status,
-              consultationFees: Number(values.consultationFees),
-              followUpFees: Number(values.followUpFees),
-              availability: values.availability,
-            },
-          ]);
-          showToast({
-            title: 'Doctor Added',
-            message: `${values.name} has been added successfully.`,
-          });
-        }}
-        onDelete={(record) => setDeleteTarget({ type: 'Doctor', record })}
-      />
+    <AsyncStatus loading={loading} error={error} onRetry={reload}>
+      <div className="space-y-6">
+        <DoctorsSection
+          doctors={doctors}
+          onAdd={async (values) => {
+            try {
+              const created = await createDoctor({
+                doctorName: values.name,
+                specialization: values.specialization,
+                mobileNumber: '9876543210',
+                email: emailFromName(values.name),
+                qualification: values.specialization,
+                department: values.specialization,
+                consultationRoom: values.availability || 'Room-1',
+              });
+              const mapped = {
+                ...mapDoctorToClinicRecord(created),
+                consultationFees: Number(values.consultationFees),
+                followUpFees: Number(values.followUpFees),
+                availability: values.availability,
+              };
+              setDoctorsOverride((prev) => [...(prev ?? doctors), mapped]);
+              showToast({
+                title: 'Doctor Added',
+                message: `${values.name} has been added successfully.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add doctor',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create doctor.',
+              });
+            }
+          }}
+          onDelete={(record) => setDeleteTarget({ type: 'Doctor', record })}
+        />
 
-      <TherapySection
-        therapies={therapies}
-        therapistOptions={therapistNames.length > 0 ? therapistNames : ['Dr. Narendra Jain']}
-        onAdd={(values) => {
-          setTherapies((prev) => [
-            ...prev,
-            {
-              id: `therapy-${Date.now()}`,
-              name: values.name,
-              category: values.category,
-              status: values.status,
-              duration: values.duration,
-              price: Number(values.price),
-              assignedTherapist: values.assignedTherapist,
-            },
-          ]);
-          showToast({
-            title: 'Therapy Added',
-            message: `${values.name} has been added successfully.`,
-          });
-        }}
-        onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
-      />
+        <TherapySection
+          therapies={therapies}
+          therapistOptions={
+            therapistNames.length > 0 ? therapistNames : ['Dr. Narendra Jain']
+          }
+          categoryOptions={data.categories.map((c) => ({
+            value: c.id,
+            label: c.categoryName,
+          }))}
+          onAdd={async (values) => {
+            try {
+              let categoryId = values.category;
+              const known = data.categories.find(
+                (c) => c.id === values.category || c.categoryName === values.category,
+              );
+              if (known) {
+                categoryId = known.id;
+              } else {
+                const createdCategory = await createTreatmentCategory({
+                  categoryName: values.category,
+                  description: values.category,
+                  active: values.status === 'Active',
+                });
+                categoryId = createdCategory.id;
+              }
 
-      <TherapistSection
-        therapists={therapists}
-        onAdd={(values) => {
-          setTherapists((prev) => [
-            ...prev,
-            {
-              id: `therapist-${Date.now()}`,
-              name: values.name,
-              status: values.status,
-              assignedTherapies: values.assignedTherapies,
-            },
-          ]);
-          showToast({
-            title: 'Therapist Added',
-            message: `${values.name} has been added successfully.`,
-          });
-        }}
-        onDelete={(record) => setDeleteTarget({ type: 'Therapist', record })}
-      />
+              const created = await createTherapy({
+                categoryId,
+                therapyName: values.name,
+                description: `${values.duration} · ₹${values.price}`,
+                active: values.status === 'Active',
+              });
 
-      <DeleteClinicItemModal
-        open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
-        itemType={deleteTarget?.type ?? 'Doctor'}
-      />
-    </div>
+              const mapped: ClinicTherapyRecord = {
+                ...mapTherapyToClinicRecord(
+                  created,
+                  new Map(
+                    data.categories.map((c) => [c.id, c]),
+                  ),
+                  values.assignedTherapist,
+                ),
+                category: known?.categoryName ?? values.category,
+                duration: values.duration,
+                price: Number(values.price),
+                assignedTherapist: values.assignedTherapist,
+              };
+              setTherapiesOverride((prev) => [...(prev ?? therapies), mapped]);
+              showToast({
+                title: 'Therapy Added',
+                message: `${values.name} has been added successfully.`,
+              });
+              reload();
+            } catch (err) {
+              showToast({
+                title: 'Failed to add therapy',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create therapy.',
+              });
+            }
+          }}
+          onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
+        />
+
+        <TherapistSection
+          therapists={therapists}
+          onAdd={async (values) => {
+            try {
+              const created = await createTherapist({
+                therapistName: values.name,
+                specialization: values.assignedTherapies[0] ?? 'General',
+                mobileNumber: '9876543210',
+                email: emailFromName(values.name),
+                qualification: 'Therapist',
+                therapyRoom: 'Therapy Room',
+              });
+              const mapped = {
+                ...mapTherapistToClinicRecord(created),
+                assignedTherapies: values.assignedTherapies,
+              };
+              setTherapistsOverride((prev) => [
+                ...(prev ?? therapists),
+                mapped,
+              ]);
+              showToast({
+                title: 'Therapist Added',
+                message: `${values.name} has been added successfully.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add therapist',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create therapist.',
+              });
+            }
+          }}
+          onDelete={(record) => setDeleteTarget({ type: 'Therapist', record })}
+        />
+
+        <DeleteClinicItemModal
+          open={Boolean(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={handleDeleteConfirm}
+          itemType={deleteTarget?.type ?? 'Doctor'}
+        />
+      </div>
+    </AsyncStatus>
   );
 }
 
@@ -159,14 +293,14 @@ function DoctorsSection({
   onDelete,
 }: {
   doctors: ClinicDoctorRecord[];
-  onAdd: (values: ClinicDoctorFormValues) => void;
+  onAdd: (values: ClinicDoctorFormValues) => void | Promise<void>;
   onDelete: (record: ClinicDoctorRecord) => void;
 }) {
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ClinicDoctorFormValues>({
     resolver: zodResolver(clinicDoctorSchema),
     defaultValues: {
@@ -179,8 +313,8 @@ function DoctorsSection({
     },
   });
 
-  const onSubmit = (values: ClinicDoctorFormValues) => {
-    onAdd(values);
+  const onSubmit = async (values: ClinicDoctorFormValues) => {
+    await onAdd(values);
     reset();
   };
 
@@ -231,7 +365,8 @@ function DoctorsSection({
                 <button
                   type="button"
                   onClick={handleSubmit(onSubmit)}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark"
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
                   aria-label="Add doctor"
                 >
                   <Plus className="h-4 w-4" />
@@ -271,19 +406,21 @@ function DoctorsSection({
 function TherapySection({
   therapies,
   therapistOptions,
+  categoryOptions,
   onAdd,
   onDelete,
 }: {
   therapies: ClinicTherapyRecord[];
   therapistOptions: string[];
-  onAdd: (values: ClinicTherapyFormValues) => void;
+  categoryOptions: { value: string; label: string }[];
+  onAdd: (values: ClinicTherapyFormValues) => void | Promise<void>;
   onDelete: (record: ClinicTherapyRecord) => void;
 }) {
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<ClinicTherapyFormValues>({
     resolver: zodResolver(clinicTherapySchema),
     defaultValues: {
@@ -296,8 +433,8 @@ function TherapySection({
     },
   });
 
-  const onSubmit = (values: ClinicTherapyFormValues) => {
-    onAdd(values);
+  const onSubmit = async (values: ClinicTherapyFormValues) => {
+    await onAdd(values);
     reset();
   };
 
@@ -327,7 +464,16 @@ function TherapySection({
                 <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="Category" error={errors.category?.message} {...register('category')} />
+                <Select
+                  placeholder="Category"
+                  options={
+                    categoryOptions.length > 0
+                      ? categoryOptions
+                      : ['Panchakarma', 'Wellness', 'Detox']
+                  }
+                  error={errors.category?.message}
+                  {...register('category')}
+                />
               </td>
               <td className="px-4 py-3">
                 <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
@@ -345,7 +491,8 @@ function TherapySection({
                 <button
                   type="button"
                   onClick={handleSubmit(onSubmit)}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark"
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
                   aria-label="Add therapy"
                 >
                   <Plus className="h-4 w-4" />
@@ -388,7 +535,7 @@ function TherapistSection({
   onDelete,
 }: {
   therapists: ClinicTherapistRecord[];
-  onAdd: (values: ClinicTherapistFormValues) => void;
+  onAdd: (values: ClinicTherapistFormValues) => void | Promise<void>;
   onDelete: (record: ClinicTherapistRecord) => void;
 }) {
   const {
@@ -424,8 +571,8 @@ function TherapistSection({
     );
   };
 
-  const onSubmit = (values: ClinicTherapistFormValues) => {
-    onAdd(values);
+  const onSubmit = async (values: ClinicTherapistFormValues) => {
+    await onAdd(values);
     reset();
   };
 

@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('PatientsPage', () => {
-  it('renders patient tabs and table', () => {
+  it('renders patient tabs and table', async () => {
     render(
       <MemoryRouter>
         <PatientsPage />
@@ -24,7 +24,7 @@ describe('PatientsPage', () => {
 
     expect(screen.getByText('Active Patients')).toBeInTheDocument();
     expect(screen.getByText('Inactive Patients')).toBeInTheDocument();
-    expect(screen.getByText('Khushi Shroff')).toBeInTheDocument();
+    expect(await screen.findByText('Khushi Shroff')).toBeInTheDocument();
     expect(screen.getByText('Bill')).toBeInTheDocument();
     expect(screen.getAllByText('Upload').length).toBeGreaterThan(0);
   });
@@ -37,6 +37,7 @@ describe('PatientsPage', () => {
       </MemoryRouter>,
     );
 
+    await screen.findByText('Khushi Shroff');
     await user.type(screen.getByPlaceholderText('Patient ID'), 'PT458653');
     expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
     expect(screen.getByText('Amit Verma')).toBeInTheDocument();
@@ -50,6 +51,7 @@ describe('PatientsPage', () => {
       </MemoryRouter>,
     );
 
+    await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Inactive Patients'));
     expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
     expect(screen.getByText('Priya Nair')).toBeInTheDocument();
@@ -63,7 +65,7 @@ describe('PatientsPage', () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByText('Khushi Shroff'));
+    await user.click(await screen.findByText('Khushi Shroff'));
     expect(mockNavigate).toHaveBeenCalledWith('/patients/37944397');
   });
 
@@ -75,6 +77,7 @@ describe('PatientsPage', () => {
       </MemoryRouter>,
     );
 
+    await screen.findByText('Khushi Shroff');
     await user.click(screen.getByLabelText('Download bill for Khushi Shroff'));
     expect(screen.getByText('GST No. : 12334567890')).toBeInTheDocument();
   });
@@ -87,6 +90,7 @@ describe('PatientsPage', () => {
       </MemoryRouter>,
     );
 
+    await screen.findByText('Khushi Shroff');
     const uploadButtons = screen.getAllByRole('button', { name: /Upload/i });
     await user.click(uploadButtons[0]);
     expect(screen.getByText('Upload Reports')).toBeInTheDocument();

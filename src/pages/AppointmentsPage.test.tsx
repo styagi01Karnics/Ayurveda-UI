@@ -19,16 +19,17 @@ function renderAppointments() {
 }
 
 describe('AppointmentsPage', () => {
-  it('renders appointment tabs and table', () => {
+  it('renders appointment tabs and table', async () => {
     renderAppointments();
     expect(screen.getByText('All Appointments')).toBeInTheDocument();
     expect(screen.getByText('All Follow Ups')).toBeInTheDocument();
-    expect(screen.getAllByText('Khushi Shroff').length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Khushi Shroff')).length).toBeGreaterThan(0);
   });
 
   it('filters appointments by patient id', async () => {
     const user = userEvent.setup();
     renderAppointments();
+    await screen.findAllByText('Khushi Shroff');
     await user.type(screen.getByPlaceholderText('Patient ID'), 'PT458653');
     expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
   });
@@ -43,6 +44,7 @@ describe('AppointmentsPage', () => {
   it('shows cancel confirmation modal', async () => {
     const user = userEvent.setup();
     renderAppointments();
+    await screen.findAllByText('Khushi Shroff');
     const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
     await user.click(cancelButtons[0]);
     expect(screen.getByText('Cancel Appointment')).toBeInTheDocument();

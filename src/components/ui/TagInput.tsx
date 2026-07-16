@@ -1,13 +1,24 @@
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export type TagOption =
+  | string
+  | { value: string; label: string; categoryId?: string };
+
 interface TagInputProps {
   label?: string;
   value: string[];
   onChange: (tags: string[]) => void;
-  options: readonly string[];
+  options: readonly TagOption[];
   error?: string;
   placeholder?: string;
+}
+
+function normalizeOption(option: TagOption): { value: string; label: string } {
+  if (typeof option === 'string') {
+    return { value: option, label: option };
+  }
+  return option;
 }
 
 export function TagInput({
@@ -18,7 +29,9 @@ export function TagInput({
   error,
   placeholder = 'Select',
 }: TagInputProps) {
-  const available = options.filter((opt) => !value.includes(opt));
+  const normalized = options.map(normalizeOption);
+  const labelByValue = new Map(normalized.map((o) => [o.value, o.label]));
+  const available = normalized.filter((opt) => !value.includes(opt.value));
 
   const addTag = (tag: string) => {
     if (!value.includes(tag)) onChange([...value, tag]);
@@ -44,12 +57,12 @@ export function TagInput({
             key={tag}
             className="inline-flex items-center gap-1 rounded-md bg-gold/15 px-2 py-0.5 text-xs font-medium text-brown"
           >
-            {tag}
+            {labelByValue.get(tag) ?? tag}
             <button
               type="button"
               onClick={() => removeTag(tag)}
               className="text-text-muted hover:text-danger"
-              aria-label={`Remove ${tag}`}
+              aria-label={`Remove ${labelByValue.get(tag) ?? tag}`}
             >
               <X className="h-3 w-3" />
             </button>
@@ -65,8 +78,8 @@ export function TagInput({
           >
             <option value="">{placeholder}</option>
             {available.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
               </option>
             ))}
           </select>

@@ -6,26 +6,50 @@ import { AppointmentConfirmedModal } from '@/components/appointments/Appointment
 import { AppointmentsCalendar } from '@/components/appointments/AppointmentsCalendar';
 import { AppointmentsTable } from '@/components/appointments/AppointmentsTable';
 import { CalendarEventModal } from '@/components/appointments/CalendarEventModal';
-import { CreatePatientModal } from '@/components/appointments/CreatePatientModal';
+import {
+  CreatePatientModal,
+  type BookingLookupOptions,
+} from '@/components/appointments/CreatePatientModal';
 import { FollowUpsTable } from '@/components/appointments/FollowUpsTable';
 import { ScheduleFollowUpModal } from '@/components/appointments/ScheduleFollowUpModal';
 import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Tabs } from '@/components/ui/Tabs';
-import { assets } from '@/lib/assets';
-import { cn } from '@/lib/utils';
 import {
   APPOINTMENT_FILTER_OPTIONS,
   calendarEventDetails,
   calendarEvents,
-  initialAppointments,
   initialFollowUps,
 } from '@/data/mock/appointments';
-import type { CreatePatientValues, FollowUpFormValues } from '@/lib/validation/patient.schema';
-import type { AppointmentRecord, CalendarEventDetail, FollowUpRecord, VisitType } from '@/types';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import {
+  getAllAppointmentsForPatients,
+  getAllDoshas,
+  getAllTherapies,
+  getAllTreatmentCategories,
+} from '@/lib/api/appointments';
+import { bookAppointmentFlow } from '@/lib/api/booking';
+import { ApiError } from '@/lib/api/client';
+import { getAllDoctors } from '@/lib/api/doctors';
+import { mapAppointmentToRecord } from '@/lib/api/mappers';
+import { getAllPatients } from '@/lib/api/patients';
+import { getAllTherapists } from '@/lib/api/therapists';
+import { assets } from '@/lib/assets';
+import { cn } from '@/lib/utils';
+import type {
+  CreatePatientValues,
+  FollowUpFormValues,
+} from '@/lib/validation/patient.schema';
+import type {
+  AppointmentRecord,
+  CalendarEventDetail,
+  FollowUpRecord,
+  VisitType,
+} from '@/types';
 
 type AppointmentTab = 'appointments' | 'followUps';
 type ViewMode = 'list' | 'calendar';
@@ -34,7 +58,6 @@ export function AppointmentsPage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<AppointmentTab>('appointments');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [appointments, setAppointments] = useState(initialAppointments);
   const [followUps, setFollowUps] = useState(initialFollowUps);
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -42,9 +65,86 @@ export function AppointmentsPage() {
   const [dateFilter, setDateFilter] = useState('');
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
-  const [cancelTarget, setCancelTarget] = useState<AppointmentRecord | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<AppointmentRecord | null>(
+    null,
+  );
   const [confirmedOpen, setConfirmedOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEventDetail | null>(null);
+  const [selectedEvent, setSelectedEvent] =
+    useState<CalendarEventDetail | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [localAppointments, setLocalAppointments] = useState<
+    AppointmentRecord[]
+  >([]);
+
+  const {
+    data,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(async () => {
+    const [patients, doctors, therapists, categories, therapies, doshas] =
+      await Promise.all([
+        getAllPatients(),
+        getAllDoctors(),
+        getAllTherapists(),
+        getAllTreatmentCategories(),
+        getAllTherapies(),
+        getAllDoshas(),
+      ]);
+
+    const doctorsById = new Map(doctors.map((d) => [d.id, d]));
+    const appointments = await getAllAppointmentsForPatients(
+      patients.map((p) => p.id),
+    );
+
+    const records = appointments.map((appt) =>
+      mapAppointmentToRecord(appt, doctorsById),
+    );
+
+    const lookupOptions: BookingLookupOptions = {
+      doctors: doctors.map((d) => ({
+        value: d.id,
+        label: d.doctorName,
+      })),
+      therapists: therapists.map((t) => ({
+        value: t.id,
+        label: t.therapistName,
+      })),
+      categories: categories.map((c) => ({
+        value: c.id,
+        label: c.categoryName,
+      })),
+      therapies: therapies.map((t) => ({
+        value: t.id,
+        label: t.therapyName,
+        categoryId: t.categoryId,
+      })),
+      doshas: doshas.map((d) => ({
+        value: d.name,
+        label: d.name,
+      })),
+    };
+
+    return { records, lookupOptions, doctors };
+  }, {
+    records: [] as AppointmentRecord[],
+    lookupOptions: {
+      doctors: [],
+      therapists: [],
+      categories: [],
+      therapies: [],
+      doshas: [],
+    },
+    doctors: [],
+  });
+
+  const appointments = useMemo(() => {
+    const ids = new Set(localAppointments.map((a) => a.id));
+    return [
+      ...localAppointments,
+      ...data.records.filter((r) => !ids.has(r.id)),
+    ];
+  }, [data.records, localAppointments]);
 
   const headerAction = useMemo(
     () =>
@@ -74,7 +174,8 @@ export function AppointmentsPage() {
     return appointments.filter((item) => {
       const matchesId =
         !patientIdQuery ||
-        item.uhid.toLowerCase().includes(patientIdQuery.toLowerCase());
+        item.uhid.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
+        item.patient.toLowerCase().includes(patientIdQuery.toLowerCase());
       const matchesStatus = !statusFilter || item.status === statusFilter;
       const matchesVisit =
         !visitTypeFilter ||
@@ -105,7 +206,9 @@ export function AppointmentsPage() {
 
   const handleCancelConfirm = () => {
     if (!cancelTarget) return;
-    setAppointments((prev) => prev.filter((item) => item.id !== cancelTarget.id));
+    setLocalAppointments((prev) =>
+      prev.filter((item) => item.id !== cancelTarget.id),
+    );
     showToast({
       title: 'Appointment has been cancelled',
       message: `${cancelTarget.patient}'s appointment on ${cancelTarget.appointmentDate} was cancelled.`,
@@ -113,36 +216,66 @@ export function AppointmentsPage() {
     setCancelTarget(null);
   };
 
-  const handleCreatePatient = (data: CreatePatientValues) => {
-    const newAppointment = {
-      id: `ap-${Date.now()}`,
-      uhid: data.patientId.startsWith('#') ? data.patientId : `#${data.patientId}`,
-      patient: data.fullName,
-      doctor: data.assignedDoctor,
-      visitType: (data.consultationTypes[0] ?? 'Consultation') as VisitType,
-      appointmentDate: `${data.scheduleDate}, ${data.scheduleTime}`,
-      dateCreated: data.registrationDate,
-      status: 'Scheduled' as const,
-    };
-    setAppointments((prev) => [newAppointment, ...prev]);
-    setConfirmedOpen(true);
+  const handleCreatePatient = async (formData: CreatePatientValues) => {
+    setSubmitting(true);
+    try {
+      const result = await bookAppointmentFlow(formData);
+      const doctorName =
+        data.doctors.find((d) => d.id === formData.assignedDoctor)
+          ?.doctorName ?? formData.assignedDoctor;
+
+      const newAppointment: AppointmentRecord = {
+        id: String(result.appointment.id ?? `ap-${Date.now()}`),
+        uhid: formData.patientId
+          ? formData.patientId.startsWith('#')
+            ? formData.patientId
+            : `#${formData.patientId}`
+          : `#${result.patientId.slice(0, 8)}`,
+        patient: formData.fullName,
+        doctor: doctorName,
+        visitType: (formData.consultationTypes[0] ?? 'Consultation') as VisitType,
+        appointmentDate: `${formData.scheduleDate}, ${formData.scheduleTime}`,
+        dateCreated: formData.registrationDate,
+        status: 'Scheduled',
+      };
+
+      setLocalAppointments((prev) => [newAppointment, ...prev]);
+      setCreatePatientOpen(false);
+      setConfirmedOpen(true);
+      reload();
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Failed to book appointment.';
+      showToast({
+        title: 'Booking failed',
+        message,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleScheduleFollowUp = (data: FollowUpFormValues) => {
+  const handleScheduleFollowUp = (formData: FollowUpFormValues) => {
     const newFollowUp: FollowUpRecord = {
       id: `fu-${Date.now()}`,
-      uhid: data.patientId.startsWith('#') ? data.patientId : `#${data.patientId}`,
-      patient: data.fullName,
-      doctor: data.doctor,
-      visitType: data.visitType as VisitType,
-      appointmentDate: `${data.scheduleDate}, ${data.scheduleTime}`,
-      dateCreated: data.scheduleDate,
+      uhid: formData.patientId.startsWith('#')
+        ? formData.patientId
+        : `#${formData.patientId}`,
+      patient: formData.fullName,
+      doctor: formData.doctor,
+      visitType: formData.visitType as VisitType,
+      appointmentDate: `${formData.scheduleDate}, ${formData.scheduleTime}`,
+      dateCreated: formData.scheduleDate,
       status: 'Upcoming',
     };
     setFollowUps((prev) => [newFollowUp, ...prev]);
     showToast({
       title: 'Follow-up Scheduled',
-      message: `Follow-up for ${data.fullName} has been scheduled successfully.`,
+      message: `Follow-up for ${formData.fullName} has been scheduled successfully.`,
     });
   };
 
@@ -197,18 +330,28 @@ export function AppointmentsPage() {
             )}
             aria-label="List view"
           >
-            <AppIcon src={assets.icons.listView} className="h-4 w-4" active={viewMode === 'list'} />
+            <AppIcon
+              src={assets.icons.listView}
+              className="h-4 w-4"
+              active={viewMode === 'list'}
+            />
           </button>
           <button
             type="button"
             onClick={() => setViewMode('calendar')}
             className={cn(
               'rounded-md p-2 transition-colors',
-              viewMode === 'calendar' ? 'bg-gold/15 text-gold' : 'text-text-muted',
+              viewMode === 'calendar'
+                ? 'bg-gold/15 text-gold'
+                : 'text-text-muted',
             )}
             aria-label="Calendar view"
           >
-            <AppIcon src={assets.icons.calendarView} className="h-4 w-4" active={viewMode === 'calendar'} />
+            <AppIcon
+              src={assets.icons.calendarView}
+              className="h-4 w-4"
+              active={viewMode === 'calendar'}
+            />
           </button>
         </div>
       </div>
@@ -241,10 +384,18 @@ export function AppointmentsPage() {
           </div>
 
           {activeTab === 'appointments' ? (
-            <AppointmentsTable
-              items={filteredAppointments}
-              onCancel={handleCancelRequest}
-            />
+            <AsyncStatus
+              loading={loading}
+              error={error}
+              onRetry={reload}
+              empty={!loading && !error && filteredAppointments.length === 0}
+              emptyMessage="No appointments found."
+            >
+              <AppointmentsTable
+                items={filteredAppointments}
+                onCancel={handleCancelRequest}
+              />
+            </AsyncStatus>
           ) : (
             <FollowUpsTable items={filteredFollowUps} />
           )}
@@ -252,19 +403,31 @@ export function AppointmentsPage() {
       )}
 
       {viewMode === 'calendar' && (
-        <AppointmentsCalendar events={calendarEvents} onEventClick={handleEventClick} />
+        <AppointmentsCalendar
+          events={calendarEvents}
+          onEventClick={handleEventClick}
+        />
       )}
 
       <CreatePatientModal
         open={createPatientOpen}
         onClose={() => setCreatePatientOpen(false)}
         onSubmit={handleCreatePatient}
+        lookupOptions={data.lookupOptions}
+        submitting={submitting}
       />
 
       <ScheduleFollowUpModal
         open={followUpOpen}
         onClose={() => setFollowUpOpen(false)}
         onSubmit={handleScheduleFollowUp}
+        doctorOptions={
+          data.lookupOptions.doctors.length > 0
+            ? data.lookupOptions.doctors.map((d) =>
+                typeof d === 'string' ? d : d.label,
+              )
+            : undefined
+        }
       />
 
       <CancelAppointmentModal

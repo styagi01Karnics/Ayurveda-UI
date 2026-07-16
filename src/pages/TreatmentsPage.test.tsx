@@ -23,15 +23,16 @@ function renderTreatments() {
 }
 
 describe('TreatmentsPage', () => {
-  it('renders treatments table', () => {
+  it('renders treatments table', async () => {
     renderTreatments();
-    expect(screen.getAllByText('Khushi Shroff').length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Khushi Shroff')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Panchakarma').length).toBeGreaterThan(0);
   });
 
   it('filters by patient name', async () => {
     const user = userEvent.setup();
     renderTreatments();
+    await screen.findAllByText('Khushi Shroff');
     await user.type(screen.getByPlaceholderText('Patient'), 'Unknown');
     expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
   });
@@ -40,7 +41,7 @@ describe('TreatmentsPage', () => {
     const user = userEvent.setup();
     mockNavigate.mockClear();
     renderTreatments();
-    await user.click(screen.getAllByText('Khushi Shroff')[0]);
+    await user.click((await screen.findAllByText('Khushi Shroff'))[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/treatments/patient/37944397');
   });
 });
@@ -60,7 +61,7 @@ describe('TreatmentPatientDetailPage', () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(screen.getByText('#37944397')).toBeInTheDocument();
+    expect(await screen.findByText('#37944397')).toBeInTheDocument();
     expect(screen.getByRole('navigation')).toHaveTextContent('Treatment');
   });
 });

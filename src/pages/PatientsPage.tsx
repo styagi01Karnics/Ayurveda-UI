@@ -4,15 +4,14 @@ import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { PatientsTable } from '@/components/patients/PatientsTable';
 import { UploadReportsModal } from '@/components/patients/UploadReportsModal';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
-import {
-  allPatients,
-  FILTER_OPTIONS,
-  getPatientByDetailId,
-  getPatientByRecordId,
-} from '@/data/mock/patients';
+import { FILTER_OPTIONS, getPatientByDetailId } from '@/data/mock/patients';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { getAllPatients } from '@/lib/api/patients';
+import { mapPatientToDetail, mapPatientToRecord } from '@/lib/api/mappers';
 import type { Dosha, PatientRecord, PatientStatus, VisitType } from '@/types';
 
 type PatientTab = 'active' | 'inactive';
@@ -27,15 +26,39 @@ export function PatientsPage() {
   const [uploadPatient, setUploadPatient] = useState<PatientRecord | null>(null);
   const [billPatientId, setBillPatientId] = useState<string | null>(null);
 
+  const {
+    data: patients,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(async () => {
+    const rows = await getAllPatients();
+    return rows.map((patient) => {
+      const mapped = mapPatientToRecord(patient);
+      const mock = getPatientByDetailId(patient.id);
+      if (!mock) return mapped;
+      return {
+        ...mapped,
+        doctor: mock.doctor,
+        visitType: mock.visitType,
+        appointmentDate: mock.appointmentDate,
+        dosha: mock.dosha,
+        status: mock.status,
+        isActive: mock.isActive,
+      };
+    });
+  }, []);
+
   const filteredPatients = useMemo(() => {
-    return allPatients.filter((patient) => {
+    return patients.filter((patient) => {
       const matchesTab =
         activeTab === 'active' ? patient.isActive : !patient.isActive;
       const matchesId =
         !patientIdQuery ||
         patient.id.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
         patient.secondaryId.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
-        patient.detailId.includes(patientIdQuery);
+        patient.detailId.includes(patientIdQuery) ||
+        patient.name.toLowerCase().includes(patientIdQuery.toLowerCase());
       const matchesStatus =
         !statusFilter || patient.status === (statusFilter as PatientStatus);
       const matchesVisit =
@@ -53,6 +76,7 @@ export function PatientsPage() {
       );
     });
   }, [
+    patients,
     activeTab,
     patientIdQuery,
     statusFilter,
@@ -60,10 +84,38 @@ export function PatientsPage() {
     doshaFilter,
   ]);
 
-  const billPatient =
-    billPatientId
-      ? getPatientByDetailId(billPatientId) ?? getPatientByRecordId(billPatientId) ?? null
-      : null;
+  const billPatient = useMemo(() => {
+    if (!billPatientId) return null;
+    const mock = getPatientByDetailId(billPatientId);
+    if (mock) return mock;
+
+    const record = patients.find(
+      (p) => p.detailId === billPatientId || p.id === billPatientId,
+    );
+    if (!record) return null;
+    return mapPatientToDetail({
+      id: record.detailId,
+      patientCode: record.secondaryId,
+      fullName: record.name,
+      gender: 'UNKNOWN',
+      dateOfBirth: '',
+      age: 0,
+      preferredLanguage: '',
+      email: '',
+      mobileNumber: record.phone.replace(/^\+91-?/, ''),
+      state: '',
+      city: '',
+      address: '',
+      emergencyContactName: '',
+      emergencyRelationship: '',
+      emergencyPhoneNumber: '',
+      idProofType: '',
+      idProofNumber: '',
+      occupation: '',
+      insuranceDetails: '',
+      active: record.isActive,
+    });
+  }, [billPatientId, patients]);
 
   const handleRowClick = (record: PatientRecord) => {
     navigate(`/patients/${record.detailId}`);
@@ -111,23 +163,31 @@ export function PatientsPage() {
           />
       </div>
 
-      <PatientsTable
-        records={filteredPatients}
-        onRowClick={handleRowClick}
-        onDownloadBill={handleDownloadBill}
-        onUploadReport={setUploadPatient}
-      />
+      <AsyncStatus
+        loading={loading}
+        error={error}
+        onRetry={reload}
+        empty={!loading && !error && filteredPatients.length === 0}
+        emptyMessage="No patients found."
+      >
+        <PatientsTable
+          records={filteredPatients}
+          onRowClick={handleRowClick}
+          onUploadReport={(record) => setUploadPatient(record)}
+          onDownloadBill={handleDownloadBill}
+        />
+      </AsyncStatus>
 
       <UploadReportsModal
         open={Boolean(uploadPatient)}
-        onClose={() => setUploadPatient(null)}
         patient={uploadPatient}
+        onClose={() => setUploadPatient(null)}
       />
 
       <BillInvoiceModal
         open={Boolean(billPatient)}
-        onClose={() => setBillPatientId(null)}
         patient={billPatient}
+        onClose={() => setBillPatientId(null)}
       />
     </PageShell>
   );

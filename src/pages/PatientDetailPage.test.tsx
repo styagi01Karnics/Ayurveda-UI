@@ -21,9 +21,9 @@ function renderDetail(patientId = '37944397') {
 }
 
 describe('PatientDetailPage', () => {
-  it('renders patient header and personal info tab', () => {
+  it('renders patient header and personal info tab', async () => {
     renderDetail();
-    expect(screen.getByText('Patient Details')).toBeInTheDocument();
+    expect(await screen.findByText('Patient Details')).toBeInTheDocument();
     expect(screen.getByText('#37944397')).toBeInTheDocument();
     expect(screen.getByText('Under Treatment')).toBeInTheDocument();
     expect(screen.getByText('Basic Information')).toBeInTheDocument();
@@ -33,6 +33,7 @@ describe('PatientDetailPage', () => {
   it('switches to medical assessment tab', async () => {
     const user = userEvent.setup();
     renderDetail();
+    await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Medical Assessment'));
     expect(screen.getByText('Ayurvedic Assessment')).toBeInTheDocument();
     expect(screen.getByText('Physical Examination')).toBeInTheDocument();
@@ -41,6 +42,7 @@ describe('PatientDetailPage', () => {
   it('switches to treatment tab', async () => {
     const user = userEvent.setup();
     renderDetail();
+    await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Treatment & Follow Up'));
     expect(screen.getByText('Active Treatment Plan')).toBeInTheDocument();
     expect(screen.getByText('Joint Pain Package')).toBeInTheDocument();
@@ -49,6 +51,7 @@ describe('PatientDetailPage', () => {
   it('switches to billing tab', async () => {
     const user = userEvent.setup();
     renderDetail();
+    await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Billing & Membership'));
     expect(screen.getByText('Payment Setup')).toBeInTheDocument();
     expect(screen.getByText('Debit Card')).toBeInTheDocument();
