@@ -168,6 +168,20 @@ export interface DoctorStats {
   followUpsPending: number;
 }
 
+/** Doctor directory row mapped from the doctors API. */
+export interface DoctorDirectoryRecord {
+  id: string;
+  doctorCode: string;
+  name: string;
+  specialization: string;
+  qualification: string;
+  department: string;
+  consultationRoom: string;
+  mobileNumber: string;
+  email: string;
+  status: ClinicStatus;
+}
+
 export interface AppointmentRecord {
   id: string;
   uhid: string;

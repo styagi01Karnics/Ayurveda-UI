@@ -9,14 +9,18 @@ npm install
 npm run dev
 ```
 
-API base URLs are configured in `.env` (see `.env.example`). In development, Vite proxies:
+API calls use Vite proxy prefixes (avoids CORS in local dev). The browser hits same-origin paths; Vite forwards to the real servers:
 
-| Prefix | Service | Port |
-|--------|---------|------|
-| `/patient-api` | Patients | 8101 |
-| `/doctor-api` | Doctors | 8102 |
-| `/appointment-api` | Appointments / therapies / doshas | 8103 |
-| `/therapist-api` | Therapists | 8104 |
+| Env / prefix | Forwards to |
+|--------------|-------------|
+| `/patient-api` | `http://103.174.103.250:8101` |
+| `/doctor-api` | `http://103.174.103.250:8102` |
+| `/appointment-api` | `http://103.174.103.250:8103` |
+| `/therapist-api` | `http://103.174.103.250:8104` |
+
+Example: UI calls `/doctor-api/api/v1/doctors` → server `http://103.174.103.250:8102/api/v1/doctors`.
+
+**Restart `npm run dev` after changing `.env`.** Direct browser calls to `103.174.103.250` will show CORS errors unless the backend allows your origin.
 
 ## Patients Module (Figma-aligned)
 

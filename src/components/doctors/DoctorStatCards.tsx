@@ -1,43 +1,45 @@
+import { useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
-import type { DoctorStats } from '@/types';
+import type { DoctorDirectoryRecord } from '@/types';
 
 interface DoctorStatCardsProps {
-  stats: DoctorStats;
+  doctors: DoctorDirectoryRecord[];
 }
 
-export function DoctorStatCards({ stats }: DoctorStatCardsProps) {
+export function DoctorStatCards({ doctors }: DoctorStatCardsProps) {
+  const stats = useMemo(() => {
+    const active = doctors.filter((d) => d.status === 'Active').length;
+    const inactive = doctors.length - active;
+    const departments = [...new Set(doctors.map((d) => d.department))];
+    const specializations = [...new Set(doctors.map((d) => d.specialization))];
+    const rooms = [...new Set(doctors.map((d) => d.consultationRoom))];
+
+    return { active, inactive, departments, specializations, rooms };
+  }, [doctors]);
+
   const cards = [
     {
-      title: 'Total Patients',
-      value: stats.totalPatients,
+      title: 'Total Doctors',
+      value: doctors.length,
       pills: [
-        { label: `${stats.completedPatients} Completed`, variant: 'gold' as const },
-        { label: `${stats.ongoingPatients} Ongoing`, variant: 'gold' as const },
+        { label: `${stats.active} Active` },
+        { label: `${stats.inactive} Inactive` },
       ],
     },
     {
-      title: 'Active Treatment Plans',
-      value: stats.activeTreatmentPlans,
-      pills: [
-        { label: `${stats.completedTreatmentPlans} Completed`, variant: 'gold' as const },
-        { label: `${stats.ongoingTreatmentPlans} Ongoing`, variant: 'gold' as const },
-      ],
+      title: 'Departments',
+      value: stats.departments.length,
+      pills: stats.departments.slice(0, 2).map((dept) => ({ label: dept })),
     },
     {
-      title: 'Completed Treatments',
-      value: stats.completedTreatments,
-      pills: [
-        { label: `${stats.consultationCount} Consultation`, variant: 'gold' as const },
-        { label: `${stats.therapyCount} Therapy`, variant: 'gold' as const },
-      ],
+      title: 'Specializations',
+      value: stats.specializations.length,
+      pills: stats.specializations.slice(0, 2).map((spec) => ({ label: spec })),
     },
     {
-      title: 'Follow Ups Due',
-      value: stats.followUpsDue,
-      pills: [
-        { label: `${stats.followUpsScheduled} Scheduled`, variant: 'gold' as const },
-        { label: `${stats.followUpsPending} Pending`, variant: 'gold' as const },
-      ],
+      title: 'Consultation Rooms',
+      value: stats.rooms.length,
+      pills: stats.rooms.slice(0, 2).map((room) => ({ label: room })),
     },
   ];
 

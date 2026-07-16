@@ -12,6 +12,7 @@ import type {
   ClinicDoctorRecord,
   ClinicTherapistRecord,
   ClinicTherapyRecord,
+  DoctorDirectoryRecord,
   Dosha,
   PatientDetail,
   PatientRecord,
@@ -312,6 +313,23 @@ export function mapDoctorToClinicRecord(doctor: DoctorDto): ClinicDoctorRecord {
     consultationFees: 0,
     followUpFees: 0,
     availability: `${doctor.department} · ${doctor.consultationRoom}`,
+  };
+}
+
+export function mapDoctorToDirectoryRecord(
+  doctor: DoctorDto,
+): DoctorDirectoryRecord {
+  return {
+    id: doctor.id,
+    doctorCode: doctor.doctorCode,
+    name: doctor.doctorName,
+    specialization: doctor.specialization,
+    qualification: doctor.qualification,
+    department: doctor.department,
+    consultationRoom: doctor.consultationRoom,
+    mobileNumber: doctor.mobileNumber,
+    email: doctor.email,
+    status: doctor.active ? 'Active' : 'Inactive',
   };
 }
 

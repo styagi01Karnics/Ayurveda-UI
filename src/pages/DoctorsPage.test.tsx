@@ -29,38 +29,33 @@ function renderDoctors() {
 }
 
 describe('DoctorsPage', () => {
-  it('renders stat cards and schedule table', () => {
+  it('renders stat cards and doctors table from API', async () => {
     renderDoctors();
-    expect(screen.getByText('Total Patients')).toBeInTheDocument();
-    expect(screen.getByText('Follow Ups Due')).toBeInTheDocument();
-    expect(screen.getAllByText('Khushi Shroff').length).toBeGreaterThan(0);
+    expect(await screen.findByText('Total Doctors')).toBeInTheDocument();
+    expect(screen.getByText('Dr. Shweta Arya')).toBeInTheDocument();
+    expect(screen.getByText('BAMS (Ayurvedic Physician)')).toBeInTheDocument();
   });
 
-  it('navigates to patient details on start', async () => {
+  it('filters doctors by search query', async () => {
     const user = userEvent.setup();
-    mockNavigate.mockClear();
     renderDoctors();
-    const startButtons = screen.getAllByRole('button', { name: 'Start' });
-    await user.click(startButtons[0]);
-    expect(mockNavigate).toHaveBeenCalledWith('/doctors/patient/37944397');
+    await screen.findByText('Dr. Shweta Arya');
+    await user.type(screen.getByPlaceholderText('Search doctor'), 'Unknown');
+    expect(screen.queryByText('Dr. Shweta Arya')).not.toBeInTheDocument();
   });
 
-  it('shows cancel confirmation modal', async () => {
+  it('filters by status', async () => {
     const user = userEvent.setup();
     renderDoctors();
-    const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
-    await user.click(cancelButtons[0]);
-    expect(screen.getByText('Cancel Appointment')).toBeInTheDocument();
-    expect(
-      screen.getByText('Are you sure you want to delete this appointment?'),
-    ).toBeInTheDocument();
-  });
-
-  it('filters by visit type', async () => {
-    const user = userEvent.setup();
-    renderDoctors();
+    await screen.findByText('Dr. Shweta Arya');
     const selects = screen.getAllByRole('combobox');
-    await user.selectOptions(selects[1], 'Therapy');
-    expect(screen.getAllByText('Therapy').length).toBeGreaterThan(0);
+    await user.selectOptions(selects[0], 'Inactive');
+    expect(screen.queryByText('Dr. Shweta Arya')).not.toBeInTheDocument();
+  });
+
+  it('shows department filter options', async () => {
+    renderDoctors();
+    await screen.findByText('Dr. Shweta Arya');
+    expect(screen.getByRole('option', { name: 'BAMS (Ayurvedic Physician)' })).toBeInTheDocument();
   });
 });

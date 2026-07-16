@@ -1,31 +1,59 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
-import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
-import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
 import { DoctorStatCards } from '@/components/doctors/DoctorStatCards';
-import { DoctorScheduleTable } from '@/components/doctors/DoctorScheduleTable';
+import { DoctorsTable } from '@/components/doctors/DoctorsTable';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { getAllDoctors } from '@/lib/api/doctors';
+import { mapDoctorToDirectoryRecord } from '@/lib/api/mappers';
 import { assets } from '@/lib/assets';
-import {
-  doctorStats,
-  DOCTOR_FILTER_OPTIONS,
-  initialDoctorSchedule,
-} from '@/data/mock/doctors';
-import type { DoctorScheduleItem, VisitType } from '@/types';
+import type { ClinicStatus } from '@/types';
+
+const STATUS_OPTIONS = ['Active', 'Inactive'] as const;
 
 export function DoctorsPage() {
   const navigate = useNavigate();
-  const { showToast } = useToast();
-  const [schedule, setSchedule] = useState(initialDoctorSchedule);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [visitTypeFilter, setVisitTypeFilter] = useState('');
-  const [cancelTarget, setCancelTarget] = useState<DoctorScheduleItem | null>(null);
+  const [departmentFilter, setDepartmentFilter] = useState('');
+
+  const {
+    data: doctors,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(async () => {
+    const rows = await getAllDoctors();
+    return rows.map(mapDoctorToDirectoryRecord);
+  }, []);
+
+  const departmentOptions = useMemo(
+    () => [...new Set(doctors.map((d) => d.department))].sort(),
+    [doctors],
+  );
+
+  const filteredDoctors = useMemo(() => {
+    return doctors.filter((doctor) => {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        !query ||
+        doctor.name.toLowerCase().includes(query) ||
+        doctor.doctorCode.toLowerCase().includes(query) ||
+        doctor.specialization.toLowerCase().includes(query) ||
+        doctor.email.toLowerCase().includes(query);
+      const matchesStatus =
+        !statusFilter || doctor.status === (statusFilter as ClinicStatus);
+      const matchesDepartment =
+        !departmentFilter || doctor.department === departmentFilter;
+      return matchesSearch && matchesStatus && matchesDepartment;
+    });
+  }, [doctors, searchQuery, statusFilter, departmentFilter]);
 
   const headerAction = useMemo(
     () => (
@@ -42,79 +70,40 @@ export function DoctorsPage() {
 
   usePageAction(headerAction);
 
-  const filteredSchedule = useMemo(() => {
-    return schedule.filter((item) => {
-      const matchesSearch =
-        !searchQuery ||
-        item.patient.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus =
-        !statusFilter || item.status === statusFilter;
-      const matchesVisit =
-        !visitTypeFilter ||
-        item.visitType === (visitTypeFilter as VisitType);
-      return matchesSearch && matchesStatus && matchesVisit;
-    });
-  }, [schedule, searchQuery, statusFilter, visitTypeFilter]);
-
-  const handleStart = (id: string) => {
-    const item = schedule.find((s) => s.id === id);
-    if (item) {
-      navigate(`/doctors/patient/${item.patientDetailId}`);
-    }
-  };
-
-  const handleCancelRequest = (id: string) => {
-    const item = schedule.find((s) => s.id === id);
-    if (item) {
-      setCancelTarget(item);
-    }
-  };
-
-  const handleCancelConfirm = () => {
-    if (!cancelTarget) return;
-    setSchedule((prev) => prev.filter((item) => item.id !== cancelTarget.id));
-    showToast({
-      title: 'Appointment has been cancelled',
-      message: `${cancelTarget.patient}'s ${cancelTarget.time} ${cancelTarget.visitType} appointment was cancelled.`,
-    });
-    setCancelTarget(null);
-  };
-
   return (
     <PageShell>
-      <DoctorStatCards stats={doctorStats} />
+      <AsyncStatus loading={loading} error={error} onRetry={reload}>
+        <DoctorStatCards doctors={doctors} />
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <SearchField
-          placeholder="Search patient"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Select
-          placeholder="Status"
-          options={[...DOCTOR_FILTER_OPTIONS.status]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        />
-        <Select
-          placeholder="Visit type"
-          options={[...DOCTOR_FILTER_OPTIONS.visitType]}
-          value={visitTypeFilter}
-          onChange={(e) => setVisitTypeFilter(e.target.value)}
-        />
-      </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <SearchField
+            placeholder="Search doctor"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Select
+            placeholder="Status"
+            options={[...STATUS_OPTIONS]}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          />
+          <Select
+            placeholder="Department"
+            options={departmentOptions}
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+          />
+        </div>
 
-      <DoctorScheduleTable
-        items={filteredSchedule}
-        onStart={handleStart}
-        onCancel={handleCancelRequest}
-      />
-
-      <CancelAppointmentModal
-        open={Boolean(cancelTarget)}
-        onClose={() => setCancelTarget(null)}
-        onConfirm={handleCancelConfirm}
-      />
+        <AsyncStatus
+          loading={false}
+          error={null}
+          empty={filteredDoctors.length === 0}
+          emptyMessage="No doctors found."
+        >
+          <DoctorsTable records={filteredDoctors} />
+        </AsyncStatus>
+      </AsyncStatus>
     </PageShell>
   );
 }
