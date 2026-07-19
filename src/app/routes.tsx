@@ -12,10 +12,11 @@ import { PatientDetailPage } from '@/pages/PatientDetailPage';
 import { PatientsPage } from '@/pages/PatientsPage';
 import { BillingPage } from '@/pages/BillingPage';
 import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage';
+import { ActivityLogsPage } from '@/pages/ActivityLogsPage';
 import { MedicinesPage } from '@/pages/MedicinesPage';
+import { SalesPage } from '@/pages/SalesPage';
 import { TreatmentPatientDetailPage } from '@/pages/TreatmentPatientDetailPage';
 import { TreatmentsPage } from '@/pages/TreatmentsPage';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { SignupPage } from '@/pages/SignupPage';
 
@@ -40,24 +41,8 @@ export function AppRoutes() {
             <Route path="/treatments" element={<TreatmentsPage />} />
             <Route path="/treatments/patient/:patientId" element={<TreatmentPatientDetailPage />} />
             <Route path="/medicines" element={<MedicinesPage />} />
-            <Route
-              path="/sales"
-              element={
-                <PlaceholderPage
-                  title="Sales"
-                  description="Sales tracking coming soon."
-                />
-              }
-            />
-            <Route
-              path="/activity-logs"
-              element={
-                <PlaceholderPage
-                  title="Activity Logs"
-                  description="Activity logs will be available after API integration."
-                />
-              }
-            />
+            <Route path="/sales" element={<SalesPage />} />
+            <Route path="/activity-logs" element={<ActivityLogsPage />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/billing/generate" element={<GenerateInvoicePage />} />
             <Route path="/settings" element={<SettingsPage />} />

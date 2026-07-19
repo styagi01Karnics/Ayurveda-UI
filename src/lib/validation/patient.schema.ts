@@ -52,6 +52,18 @@ export const patientStep2Schema = z.object({
   therapyInstructions: z.string().min(1, 'Therapy instructions are required'),
 });
 
+/** Optional therapy fields — required only when consultation type includes Therapy. */
+export const patientStep2OptionalSchema = z.object({
+  treatmentCategory: z.string().optional().default(''),
+  recommendedTherapies: z.array(z.string()).optional().default([]),
+  scheduleDate: z.string().optional().default(''),
+  scheduleTime: z.string().optional().default(''),
+  sessionDuration: z.string().optional().default(''),
+  sessionFrequency: z.string().optional().default(''),
+  assignedTherapist: z.string().optional().default(''),
+  therapyInstructions: z.string().optional().default(''),
+});
+
 export const patientStep3Schema = z.object({
   doshaType: z.string().min(1, 'Dosha type is required'),
   bodyConstitution: z
@@ -93,13 +105,17 @@ export const patientStep3Schema = z.object({
 });
 
 export const createPatientSchema = patientStep1Schema
-  .merge(patientStep2Schema)
+  .merge(patientStep2OptionalSchema)
   .merge(patientStep3Schema);
 
 export type PatientStep1Values = z.infer<typeof patientStep1Schema>;
 export type PatientStep2Values = z.infer<typeof patientStep2Schema>;
 export type PatientStep3Values = z.infer<typeof patientStep3Schema>;
 export type CreatePatientValues = z.infer<typeof createPatientSchema>;
+
+export function includesTherapyType(types: string[]): boolean {
+  return types.some((type) => type.toUpperCase().includes('THERAPY'));
+}
 
 export const followUpSchema = z.object({
   patientId: z.string().min(1, 'Patient ID is required'),

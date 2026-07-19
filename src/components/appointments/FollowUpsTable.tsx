@@ -4,11 +4,12 @@ import type { FollowUpRecord } from '@/types';
 
 interface FollowUpsTableProps {
   items: FollowUpRecord[];
+  embedded?: boolean;
 }
 
-export function FollowUpsTable({ items }: FollowUpsTableProps) {
+export function FollowUpsTable({ items, embedded }: FollowUpsTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">

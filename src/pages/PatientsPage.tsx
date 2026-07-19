@@ -5,6 +5,7 @@ import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { PatientsTable } from '@/components/patients/PatientsTable';
 import { UploadReportsModal } from '@/components/patients/UploadReportsModal';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
@@ -127,56 +128,70 @@ export function PatientsPage() {
 
   return (
     <PageShell>
-      <UnderlineTabs
-        tabs={[
-          { id: 'active' as const, label: 'Active Patients' },
-          { id: 'inactive' as const, label: 'Inactive Patients' },
-        ]}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-        className="border-none"
-      />
-
-      <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <SearchField
-            placeholder="Patient ID"
-            value={patientIdQuery}
-            onChange={(e) => setPatientIdQuery(e.target.value)}
+      <ListPanel
+        tabs={
+          <UnderlineTabs
+            tabs={[
+              { id: 'active' as const, label: 'Active Patients' },
+              { id: 'inactive' as const, label: 'Inactive Patients' },
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+            className="border-none"
           />
-          <Select
-            placeholder="Status"
-            options={[...FILTER_OPTIONS.status]}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          />
-          <Select
-            placeholder="Visit type"
-            options={[...FILTER_OPTIONS.visitType]}
-            value={visitTypeFilter}
-            onChange={(e) => setVisitTypeFilter(e.target.value)}
-          />
-          <Select
-            placeholder="Dosha"
-            options={[...FILTER_OPTIONS.dosha]}
-            value={doshaFilter}
-            onChange={(e) => setDoshaFilter(e.target.value)}
-          />
-      </div>
-
-      <AsyncStatus
-        loading={loading}
-        error={error}
-        onRetry={reload}
-        empty={!loading && !error && filteredPatients.length === 0}
-        emptyMessage="No patients found."
+        }
+        filters={
+          <>
+            <FilterControl>
+              <SearchField
+                placeholder="Patient ID"
+                value={patientIdQuery}
+                onChange={(e) => setPatientIdQuery(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Status"
+                options={[...FILTER_OPTIONS.status]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Visit type"
+                options={[...FILTER_OPTIONS.visitType]}
+                value={visitTypeFilter}
+                onChange={(e) => setVisitTypeFilter(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Dosha"
+                options={[...FILTER_OPTIONS.dosha]}
+                value={doshaFilter}
+                onChange={(e) => setDoshaFilter(e.target.value)}
+              />
+            </FilterControl>
+          </>
+        }
       >
-        <PatientsTable
-          records={filteredPatients}
-          onRowClick={handleRowClick}
-          onUploadReport={(record) => setUploadPatient(record)}
-          onDownloadBill={handleDownloadBill}
-        />
-      </AsyncStatus>
+        <AsyncStatus
+          loading={loading}
+          error={error}
+          onRetry={reload}
+          empty={!loading && !error && filteredPatients.length === 0}
+          emptyMessage="No patients found."
+        >
+          <PatientsTable
+            embedded
+            records={filteredPatients}
+            onRowClick={handleRowClick}
+            onUploadReport={(record) => setUploadPatient(record)}
+            onDownloadBill={handleDownloadBill}
+          />
+        </AsyncStatus>
+      </ListPanel>
 
       <UploadReportsModal
         open={Boolean(uploadPatient)}

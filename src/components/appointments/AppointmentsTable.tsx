@@ -5,11 +5,16 @@ import type { AppointmentRecord, VisitType } from '@/types';
 interface AppointmentsTableProps {
   items: AppointmentRecord[];
   onCancel: (id: string) => void;
+  embedded?: boolean;
 }
 
-export function AppointmentsTable({ items, onCancel }: AppointmentsTableProps) {
+export function AppointmentsTable({
+  items,
+  onCancel,
+  embedded,
+}: AppointmentsTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">

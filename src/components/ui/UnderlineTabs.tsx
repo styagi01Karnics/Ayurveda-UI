@@ -14,17 +14,17 @@ export function UnderlineTabs<T extends string>({
   className,
 }: UnderlineTabsProps<T>) {
   return (
-    <div className={cn('flex gap-6 border-b border-gray-100', className)}>
+    <div className={cn('flex flex-wrap items-center gap-2', className)}>
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
           onClick={() => onChange(tab.id)}
           className={cn(
-            '-mb-px border-b-2 pb-3 text-sm font-medium transition-colors',
+            'rounded-lg px-4 py-1.5 font-sans text-[14px] font-semibold leading-[24px] tracking-normal transition-colors',
             activeTab === tab.id
-              ? 'border-gold text-gold'
-              : 'border-transparent text-text-muted hover:text-brown',
+              ? 'bg-[#FAF4E5] text-brown'
+              : 'text-text-muted hover:text-brown',
           )}
         >
           {tab.label}

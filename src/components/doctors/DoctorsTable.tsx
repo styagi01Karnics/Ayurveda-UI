@@ -4,11 +4,12 @@ import type { DoctorDirectoryRecord } from '@/types';
 
 interface DoctorsTableProps {
   records: DoctorDirectoryRecord[];
+  embedded?: boolean;
 }
 
-export function DoctorsTable({ records }: DoctorsTableProps) {
+export function DoctorsTable({ records, embedded }: DoctorsTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">

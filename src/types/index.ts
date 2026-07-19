@@ -268,6 +268,39 @@ export interface BillingRecord {
   status: BillingStatus;
 }
 
+export interface SalesInvoiceRecord {
+  id: string;
+  invoiceId: string;
+  invoiceDate: string;
+  treatmentCategory: string;
+  serviceType: string;
+  totalAmount: number;
+}
+
+export interface SalesStats {
+  totalPatients: number;
+  patientsCompleted: number;
+  patientsOngoing: number;
+  appointmentsThisMonth: number;
+  appointmentsCompleted: number;
+  appointmentsOngoing: number;
+  revenueThisMonth: number;
+  revenuePeriod: string;
+  completedTreatments: number;
+}
+
+export type ActivityLogAction = 'Viewed' | 'Created' | 'Updated' | 'Deleted';
+
+export interface ActivityLogRecord {
+  id: string;
+  page: string;
+  action: ActivityLogAction;
+  target: string;
+  before: string;
+  after: string;
+  timestamp: string;
+}
+
 export type InvoiceStep = 'service' | 'medicine' | 'therapy' | 'summary';
 
 export interface InvoiceLineItem {

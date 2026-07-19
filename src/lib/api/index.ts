@@ -1,5 +1,6 @@
 export { ApiError, apiRequest, apiRequestList } from './client';
 export { apiConfig } from './config';
+export { apiEndpoints } from './endpoints';
 export * from './types';
 export * as patientsApi from './patients';
 export * as doctorsApi from './doctors';

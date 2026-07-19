@@ -16,6 +16,7 @@ import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentMo
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
+import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Tabs } from '@/components/ui/Tabs';
@@ -224,17 +225,26 @@ export function AppointmentsPage() {
         data.doctors.find((d) => d.id === formData.assignedDoctor)
           ?.doctorName ?? formData.assignedDoctor;
 
+      const patientCode =
+        formData.patientId ?? result.patientId.slice(0, 8);
+
+      const appointmentDate =
+        formData.scheduleDate && formData.scheduleTime
+          ? `${formData.scheduleDate}, ${formData.scheduleTime}`
+          : formData.registrationDate;
+
       const newAppointment: AppointmentRecord = {
-        id: String(result.appointment.id ?? `ap-${Date.now()}`),
-        uhid: formData.patientId
-          ? formData.patientId.startsWith('#')
-            ? formData.patientId
-            : `#${formData.patientId}`
-          : `#${result.patientId.slice(0, 8)}`,
+        id: String(
+          result.appointment?.id ??
+            result.appointment?.bookingId ??
+            `ap-${Date.now()}`,
+        ),
+        uhid: patientCode.startsWith('#') ? patientCode : `#${patientCode}`,
         patient: formData.fullName,
         doctor: doctorName,
-        visitType: (formData.consultationTypes[0] ?? 'Consultation') as VisitType,
-        appointmentDate: `${formData.scheduleDate}, ${formData.scheduleTime}`,
+        visitType: (formData.consultationTypes[0] ??
+          'Consultation') as VisitType,
+        appointmentDate,
         dateCreated: formData.registrationDate,
         status: 'Scheduled',
       };
@@ -305,84 +315,96 @@ export function AppointmentsPage() {
     }
   };
 
+  const tabsNode = (
+    <Tabs
+      tabs={[
+        { id: 'appointments' as const, label: 'All Appointments' },
+        { id: 'followUps' as const, label: 'All Follow Ups' },
+      ]}
+      activeTab={activeTab}
+      onChange={(tab) => {
+        setActiveTab(tab);
+        setStatusFilter('');
+      }}
+    />
+  );
+
+  const viewToggleNode = (
+    <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+      <button
+        type="button"
+        onClick={() => setViewMode('list')}
+        className={cn(
+          'rounded-md p-2 transition-colors',
+          viewMode === 'list' ? 'bg-gold/15 text-gold' : 'text-text-muted',
+        )}
+        aria-label="List view"
+      >
+        <AppIcon
+          src={assets.icons.listView}
+          className="h-4 w-4"
+          active={viewMode === 'list'}
+        />
+      </button>
+      <button
+        type="button"
+        onClick={() => setViewMode('calendar')}
+        className={cn(
+          'rounded-md p-2 transition-colors',
+          viewMode === 'calendar' ? 'bg-gold/15 text-gold' : 'text-text-muted',
+        )}
+        aria-label="Calendar view"
+      >
+        <AppIcon
+          src={assets.icons.calendarView}
+          className="h-4 w-4"
+          active={viewMode === 'calendar'}
+        />
+      </button>
+    </div>
+  );
+
   return (
     <PageShell>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <Tabs
-          tabs={[
-            { id: 'appointments' as const, label: 'All Appointments' },
-            { id: 'followUps' as const, label: 'All Follow Ups' },
-          ]}
-          activeTab={activeTab}
-          onChange={(tab) => {
-            setActiveTab(tab);
-            setStatusFilter('');
-          }}
-        />
-
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
-          <button
-            type="button"
-            onClick={() => setViewMode('list')}
-            className={cn(
-              'rounded-md p-2 transition-colors',
-              viewMode === 'list' ? 'bg-gold/15 text-gold' : 'text-text-muted',
-            )}
-            aria-label="List view"
-          >
-            <AppIcon
-              src={assets.icons.listView}
-              className="h-4 w-4"
-              active={viewMode === 'list'}
-            />
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('calendar')}
-            className={cn(
-              'rounded-md p-2 transition-colors',
-              viewMode === 'calendar'
-                ? 'bg-gold/15 text-gold'
-                : 'text-text-muted',
-            )}
-            aria-label="Calendar view"
-          >
-            <AppIcon
-              src={assets.icons.calendarView}
-              className="h-4 w-4"
-              active={viewMode === 'calendar'}
-            />
-          </button>
-        </div>
-      </div>
-
-      {viewMode === 'list' && (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SearchField
-              placeholder="Patient ID"
-              value={patientIdQuery}
-              onChange={(e) => setPatientIdQuery(e.target.value)}
-            />
-            <Select
-              placeholder="Status"
-              options={
-                activeTab === 'appointments'
-                  ? [...APPOINTMENT_FILTER_OPTIONS.status]
-                  : [...APPOINTMENT_FILTER_OPTIONS.followUpStatus]
-              }
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            />
-            <Select
-              placeholder="Visit type"
-              options={[...APPOINTMENT_FILTER_OPTIONS.visitType]}
-              value={visitTypeFilter}
-              onChange={(e) => setVisitTypeFilter(e.target.value)}
-            />
-            <InputDate value={dateFilter} onChange={setDateFilter} />
-          </div>
-
+      {viewMode === 'list' ? (
+        <ListPanel
+          tabs={tabsNode}
+          toolbar={viewToggleNode}
+          filters={
+            <>
+              <FilterControl>
+                <SearchField
+                  placeholder="Patient ID"
+                  value={patientIdQuery}
+                  onChange={(e) => setPatientIdQuery(e.target.value)}
+                />
+              </FilterControl>
+              <FilterControl>
+                <Select
+                  placeholder="Status"
+                  options={
+                    activeTab === 'appointments'
+                      ? [...APPOINTMENT_FILTER_OPTIONS.status]
+                      : [...APPOINTMENT_FILTER_OPTIONS.followUpStatus]
+                  }
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                />
+              </FilterControl>
+              <FilterControl>
+                <Select
+                  placeholder="Visit type"
+                  options={[...APPOINTMENT_FILTER_OPTIONS.visitType]}
+                  value={visitTypeFilter}
+                  onChange={(e) => setVisitTypeFilter(e.target.value)}
+                />
+              </FilterControl>
+              <FilterControl>
+                <InputDate value={dateFilter} onChange={setDateFilter} />
+              </FilterControl>
+            </>
+          }
+        >
           {activeTab === 'appointments' ? (
             <AsyncStatus
               loading={loading}
@@ -392,21 +414,26 @@ export function AppointmentsPage() {
               emptyMessage="No appointments found."
             >
               <AppointmentsTable
+                embedded
                 items={filteredAppointments}
                 onCancel={handleCancelRequest}
               />
             </AsyncStatus>
           ) : (
-            <FollowUpsTable items={filteredFollowUps} />
+            <FollowUpsTable embedded items={filteredFollowUps} />
           )}
-        </>
-      )}
-
-      {viewMode === 'calendar' && (
-        <AppointmentsCalendar
-          events={calendarEvents}
-          onEventClick={handleEventClick}
-        />
+        </ListPanel>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {tabsNode}
+            {viewToggleNode}
+          </div>
+          <AppointmentsCalendar
+            events={calendarEvents}
+            onEventClick={handleEventClick}
+          />
+        </div>
       )}
 
       <CreatePatientModal

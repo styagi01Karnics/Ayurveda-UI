@@ -1,19 +1,22 @@
 import { apiConfig } from './config';
 import { apiRequest, apiRequestList } from './client';
+import { apiEndpoints } from './endpoints';
 import type { CreateTherapistPayload, TherapistDto } from './types';
 
-const base = () => `${apiConfig.therapist}/api/v1/therapists`;
+const url = (path: string) => `${apiConfig.therapist}${path}`;
 
 export function getAllTherapists() {
-  return apiRequestList<TherapistDto>(base());
+  return apiRequestList<TherapistDto>(url(apiEndpoints.therapists.getAll));
 }
 
 export function getTherapistById(therapistId: string) {
-  return apiRequest<TherapistDto>(`${base()}/${therapistId}`);
+  return apiRequest<TherapistDto>(
+    url(apiEndpoints.therapists.getById(therapistId)),
+  );
 }
 
 export function createTherapist(payload: CreateTherapistPayload) {
-  return apiRequest<TherapistDto>(base(), {
+  return apiRequest<TherapistDto>(url(apiEndpoints.therapists.create), {
     method: 'POST',
     body: payload,
   });

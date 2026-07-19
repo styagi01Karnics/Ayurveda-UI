@@ -11,7 +11,7 @@ export function TopBanner({ onClaimOffer }: TopBannerProps) {
   if (!visible) return null;
 
   return (
-    <div className="flex w-full shrink-0 items-center justify-between gap-3 border-b border-[#ebe4d8] bg-[#f3e8d4] px-4 py-2.5 sm:px-6">
+    <div className="mx-4 mt-3 flex shrink-0 items-center justify-between gap-3 rounded-[10px] border border-[#ebe4d8] bg-[#f3e8d4] px-4 py-2.5 opacity-100 sm:mx-6 sm:px-6">
       <p className="flex-1 text-center text-xs text-brown sm:text-sm">
         Get Up to 50% Off on Ayurvedic Medicines &amp; Wellness Products{' '}
         <button

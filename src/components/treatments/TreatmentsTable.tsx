@@ -5,11 +5,16 @@ import type { TreatmentRecord } from '@/types';
 interface TreatmentsTableProps {
   records: TreatmentRecord[];
   onRowClick?: (record: TreatmentRecord) => void;
+  embedded?: boolean;
 }
 
-export function TreatmentsTable({ records, onRowClick }: TreatmentsTableProps) {
+export function TreatmentsTable({
+  records,
+  onRowClick,
+  embedded,
+}: TreatmentsTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">

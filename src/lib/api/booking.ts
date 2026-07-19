@@ -5,6 +5,7 @@ import {
 import type {
   AppointmentDto,
   AppointmentTherapyDto,
+  CreateAppointmentPayload,
   CreatePatientPayload,
 } from '@/lib/api/types';
 import {
@@ -21,26 +22,33 @@ export interface BookAppointmentResult {
   patientId: string;
 }
 
+/** Exact patient object shape from Postman appointment booking curl. */
 function toPatientPayload(data: CreatePatientValues): CreatePatientPayload {
   return {
-    fullName: data.fullName,
+    fullName: data.fullName.trim(),
     gender: toApiGender(data.gender),
     dateOfBirth: data.dateOfBirth,
     age: Number(data.age),
     preferredLanguage: data.preferredLanguage,
-    mobileNumber: data.mobileNumber,
-    email: data.email,
+    mobileNumber: data.mobileNumber.trim(),
+    email: data.email.trim(),
     state: data.state,
     city: data.city,
-    address: data.permanentAddress,
-    emergencyContactName: data.emergencyName,
+    address: data.permanentAddress.trim(),
+    emergencyContactName: data.emergencyName.trim(),
     emergencyRelationship: data.emergencyRelation,
-    emergencyPhoneNumber: data.emergencyPhone,
+    emergencyPhoneNumber: data.emergencyPhone.trim(),
     idProofType: toApiIdProofType(data.idProofType),
-    idProofNumber: data.idNumber,
+    idProofNumber: data.idNumber.trim(),
     occupation: data.occupation,
-    insuranceDetails: data.insuranceDetails || undefined,
+    insuranceDetails: data.insuranceDetails?.trim() || 'None',
   };
+}
+
+function wantsTherapy(data: CreatePatientValues): boolean {
+  return data.consultationTypes.some((type) =>
+    type.toUpperCase().includes('THERAPY'),
+  );
 }
 
 function extractPatientId(appointment: AppointmentDto): string | undefined {
@@ -51,19 +59,27 @@ function extractPatientId(appointment: AppointmentDto): string | undefined {
   return undefined;
 }
 
+function normalizeScheduleTime(time: string): string {
+  if (!time) return time;
+  return time.length === 5 ? `${time}:00` : time;
+}
+
 /**
- * Books a consultation appointment, and optionally a therapy session
- * when therapy fields are present (mirrors Create Patient modal steps 1–2).
+ * Matches Postman:
+ * POST http://103.174.103.250:8103/api/v1/appointments
+ * then optionally POST .../appointment-therapies
  */
 export async function bookAppointmentFlow(
   data: CreatePatientValues,
 ): Promise<BookAppointmentResult> {
-  const appointment = await createAppointment({
+  const payload: CreateAppointmentPayload = {
     patient: toPatientPayload(data),
     registrationDate: data.registrationDate,
     assignedDoctorId: data.assignedDoctor,
     consultationTypes: toApiConsultationTypes(data.consultationTypes),
-  });
+  };
+
+  const appointment = await createAppointment(payload);
 
   const patientId = extractPatientId(appointment);
   if (!patientId) {
@@ -72,23 +88,24 @@ export async function bookAppointmentFlow(
     );
   }
 
-  const wantsTherapy = data.consultationTypes.some((type) =>
-    type.toUpperCase().includes('THERAPY'),
-  );
-
   let therapy: AppointmentTherapyDto | null = null;
-  if (wantsTherapy || data.recommendedTherapies.length > 0) {
-    const scheduleTime =
-      data.scheduleTime.length === 5
-        ? `${data.scheduleTime}:00`
-        : data.scheduleTime;
+  if (wantsTherapy(data)) {
+    if (
+      !data.treatmentCategory ||
+      !data.assignedTherapist ||
+      !data.recommendedTherapies?.length
+    ) {
+      throw new Error(
+        'Therapy booking requires category, therapist, and at least one therapy.',
+      );
+    }
 
     therapy = await createAppointmentTherapy({
       patientId,
       treatmentCategoryId: data.treatmentCategory,
       assignedTherapistId: data.assignedTherapist,
       scheduleDate: data.scheduleDate,
-      scheduleTime,
+      scheduleTime: normalizeScheduleTime(data.scheduleTime),
       sessionDuration: parseSessionNumber(data.sessionDuration),
       sessionFrequency: parseSessionNumber(data.sessionFrequency) || 1,
       therapyInstructions: data.therapyInstructions,

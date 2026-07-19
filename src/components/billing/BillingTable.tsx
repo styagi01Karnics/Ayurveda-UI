@@ -7,11 +7,16 @@ import type { BillingRecord } from '@/types';
 interface BillingTableProps {
   records: BillingRecord[];
   onDownload: (record: BillingRecord) => void;
+  embedded?: boolean;
 }
 
-export function BillingTable({ records, onDownload }: BillingTableProps) {
+export function BillingTable({
+  records,
+  onDownload,
+  embedded,
+}: BillingTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">

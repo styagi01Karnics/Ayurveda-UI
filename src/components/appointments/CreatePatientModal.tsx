@@ -15,6 +15,7 @@ import {
   CONSULTATION_TYPES,
   GENDER_OPTIONS,
   ID_PROOF_TYPES,
+  includesTherapyType,
   LANGUAGE_OPTIONS,
   OCCUPATION_OPTIONS,
   patientStep1Schema,
@@ -27,6 +28,17 @@ import {
   type PatientStep3Values,
 } from '@/lib/validation/patient.schema';
 import { INDIAN_STATES, CITIES_BY_STATE } from '@/lib/validation/signup.schema';
+
+const EMPTY_THERAPY: PatientStep2Values = {
+  treatmentCategory: '',
+  recommendedTherapies: [],
+  scheduleDate: '',
+  scheduleTime: '',
+  sessionDuration: '',
+  sessionFrequency: '',
+  assignedTherapist: '',
+  therapyInstructions: '',
+};
 
 const STEPS = [
   { id: 1, label: 'Personal Information' },
@@ -102,7 +114,13 @@ export function CreatePatientModal({
 
   const handleStep1 = step1Form.handleSubmit((data) => {
     setFormData((prev) => ({ ...prev, ...data }));
-    setStep(2);
+    // Therapy step only when API therapy appointment is needed.
+    if (includesTherapyType(data.consultationTypes)) {
+      setStep(2);
+    } else {
+      setFormData((prev) => ({ ...prev, ...data, ...EMPTY_THERAPY }));
+      setStep(3);
+    }
   });
 
   const handleStep2 = step2Form.handleSubmit((data) => {
@@ -111,9 +129,19 @@ export function CreatePatientModal({
   });
 
   const handleStep3 = step3Form.handleSubmit(async (data) => {
-    const complete = { ...formData, ...data } as CreatePatientValues;
+    const complete = {
+      ...EMPTY_THERAPY,
+      ...formData,
+      ...data,
+    } as CreatePatientValues;
     await onSubmit(complete);
   });
+
+  const needsTherapy = includesTherapyType(
+    (formData.consultationTypes as string[] | undefined) ??
+      step1Form.watch('consultationTypes') ??
+      [],
+  );
 
   const selectedState = step1Form.watch('state');
   const selectedCategory = step2Form.watch('treatmentCategory');
@@ -177,7 +205,11 @@ export function CreatePatientModal({
           </div>
         ) : (
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep(2)} disabled={submitting}>
+            <Button
+              variant="outline"
+              onClick={() => setStep(needsTherapy ? 2 : 1)}
+              disabled={submitting}
+            >
               Back
             </Button>
             <Button onClick={handleStep3} disabled={submitting}>

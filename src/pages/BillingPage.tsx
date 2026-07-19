@@ -5,6 +5,7 @@ import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { BillingTable } from '@/components/billing/BillingTable';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -59,21 +60,29 @@ export function BillingPage() {
 
   return (
     <PageShell>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SearchField
-          placeholder="Patient ID"
-          value={patientIdQuery}
-          onChange={(e) => setPatientIdQuery(e.target.value)}
-        />
-        <Select
-          placeholder="Status"
-          options={[...BILLING_FILTER_OPTIONS.status]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        />
-      </div>
-
-      <BillingTable records={filteredRecords} onDownload={handleDownload} />
+      <ListPanel
+        filters={
+          <>
+            <FilterControl>
+              <SearchField
+                placeholder="Patient ID"
+                value={patientIdQuery}
+                onChange={(e) => setPatientIdQuery(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Status"
+                options={[...BILLING_FILTER_OPTIONS.status]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              />
+            </FilterControl>
+          </>
+        }
+      >
+        <BillingTable embedded records={filteredRecords} onDownload={handleDownload} />
+      </ListPanel>
 
       <BillInvoiceModal
         open={Boolean(invoicePatient)}

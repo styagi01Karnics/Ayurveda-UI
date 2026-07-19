@@ -1,5 +1,6 @@
 import { apiConfig } from './config';
 import { apiRequest, apiRequestList } from './client';
+import { apiEndpoints } from './endpoints';
 import type {
   AppointmentDto,
   AppointmentTherapyDto,
@@ -13,35 +14,36 @@ import type {
   TherapyDto,
 } from './types';
 
-const base = () => `${apiConfig.appointment}/api/v1`;
+const url = (path: string) => `${apiConfig.appointment}${path}`;
+const ep = apiEndpoints.appointments;
 
 export function getAllTreatmentCategories() {
   return apiRequestList<TreatmentCategoryDto>(
-    `${base()}/treatment-categories`,
+    url(ep.treatmentCategories.getAll),
   );
 }
 
 export function getTreatmentCategoryById(categoryId: string) {
   return apiRequest<TreatmentCategoryDto>(
-    `${base()}/treatment-categories/${categoryId}`,
+    url(ep.treatmentCategories.getById(categoryId)),
   );
 }
 
 export function createTreatmentCategory(
   payload: CreateTreatmentCategoryPayload,
 ) {
-  return apiRequest<TreatmentCategoryDto>(`${base()}/treatment-categories`, {
+  return apiRequest<TreatmentCategoryDto>(url(ep.treatmentCategories.create), {
     method: 'POST',
     body: payload,
   });
 }
 
 export function getAllTherapies() {
-  return apiRequestList<TherapyDto>(`${base()}/therapies`);
+  return apiRequestList<TherapyDto>(url(ep.therapies.getAll));
 }
 
 export function createTherapy(payload: CreateTherapyPayload) {
-  return apiRequest<TherapyDto>(`${base()}/therapies`, {
+  return apiRequest<TherapyDto>(url(ep.therapies.create), {
     method: 'POST',
     body: payload,
   });
@@ -49,16 +51,18 @@ export function createTherapy(payload: CreateTherapyPayload) {
 
 export function getAppointmentsByPatientId(patientId: string) {
   return apiRequestList<AppointmentDto>(
-    `${base()}/appointments/patient/${patientId}`,
+    url(ep.bookings.getByPatientId(patientId)),
   );
 }
 
 export function getAppointmentById(bookingId: string) {
-  return apiRequest<AppointmentDto>(`${base()}/appointments/${bookingId}`);
+  return apiRequest<AppointmentDto>(
+    url(ep.bookings.getByBookingId(bookingId)),
+  );
 }
 
 export function createAppointment(payload: CreateAppointmentPayload) {
-  return apiRequest<AppointmentDto>(`${base()}/appointments`, {
+  return apiRequest<AppointmentDto>(url(ep.bookings.create), {
     method: 'POST',
     body: payload,
   });
@@ -66,35 +70,38 @@ export function createAppointment(payload: CreateAppointmentPayload) {
 
 export function getAppointmentTherapiesByPatientId(patientId: string) {
   return apiRequestList<AppointmentTherapyDto>(
-    `${base()}/appointment-therapies/${patientId}`,
+    url(ep.appointmentTherapies.getByPatientId(patientId)),
   );
 }
 
 export function createAppointmentTherapy(
   payload: CreateAppointmentTherapyPayload,
 ) {
-  return apiRequest<AppointmentTherapyDto>(`${base()}/appointment-therapies`, {
-    method: 'POST',
-    body: payload,
-  });
+  return apiRequest<AppointmentTherapyDto>(
+    url(ep.appointmentTherapies.create),
+    {
+      method: 'POST',
+      body: payload,
+    },
+  );
 }
 
 export function getAllDoshas() {
-  return apiRequestList<DoshaDto>(`${base()}/doshas`);
+  return apiRequestList<DoshaDto>(url(ep.doshas.getAll));
 }
 
 export function getDoshaById(doshaId: string) {
-  return apiRequest<DoshaDto>(`${base()}/doshas/${doshaId}`);
+  return apiRequest<DoshaDto>(url(ep.doshas.getById(doshaId)));
 }
 
 export function createDosha(payload: CreateDoshaPayload) {
-  return apiRequest<DoshaDto>(`${base()}/doshas`, {
+  return apiRequest<DoshaDto>(url(ep.doshas.create), {
     method: 'POST',
     body: payload,
   });
 }
 
-/** Aggregate appointments across patients (no dedicated list-all endpoint). */
+/** Aggregate appointments across patients (API has no list-all endpoint). */
 export async function getAllAppointmentsForPatients(
   patientIds: string[],
 ): Promise<AppointmentDto[]> {

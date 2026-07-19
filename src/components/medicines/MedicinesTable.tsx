@@ -9,11 +9,17 @@ interface MedicinesTableProps {
   records: MedicineRecord[];
   onEdit: (record: MedicineRecord) => void;
   onDelete: (record: MedicineRecord) => void;
+  embedded?: boolean;
 }
 
-export function MedicinesTable({ records, onEdit, onDelete }: MedicinesTableProps) {
+export function MedicinesTable({
+  records,
+  onEdit,
+  onDelete,
+  embedded,
+}: MedicinesTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">

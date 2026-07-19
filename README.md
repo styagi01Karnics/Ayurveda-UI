@@ -9,18 +9,19 @@ npm install
 npm run dev
 ```
 
-API calls use Vite proxy prefixes (avoids CORS in local dev). The browser hits same-origin paths; Vite forwards to the real servers:
+API calls use same-origin `/api/v1/...` paths (no `/appointment-api` prefix).  
+Vite proxies them to the backend hosts (avoids CORS):
 
-| Env / prefix | Forwards to |
-|--------------|-------------|
-| `/patient-api` | `http://103.174.103.250:8101` |
-| `/doctor-api` | `http://103.174.103.250:8102` |
-| `/appointment-api` | `http://103.174.103.250:8103` |
-| `/therapist-api` | `http://103.174.103.250:8104` |
+| Browser path | Proxied to |
+|--------------|------------|
+| `/api/v1/patients/...` | `http://103.174.103.250:8101` |
+| `/api/v1/doctors/...` | `http://103.174.103.250:8102` |
+| `/api/v1/appointments/...` | `http://103.174.103.250:8103` |
+| `/api/v1/therapists/...` | `http://103.174.103.250:8104` |
 
-Example: UI calls `/doctor-api/api/v1/doctors` → server `http://103.174.103.250:8102/api/v1/doctors`.
+Example: `POST /api/v1/appointments` → `POST http://103.174.103.250:8103/api/v1/appointments`
 
-**Restart `npm run dev` after changing `.env`.** Direct browser calls to `103.174.103.250` will show CORS errors unless the backend allows your origin.
+**Restart `npm run dev` after changing `.env` or `vite.config.ts`.**
 
 ## Patients Module (Figma-aligned)
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PageShell } from '@/components/layout/PageShell';
 import { TreatmentsTable } from '@/components/treatments/TreatmentsTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { TREATMENT_FILTER_OPTIONS } from '@/data/mock/treatments';
@@ -89,53 +90,66 @@ export function TreatmentsPage() {
 
   return (
     <PageShell>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <SearchField
-          placeholder="Patient"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Select
-          placeholder="Status"
-          options={[...TREATMENT_FILTER_OPTIONS.status]}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        />
-        <Select
-          placeholder="Visit type"
-          options={[...TREATMENT_FILTER_OPTIONS.visitType]}
-          value={visitTypeFilter}
-          onChange={(e) => setVisitTypeFilter(e.target.value)}
-        />
-        <div className="relative">
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-brown focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-          />
-          {!dateFilter && (
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-              Date Created
-            </span>
-          )}
-        </div>
-      </div>
-
-      <AsyncStatus
-        loading={loading}
-        error={error}
-        onRetry={reload}
-        empty={!loading && !error && filteredTreatments.length === 0}
-        emptyMessage="No treatments found."
+      <ListPanel
+        filters={
+          <>
+            <FilterControl>
+              <SearchField
+                placeholder="Patient"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Status"
+                options={[...TREATMENT_FILTER_OPTIONS.status]}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Visit type"
+                options={[...TREATMENT_FILTER_OPTIONS.visitType]}
+                value={visitTypeFilter}
+                onChange={(e) => setVisitTypeFilter(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <div className="relative">
+                <input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-brown focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
+                />
+                {!dateFilter && (
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                    Date Created
+                  </span>
+                )}
+              </div>
+            </FilterControl>
+          </>
+        }
       >
-        <TreatmentsTable
-          records={filteredTreatments}
-          onRowClick={(record) =>
-            navigate(`/treatments/patient/${record.patientDetailId}`)
-          }
-        />
-      </AsyncStatus>
+        <AsyncStatus
+          loading={loading}
+          error={error}
+          onRetry={reload}
+          empty={!loading && !error && filteredTreatments.length === 0}
+          emptyMessage="No treatments found."
+        >
+          <TreatmentsTable
+            embedded
+            records={filteredTreatments}
+            onRowClick={(record) =>
+              navigate(`/treatments/patient/${record.patientDetailId}`)
+            }
+          />
+        </AsyncStatus>
+      </ListPanel>
     </PageShell>
   );
 }

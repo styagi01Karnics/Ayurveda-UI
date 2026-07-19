@@ -43,7 +43,7 @@ export async function apiRequest<T>(
   const response = await fetch(url, {
     ...rest,
     headers: {
-      accept: 'application/json',
+      accept: '*/*',
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...headers,
     },

@@ -6,6 +6,7 @@ import { DoctorStatCards } from '@/components/doctors/DoctorStatCards';
 import { DoctorsTable } from '@/components/doctors/DoctorsTable';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -71,38 +72,48 @@ export function DoctorsPage() {
   usePageAction(headerAction);
 
   return (
-    <PageShell>
+    <PageShell className="space-y-4">
       <AsyncStatus loading={loading} error={error} onRetry={reload}>
         <DoctorStatCards doctors={doctors} />
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <SearchField
-            placeholder="Search doctor"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Select
-            placeholder="Status"
-            options={[...STATUS_OPTIONS]}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          />
-          <Select
-            placeholder="Department"
-            options={departmentOptions}
-            value={departmentFilter}
-            onChange={(e) => setDepartmentFilter(e.target.value)}
-          />
-        </div>
-
-        <AsyncStatus
-          loading={false}
-          error={null}
-          empty={filteredDoctors.length === 0}
-          emptyMessage="No doctors found."
+        <ListPanel
+          filters={
+            <>
+              <FilterControl>
+                <SearchField
+                  placeholder="Search doctor"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </FilterControl>
+              <FilterControl>
+                <Select
+                  placeholder="Status"
+                  options={[...STATUS_OPTIONS]}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                />
+              </FilterControl>
+              <FilterControl>
+                <Select
+                  placeholder="Department"
+                  options={departmentOptions}
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                />
+              </FilterControl>
+            </>
+          }
         >
-          <DoctorsTable records={filteredDoctors} />
-        </AsyncStatus>
+          <AsyncStatus
+            loading={false}
+            error={null}
+            empty={filteredDoctors.length === 0}
+            emptyMessage="No doctors found."
+          >
+            <DoctorsTable embedded records={filteredDoctors} />
+          </AsyncStatus>
+        </ListPanel>
       </AsyncStatus>
     </PageShell>
   );

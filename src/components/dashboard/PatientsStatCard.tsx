@@ -16,7 +16,7 @@ export function PatientsStatCard({ stats }: PatientsStatCardProps) {
   return (
     <Card className="dashboard-card flex flex-col">
       <div className="mb-3 flex items-start justify-between">
-        <h3 className="text-sm font-medium text-text-muted">Total Patients</h3>
+        <h3 className="text-base font-medium text-text-muted">Total Patients</h3>
         <PeriodDropdown />
       </div>
 

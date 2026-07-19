@@ -6,6 +6,7 @@ import { DeleteMedicineModal } from '@/components/medicines/DeleteMedicineModal'
 import { MedicineFormModal } from '@/components/medicines/MedicineFormModal';
 import { MedicinesTable } from '@/components/medicines/MedicinesTable';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -100,28 +101,37 @@ export function MedicinesPage() {
 
   return (
     <PageShell>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <SearchField
-          placeholder="Medicine Name"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+      <ListPanel
+        filters={
+          <>
+            <FilterControl>
+              <SearchField
+                placeholder="Medicine Name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </FilterControl>
+            <FilterControl>
+              <Select
+                placeholder="Category"
+                options={[...MEDICINE_FILTER_OPTIONS.category]}
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              />
+            </FilterControl>
+          </>
+        }
+      >
+        <MedicinesTable
+          embedded
+          records={filteredMedicines}
+          onEdit={(record) => {
+            setEditTarget(record);
+            setFormOpen(true);
+          }}
+          onDelete={setDeleteTarget}
         />
-        <Select
-          placeholder="Category"
-          options={[...MEDICINE_FILTER_OPTIONS.category]}
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        />
-      </div>
-
-      <MedicinesTable
-        records={filteredMedicines}
-        onEdit={(record) => {
-          setEditTarget(record);
-          setFormOpen(true);
-        }}
-        onDelete={setDeleteTarget}
-      />
+      </ListPanel>
 
       <MedicineFormModal
         open={formOpen}

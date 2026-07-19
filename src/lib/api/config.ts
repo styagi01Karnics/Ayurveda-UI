@@ -1,24 +1,20 @@
 const trimSlash = (url: string) => url.replace(/\/+$/, '');
 
 /**
- * Defaults use Vite proxy prefixes (same-origin → no CORS in `npm run dev`).
- * Override with absolute hosts only when the backend allows your UI origin,
- * or when building for a same-origin gateway.
+ * Leave bases empty in local dev so requests are `/api/v1/...`
+ * (Vite proxies to 103.174.103.250 — no CORS, no `/appointment-api` prefix).
+ *
+ * For production absolute hosts, set e.g.
+ * VITE_APPOINTMENT_API_URL=http://103.174.103.250:8103
  */
-const DEFAULTS = {
-  patient: '/patient-api',
-  doctor: '/doctor-api',
-  appointment: '/appointment-api',
-  therapist: '/therapist-api',
-} as const;
+function resolveBase(envValue: string | undefined): string {
+  if (envValue == null || envValue.trim() === '') return '';
+  return trimSlash(envValue);
+}
 
 export const apiConfig = {
-  patient: trimSlash(import.meta.env.VITE_PATIENT_API_URL ?? DEFAULTS.patient),
-  doctor: trimSlash(import.meta.env.VITE_DOCTOR_API_URL ?? DEFAULTS.doctor),
-  appointment: trimSlash(
-    import.meta.env.VITE_APPOINTMENT_API_URL ?? DEFAULTS.appointment,
-  ),
-  therapist: trimSlash(
-    import.meta.env.VITE_THERAPIST_API_URL ?? DEFAULTS.therapist,
-  ),
+  patient: resolveBase(import.meta.env.VITE_PATIENT_API_URL),
+  doctor: resolveBase(import.meta.env.VITE_DOCTOR_API_URL),
+  appointment: resolveBase(import.meta.env.VITE_APPOINTMENT_API_URL),
+  therapist: resolveBase(import.meta.env.VITE_THERAPIST_API_URL),
 } as const;

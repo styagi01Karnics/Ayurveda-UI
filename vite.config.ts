@@ -6,6 +6,17 @@ import path from 'node:path';
 
 const BACKEND_HOST = 'http://103.174.103.250';
 
+/**
+ * Same-origin proxy (no CORS). Browser calls `/api/v1/...` directly —
+ * no `/appointment-api` prefix. Vite forwards to the correct service port.
+ */
+function serviceProxy(port: number) {
+  return {
+    target: `${BACKEND_HOST}:${port}`,
+    changeOrigin: true,
+  };
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
@@ -15,26 +26,21 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/patient-api': {
-        target: `${BACKEND_HOST}:8101`,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/patient-api/, ''),
-      },
-      '/doctor-api': {
-        target: `${BACKEND_HOST}:8102`,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/doctor-api/, ''),
-      },
-      '/appointment-api': {
-        target: `${BACKEND_HOST}:8103`,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/appointment-api/, ''),
-      },
-      '/therapist-api': {
-        target: `${BACKEND_HOST}:8104`,
-        changeOrigin: true,
-        rewrite: (p) => p.replace(/^\/therapist-api/, ''),
-      },
+      // Patient-service :8101
+      '/api/v1/patients': serviceProxy(8101),
+
+      // Doctor-service :8102
+      '/api/v1/doctors': serviceProxy(8102),
+
+      // Therapist-service :8104
+      '/api/v1/therapists': serviceProxy(8104),
+
+      // Appointment-service :8103
+      '/api/v1/appointments': serviceProxy(8103),
+      '/api/v1/appointment-therapies': serviceProxy(8103),
+      '/api/v1/treatment-categories': serviceProxy(8103),
+      '/api/v1/therapies': serviceProxy(8103),
+      '/api/v1/doshas': serviceProxy(8103),
     },
   },
   test: {

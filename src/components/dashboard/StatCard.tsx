@@ -19,7 +19,7 @@ export function StatCard({ title, stats, type }: StatCardProps) {
     return (
       <Card className="dashboard-card">
         <div className="mb-3 flex items-start justify-between">
-          <h3 className="text-sm font-medium text-text-muted">{title}</h3>
+          <h3 className="text-base font-medium text-text-muted">{title}</h3>
           <PeriodDropdown />
         </div>
         <p className="text-2xl font-bold text-brown lg:text-[28px]">
@@ -53,7 +53,7 @@ export function StatCard({ title, stats, type }: StatCardProps) {
   return (
     <Card className="dashboard-card">
       <div className="mb-3 flex items-start justify-between">
-        <h3 className="text-sm font-medium text-text-muted">{title}</h3>
+        <h3 className="text-base font-medium text-text-muted">{title}</h3>
         <PeriodDropdown />
       </div>
 
