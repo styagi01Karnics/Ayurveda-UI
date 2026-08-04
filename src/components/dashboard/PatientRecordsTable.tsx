@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { DataTableShell } from '@/components/ui/DataTableShell';
 import { cn } from '@/lib/utils';
@@ -9,6 +10,7 @@ interface PatientRecordsTableProps {
   showActions?: boolean;
   compact?: boolean;
   className?: string;
+  viewAllTo?: string;
 }
 
 export function PatientRecordsTable({
@@ -17,14 +19,15 @@ export function PatientRecordsTable({
   showActions = false,
   compact = false,
   className,
+  viewAllTo = '/patients',
 }: PatientRecordsTableProps) {
   return (
     <DataTableShell className={cn('w-full', className)}>
       <div className="flex w-full items-center justify-between border-b border-gray-100 px-4 py-4 sm:px-5">
         <h3 className="font-semibold text-brown">{title}</h3>
-        <button type="button" className="text-sm font-medium text-gold hover:underline">
+        <Link to={viewAllTo} className="text-sm font-medium text-gold hover:underline">
           View All
-        </button>
+        </Link>
       </div>
 
       <div className="w-full min-w-0 overflow-x-auto">

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import {
   CategoryChip,
@@ -14,6 +15,7 @@ interface MedicineStockCardProps {
   inStockPct?: number;
   outOfStockPct?: number;
   lowStockPct?: number;
+  viewAllTo?: string;
 }
 
 export function MedicineStockCard({
@@ -25,6 +27,7 @@ export function MedicineStockCard({
   inStockPct = 68,
   outOfStockPct = 24,
   lowStockPct = 8,
+  viewAllTo = '/medicines',
 }: MedicineStockCardProps) {
   return (
     <Card className="dashboard-card">
@@ -67,9 +70,9 @@ export function MedicineStockCard({
       <div>
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-brown">Low Stock</span>
-          <button type="button" className="text-xs font-medium text-gold underline">
+          <Link to={viewAllTo} className="text-xs font-medium text-gold underline">
             View All
-          </button>
+          </Link>
         </div>
         <ul className="space-y-2">
           {lowStockItems.slice(0, 2).map((item) => (

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { Stethoscope } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { assets } from '@/lib/assets';
@@ -9,6 +10,7 @@ interface TodayScheduleCardProps {
   ongoing: ScheduleAppointment;
   next: ScheduleAppointment;
   remaining: number;
+  viewFullScheduleTo?: string;
 }
 
 export function TodayScheduleCard({
@@ -16,6 +18,7 @@ export function TodayScheduleCard({
   ongoing,
   next,
   remaining,
+  viewFullScheduleTo = '/appointments',
 }: TodayScheduleCardProps) {
   return (
     <Card className="dashboard-card relative overflow-hidden border-[#e8dfd0] bg-[#fdf8ee] p-5">
@@ -54,12 +57,12 @@ export function TodayScheduleCard({
         </ScheduleSubCard>
       </div>
 
-      <button
-        type="button"
-        className="mt-5 w-full rounded-xl border border-gold bg-transparent py-2.5 text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
+      <Link
+        to={viewFullScheduleTo}
+        className="mt-5 block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
       >
         View Full Schedule
-      </button>
+      </Link>
     </Card>
   );
 }

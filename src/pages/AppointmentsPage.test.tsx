@@ -50,6 +50,15 @@ describe('AppointmentsPage', () => {
     expect(screen.getByText('Cancel Appointment')).toBeInTheDocument();
   });
 
+  it('opens reschedule modal for cancelled appointments', async () => {
+    const user = userEvent.setup();
+    renderAppointments();
+    await screen.findAllByText('Khushi Shroff');
+    await user.click(screen.getByRole('button', { name: 'Reschedule' }));
+    expect(screen.getByText('Reschedule Appointment')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit' })).toBeInTheDocument();
+  });
+
   it('opens calendar view', async () => {
     const user = userEvent.setup();
     renderAppointments();

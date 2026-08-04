@@ -5,12 +5,14 @@ import type { AppointmentRecord, VisitType } from '@/types';
 interface AppointmentsTableProps {
   items: AppointmentRecord[];
   onCancel: (id: string) => void;
+  onReschedule: (id: string) => void;
   embedded?: boolean;
 }
 
 export function AppointmentsTable({
   items,
   onCancel,
+  onReschedule,
   embedded,
 }: AppointmentsTableProps) {
   return (
@@ -53,6 +55,14 @@ export function AppointmentsTable({
                       className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-1.5 text-xs font-semibold text-danger hover:bg-danger/15"
                     >
                       Cancel
+                    </button>
+                  ) : item.status === 'Cancelled' ? (
+                    <button
+                      type="button"
+                      onClick={() => onReschedule(item.id)}
+                      className="rounded-lg border border-gold/30 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-gold hover:bg-gold/15"
+                    >
+                      Reschedule
                     </button>
                   ) : (
                     <span className="text-text-muted">—</span>

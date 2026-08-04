@@ -11,6 +11,7 @@ import {
   type BookingLookupOptions,
 } from '@/components/appointments/CreatePatientModal';
 import { FollowUpsTable } from '@/components/appointments/FollowUpsTable';
+import { RescheduleAppointmentModal } from '@/components/appointments/RescheduleAppointmentModal';
 import { ScheduleFollowUpModal } from '@/components/appointments/ScheduleFollowUpModal';
 import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -33,12 +34,15 @@ import {
   getAllTherapies,
   getAllTreatmentCategories,
   getBookingDoshas,
+  rescheduleAppointment,
 } from '@/lib/api/appointments';
 import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
 import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
 import {
   mapPatientAppointmentListItemToRecord,
+  normalizeSlotTimeForApi,
+  toApiConsultationTypes,
 } from '@/lib/api/mappers';
 import { getAllTherapists } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
@@ -46,6 +50,7 @@ import { cn } from '@/lib/utils';
 import type {
   CreatePatientValues,
   FollowUpFormValues,
+  RescheduleAppointmentFormValues,
 } from '@/lib/validation/patient.schema';
 import type {
   AppointmentRecord,
@@ -71,11 +76,14 @@ export function AppointmentsPage() {
   const [cancelTarget, setCancelTarget] = useState<AppointmentRecord | null>(
     null,
   );
+  const [rescheduleTarget, setRescheduleTarget] =
+    useState<AppointmentRecord | null>(null);
   const [confirmedOpen, setConfirmedOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarEventDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
   const [localAppointments, setLocalAppointments] = useState<
     AppointmentRecord[]
   >([]);
@@ -227,6 +235,58 @@ export function AppointmentsPage() {
     } finally {
       setCancelling(false);
       setCancelTarget(null);
+    }
+  };
+
+  const handleRescheduleRequest = (id: string) => {
+    const item = appointments.find((a) => a.id === id);
+    if (item) setRescheduleTarget(item);
+  };
+
+  const handleRescheduleSubmit = async (
+    formData: RescheduleAppointmentFormValues,
+  ) => {
+    if (!rescheduleTarget || rescheduling) return;
+    setRescheduling(true);
+    try {
+      await rescheduleAppointment(rescheduleTarget.id, {
+        patientId: formData.patientId,
+        registrationDate: formData.registrationDate,
+        slotTime: normalizeSlotTimeForApi(formData.slotTime),
+        assignedDoctorId: formData.assignedDoctorId,
+        consultationTypes: toApiConsultationTypes(formData.consultationTypes),
+      });
+
+      const doctorLabel =
+        data.lookupOptions.doctors.find(
+          (d) =>
+            (typeof d === 'string' ? d : d.value) === formData.assignedDoctorId,
+        ) ?? rescheduleTarget.doctor;
+      const doctorName =
+        typeof doctorLabel === 'string' ? doctorLabel : doctorLabel.label;
+
+      setLocalAppointments((prev) =>
+        prev.filter((item) => item.id !== rescheduleTarget.id),
+      );
+
+      showToast({
+        title: 'Appointment rescheduled',
+        message: `${rescheduleTarget.patient}'s appointment with ${doctorName} has been rescheduled.`,
+      });
+      setRescheduleTarget(null);
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Reschedule failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not reschedule appointment.',
+      });
+    } finally {
+      setRescheduling(false);
     }
   };
 
@@ -428,6 +488,7 @@ export function AppointmentsPage() {
                 embedded
                 items={filteredAppointments}
                 onCancel={handleCancelRequest}
+                onReschedule={handleRescheduleRequest}
               />
             </AsyncStatus>
           ) : (
@@ -473,6 +534,15 @@ export function AppointmentsPage() {
         onClose={() => !cancelling && setCancelTarget(null)}
         onConfirm={handleCancelConfirm}
         loading={cancelling}
+      />
+
+      <RescheduleAppointmentModal
+        open={Boolean(rescheduleTarget)}
+        onClose={() => !rescheduling && setRescheduleTarget(null)}
+        onSubmit={handleRescheduleSubmit}
+        appointment={rescheduleTarget}
+        doctorOptions={data.lookupOptions.doctors}
+        submitting={rescheduling}
       />
 
       <AppointmentConfirmedModal

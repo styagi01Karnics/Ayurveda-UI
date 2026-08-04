@@ -1,14 +1,37 @@
 import { ChevronDown } from 'lucide-react';
+import type { BillingPeriod } from '@/lib/api/billing';
 
-export function PeriodDropdown() {
+export const DASHBOARD_PERIOD_OPTIONS: {
+  value: BillingPeriod;
+  label: string;
+}[] = [
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'YEARLY', label: 'Yearly' },
+];
+
+interface PeriodDropdownProps {
+  value: BillingPeriod;
+  onChange: (period: BillingPeriod) => void;
+}
+
+export function PeriodDropdown({ value, onChange }: PeriodDropdownProps) {
   return (
-    <button
-      type="button"
-      className="flex items-center gap-1 rounded-lg border border-[#e8e0d4] bg-white px-2.5 py-1 text-xs text-text-muted"
-    >
-      Monthly
-      <ChevronDown className="h-3 w-3" />
-    </button>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value as BillingPeriod)}
+        aria-label="Select period"
+        className="appearance-none rounded-lg border border-[#e8e0d4] bg-white py-1 pl-2.5 pr-7 text-xs text-text-muted focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
+      >
+        {DASHBOARD_PERIOD_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-text-muted" />
+    </div>
   );
 }
 

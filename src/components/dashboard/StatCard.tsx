@@ -5,6 +5,7 @@ import {
   PeriodDropdown,
   SemiCircleGauge,
 } from '@/components/dashboard/DashboardPrimitives';
+import type { BillingPeriod } from '@/lib/api/billing';
 import { formatCurrency, formatNumber } from '@/lib/utils';
 import type { DashboardStats } from '@/types';
 
@@ -12,17 +13,24 @@ interface StatCardProps {
   title: string;
   stats: DashboardStats;
   type: 'appointments' | 'billing';
+  period: BillingPeriod;
+  onPeriodChange: (period: BillingPeriod) => void;
 }
 
-export function StatCard({ title, stats, type }: StatCardProps) {
+export function StatCard({
+  title,
+  stats,
+  type,
+  period,
+  onPeriodChange,
+}: StatCardProps) {
   if (type === 'billing') {
     return (
       <Card className="dashboard-card">
         <div className="mb-3 flex items-start justify-between">
           <h3 className="text-base font-medium text-text-muted">{title}</h3>
-          <PeriodDropdown />
-        </div>
-        <p className="text-2xl font-bold text-brown lg:text-[28px]">
+          <PeriodDropdown value={period} onChange={onPeriodChange} />
+        </div>        <p className="text-2xl font-bold text-brown lg:text-[28px]">
           {formatCurrency(stats.billingTotal)}
         </p>
         <span className="mt-2 inline-block rounded-full bg-[#f3e8d4] px-3 py-1 text-xs font-medium text-gold">
@@ -54,9 +62,8 @@ export function StatCard({ title, stats, type }: StatCardProps) {
     <Card className="dashboard-card">
       <div className="mb-3 flex items-start justify-between">
         <h3 className="text-base font-medium text-text-muted">{title}</h3>
-        <PeriodDropdown />
+        <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
-
       <div className="flex items-end gap-2">
         <p className="text-2xl font-bold text-brown lg:text-[28px]">
           {formatNumber(total)}

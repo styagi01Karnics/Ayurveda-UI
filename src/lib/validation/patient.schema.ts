@@ -139,6 +139,20 @@ export const followUpSchema = z.object({
 
 export type FollowUpFormValues = z.infer<typeof followUpSchema>;
 
+export const rescheduleAppointmentSchema = z.object({
+  patientId: z.string().min(1, 'Patient is required'),
+  registrationDate: z.string().min(1, 'Registration date is required'),
+  slotTime: z.string().min(1, 'Appointment time is required'),
+  assignedDoctorId: z.string().min(1, 'Assigned doctor is required'),
+  consultationTypes: z
+    .array(z.string())
+    .min(1, 'Select at least one consultation type'),
+});
+
+export type RescheduleAppointmentFormValues = z.infer<
+  typeof rescheduleAppointmentSchema
+>;
+
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
 export const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Marathi', 'Gujarati'] as const;
 export const CONSULTATION_TYPES = ['Consultation', 'Therapy'] as const;

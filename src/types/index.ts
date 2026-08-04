@@ -200,6 +200,11 @@ export interface AppointmentRecord {
   appointmentDate: string;
   dateCreated: string;
   status: 'Scheduled' | 'Completed' | 'Cancelled';
+  patientId?: string;
+  assignedDoctorId?: string;
+  registrationDate?: string;
+  slotTime?: string;
+  consultationTypes?: string[];
 }
 
 export interface FollowUpRecord {

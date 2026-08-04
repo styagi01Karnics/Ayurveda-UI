@@ -353,6 +353,11 @@ export function mapPatientAppointmentListItemToRecord(
     ),
     dateCreated: (item.bookingTime ?? item.appointmentDate ?? '').slice(0, 10),
     status: normalizeAppointmentStatus(item.bookingStatus),
+    patientId: item.patientId,
+    assignedDoctorId: item.assignedDoctorId,
+    registrationDate: item.appointmentDate ?? '',
+    slotTime: item.slotTime ?? '',
+    consultationTypes: item.consultationTypes ?? [],
   };
 }
 
@@ -674,6 +679,26 @@ export function toApiConsultationTypes(
     const upper = type.toUpperCase();
     return upper.includes('THERAPY') ? 'THERAPY' : 'CONSULTATION';
   });
+}
+
+export function fromApiConsultationTypes(
+  types?: string[] | null,
+): string[] {
+  if (!types?.length) return ['Consultation'];
+  return types.map((type) => {
+    const upper = type.toUpperCase();
+    return upper.includes('THERAPY') ? 'Therapy' : 'Consultation';
+  });
+}
+
+export function slotTimeForInput(slotTime?: string | null): string {
+  if (!slotTime) return '10:00';
+  return slotTime.slice(0, 5);
+}
+
+export function normalizeSlotTimeForApi(time: string): string {
+  if (!time) return '10:00:00';
+  return time.length === 5 ? `${time}:00` : time;
 }
 
 export function parseSessionNumber(value: string): number {

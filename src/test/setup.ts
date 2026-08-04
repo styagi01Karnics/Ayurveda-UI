@@ -246,6 +246,18 @@ vi.mock('@/lib/api/appointments', () => ({
         slotTime: '09:00:00',
         bookingStatus: 'COMPLETED',
       },
+      {
+        bookingId: 'ap-4',
+        patientId: '37944397',
+        patientDisplayId: 'PT458655',
+        patientFullName: 'Khushi Shroff',
+        assignedDoctorId: 'doc-1',
+        doctorName: 'Dr. Sheekha',
+        consultationTypes: ['CONSULTATION'],
+        appointmentDate: '2026-08-05',
+        slotTime: '10:30:00',
+        bookingStatus: 'CANCELLED',
+      },
     ];
     let rows = [...activeRows, ...inactiveRows];
     if (filters.search) {
@@ -259,6 +271,10 @@ vi.mock('@/lib/api/appointments', () => ({
     return rows;
   }),
   cancelAppointment: vi.fn(async () => ({ id: 'ap-cancelled', bookingStatus: 'CANCELLED' })),
+  rescheduleAppointment: vi.fn(async () => ({
+    id: 'ap-rescheduled',
+    bookingStatus: 'RESCHEDULED',
+  })),
   getAppointmentsByPatientId: vi.fn(async () =>
     initialAppointments.map((a) => ({
       id: a.id,

@@ -1,14 +1,21 @@
 import { TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { DashDivider, PeriodDropdown } from '@/components/dashboard/DashboardPrimitives';
+import type { BillingPeriod } from '@/lib/api/billing';
 import { formatNumber } from '@/lib/utils';
 import type { DashboardStats } from '@/types';
 
 interface PatientsStatCardProps {
   stats: DashboardStats;
+  period: BillingPeriod;
+  onPeriodChange: (period: BillingPeriod) => void;
 }
 
-export function PatientsStatCard({ stats }: PatientsStatCardProps) {
+export function PatientsStatCard({
+  stats,
+  period,
+  onPeriodChange,
+}: PatientsStatCardProps) {
   const total = stats.totalPatients;
   const activePct = Math.round((stats.activePatients / total) * 100);
   const inactivePct = Math.round((stats.inactivePatients / total) * 100);
@@ -17,7 +24,7 @@ export function PatientsStatCard({ stats }: PatientsStatCardProps) {
     <Card className="dashboard-card flex flex-col">
       <div className="mb-3 flex items-start justify-between">
         <h3 className="text-base font-medium text-text-muted">Total Patients</h3>
-        <PeriodDropdown />
+        <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 
       <div className="flex items-end gap-2">
