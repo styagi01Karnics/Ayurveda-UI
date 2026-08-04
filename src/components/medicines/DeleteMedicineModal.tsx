@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/Button';
 interface DeleteMedicineModalProps {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   medicineName?: string;
+  submitting?: boolean;
 }
 
 export function DeleteMedicineModal({
@@ -13,6 +14,7 @@ export function DeleteMedicineModal({
   onClose,
   onConfirm,
   medicineName,
+  submitting = false,
 }: DeleteMedicineModalProps) {
   if (!open) return null;
 
@@ -41,11 +43,15 @@ export function DeleteMedicineModal({
           Are you sure you want to delete {medicineName ?? 'this medicine'}?
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={submitting}>
             Cancel
           </Button>
-          <Button className="bg-danger hover:bg-danger/90" onClick={onConfirm}>
-            Delete
+          <Button
+            className="bg-danger hover:bg-danger/90"
+            onClick={onConfirm}
+            disabled={submitting}
+          >
+            {submitting ? 'Deleting…' : 'Delete'}
           </Button>
         </div>
       </div>

@@ -21,3 +21,24 @@ export function createTherapist(payload: CreateTherapistPayload) {
     body: payload,
   });
 }
+
+export function deleteTherapist(therapistId: string) {
+  return apiRequest<void>(url(apiEndpoints.therapists.getById(therapistId)), {
+    method: 'DELETE',
+  });
+}
+
+export function updateTherapistStatus(therapistId: string, status: string) {
+  return apiRequest<TherapistDto>(
+    url(apiEndpoints.therapists.updateStatus(therapistId)),
+    {
+      method: 'PATCH',
+      body: { status },
+    },
+  );
+}
+
+export function getTherapistsByTherapyIds(therapyIds: string[]) {
+  const query = therapyIds.map(id => `therapyIds=${id}`).join('&');
+  return apiRequestList<TherapistDto>(`${url(apiEndpoints.therapists.getByTherapies)}?${query}`);
+}

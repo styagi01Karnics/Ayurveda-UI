@@ -13,6 +13,7 @@ const validStep1 = {
   preferredLanguage: 'English',
   consultationTypes: ['Consultation'],
   registrationDate: '2026-10-01',
+  appointmentTime: '10:00',
   assignedDoctor: 'Dr. Sheekha',
   mobileNumber: '9876543210',
   email: 'khushi@example.com',

@@ -9,13 +9,39 @@ import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
-import { FILTER_OPTIONS, getPatientByDetailId } from '@/data/mock/patients';
+import { FILTER_OPTIONS } from '@/data/mock/patients';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { getAllPatients } from '@/lib/api/patients';
-import { mapPatientToDetail, mapPatientToRecord } from '@/lib/api/mappers';
-import type { Dosha, PatientRecord, PatientStatus, VisitType } from '@/types';
+import {
+  getAppointmentPatients,
+  getBookingDoshas,
+  type PatientListTab,
+} from '@/lib/api/appointments';
+import {
+  mapPatientAppointmentListItemToPatientRecord,
+  mapPatientToDetail,
+} from '@/lib/api/mappers';
+import { getPatientById } from '@/lib/api/patients';
+import type { PatientRecord, PatientStatus, VisitType } from '@/types';
 
 type PatientTab = 'active' | 'inactive';
+
+function toApiConsultationType(
+  visitType: string,
+): 'CONSULTATION' | 'THERAPY' | undefined {
+  if (!visitType) return undefined;
+  return visitType.toUpperCase().includes('THERAPY') ? 'THERAPY' : 'CONSULTATION';
+}
+
+function toApiBookingStatus(status: string): string | undefined {
+  if (!status) return undefined;
+  const map: Record<string, string> = {
+    Pending: 'SCHEDULED',
+    Completed: 'COMPLETED',
+    Cancelled: 'CANCELLED',
+    'In Progress': 'IN_CONSULTATION',
+  };
+  return map[status] ?? status.toUpperCase().replace(/\s+/g, '_');
+}
 
 export function PatientsPage() {
   const navigate = useNavigate();
@@ -27,96 +53,61 @@ export function PatientsPage() {
   const [uploadPatient, setUploadPatient] = useState<PatientRecord | null>(null);
   const [billPatientId, setBillPatientId] = useState<string | null>(null);
 
+  const statusTab: PatientListTab = activeTab === 'active' ? 'ACTIVE' : 'INACTIVE';
+
   const {
-    data: patients,
+    data,
     loading,
     error,
     reload,
-  } = useAsyncData(async () => {
-    const rows = await getAllPatients();
-    return rows.map((patient) => {
-      const mapped = mapPatientToRecord(patient);
-      const mock = getPatientByDetailId(patient.id);
-      if (!mock) return mapped;
+  } = useAsyncData(
+    async () => {
+      const [rows, doshas] = await Promise.all([
+        getAppointmentPatients({
+          statusTab,
+          search: patientIdQuery.trim() || undefined,
+          bookingStatus: toApiBookingStatus(statusFilter),
+          consultationType: toApiConsultationType(visitTypeFilter),
+          doshaId: doshaFilter || undefined,
+        }),
+        getBookingDoshas().catch(() => []),
+      ]);
+
       return {
-        ...mapped,
-        doctor: mock.doctor,
-        visitType: mock.visitType,
-        appointmentDate: mock.appointmentDate,
-        dosha: mock.dosha,
-        status: mock.status,
-        isActive: mock.isActive,
+        patients: rows.map((row) =>
+          mapPatientAppointmentListItemToPatientRecord(row, activeTab),
+        ),
+        doshaOptions: doshas.map((d) => ({ value: d.id, label: d.name })),
       };
-    });
-  }, []);
+    },
+    { patients: [] as PatientRecord[], doshaOptions: [] as { value: string; label: string }[] },
+    [statusTab, patientIdQuery, statusFilter, visitTypeFilter, doshaFilter, activeTab],
+  );
 
   const filteredPatients = useMemo(() => {
-    return patients.filter((patient) => {
-      const matchesTab =
-        activeTab === 'active' ? patient.isActive : !patient.isActive;
-      const matchesId =
-        !patientIdQuery ||
-        patient.id.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
-        patient.secondaryId.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
-        patient.detailId.includes(patientIdQuery) ||
-        patient.name.toLowerCase().includes(patientIdQuery.toLowerCase());
+    return data.patients.filter((patient) => {
       const matchesStatus =
         !statusFilter || patient.status === (statusFilter as PatientStatus);
       const matchesVisit =
         !visitTypeFilter ||
         patient.visitType === (visitTypeFilter as VisitType);
-      const matchesDosha =
-        !doshaFilter || patient.dosha === (doshaFilter as Dosha);
-
-      return (
-        matchesTab &&
-        matchesId &&
-        matchesStatus &&
-        matchesVisit &&
-        matchesDosha
-      );
+      return matchesStatus && matchesVisit;
     });
-  }, [
-    patients,
-    activeTab,
-    patientIdQuery,
-    statusFilter,
-    visitTypeFilter,
-    doshaFilter,
-  ]);
+  }, [data.patients, statusFilter, visitTypeFilter]);
 
-  const billPatient = useMemo(() => {
-    if (!billPatientId) return null;
-    const mock = getPatientByDetailId(billPatientId);
-    if (mock) return mock;
-
-    const record = patients.find(
-      (p) => p.detailId === billPatientId || p.id === billPatientId,
-    );
-    if (!record) return null;
-    return mapPatientToDetail({
-      id: record.detailId,
-      patientCode: record.secondaryId,
-      fullName: record.name,
-      gender: 'UNKNOWN',
-      dateOfBirth: '',
-      age: 0,
-      preferredLanguage: '',
-      email: '',
-      mobileNumber: record.phone.replace(/^\+91-?/, ''),
-      state: '',
-      city: '',
-      address: '',
-      emergencyContactName: '',
-      emergencyRelationship: '',
-      emergencyPhoneNumber: '',
-      idProofType: '',
-      idProofNumber: '',
-      occupation: '',
-      insuranceDetails: '',
-      active: record.isActive,
-    });
-  }, [billPatientId, patients]);
+  const { data: billPatient } = useAsyncData(
+    async () => {
+      if (!billPatientId) return null;
+      try {
+        const dto = await getPatientById(billPatientId);
+        return mapPatientToDetail(dto);
+      } catch {
+        return null;
+      }
+    },
+    null,
+    [billPatientId],
+  );
 
   const handleRowClick = (record: PatientRecord) => {
     navigate(`/patients/${record.detailId}`);
@@ -168,7 +159,7 @@ export function PatientsPage() {
             <FilterControl>
               <Select
                 placeholder="Dosha"
-                options={[...FILTER_OPTIONS.dosha]}
+                options={data.doshaOptions}
                 value={doshaFilter}
                 onChange={(e) => setDoshaFilter(e.target.value)}
               />

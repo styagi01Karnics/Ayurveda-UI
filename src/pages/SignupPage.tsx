@@ -9,7 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { mockSignup } from '@/lib/auth';
+import { login as loginApi, registerTenant } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { mapAuthTokenToSession, setAuthSession } from '@/lib/auth';
 import {
   CITIES_BY_STATE,
   CLINIC_TYPES,
@@ -23,6 +25,7 @@ const authField = { fieldVariant: 'auth' as const };
 export function SignupPage() {
   const navigate = useNavigate();
   const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -61,13 +64,43 @@ export function SignupPage() {
     }
   }, [selectedState, setValue]);
 
-  const onSubmit = (values: SignupFormValues) => {
-    mockSignup({
-      fullName: values.fullName,
-      email: values.email,
-      userId: values.userId,
-    });
-    navigate('/dashboard');
+  const onSubmit = async (values: SignupFormValues) => {
+    setSubmitError(null);
+    try {
+      const tenantCode =
+        values.registrationNumber.replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase() ||
+        values.clinicName.replace(/\s+/g, '').slice(0, 3).toUpperCase();
+
+      await registerTenant({
+        tenantCode,
+        name: values.clinicName,
+        email: values.email,
+        phone: values.mobileNumber,
+        address: [values.addressLine1, values.addressLine2, values.city, values.state]
+          .filter(Boolean)
+          .join(', '),
+        adminFullName: values.fullName,
+        adminUsername: values.userId,
+        adminEmail: values.email,
+        adminPassword: values.password,
+      });
+
+      const auth = await loginApi({
+        usernameOrEmail: values.userId,
+        password: values.password,
+      });
+      const session = mapAuthTokenToSession(auth);
+      setAuthSession(session.token, session.user);
+      navigate('/dashboard');
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Signup failed. Please try again.',
+      );
+    }
   };
 
   return (
@@ -235,6 +268,11 @@ export function SignupPage() {
           </AuthFormSection>
 
           <div className="space-y-4 pt-2">
+            {submitError && (
+              <p className="text-sm text-danger" role="alert">
+                {submitError}
+              </p>
+            )}
             <Button
               type="submit"
               fullWidth

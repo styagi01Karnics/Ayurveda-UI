@@ -10,6 +10,7 @@ export const patientStep1Schema = z.object({
     .array(z.string())
     .min(1, 'Select at least one consultation type'),
   registrationDate: z.string().min(1, 'Registration date is required'),
+  appointmentTime: z.string().min(1, 'Appointment time is required'),
   assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
   mobileNumber: z
     .string()
@@ -111,7 +112,13 @@ export const createPatientSchema = patientStep1Schema
 export type PatientStep1Values = z.infer<typeof patientStep1Schema>;
 export type PatientStep2Values = z.infer<typeof patientStep2Schema>;
 export type PatientStep3Values = z.infer<typeof patientStep3Schema>;
-export type CreatePatientValues = z.infer<typeof createPatientSchema>;
+export type CreatePatientValues = z.infer<typeof createPatientSchema> & {
+  uploadedDocuments?: {
+    pastMedicalReports: File[];
+    prescriptions: File[];
+    labReports: File[];
+  };
+};
 
 export function includesTherapyType(types: string[]): boolean {
   return types.some((type) => type.toUpperCase().includes('THERAPY'));

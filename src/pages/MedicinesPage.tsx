@@ -6,29 +6,57 @@ import { DeleteMedicineModal } from '@/components/medicines/DeleteMedicineModal'
 import { MedicineFormModal } from '@/components/medicines/MedicineFormModal';
 import { MedicinesTable } from '@/components/medicines/MedicinesTable';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import {
+  createMedicine,
+  createMultipleMedicines,
+  deleteMedicine,
+  getAllMedicines,
+  getMedicineCategories,
+  updateMedicine,
+} from '@/lib/api/medicines';
+import { ApiError } from '@/lib/api/client';
+import {
+  mapMedicineCategoryOptions,
+  mapMedicineToRecord,
+  toApiMedicineCategory,
+} from '@/lib/api/mappers';
+import type { CreateMedicinePayload } from '@/lib/api/types';
 import { assets } from '@/lib/assets';
-import { initialMedicines, MEDICINE_FILTER_OPTIONS } from '@/data/mock/medicines';
 import type { MedicineFormValues } from '@/lib/validation/medicine.schema';
 import type { MedicineRecord } from '@/types';
 
-function formatExpiryDate(date: string): string {
-  const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return date;
-  return parsed.toLocaleDateString('en-GB');
-}
-
 export function MedicinesPage() {
   const { showToast } = useToast();
-  const [medicines, setMedicines] = useState(initialMedicines);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<MedicineRecord | null>(null);
   const [editTarget, setEditTarget] = useState<MedicineRecord | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const {
+    data,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(async () => {
+    const [rows, apiCategories] = await Promise.all([
+      getAllMedicines(),
+      getMedicineCategories(),
+    ]);
+
+    return {
+      medicines: rows.map(mapMedicineToRecord),
+      categoryOptions: mapMedicineCategoryOptions(apiCategories),
+    };
+  }, { medicines: [] as MedicineRecord[], categoryOptions: [] });
 
   const headerAction = useMemo(
     () => (
@@ -49,103 +77,173 @@ export function MedicinesPage() {
   usePageAction(headerAction);
 
   const filteredMedicines = useMemo(() => {
-    return medicines.filter((item) => {
+    return data.medicines.filter((item) => {
       const matchesSearch =
         !searchQuery ||
         item.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory =
-        !categoryFilter || item.category === categoryFilter;
+        !categoryFilter || item.categoryCode === categoryFilter;
       return matchesSearch && matchesCategory;
     });
-  }, [medicines, searchQuery, categoryFilter]);
+  }, [data.medicines, searchQuery, categoryFilter]);
 
-  const handleSubmit = (values: MedicineFormValues) => {
-    const record: MedicineRecord = {
-      id: editTarget?.id ?? `med-${Date.now()}`,
-      name: values.name,
-      category: values.category,
-      stockQuantity: Number(values.stockQuantity),
-      expiryDate: formatExpiryDate(values.expiryDate),
-      price: Number(values.price),
-      status: values.status,
-    };
+  const buildPayload = (values: MedicineFormValues): CreateMedicinePayload => ({
+    medicineName: values.name.trim(),
+    category: toApiMedicineCategory(values.category),
+    manufacturer: values.manufacturer.trim(),
+    batchNumber: values.batchNumber.trim(),
+    quantity: Number(values.stockQuantity),
+    expiryDate: values.expiryDate,
+    purchasePrice: Number(values.purchasePrice),
+    sellingPrice: Number(values.price),
+    lowStockAlertEnabled: values.lowStockAlertEnabled,
+    lowStockThreshold: Number(values.lowStockThreshold),
+    status: 'ACTIVE',
+  });
 
-    if (editTarget) {
-      setMedicines((prev) =>
-        prev.map((m) => (m.id === editTarget.id ? record : m)),
-      );
+  const handleSubmit = async (values: MedicineFormValues) => {
+    setSaving(true);
+    try {
+      const payload = buildPayload(values);
+
+      if (editTarget) {
+        await updateMedicine(editTarget.id, payload);
+        showToast({
+          title: 'Medicine Updated',
+          message: `${values.name} has been updated successfully.`,
+        });
+      } else {
+        await createMedicine(payload);
+        showToast({
+          title: 'Medicine Added',
+          message: `${values.name} has been added to inventory.`,
+        });
+      }
+
+      setFormOpen(false);
+      setEditTarget(null);
+      reload();
+    } catch (err) {
       showToast({
-        title: 'Medicine Updated',
-        message: `${record.name} has been updated successfully.`,
+        title: 'Error',
+        message:
+          err instanceof ApiError ? err.message : 'Failed to save medicine',
       });
-    } else {
-      setMedicines((prev) => [record, ...prev]);
-      showToast({
-        title: 'Medicine Added',
-        message: `${record.name} has been added to inventory.`,
-      });
+    } finally {
+      setSaving(false);
     }
-    setFormOpen(false);
-    setEditTarget(null);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleSubmitBulk = async (items: MedicineFormValues[]) => {
+    setSaving(true);
+    try {
+      const payloads = items.map(buildPayload);
+      await createMultipleMedicines(payloads);
+      showToast({
+        title: 'Medicines Added',
+        message: `${payloads.length} medicines have been added to inventory.`,
+      });
+      setFormOpen(false);
+      setEditTarget(null);
+      reload();
+    } catch (err) {
+      showToast({
+        title: 'Error',
+        message:
+          err instanceof ApiError ? err.message : 'Failed to save medicines',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setMedicines((prev) => prev.filter((m) => m.id !== deleteTarget.id));
-    showToast({
-      title: 'Medicine has been deleted',
-      message: `${deleteTarget.name} was removed from inventory.`,
-    });
-    setDeleteTarget(null);
+    setDeleting(true);
+    try {
+      await deleteMedicine(deleteTarget.id);
+      showToast({
+        title: 'Medicine has been deleted',
+        message: `${deleteTarget.name} was removed from inventory.`,
+      });
+      setDeleteTarget(null);
+      reload();
+    } catch (err) {
+      showToast({
+        title: 'Error',
+        message:
+          err instanceof ApiError ? err.message : 'Failed to delete medicine',
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <PageShell>
-      <ListPanel
-        filters={
-          <>
-            <FilterControl>
-              <SearchField
-                placeholder="Medicine Name"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </FilterControl>
-            <FilterControl>
-              <Select
-                placeholder="Category"
-                options={[...MEDICINE_FILTER_OPTIONS.category]}
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              />
-            </FilterControl>
-          </>
-        }
-      >
-        <MedicinesTable
-          embedded
-          records={filteredMedicines}
-          onEdit={(record) => {
-            setEditTarget(record);
-            setFormOpen(true);
-          }}
-          onDelete={setDeleteTarget}
-        />
-      </ListPanel>
+      <AsyncStatus loading={loading} error={error} onRetry={reload}>
+        <ListPanel
+          filters={
+            <>
+              <FilterControl>
+                <SearchField
+                  placeholder="Medicine Name"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </FilterControl>
+              <FilterControl>
+                <Select
+                  placeholder="Category"
+                  options={data.categoryOptions}
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                />
+              </FilterControl>
+            </>
+          }
+        >
+          <AsyncStatus
+            loading={false}
+            error={null}
+            empty={filteredMedicines.length === 0}
+            emptyMessage="No medicines found matching your filters."
+          >
+            <MedicinesTable
+              embedded
+              records={filteredMedicines}
+              onEdit={(record) => {
+                setEditTarget(record);
+                setFormOpen(true);
+              }}
+              onDelete={setDeleteTarget}
+            />
+          </AsyncStatus>
+        </ListPanel>
+      </AsyncStatus>
 
       <MedicineFormModal
         open={formOpen}
+        submitting={saving}
+        categoriesLoading={loading}
+        categoryOptions={data.categoryOptions}
         onClose={() => {
+          if (saving) return;
           setFormOpen(false);
           setEditTarget(null);
         }}
         onSubmit={handleSubmit}
+        onSubmitBulk={handleSubmitBulk}
         medicine={editTarget}
       />
 
       <DeleteMedicineModal
         open={Boolean(deleteTarget)}
-        onClose={() => setDeleteTarget(null)}
+        submitting={deleting}
+        onClose={() => {
+          if (deleting) return;
+          setDeleteTarget(null);
+        }}
         onConfirm={handleDeleteConfirm}
         medicineName={deleteTarget?.name}
       />

@@ -49,16 +49,25 @@ export const clinicDoctorSchema = z.object({
 
 export type ClinicDoctorFormValues = z.infer<typeof clinicDoctorSchema>;
 
+export const clinicCategorySchema = z.object({
+  categoryName: z.string().min(1, 'Category name is required'),
+  description: z.string().min(1, 'Description is required'),
+});
+
+export type ClinicCategoryFormValues = z.infer<typeof clinicCategorySchema>;
+
 export const clinicTherapySchema = z.object({
   name: z.string().min(1, 'Therapy name is required'),
   category: z.string().min(1, 'Category is required'),
-  status: z.enum(CLINIC_STATUS_OPTIONS),
-  duration: z.string().min(1, 'Duration is required'),
+  duration: z
+    .string()
+    .min(1, 'Duration is required')
+    .regex(/\d+/, 'Enter duration in minutes'),
   price: z
     .string()
     .min(1, 'Price is required')
     .regex(/^\d+$/, 'Enter a valid price'),
-  assignedTherapist: z.string().min(1, 'Assigned therapist is required'),
+  description: z.string().min(1, 'Description is required'),
 });
 
 export type ClinicTherapyFormValues = z.infer<typeof clinicTherapySchema>;
@@ -66,7 +75,7 @@ export type ClinicTherapyFormValues = z.infer<typeof clinicTherapySchema>;
 export const clinicTherapistSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   status: z.enum(CLINIC_STATUS_OPTIONS),
-  assignedTherapies: z
+  assignedTherapyIds: z
     .array(z.string())
     .min(1, 'Select at least one therapy'),
 });

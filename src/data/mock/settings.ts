@@ -24,10 +24,11 @@ export const initialClinicTherapies: ClinicTherapyRecord[] = [
     id: 'therapy-1',
     name: 'Panchakarma',
     category: 'Category',
-    status: 'Active',
+    categoryId: 'cat-1',
     duration: '45 min.',
     price: 500,
-    assignedTherapist: 'Dr. Narendra Jain',
+    description: 'Panchakarma therapy',
+    status: 'Active',
   },
 ];
 

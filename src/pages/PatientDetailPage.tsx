@@ -10,46 +10,23 @@ import {
 import { PatientBreadcrumbs } from '@/components/patients/PatientsTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
-import { getPatientByDetailId } from '@/data/mock/patients';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
   getAppointmentTherapiesByPatientId,
   getAppointmentsByPatientId,
+  getMedicalAssessmentByPatientId,
 } from '@/lib/api/appointments';
+import { getInvoices } from '@/lib/api/billing';
 import { getAllDoctors } from '@/lib/api/doctors';
-import { mapPatientToDetail } from '@/lib/api/mappers';
+import {
+  mapInvoicesToPatientBilling,
+  mapMedicalAssessmentDtoToUi,
+  mapPatientToDetail,
+  pickDosha,
+} from '@/lib/api/mappers';
 import { getPatientById } from '@/lib/api/patients';
 import { getAllTherapists } from '@/lib/api/therapists';
-import type { PatientDetail } from '@/types';
 import type { PatientDetailTab } from '@/types/patientDetail';
-
-function mergeWithMockDetail(detail: PatientDetail): PatientDetail {
-  const mock = getPatientByDetailId(detail.detailId);
-  if (!mock) return detail;
-
-  return {
-    ...mock,
-    ...detail,
-    name: detail.name || mock.name,
-    phone: detail.phone || mock.phone,
-    doctor: detail.doctor !== '—' ? detail.doctor : mock.doctor,
-    personalInfo: {
-      ...mock.personalInfo,
-      ...Object.fromEntries(
-        Object.entries(detail.personalInfo).filter(
-          ([, value]) => value && value !== '—',
-        ),
-      ),
-    },
-    medicalAssessment: mock.medicalAssessment,
-    treatmentFollowUp: mock.treatmentFollowUp,
-    billing: mock.billing,
-    invoice: mock.invoice,
-    treatmentStatus: mock.treatmentStatus,
-    dosha: mock.dosha,
-    status: mock.status,
-  };
-}
 
 export function PatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
@@ -60,14 +37,23 @@ export function PatientDetailPage() {
     async () => {
       if (!patientId) return null;
 
-      const [apiPatient, doctors, therapists, appointments, therapies] =
-        await Promise.all([
-          getPatientById(patientId),
-          getAllDoctors().catch(() => []),
-          getAllTherapists().catch(() => []),
-          getAppointmentsByPatientId(patientId).catch(() => []),
-          getAppointmentTherapiesByPatientId(patientId).catch(() => []),
-        ]);
+      const [
+        apiPatient,
+        doctors,
+        therapists,
+        appointments,
+        therapies,
+        medicalAssessment,
+        invoices,
+      ] = await Promise.all([
+        getPatientById(patientId),
+        getAllDoctors().catch(() => []),
+        getAllTherapists().catch(() => []),
+        getAppointmentsByPatientId(patientId).catch(() => []),
+        getAppointmentTherapiesByPatientId(patientId).catch(() => []),
+        getMedicalAssessmentByPatientId(patientId).catch(() => null),
+        getInvoices({ patientId }).catch(() => []),
+      ]);
 
       const latestAppointment = appointments[0];
       const doctorId =
@@ -75,19 +61,37 @@ export function PatientDetailPage() {
       const doctorName =
         latestAppointment?.doctorName ??
         (doctorId
-          ? doctors.find((d) => d.id === doctorId)?.doctorName
+          ? doctors.find((d) => d.id === doctorId)?.name ??
+            doctors.find((d) => d.id === doctorId)?.doctorName
           : undefined);
 
       const therapy = therapies[0];
       const therapistName =
         therapy?.therapistName ??
+        therapy?.assignedTherapist?.name ??
+        therapy?.assignedTherapist?.therapistName ??
         (therapy?.assignedTherapistId
-          ? therapists.find((t) => t.id === therapy.assignedTherapistId)
+          ? therapists.find((t) => t.id === therapy.assignedTherapistId)?.name ??
+            therapists.find((t) => t.id === therapy.assignedTherapistId)
               ?.therapistName
           : undefined);
 
-      const mapped = mapPatientToDetail(apiPatient, {
+      const treatmentCategoryName =
+        therapy?.treatmentCategoryName ??
+        therapy?.categoryName ??
+        therapy?.treatmentCategory?.categoryName ??
+        therapy?.therapies?.[0]?.name ??
+        therapy?.therapies?.[0]?.therapyName ??
+        '—';
+
+      const medicalUi = mapMedicalAssessmentDtoToUi(medicalAssessment);
+      const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
+      const doshaName =
+        medicalAssessment?.ayurvedicAssessment?.dosha?.name ?? undefined;
+
+      return mapPatientToDetail(apiPatient, {
         doctor: doctorName ?? '—',
+        dosha: pickDosha(doshaName),
         visitType: latestAppointment
           ? (latestAppointment.consultationTypes?.[0] ?? 'Consultation')
               .toString()
@@ -97,6 +101,7 @@ export function PatientDetailPage() {
             : 'Consultation'
           : 'Consultation',
         appointmentDate: latestAppointment?.registrationDate ?? undefined,
+        medicalAssessment: medicalUi,
         personalInfo: {
           gender: '',
           age: '',
@@ -120,8 +125,7 @@ export function PatientDetailPage() {
           insuranceDetails: '',
         },
         treatmentFollowUp: {
-          treatmentName:
-            therapy?.treatmentCategoryName ?? therapy?.categoryName ?? '—',
+          treatmentName: treatmentCategoryName,
           startDate: therapy?.scheduleDate ?? '—',
           endDate: '—',
           totalSessions: therapy?.sessionFrequency ?? 0,
@@ -130,7 +134,7 @@ export function PatientDetailPage() {
           assignedTherapist: therapistName ?? '—',
           nextFollowUp: therapy?.scheduleDate ?? '—',
           followUpDoctor: doctorName ?? '—',
-          reminder: '—',
+          reminder: therapy?.therapyInstructions ?? '—',
           appointmentHistory: appointments.slice(0, 5).map((appt) => ({
             visitType: (appt.consultationTypes?.[0] ?? 'Consultation')
               .toString()
@@ -138,13 +142,35 @@ export function PatientDetailPage() {
               .includes('therapy')
               ? 'Therapy'
               : 'Consultation',
-            date: appt.registrationDate ?? appt.createdAt?.slice(0, 10) ?? '—',
+            date:
+              appt.registrationDate ??
+              appt.appointmentDate ??
+              appt.createdAt?.slice(0, 10) ??
+              '—',
             status: 'Scheduled' as const,
           })),
         },
+        billing: {
+          ...billing,
+          serviceType: latestAppointment
+            ? (latestAppointment.consultationTypes?.[0] ?? 'Consultation')
+                .toString()
+                .replace(/_/g, ' ')
+            : billing.serviceType,
+        },
+        invoice: {
+          ...invoice,
+          doctorName: doctorName ?? invoice.doctorName,
+          address: apiPatient.address,
+          email: apiPatient.email,
+        },
+        treatmentStatus:
+          (therapy?.therapyStatus ?? therapy?.status)
+            ?.toUpperCase()
+            .includes('COMPLETE')
+            ? 'Discharged'
+            : 'Under Treatment',
       });
-
-      return mergeWithMockDetail(mapped);
     },
     null,
     [patientId],

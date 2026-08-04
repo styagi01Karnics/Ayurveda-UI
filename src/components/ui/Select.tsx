@@ -60,10 +60,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             {...props}
           >
             <option value="">{placeholder}</option>
-            {options.map((option) => {
+            {(options || []).map((option, index) => {
+              if (option === null || option === undefined) return null;
               const { value, label: optionLabel } = normalizeOption(option);
               return (
-                <option key={value} value={value}>
+                <option key={`${value}-${index}`} value={value}>
                   {optionLabel}
                 </option>
               );

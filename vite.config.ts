@@ -39,8 +39,41 @@ export default defineConfig({
       '/api/v1/appointments': serviceProxy(8103),
       '/api/v1/appointment-therapies': serviceProxy(8103),
       '/api/v1/treatment-categories': serviceProxy(8103),
+      '/api/v1/treatment-plans': serviceProxy(8103),
       '/api/v1/therapies': serviceProxy(8103),
       '/api/v1/doshas': serviceProxy(8103),
+      '/api/v1/systemic-examinations': serviceProxy(8103),
+      '/api/v1/physical-examinations': serviceProxy(8103),
+      '/api/v1/medical-histories': serviceProxy(8103),
+      '/api/v1/medical-assessment': serviceProxy(8103),
+      '/api/v1/lifestyle-information': serviceProxy(8103),
+      '/api/v1/ayurvedic-assessments': serviceProxy(8103),
+      '/api/v1/dashboard/todays-schedule': serviceProxy(8103),
+
+      // Auth-service :8111
+      '/api/v1/auth': serviceProxy(8111),
+      '/api/v1/tenants': serviceProxy(8111),
+
+      // File-upload-service :8105
+      '/api/v1/documents': serviceProxy(8105),
+
+      // Attendance-service :8106
+      '/api/v1/attendances': serviceProxy(8106),
+
+      // Activity-log-service :8107
+      '/api/v1/activity-logs': serviceProxy(8107),
+
+      // Medicine & Dashboard-service :8108
+      '/api/v1/medicines': serviceProxy(8108),
+      '/api/v1/dashboard/medicine-stock': serviceProxy(8108),
+
+      // Billing-service :8109
+      '/api/v1/invoices': serviceProxy(8109),
+      '/api/v1/sales': serviceProxy(8109),
+      '/api/v1/dashboard/billing-summary': serviceProxy(8109),
+
+      // Notification-service :8110
+      '/api/v1/notifications': serviceProxy(8110),
     },
   },
   test: {

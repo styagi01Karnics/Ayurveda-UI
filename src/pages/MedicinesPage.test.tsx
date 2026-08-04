@@ -19,15 +19,16 @@ function renderMedicines() {
 }
 
 describe('MedicinesPage', () => {
-  it('renders medicines table', () => {
+  it('renders medicines table', async () => {
     renderMedicines();
-    expect(screen.getAllByText('Tab OCRIS 200').length).toBeGreaterThan(0);
+    expect(await screen.findAllByText('Tab OCRIS 200')).toHaveLength(6);
     expect(screen.getAllByText('In Stock').length).toBeGreaterThan(0);
   });
 
   it('filters by medicine name', async () => {
     const user = userEvent.setup();
     renderMedicines();
+    await screen.findAllByText('Tab OCRIS 200');
     await user.type(screen.getByPlaceholderText('Medicine Name'), 'Unknown');
     expect(screen.queryByText('Tab OCRIS 200')).not.toBeInTheDocument();
   });
@@ -35,6 +36,7 @@ describe('MedicinesPage', () => {
   it('shows delete confirmation modal', async () => {
     const user = userEvent.setup();
     renderMedicines();
+    await screen.findAllByText('Tab OCRIS 200');
     const deleteButtons = screen.getAllByLabelText(/Delete Tab OCRIS 200/);
     await user.click(deleteButtons[0]);
     expect(screen.getByText('Delete Medicine')).toBeInTheDocument();
@@ -51,8 +53,8 @@ describe('BillingPage', () => {
         </PageActionContext.Provider>
       </MemoryRouter>,
     );
-    expect(screen.getAllByText('INV-1024').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('#PT458652').length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('INV-1024')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('#PT458652')).length).toBeGreaterThan(0);
   });
 });
 

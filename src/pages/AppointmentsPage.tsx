@@ -28,16 +28,18 @@ import {
 } from '@/data/mock/appointments';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
-  getAllAppointmentsForPatients,
-  getAllDoshas,
+  cancelAppointment,
+  getAllAppointmentPatients,
   getAllTherapies,
   getAllTreatmentCategories,
+  getBookingDoshas,
 } from '@/lib/api/appointments';
-import { bookAppointmentFlow } from '@/lib/api/booking';
+import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
-import { getAllDoctors } from '@/lib/api/doctors';
-import { mapAppointmentToRecord } from '@/lib/api/mappers';
-import { getAllPatients } from '@/lib/api/patients';
+import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
+import {
+  mapPatientAppointmentListItemToRecord,
+} from '@/lib/api/mappers';
 import { getAllTherapists } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
@@ -73,6 +75,7 @@ export function AppointmentsPage() {
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarEventDetail | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [localAppointments, setLocalAppointments] = useState<
     AppointmentRecord[]
   >([]);
@@ -83,33 +86,26 @@ export function AppointmentsPage() {
     error,
     reload,
   } = useAsyncData(async () => {
-    const [patients, doctors, therapists, categories, therapies, doshas] =
+    const [doctors, therapists, categories, therapies, doshas, appointments] =
       await Promise.all([
-        getAllPatients(),
-        getAllDoctors(),
-        getAllTherapists(),
-        getAllTreatmentCategories(),
-        getAllTherapies(),
-        getAllDoshas(),
+        getActiveDoctors().catch(() => getAllDoctors().catch(() => [])),
+        getAllTherapists().catch(() => []),
+        getAllTreatmentCategories().catch(() => []),
+        getAllTherapies().catch(() => []),
+        getBookingDoshas().catch(() => []),
+        getAllAppointmentPatients().catch(() => []),
       ]);
 
-    const doctorsById = new Map(doctors.map((d) => [d.id, d]));
-    const appointments = await getAllAppointmentsForPatients(
-      patients.map((p) => p.id),
-    );
-
-    const records = appointments.map((appt) =>
-      mapAppointmentToRecord(appt, doctorsById),
-    );
+    const records = appointments.map(mapPatientAppointmentListItemToRecord);
 
     const lookupOptions: BookingLookupOptions = {
       doctors: doctors.map((d) => ({
         value: d.id,
-        label: d.doctorName,
+        label: d.name || d.doctorName || '—',
       })),
       therapists: therapists.map((t) => ({
         value: t.id,
-        label: t.therapistName,
+        label: t.name || t.therapistName || '—',
       })),
       categories: categories.map((c) => ({
         value: c.id,
@@ -117,11 +113,11 @@ export function AppointmentsPage() {
       })),
       therapies: therapies.map((t) => ({
         value: t.id,
-        label: t.therapyName,
+        label: t.name || t.therapyName || '—',
         categoryId: t.categoryId,
       })),
       doshas: doshas.map((d) => ({
-        value: d.name,
+        value: d.id,
         label: d.name,
       })),
     };
@@ -205,25 +201,45 @@ export function AppointmentsPage() {
     if (item) setCancelTarget(item);
   };
 
-  const handleCancelConfirm = () => {
-    if (!cancelTarget) return;
-    setLocalAppointments((prev) =>
-      prev.filter((item) => item.id !== cancelTarget.id),
-    );
-    showToast({
-      title: 'Appointment has been cancelled',
-      message: `${cancelTarget.patient}'s appointment on ${cancelTarget.appointmentDate} was cancelled.`,
-    });
-    setCancelTarget(null);
+  const handleCancelConfirm = async () => {
+    if (!cancelTarget || cancelling) return;
+    setCancelling(true);
+    try {
+      await cancelAppointment(cancelTarget.id);
+      setLocalAppointments((prev) =>
+        prev.filter((item) => item.id !== cancelTarget.id),
+      );
+      showToast({
+        title: 'Appointment has been cancelled',
+        message: `${cancelTarget.patient}'s appointment on ${cancelTarget.appointmentDate} was cancelled.`,
+      });
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Cancellation failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not cancel appointment.',
+      });
+    } finally {
+      setCancelling(false);
+      setCancelTarget(null);
+    }
   };
 
-  const handleCreatePatient = async (formData: CreatePatientValues) => {
+  const handleBookingComplete = async (
+    result: BookAppointmentResult,
+    formData: CreatePatientValues,
+  ) => {
     setSubmitting(true);
     try {
-      const result = await bookAppointmentFlow(formData);
       const doctorName =
-        data.doctors.find((d) => d.id === formData.assignedDoctor)
-          ?.doctorName ?? formData.assignedDoctor;
+        data.doctors.find((d) => d.id === formData.assignedDoctor)?.name ||
+        data.doctors.find((d) => d.id === formData.assignedDoctor)?.doctorName ||
+        formData.assignedDoctor;
 
       const patientCode =
         formData.patientId ?? result.patientId.slice(0, 8);
@@ -231,7 +247,7 @@ export function AppointmentsPage() {
       const appointmentDate =
         formData.scheduleDate && formData.scheduleTime
           ? `${formData.scheduleDate}, ${formData.scheduleTime}`
-          : formData.registrationDate;
+          : `${formData.registrationDate}, ${formData.appointmentTime || '10:00'}`;
 
       const newAppointment: AppointmentRecord = {
         id: String(
@@ -252,17 +268,12 @@ export function AppointmentsPage() {
       setLocalAppointments((prev) => [newAppointment, ...prev]);
       setCreatePatientOpen(false);
       setConfirmedOpen(true);
-      reload();
+      await reload();
     } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Failed to book appointment.';
       showToast({
-        title: 'Booking failed',
-        message,
+        title: 'Error',
+        message:
+          err instanceof Error ? err.message : 'Could not refresh appointments.',
       });
     } finally {
       setSubmitting(false);
@@ -439,7 +450,7 @@ export function AppointmentsPage() {
       <CreatePatientModal
         open={createPatientOpen}
         onClose={() => setCreatePatientOpen(false)}
-        onSubmit={handleCreatePatient}
+        onComplete={handleBookingComplete}
         lookupOptions={data.lookupOptions}
         submitting={submitting}
       />
@@ -459,8 +470,9 @@ export function AppointmentsPage() {
 
       <CancelAppointmentModal
         open={Boolean(cancelTarget)}
-        onClose={() => setCancelTarget(null)}
+        onClose={() => !cancelling && setCancelTarget(null)}
         onConfirm={handleCancelConfirm}
+        loading={cancelling}
       />
 
       <AppointmentConfirmedModal

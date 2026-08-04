@@ -1,4 +1,5 @@
 import type { ApiResponse } from './types';
+import { getStoredToken } from '@/lib/auth';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -15,6 +16,11 @@ export class ApiError extends Error {
 type RequestOptions = Omit<RequestInit, 'body'> & {
   body?: unknown;
 };
+
+function authHeaders(): Record<string, string> {
+  const token = getStoredToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 async function parseJson(response: Response): Promise<unknown> {
   const text = await response.text();
@@ -44,10 +50,58 @@ export async function apiRequest<T>(
     ...rest,
     headers: {
       accept: '*/*',
+      ...authHeaders(),
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  const parsed = await parseJson(response);
+
+  if (!response.ok) {
+    throw new ApiError(
+      messageFromBody(parsed, `Request failed (${response.status})`),
+      response.status,
+      parsed,
+    );
+  }
+
+  if (
+    parsed &&
+    typeof parsed === 'object' &&
+    'success' in parsed &&
+    'data' in parsed
+  ) {
+    const envelope = parsed as ApiResponse<T>;
+    if (!envelope.success) {
+      throw new ApiError(
+        envelope.message || 'Request was not successful',
+        envelope.status || response.status,
+        envelope,
+      );
+    }
+    return envelope.data;
+  }
+
+  return parsed as T;
+}
+
+/** Multipart POST — do not set Content-Type; browser adds boundary. */
+export async function apiRequestFormData<T>(
+  url: string,
+  formData: FormData,
+  options: Omit<RequestInit, 'body'> = {},
+): Promise<T> {
+  const response = await fetch(url, {
+    ...options,
+    method: options.method ?? 'POST',
+    headers: {
+      accept: '*/*',
+      ...authHeaders(),
+      ...options.headers,
+    },
+    body: formData,
   });
 
   const parsed = await parseJson(response);

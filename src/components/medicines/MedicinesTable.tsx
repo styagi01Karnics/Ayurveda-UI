@@ -83,11 +83,25 @@ export function MedicinesTable({
   );
 }
 
-function MedicineStatus({ status }: { status: MedicineRecord['status'] }) {
-  const colors = {
+function MedicineStatus({ status }: { status: MedicineRecord['status'] | string }) {
+  const normalized =
+    status === 'IN_STOCK' || status === 'In Stock'
+      ? 'In Stock'
+      : status === 'LOW_STOCK' || status === 'Low Stock'
+        ? 'Low Stock'
+        : status === 'OUT_OF_STOCK' || status === 'Out of Stock'
+          ? 'Out of Stock'
+          : status;
+
+  const colors: Record<string, string> = {
     'In Stock': 'text-success',
     'Low Stock': 'text-gold',
     'Out of Stock': 'text-danger',
   };
-  return <span className={cn('font-medium', colors[status])}>{status}</span>;
+
+  return (
+    <span className={cn('font-medium', colors[normalized] ?? 'text-brown')}>
+      {normalized}
+    </span>
+  );
 }

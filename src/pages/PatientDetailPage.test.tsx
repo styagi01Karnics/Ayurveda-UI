@@ -24,19 +24,20 @@ describe('PatientDetailPage', () => {
   it('renders patient header and personal info tab', async () => {
     renderDetail();
     expect(await screen.findByText('Patient Details')).toBeInTheDocument();
-    expect(screen.getByText('#37944397')).toBeInTheDocument();
-    expect(screen.getByText('Under Treatment')).toBeInTheDocument();
-    expect(screen.getByText('Basic Information')).toBeInTheDocument();
     expect(screen.getByText('Khushi Shroff')).toBeInTheDocument();
+    expect(screen.getByText('Basic Information')).toBeInTheDocument();
   });
 
-  it('switches to medical assessment tab', async () => {
+  it('switches to medical assessment tab and loads API data', async () => {
     const user = userEvent.setup();
     renderDetail();
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Medical Assessment'));
     expect(screen.getByText('Ayurvedic Assessment')).toBeInTheDocument();
     expect(screen.getByText('Physical Examination')).toBeInTheDocument();
+    expect(await screen.findByText('Lean, Dry Skin')).toBeInTheDocument();
+    expect(screen.getByText('Systemic Examination')).toBeInTheDocument();
+    expect(screen.getByText('Treatment Plan')).toBeInTheDocument();
   });
 
   it('switches to treatment tab', async () => {
@@ -45,7 +46,6 @@ describe('PatientDetailPage', () => {
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Treatment & Follow Up'));
     expect(screen.getByText('Active Treatment Plan')).toBeInTheDocument();
-    expect(screen.getByText('Joint Pain Package')).toBeInTheDocument();
   });
 
   it('switches to billing tab', async () => {
@@ -54,6 +54,5 @@ describe('PatientDetailPage', () => {
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Billing & Membership'));
     expect(screen.getByText('Payment Setup')).toBeInTheDocument();
-    expect(screen.getByText('Debit Card')).toBeInTheDocument();
   });
 });

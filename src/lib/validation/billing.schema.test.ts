@@ -9,11 +9,15 @@ describe('medicineSchema', () => {
   it('accepts valid medicine data', () => {
     const result = medicineSchema.safeParse({
       name: 'Tab OCRIS 200',
-      category: 'Tablet',
+      category: 'TABLET',
+      manufacturer: 'Himalaya',
+      batchNumber: 'B-001',
       stockQuantity: '5000',
       expiryDate: '2026-10-05',
+      purchasePrice: '350',
       price: '500',
-      status: 'In Stock',
+      lowStockAlertEnabled: true,
+      lowStockThreshold: '20',
     });
     expect(result.success).toBe(true);
   });

@@ -36,10 +36,9 @@ describe('settings.schema', () => {
     const result = clinicTherapySchema.safeParse({
       name: 'Panchakarma',
       category: 'Category',
-      status: 'Active',
       duration: '45 min.',
       price: '500',
-      assignedTherapist: 'Dr. Narendra Jain',
+      description: 'Detox therapy',
     });
     expect(result.success).toBe(true);
   });

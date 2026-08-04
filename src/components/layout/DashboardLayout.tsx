@@ -7,7 +7,7 @@ import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { LogoutModal } from '@/components/auth/LogoutModal';
 import { PasswordSuccessModal } from '@/components/auth/PasswordSuccessModal';
 import { RedeemCouponModal } from '@/components/dashboard/RedeemCouponModal';
-import { clearStoredUser } from '@/lib/auth';
+import { clearAuthSession } from '@/lib/auth';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { TopBanner } from './TopBanner';
@@ -50,7 +50,7 @@ export function DashboardLayout() {
   );
 
   const handleLogout = () => {
-    clearStoredUser();
+    clearAuthSession();
     navigate('/login');
   };
 

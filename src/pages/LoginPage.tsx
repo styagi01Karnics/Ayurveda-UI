@@ -8,7 +8,9 @@ import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { mockLogin } from '@/lib/auth';
+import { login as loginApi } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { mapAuthTokenToSession, setAuthSession } from '@/lib/auth';
 import {
   loginSchema,
   type LoginFormValues,
@@ -30,13 +32,24 @@ export function LoginPage() {
     },
   });
 
-  const onSubmit = (values: LoginFormValues) => {
+  const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
-    const user = mockLogin(values.emailOrUsername, values.password);
-    if (user) {
+    try {
+      const response = await loginApi({
+        usernameOrEmail: values.emailOrUsername.trim(),
+        password: values.password,
+      });
+      const session = mapAuthTokenToSession(response);
+      setAuthSession(session.token, session.user);
       navigate('/dashboard');
-    } else {
-      setSubmitError('Invalid credentials. Please try again.');
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Invalid credentials. Please try again.',
+      );
     }
   };
 

@@ -50,6 +50,7 @@ export interface PatientMedicalAssessment {
   bodyConstitution: string;
   currentImbalance: string;
   previousPanchakarma: string;
+  doshaName?: string;
   weight: string;
   height: string;
   ibw: string;
@@ -74,6 +75,14 @@ export interface PatientMedicalAssessment {
   diet: string;
   sleep: string;
   exercise: string;
+  addiction?: string;
+  cardiovascular?: string;
+  respiratory?: string;
+  nervous?: string;
+  abdomenGi?: string;
+  locomotor?: string;
+  investigationPlan?: string;
+  planTaken?: string;
   reports: { name: string; size: string; time: string; type: 'folder' | 'file' }[];
 }
 
@@ -248,10 +257,16 @@ export interface MedicineRecord {
   id: string;
   name: string;
   category: string;
+  categoryCode: string;
   stockQuantity: number;
   expiryDate: string;
   price: number;
   status: MedicineStatus;
+  manufacturer?: string;
+  batchNumber?: string;
+  purchasePrice?: number;
+  lowStockThreshold?: number;
+  lowStockAlertEnabled?: boolean;
 }
 
 export type BillingStatus = 'Ongoing' | 'Completed';
@@ -261,6 +276,8 @@ export interface BillingRecord {
   invoiceId: string;
   patientId: string;
   secondaryPatientId: string;
+  /** Patient master UUID from billing API — use for GET /patients. */
+  patientUuid?: string;
   invoiceDate: string;
   totalAmount: number;
   paidAmount: number;
@@ -301,14 +318,38 @@ export interface ActivityLogRecord {
   timestamp: string;
 }
 
-export type InvoiceStep = 'service' | 'medicine' | 'therapy' | 'summary';
+export type InvoiceBillType = 'service' | 'medicine' | 'therapy';
+
+/** @deprecated Use InvoiceBillType — summary tab removed; each bill tab has its own summary */
+export type InvoiceStep = InvoiceBillType;
 
 export interface InvoiceLineItem {
   id: string;
   name: string;
   quantity: number;
   amount: number;
-  type: 'service' | 'medicine' | 'therapy';
+  type: InvoiceBillType;
+  /** Medicine-service UUID — required for POST /api/v1/invoices medicines[]. */
+  medicineId?: string;
+  /** Therapist-service UUID — required for therapy line items. */
+  assignedTherapistId?: string;
+}
+
+export interface TherapyInvoiceLineItem extends InvoiceLineItem {
+  type: 'therapy';
+  assignedTherapist: string;
+  assignedTherapistId?: string;
+  scheduleDate: string;
+  scheduleTime: string;
+  sessionDuration: string;
+  sessionFrequency: string;
+}
+
+export interface BillSummaryState {
+  discount: string;
+  applyTax: boolean;
+  cgst: string;
+  sgst: string;
 }
 
 export type PaymentModeId = 'upi' | 'card' | 'wallet' | 'partial' | 'emi';
@@ -340,9 +381,13 @@ export interface LowStockItem {
 }
 
 export interface AuthUser {
+  id?: string;
   fullName: string;
   role: string;
   email: string;
+  username?: string;
+  tenantId?: string;
+  tenantCode?: string;
 }
 
 export interface SignupFormData {
@@ -380,10 +425,17 @@ export interface ClinicTherapyRecord {
   id: string;
   name: string;
   category: string;
-  status: ClinicStatus;
+  categoryId: string;
   duration: string;
   price: number;
-  assignedTherapist: string;
+  description: string;
+  status: ClinicStatus;
+}
+
+export interface ClinicTreatmentCategoryRecord {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export interface ClinicTherapistRecord {

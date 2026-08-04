@@ -19,3 +19,13 @@ export function createPatient(payload: CreatePatientPayload) {
     body: payload,
   });
 }
+
+export function deletePatient(patientId: string) {
+  return apiRequest<void>(url(apiEndpoints.patients.delete(patientId)), {
+    method: 'DELETE',
+  });
+}
+
+export function getPatientCount() {
+  return apiRequest<number>(url(apiEndpoints.patients.getCount));
+}

@@ -21,7 +21,7 @@ export const invoiceServiceStepSchema = z.object({
 });
 
 export const invoiceMedicineItemSchema = z.object({
-  medicineName: z.string().min(1, 'Medicine name is required'),
+  medicineId: z.string().min(1, 'Medicine is required'),
   quantity: z.string().min(1, 'Quantity is required'),
   price: z
     .string()
@@ -35,7 +35,8 @@ export const invoiceTherapyItemSchema = z.object({
     .string()
     .min(1, 'Therapy price is required')
     .regex(/^\d+$/, 'Enter a valid price'),
-  assignedTherapist: z.string().min(1, 'Assigned therapist is required'),
+  assignedTherapistId: z.string().min(1, 'Assigned therapist is required'),
+  assignedTherapistName: z.string().optional(),
   scheduleDate: z.string().min(1, 'Schedule date is required'),
   scheduleTime: z.string().min(1, 'Schedule time is required'),
   sessionDuration: z.string().min(1, 'Session duration is required'),

@@ -1,67 +1,189 @@
-import { useState } from 'react';
-import { ChartModal } from '@/components/dashboard/ChartModal';
-import { MedicineStockCard } from '@/components/dashboard/MedicineStockCard';
-import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable';
-import { PatientsStatCard } from '@/components/dashboard/PatientsStatCard';
-import { PatientTrendsChart } from '@/components/dashboard/PatientTrendsChart';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { TodayScheduleCard } from '@/components/dashboard/TodayScheduleCard';
-import { PageShell } from '@/components/layout/PageShell';
-import {
-  dashboardStats,
-  lowStockItems,
-  nextAppointment,
-  ongoingAppointment,
-  patientTrendsData,
-  patientTrendsFullYear,
-  recentPatientRecords,
-} from '@/data/mock/dashboard';
-
-export function DashboardPage() {
-  const [chartOpen, setChartOpen] = useState(false);
-
-  return (
-    <PageShell className="w-full space-y-4">
-      <div className="w-full space-y-4">
-        <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-          <PatientsStatCard stats={dashboardStats} />
-          <StatCard
-            title="Total Appointments"
-            stats={dashboardStats}
-            type="appointments"
-          />
-          <StatCard title="Billing" stats={dashboardStats} type="billing" />
-        </div>
-
-        <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-          <PatientTrendsChart
-            data={patientTrendsData}
-            compact
-            onExpand={() => setChartOpen(true)}
-          />
-          <MedicineStockCard
-            totalStock={442}
-            tablets={300}
-            syrups={100}
-            powder={42}
-            lowStockItems={lowStockItems}
-          />
-          <TodayScheduleCard
-            dateLabel="15 Oct 2026, Wed, 01:05 AM"
-            ongoing={ongoingAppointment}
-            next={nextAppointment}
-            remaining={12}
-          />
-        </div>
-      </div>
-
-      <PatientRecordsTable records={recentPatientRecords} compact />
-
-      <ChartModal
-        open={chartOpen}
-        onClose={() => setChartOpen(false)}
-        data={patientTrendsFullYear}
-      />
-    </PageShell>
-  );
-}
+import { useMemo, useState } from 'react';
+import { ChartModal } from '@/components/dashboard/ChartModal';
+import { MedicineStockCard } from '@/components/dashboard/MedicineStockCard';
+import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable';
+import { PatientsStatCard } from '@/components/dashboard/PatientsStatCard';
+import { PatientTrendsChart } from '@/components/dashboard/PatientTrendsChart';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { TodayScheduleCard } from '@/components/dashboard/TodayScheduleCard';
+import { PageShell } from '@/components/layout/PageShell';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import {
+  patientTrendsData,
+  patientTrendsFullYear,
+} from '@/data/mock/dashboard';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { getAppointmentPatients } from '@/lib/api/appointments';
+import {
+  getAppointmentStats,
+  getDashboardBillingSummary,
+  getDashboardMedicineStock,
+  getTodaysSchedule,
+} from '@/lib/api/dashboard';
+import { getPatientCount } from '@/lib/api/patients';
+import {
+  buildDashboardStats,
+  mapPatientAppointmentListItemToPatientRecord,
+  mapScheduleAppointment,
+} from '@/lib/api/mappers';
+import type { DashboardStats } from '@/types';
+
+const EMPTY_STATS: DashboardStats = {
+  totalPatients: 0,
+  patientGrowth: 0,
+  patientsToday: 0,
+  activePatients: 0,
+  inactivePatients: 0,
+  totalAppointments: 0,
+  appointmentGrowth: 0,
+  appointmentsToday: 0,
+  billingTotal: 0,
+  billsGenerated: 0,
+  pendingPayments: 0,
+  collectedPayments: 0,
+};
+
+export function DashboardPage() {
+  const [chartOpen, setChartOpen] = useState(false);
+
+  const { data, loading, error, reload } = useAsyncData(
+    async () => {
+      const [
+        medStock,
+        schedule,
+        appointmentStats,
+        billingSummary,
+        patientCount,
+        recentRows,
+      ] = await Promise.all([
+        getDashboardMedicineStock().catch(() => null),
+        getTodaysSchedule().catch(() => null),
+        getAppointmentStats().catch(() => null),
+        getDashboardBillingSummary('MONTHLY').catch(() => null),
+        getPatientCount().catch(() => 0),
+        getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
+      ]);
+
+      const stats = buildDashboardStats({
+        patientCount: typeof patientCount === 'number' ? patientCount : 0,
+        appointmentStats,
+        billingSummary,
+      });
+
+      const recentPatients = recentRows
+        .slice(0, 4)
+        .map((row) => mapPatientAppointmentListItemToPatientRecord(row, 'active'));
+
+      return {
+        medStock,
+        schedule,
+        stats,
+        recentPatients,
+      };
+    },
+    {
+      medStock: null as Awaited<ReturnType<typeof getDashboardMedicineStock>> | null,
+      schedule: null,
+      stats: EMPTY_STATS,
+      recentPatients: [],
+    },
+  );
+
+  const medStock = data.medStock;
+  const breakdown = medStock?.statusBreakdown;
+  const totalStatus =
+    (breakdown?.inStock ?? 0) +
+    (breakdown?.outOfStock ?? 0) +
+    (breakdown?.lowStock ?? 0);
+
+  const inStockPct = totalStatus
+    ? Math.round(((breakdown?.inStock ?? 0) / totalStatus) * 100)
+    : 68;
+  const outOfStockPct = totalStatus
+    ? Math.round(((breakdown?.outOfStock ?? 0) / totalStatus) * 100)
+    : 24;
+  const lowStockPct = totalStatus
+    ? Math.round(((breakdown?.lowStock ?? 0) / totalStatus) * 100)
+    : 8;
+
+  const lowStockList =
+    medStock?.lowStockItems?.map((item) => ({
+      name: item.medicineName,
+      quantity: item.stockQuantity,
+    })) ?? [];
+
+  const scheduleDateLabel = useMemo(() => {
+    if (data.schedule?.currentDateTime) {
+      return new Date(data.schedule.currentDateTime).toLocaleString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    }
+    return new Date().toLocaleString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }, [data.schedule?.currentDateTime]);
+
+  const ongoing = mapScheduleAppointment(data.schedule?.ongoingAppointment);
+  const next = mapScheduleAppointment(data.schedule?.nextAppointment);
+
+  return (
+    <PageShell className="w-full space-y-4">
+      <div className="w-full space-y-4">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+          <PatientsStatCard stats={data.stats} />
+          <StatCard
+            title="Total Appointments"
+            stats={data.stats}
+            type="appointments"
+          />
+          <StatCard title="Billing" stats={data.stats} type="billing" />
+        </div>
+
+        <AsyncStatus loading={loading} error={error} onRetry={reload}>
+          <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+            <PatientTrendsChart
+              data={patientTrendsData}
+              compact
+              onExpand={() => setChartOpen(true)}
+            />
+            <MedicineStockCard
+              totalStock={medStock?.totalStock ?? 0}
+              tablets={medStock?.tablets ?? 0}
+              syrups={medStock?.syrups ?? 0}
+              powder={medStock?.powder ?? 0}
+              lowStockItems={lowStockList}
+              inStockPct={inStockPct}
+              outOfStockPct={outOfStockPct}
+              lowStockPct={lowStockPct}
+            />
+            <TodayScheduleCard
+              dateLabel={scheduleDateLabel}
+              ongoing={ongoing}
+              next={next}
+              remaining={data.schedule?.remainingToday ?? 0}
+            />
+          </div>
+        </AsyncStatus>
+      </div>
+
+      <PatientRecordsTable records={data.recentPatients} compact />
+
+      <ChartModal
+        open={chartOpen}
+        onClose={() => setChartOpen(false)}
+        data={patientTrendsFullYear}
+      />
+    </PageShell>
+  );
+}
+

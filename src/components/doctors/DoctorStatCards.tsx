@@ -50,9 +50,9 @@ export function DoctorStatCards({ doctors }: DoctorStatCardsProps) {
           <p className="text-sm text-text-muted">{card.title}</p>
           <p className="mt-1 text-3xl font-bold text-brown">{card.value}</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {card.pills.map((pill) => (
+            {card.pills.map((pill, index) => (
               <span
-                key={pill.label}
+                key={`${pill.label}-${index}`}
                 className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold"
               >
                 {pill.label}

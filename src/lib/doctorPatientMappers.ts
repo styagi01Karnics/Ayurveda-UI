@@ -31,6 +31,7 @@ export function mapPatientToPersonalForm(
     preferredLanguage: 'English',
     consultationTypes: [info.serviceType],
     registrationDate: parseDob(info.registrationDate),
+    appointmentTime: '10:00',
     assignedDoctor: info.assignedDoctor,
     mobileNumber: patient.phone.replace(/\D/g, '').slice(-10),
     email: info.email.includes('@') ? info.email : `${info.email}@gmail.com`,

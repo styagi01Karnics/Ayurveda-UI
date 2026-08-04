@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { CloudUpload, FileText, Folder, Trash2, X } from 'lucide-react';
+import { CloudUpload, FileText, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
@@ -10,6 +10,19 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Stepper } from '@/components/ui/Stepper';
 import { TagInput, type TagOption } from '@/components/ui/TagInput';
 import { Badge } from '@/components/ui/Badge';
+import { useToast } from '@/app/ToastContext';
+import {
+  getBookingDoshas,
+  getTherapiesByCategory,
+} from '@/lib/api/appointments';
+import type { BookAppointmentResult, BookingSession } from '@/lib/api/booking';
+import {
+  submitBookingStep1,
+  submitBookingStep2,
+  submitBookingStep3,
+} from '@/lib/api/booking';
+import { ApiError } from '@/lib/api/client';
+import { getTherapistsByTherapyIds } from '@/lib/api/therapists';
 import {
   CONSTITUTION_OPTIONS,
   CONSULTATION_TYPES,
@@ -40,6 +53,18 @@ const EMPTY_THERAPY: PatientStep2Values = {
   therapyInstructions: '',
 };
 
+const EMPTY_DOCUMENTS = {
+  pastMedicalReports: [] as File[],
+  prescriptions: [] as File[],
+  labReports: [] as File[],
+};
+
+const DOCUMENT_TABS = [
+  { id: 'pastMedicalReports' as const, label: 'Past Medical Reports' },
+  { id: 'prescriptions' as const, label: 'Prescriptions' },
+  { id: 'labReports' as const, label: 'Lab Reports' },
+];
+
 const STEPS = [
   { id: 1, label: 'Personal Information' },
   { id: 2, label: 'Therapy Details' },
@@ -57,7 +82,10 @@ export interface BookingLookupOptions {
 interface CreatePatientModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreatePatientValues) => void | Promise<void>;
+  onComplete: (
+    result: BookAppointmentResult,
+    formData: CreatePatientValues,
+  ) => void | Promise<void>;
   lookupOptions: BookingLookupOptions;
   submitting?: boolean;
 }
@@ -65,18 +93,38 @@ interface CreatePatientModalProps {
 export function CreatePatientModal({
   open,
   onClose,
-  onSubmit,
+  onComplete,
   lookupOptions,
   submitting = false,
 }: CreatePatientModalProps) {
+  const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<Partial<CreatePatientValues>>({});
+  const [bookingSession, setBookingSession] = useState<BookingSession | null>(
+    null,
+  );
+  const [stepSubmitting, setStepSubmitting] = useState(false);
   const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const [categoryTherapyOptions, setCategoryTherapyOptions] = useState<
+    TagOption[]
+  >([]);
+  const [therapistOptions, setTherapistOptions] = useState<SelectOption[]>(
+    lookupOptions.therapists,
+  );
+  const [uploadedDocuments, setUploadedDocuments] = useState(EMPTY_DOCUMENTS);
+  const [documentTab, setDocumentTab] =
+    useState<(typeof DOCUMENT_TABS)[number]['id']>('pastMedicalReports');
+  const [doshaOptions, setDoshaOptions] = useState<SelectOption[]>(
+    lookupOptions.doshas,
+  );
+  const [doshasLoading, setDoshasLoading] = useState(false);
+  const [doshasError, setDoshasError] = useState<string | null>(null);
 
   const step1Form = useForm<PatientStep1Values>({
     resolver: zodResolver(patientStep1Schema),
     defaultValues: {
       consultationTypes: [],
+      appointmentTime: '10:00',
       ...formData,
     },
   });
@@ -102,39 +150,102 @@ export function CreatePatientModal({
     },
   });
 
+  const isBusy = submitting || stepSubmitting;
+
   const handleClose = () => {
-    if (submitting) return;
+    if (isBusy) return;
     setStep(1);
     setFormData({});
+    setBookingSession(null);
+    setUploadedDocuments(EMPTY_DOCUMENTS);
+    setDocumentTab('pastMedicalReports');
     step1Form.reset();
     step2Form.reset();
     step3Form.reset();
     onClose();
   };
 
-  const handleStep1 = step1Form.handleSubmit((data) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-    // Therapy step only when API therapy appointment is needed.
-    if (includesTherapyType(data.consultationTypes)) {
-      setStep(2);
-    } else {
-      setFormData((prev) => ({ ...prev, ...data, ...EMPTY_THERAPY }));
-      setStep(3);
+  const showStepError = (err: unknown, fallback: string) => {
+    const message =
+      err instanceof ApiError
+        ? err.message
+        : err instanceof Error
+          ? err.message
+          : fallback;
+    showToast({ title: 'Booking failed', message });
+  };
+
+  const handleStep1 = step1Form.handleSubmit(async (data) => {
+    setStepSubmitting(true);
+    try {
+      const merged = { ...formData, ...data } as CreatePatientValues;
+      const session = await submitBookingStep1(merged);
+      setBookingSession(session);
+      setFormData((prev) => ({ ...prev, ...data }));
+      if (includesTherapyType(data.consultationTypes)) {
+        setStep(2);
+      } else {
+        setFormData((prev) => ({ ...prev, ...data, ...EMPTY_THERAPY }));
+        setStep(3);
+      }
+    } catch (err) {
+      showStepError(err, 'Failed to create appointment.');
+    } finally {
+      setStepSubmitting(false);
     }
   });
 
-  const handleStep2 = step2Form.handleSubmit((data) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-    setStep(3);
+  const handleStep2 = step2Form.handleSubmit(async (data) => {
+    if (!bookingSession) {
+      showToast({
+        title: 'Booking failed',
+        message: 'Complete step 1 before therapy details.',
+      });
+      return;
+    }
+    setStepSubmitting(true);
+    try {
+      const merged = { ...formData, ...data } as CreatePatientValues;
+      const therapy = await submitBookingStep2(merged, bookingSession);
+      setBookingSession({ ...bookingSession, therapy });
+      setFormData((prev) => ({ ...prev, ...data }));
+      setStep(3);
+    } catch (err) {
+      showStepError(err, 'Failed to book therapy appointment.');
+    } finally {
+      setStepSubmitting(false);
+    }
   });
 
   const handleStep3 = step3Form.handleSubmit(async (data) => {
-    const complete = {
-      ...EMPTY_THERAPY,
-      ...formData,
-      ...data,
-    } as CreatePatientValues;
-    await onSubmit(complete);
+    if (!bookingSession) {
+      showToast({
+        title: 'Booking failed',
+        message: 'Complete step 1 before medical assessment.',
+      });
+      return;
+    }
+    setStepSubmitting(true);
+    try {
+      const complete = {
+        ...EMPTY_THERAPY,
+        ...formData,
+        ...data,
+        uploadedDocuments,
+      } as CreatePatientValues;
+      const medicalAssessment = await submitBookingStep3(
+        complete,
+        bookingSession,
+      );
+      await onComplete(
+        { ...bookingSession, medicalAssessment },
+        complete,
+      );
+    } catch (err) {
+      showStepError(err, 'Failed to save medical assessment.');
+    } finally {
+      setStepSubmitting(false);
+    }
   });
 
   const needsTherapy = includesTherapyType(
@@ -145,17 +256,118 @@ export function CreatePatientModal({
 
   const selectedState = step1Form.watch('state');
   const selectedCategory = step2Form.watch('treatmentCategory');
+  const recommendedTherapies = step2Form.watch('recommendedTherapies') ?? [];
 
-  const therapyOptions = selectedCategory
-    ? lookupOptions.therapies.filter((option) => {
-        if (typeof option === 'string') return true;
-        return (
-          (option as TagOption & { categoryId?: string }).categoryId ===
-            undefined ||
-          (option as { categoryId?: string }).categoryId === selectedCategory
+  const therapyOptions =
+    categoryTherapyOptions.length > 0
+      ? categoryTherapyOptions
+      : selectedCategory
+        ? lookupOptions.therapies.filter((option) => {
+            if (typeof option === 'string') return true;
+            return (
+              (option as TagOption & { categoryId?: string }).categoryId ===
+                undefined ||
+              (option as { categoryId?: string }).categoryId === selectedCategory
+            );
+          })
+        : lookupOptions.therapies;
+
+  useEffect(() => {
+    setDoshaOptions(lookupOptions.doshas);
+  }, [lookupOptions.doshas]);
+
+  useEffect(() => {
+    if (!open || step !== 3) return;
+
+    let cancelled = false;
+    setDoshasLoading(true);
+    setDoshasError(null);
+
+    getBookingDoshas()
+      .then((doshas) => {
+        if (cancelled) return;
+        setDoshaOptions(
+          doshas.map((d) => ({
+            value: d.id,
+            label: d.name,
+          })),
+        );
+        if (doshas.length === 0) {
+          setDoshasError(
+            'No doshas returned from GET /api/v1/doshas. Add doshas in Settings or ask admin to fix the dosha list API.',
+          );
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDoshasError('Could not load dosha types. Please try again.');
+        setDoshaOptions(lookupOptions.doshas);
+      })
+      .finally(() => {
+        if (!cancelled) setDoshasLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, step, lookupOptions.doshas]);
+
+  useEffect(() => {
+    setTherapistOptions(lookupOptions.therapists);
+  }, [lookupOptions.therapists]);
+
+  useEffect(() => {
+    if (!selectedCategory) {
+      setCategoryTherapyOptions([]);
+      return;
+    }
+
+    let cancelled = false;
+    getTherapiesByCategory(selectedCategory)
+      .then((therapies) => {
+        if (cancelled) return;
+        setCategoryTherapyOptions(
+          therapies.map((therapy) => ({
+            value: therapy.id,
+            label: therapy.name || therapy.therapyName || therapy.id,
+            categoryId: therapy.categoryId,
+          })),
         );
       })
-    : lookupOptions.therapies;
+      .catch(() => {
+        if (!cancelled) setCategoryTherapyOptions([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    if (!recommendedTherapies.length) {
+      setTherapistOptions(lookupOptions.therapists);
+      return;
+    }
+
+    let cancelled = false;
+    getTherapistsByTherapyIds(recommendedTherapies)
+      .then((therapists) => {
+        if (cancelled) return;
+        setTherapistOptions(
+          therapists.map((therapist) => ({
+            value: therapist.id,
+            label: therapist.name || therapist.therapistName || therapist.id,
+          })),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setTherapistOptions(lookupOptions.therapists);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [recommendedTherapies, lookupOptions.therapists]);
 
   useEffect(() => {
     if (selectedState && CITIES_BY_STATE[selectedState]) {
@@ -169,7 +381,8 @@ export function CreatePatientModal({
     if (!open) {
       setStep(1);
       setFormData({});
-      step1Form.reset({ consultationTypes: [] });
+      setBookingSession(null);
+      step1Form.reset({ consultationTypes: [], appointmentTime: '10:00' });
       step2Form.reset({
         recommendedTherapies: [],
         sessionDuration: '45',
@@ -178,6 +391,8 @@ export function CreatePatientModal({
           'Patient should avoid cold food during therapy and maintain warm diet.',
       });
       step3Form.reset({ bodyConstitution: [], allergies: [] });
+      setUploadedDocuments(EMPTY_DOCUMENTS);
+      setDocumentTab('pastMedicalReports');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when modal opens/closes
   }, [open]);
@@ -191,16 +406,16 @@ export function CreatePatientModal({
       size="xl"
       footer={
         step === 1 ? (
-          <Button onClick={handleStep1} disabled={submitting}>
-            Next
+          <Button onClick={handleStep1} disabled={isBusy}>
+            {stepSubmitting ? 'Saving…' : 'Next'}
           </Button>
         ) : step === 2 ? (
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep(1)} disabled={submitting}>
+            <Button variant="outline" onClick={() => setStep(1)} disabled={isBusy}>
               Back
             </Button>
-            <Button onClick={handleStep2} disabled={submitting}>
-              Next
+            <Button onClick={handleStep2} disabled={isBusy}>
+              {stepSubmitting ? 'Saving…' : 'Next'}
             </Button>
           </div>
         ) : (
@@ -208,12 +423,15 @@ export function CreatePatientModal({
             <Button
               variant="outline"
               onClick={() => setStep(needsTherapy ? 2 : 1)}
-              disabled={submitting}
+              disabled={isBusy}
             >
               Back
             </Button>
-            <Button onClick={handleStep3} disabled={submitting}>
-              {submitting ? 'Booking…' : 'Confirm'}
+            <Button
+              onClick={handleStep3}
+              disabled={isBusy || doshasLoading || doshaOptions.length === 0}
+            >
+              {isBusy ? 'Saving…' : 'Confirm'}
             </Button>
           </div>
         )
@@ -238,6 +456,7 @@ export function CreatePatientModal({
                 error={step1Form.formState.errors.consultationTypes?.message}
               />
               <Input label="Registration Date" type="date" error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
+              <Input label="Appointment Time" type="time" error={step1Form.formState.errors.appointmentTime?.message} {...step1Form.register('appointmentTime')} />
               <Select
                 label="Assigned Doctor"
                 placeholder="Select Doctor"
@@ -319,7 +538,7 @@ export function CreatePatientModal({
               <Select
                 label="Assigned Therapist"
                 placeholder="Select"
-                options={lookupOptions.therapists}
+                options={therapistOptions}
                 error={step2Form.formState.errors.assignedTherapist?.message}
                 {...step2Form.register('assignedTherapist')}
               />
@@ -335,13 +554,19 @@ export function CreatePatientModal({
             <div className="grid gap-4 sm:grid-cols-3">
               <Select
                 label="Dosha Type"
-                placeholder="Select"
-                options={
-                  lookupOptions.doshas.length > 0
-                    ? lookupOptions.doshas
-                    : ['Vata', 'Pitta', 'Kapha']
+                placeholder={
+                  doshasLoading
+                    ? 'Loading doshas…'
+                    : doshaOptions.length
+                      ? 'Select'
+                      : 'No doshas available'
                 }
-                error={step3Form.formState.errors.doshaType?.message}
+                options={doshaOptions}
+                disabled={doshasLoading || doshaOptions.length === 0}
+                error={
+                  doshasError ??
+                  step3Form.formState.errors.doshaType?.message
+                }
                 {...step3Form.register('doshaType')}
               />
               <TagInput
@@ -417,7 +642,12 @@ export function CreatePatientModal({
           </FormSection>
 
           <FormSection title="Upload Reports">
-            <UploadReportsSection />
+            <UploadReportsSection
+              activeTab={documentTab}
+              onTabChange={setDocumentTab}
+              documents={uploadedDocuments}
+              onDocumentsChange={setUploadedDocuments}
+            />
           </FormSection>
         </div>
       )}
@@ -425,48 +655,113 @@ export function CreatePatientModal({
   );
 }
 
-function UploadReportsSection() {
-  const mockFiles = [
-    { name: 'Stock Photos', size: '2.20GB', time: '3m ago', type: 'folder' as const },
-    { name: 'user-journey-01.pdf', size: '604KB', time: '2m ago', type: 'file' as const },
-    { name: 'Optimised Photos', size: '1.46MB', time: '3 days ago', type: 'folder' as const },
-  ];
+type DocumentTabId = keyof typeof EMPTY_DOCUMENTS;
+
+function UploadReportsSection({
+  activeTab,
+  onTabChange,
+  documents,
+  onDocumentsChange,
+}: {
+  activeTab: DocumentTabId;
+  onTabChange: (tab: DocumentTabId) => void;
+  documents: typeof EMPTY_DOCUMENTS;
+  onDocumentsChange: (docs: typeof EMPTY_DOCUMENTS) => void;
+}) {
+  const activeFiles = documents[activeTab];
+
+  const addFiles = (files: FileList | null) => {
+    if (!files?.length) return;
+    onDocumentsChange({
+      ...documents,
+      [activeTab]: [...documents[activeTab], ...Array.from(files)],
+    });
+  };
+
+  const removeFile = (index: number) => {
+    onDocumentsChange({
+      ...documents,
+      [activeTab]: documents[activeTab].filter((_, i) => i !== index),
+    });
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 border-b border-gray-100 pb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
-        <span className="text-gold">Past Medical Reports</span>
-        <span>Prescriptions</span>
-        <span>Lab Reports</span>
-      </div>
-      <div className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-8 text-center">
-        <CloudUpload className="h-8 w-8 text-gold" />
-        <p className="text-sm font-medium text-brown">Tap to upload photo</p>
-        <p className="text-xs text-text-muted">Only Supported: .jpg, .jpeg, .png</p>
-      </div>
-      <div className="space-y-2">
-        {mockFiles.map((file) => (
-          <div key={file.name} className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
-            <div className="flex items-center gap-3">
-              {file.type === 'folder' ? (
-                <Folder className="h-5 w-5 text-gold" />
-              ) : (
-                <FileText className="h-5 w-5 text-gold" />
-              )}
-              <div>
-                <p className="text-sm font-medium text-brown">{file.name}</p>
-                <p className="text-xs text-text-muted">{file.time}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="gold">{file.size}</Badge>
-              <button type="button" className="text-text-muted hover:text-danger" aria-label="Delete file">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+      <div className="flex flex-wrap gap-4 border-b border-gray-100 pb-2 text-xs font-semibold uppercase tracking-wide">
+        {DOCUMENT_TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onTabChange(tab.id)}
+            className={
+              activeTab === tab.id ? 'text-gold' : 'text-text-muted hover:text-brown'
+            }
+          >
+            {tab.label}
+            {documents[tab.id].length > 0 ? ` (${documents[tab.id].length})` : ''}
+          </button>
         ))}
       </div>
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-8 text-center">
+        <CloudUpload className="h-8 w-8 text-gold" />
+        <p className="text-sm font-medium text-brown">
+          Tap to upload {DOCUMENT_TABS.find((t) => t.id === activeTab)?.label}
+        </p>
+        <p className="text-xs text-text-muted">
+          Supported: .jpg, .jpeg, .png, .pdf
+        </p>
+        <input
+          type="file"
+          className="sr-only"
+          accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+          multiple
+          onChange={(e) => {
+            addFiles(e.target.files);
+            e.target.value = '';
+          }}
+        />
+      </label>
+      {activeFiles.length > 0 && (
+        <div className="space-y-2">
+          {activeFiles.map((file, index) => (
+            <div
+              key={`${file.name}-${index}`}
+              className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="h-5 w-5 text-gold" />
+                <div>
+                  <p className="text-sm font-medium text-brown">{file.name}</p>
+                  <p className="text-xs text-text-muted">{file.type || 'File'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant="gold">{formatSize(file.size)}</Badge>
+                <button
+                  type="button"
+                  onClick={() => removeFile(index)}
+                  className="text-text-muted hover:text-danger"
+                  aria-label={`Remove ${file.name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!activeFiles.length && (
+        <p className="text-xs text-text-muted">
+          No files for this category. Booking will use JSON medical assessment only
+          (3 APIs). Add files here to use the with-documents endpoint (4th API).
+        </p>
+      )}
     </div>
   );
 }

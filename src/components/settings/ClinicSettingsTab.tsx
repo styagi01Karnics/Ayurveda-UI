@@ -8,27 +8,42 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
-import { THERAPY_ASSIGNMENT_OPTIONS } from '@/data/mock/settings';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
   createTherapy,
   createTreatmentCategory,
+  deleteTherapy,
   getAllTherapies,
   getAllTreatmentCategories,
+  updateTherapyStatus,
 } from '@/lib/api/appointments';
 import { ApiError } from '@/lib/api/client';
-import { createDoctor, getAllDoctors } from '@/lib/api/doctors';
+import {
+  createDoctor,
+  deleteDoctor,
+  getAllDoctors,
+  updateDoctorStatus,
+} from '@/lib/api/doctors';
 import {
   mapDoctorToClinicRecord,
   mapTherapistToClinicRecord,
   mapTherapyToClinicRecord,
+  mapTreatmentCategoryToRecord,
+  parseSessionNumber,
 } from '@/lib/api/mappers';
-import { createTherapist, getAllTherapists } from '@/lib/api/therapists';
+import {
+  createTherapist,
+  deleteTherapist,
+  getAllTherapists,
+  updateTherapistStatus,
+} from '@/lib/api/therapists';
 import {
   CLINIC_STATUS_OPTIONS,
+  clinicCategorySchema,
   clinicDoctorSchema,
   clinicTherapistSchema,
   clinicTherapySchema,
+  type ClinicCategoryFormValues,
   type ClinicDoctorFormValues,
   type ClinicTherapistFormValues,
   type ClinicTherapyFormValues,
@@ -36,8 +51,10 @@ import {
 import { cn, formatCurrency } from '@/lib/utils';
 import type {
   ClinicDoctorRecord,
+  ClinicStatus,
   ClinicTherapistRecord,
   ClinicTherapyRecord,
+  ClinicTreatmentCategoryRecord,
 } from '@/types';
 
 type DeleteTarget =
@@ -46,27 +63,42 @@ type DeleteTarget =
   | { type: 'Therapist'; record: ClinicTherapistRecord }
   | null;
 
-function emailFromName(name: string): string {
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '.')
-    .replace(/^\.+|\.+$/g, '');
-  return `${slug || 'user'}@ganeshaayurvedaa.com`;
+function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
+  return status === 'Active' ? 'ACTIVE' : 'INACTIVE';
+}
+
+function nextStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
+  return status === 'Active' ? 'INACTIVE' : 'ACTIVE';
+}
+
+function StatusToggle({
+  status,
+  onToggle,
+  disabled,
+}: {
+  status: ClinicStatus;
+  onToggle: () => void | Promise<void>;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => void onToggle()}
+      disabled={disabled}
+      className={cn(
+        'font-medium underline-offset-2 hover:underline disabled:opacity-60',
+        status === 'Active' ? 'text-success' : 'text-text-muted',
+      )}
+    >
+      {status}
+    </button>
+  );
 }
 
 export function ClinicSettingsTab() {
   const { showToast } = useToast();
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
-  const [doctorsOverride, setDoctorsOverride] = useState<
-    ClinicDoctorRecord[] | null
-  >(null);
-  const [therapiesOverride, setTherapiesOverride] = useState<
-    ClinicTherapyRecord[] | null
-  >(null);
-  const [therapistsOverride, setTherapistsOverride] = useState<
-    ClinicTherapistRecord[] | null
-  >(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const { data, loading, error, reload } = useAsyncData(async () => {
     const [doctors, therapists, therapies, categories] = await Promise.all([
@@ -77,80 +109,154 @@ export function ClinicSettingsTab() {
     ]);
 
     const categoriesById = new Map(categories.map((c) => [c.id, c]));
+    const therapiesById = new Map(therapies.map((t) => [t.id, t]));
 
     return {
       doctors: doctors.map(mapDoctorToClinicRecord),
-      therapists: therapists.map(mapTherapistToClinicRecord),
+      therapists: therapists.map((t) =>
+        mapTherapistToClinicRecord(t, therapiesById),
+      ),
       therapies: therapies.map((therapy) =>
         mapTherapyToClinicRecord(therapy, categoriesById),
       ),
-      categories,
+      categories: categories.map(mapTreatmentCategoryToRecord),
+      categoryOptions: categories.map((c) => ({
+        value: c.id,
+        label: c.categoryName,
+      })),
     };
   }, {
     doctors: [] as ClinicDoctorRecord[],
     therapists: [] as ClinicTherapistRecord[],
     therapies: [] as ClinicTherapyRecord[],
-    categories: [],
+    categories: [] as ClinicTreatmentCategoryRecord[],
+    categoryOptions: [] as { value: string; label: string }[],
   });
 
-  const doctors = doctorsOverride ?? data.doctors;
-  const therapies = therapiesOverride ?? data.therapies;
-  const therapists = therapistsOverride ?? data.therapists;
-  const therapistNames = therapists.map((t) => t.name);
+  const { doctors, therapies, therapists } = data;
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    if (deleteTarget.type === 'Doctor') {
-      setDoctorsOverride((prev) =>
-        (prev ?? doctors).filter((d) => d.id !== deleteTarget.record.id),
-      );
+    try {
+      if (deleteTarget.type === 'Doctor') {
+        await deleteDoctor(deleteTarget.record.id);
+        showToast({
+          title: 'Doctor has been deleted',
+          message: `${deleteTarget.record.name} was removed from the database.`,
+        });
+      } else if (deleteTarget.type === 'Therapy') {
+        await deleteTherapy(deleteTarget.record.id);
+        showToast({
+          title: 'Therapy has been deleted',
+          message: `${deleteTarget.record.name} was removed from the database.`,
+        });
+      } else if (deleteTarget.type === 'Therapist') {
+        await deleteTherapist(deleteTarget.record.id);
+        showToast({
+          title: 'Therapist has been deleted',
+          message: `${deleteTarget.record.name} was removed from the database.`,
+        });
+      }
+      await reload();
+    } catch (err) {
       showToast({
-        title: 'Doctor has been deleted',
-        message: `${deleteTarget.record.name} was removed locally. Delete is not available on the API yet.`,
+        title: 'Error deleting record',
+        message: err instanceof ApiError ? err.message : 'An unknown error occurred.',
       });
-    } else if (deleteTarget.type === 'Therapy') {
-      setTherapiesOverride((prev) =>
-        (prev ?? therapies).filter((t) => t.id !== deleteTarget.record.id),
-      );
-      showToast({
-        title: 'Therapy has been deleted',
-        message: `${deleteTarget.record.name} was removed locally. Delete is not available on the API yet.`,
-      });
-    } else {
-      setTherapistsOverride((prev) =>
-        (prev ?? therapists).filter((t) => t.id !== deleteTarget.record.id),
-      );
-      showToast({
-        title: 'Therapist has been deleted',
-        message: `${deleteTarget.record.name} was removed locally. Delete is not available on the API yet.`,
-      });
+    } finally {
+      setDeleteTarget(null);
     }
-    setDeleteTarget(null);
+  };
+
+  const handleToggleDoctorStatus = async (doctor: ClinicDoctorRecord) => {
+    setTogglingId(doctor.id);
+    try {
+      await updateDoctorStatus(doctor.id, nextStatus(doctor.status));
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Failed to update doctor status',
+        message: err instanceof ApiError ? err.message : 'Could not update status.',
+      });
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleToggleTherapyStatus = async (therapy: ClinicTherapyRecord) => {
+    setTogglingId(therapy.id);
+    try {
+      await updateTherapyStatus(therapy.id, nextStatus(therapy.status));
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Failed to update therapy status',
+        message: err instanceof ApiError ? err.message : 'Could not update status.',
+      });
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleToggleTherapistStatus = async (therapist: ClinicTherapistRecord) => {
+    setTogglingId(therapist.id);
+    try {
+      await updateTherapistStatus(therapist.id, nextStatus(therapist.status));
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Failed to update therapist status',
+        message: err instanceof ApiError ? err.message : 'Could not update status.',
+      });
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   return (
     <AsyncStatus loading={loading} error={error} onRetry={reload}>
       <div className="space-y-6">
-        <DoctorsSection
-          doctors={doctors}
+        <TreatmentCategoriesSection
+          categories={data.categories}
           onAdd={async (values) => {
             try {
-              const created = await createDoctor({
-                doctorName: values.name,
-                specialization: values.specialization,
-                mobileNumber: '9876543210',
-                email: emailFromName(values.name),
-                qualification: values.specialization,
-                department: values.specialization,
-                consultationRoom: values.availability || 'Room-1',
+              await createTreatmentCategory({
+                categoryName: values.categoryName.trim(),
+                description: values.description.trim(),
+                status: 'ACTIVE',
               });
-              const mapped = {
-                ...mapDoctorToClinicRecord(created),
+              await reload();
+              showToast({
+                title: 'Category Added',
+                message: `${values.categoryName} has been added successfully.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add category',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create treatment category.',
+              });
+            }
+          }}
+        />
+
+        <DoctorsSection
+          doctors={doctors}
+          togglingId={togglingId}
+          onToggleStatus={handleToggleDoctorStatus}
+          onAdd={async (values) => {
+            try {
+              await createDoctor({
+                name: values.name,
+                specialization: values.specialization,
+                status: toApiStatus(values.status),
                 consultationFees: Number(values.consultationFees),
                 followUpFees: Number(values.followUpFees),
                 availability: values.availability,
-              };
-              setDoctorsOverride((prev) => [...(prev ?? doctors), mapped]);
+              });
+              await reload();
               showToast({
                 title: 'Doctor Added',
                 message: `${values.name} has been added successfully.`,
@@ -170,56 +276,33 @@ export function ClinicSettingsTab() {
 
         <TherapySection
           therapies={therapies}
-          therapistOptions={
-            therapistNames.length > 0 ? therapistNames : ['Dr. Narendra Jain']
-          }
-          categoryOptions={data.categories.map((c) => ({
-            value: c.id,
-            label: c.categoryName,
-          }))}
+          categoryOptions={data.categoryOptions}
+          togglingId={togglingId}
+          onToggleStatus={handleToggleTherapyStatus}
           onAdd={async (values) => {
             try {
-              let categoryId = values.category;
-              const known = data.categories.find(
-                (c) => c.id === values.category || c.categoryName === values.category,
-              );
-              if (known) {
-                categoryId = known.id;
-              } else {
-                const createdCategory = await createTreatmentCategory({
-                  categoryName: values.category,
-                  description: values.category,
-                  active: values.status === 'Active',
+              if (!values.category) {
+                showToast({
+                  title: 'Category required',
+                  message: 'Add a treatment category before creating therapies.',
                 });
-                categoryId = createdCategory.id;
+                return;
               }
 
-              const created = await createTherapy({
-                categoryId,
-                therapyName: values.name,
-                description: `${values.duration} · ₹${values.price}`,
-                active: values.status === 'Active',
+              await createTherapy({
+                name: values.name,
+                categoryId: values.category,
+                status: 'ACTIVE',
+                durationMinutes: parseSessionNumber(values.duration) || 45,
+                price: Number(values.price),
+                description: values.description,
               });
 
-              const mapped: ClinicTherapyRecord = {
-                ...mapTherapyToClinicRecord(
-                  created,
-                  new Map(
-                    data.categories.map((c) => [c.id, c]),
-                  ),
-                  values.assignedTherapist,
-                ),
-                category: known?.categoryName ?? values.category,
-                duration: values.duration,
-                price: Number(values.price),
-                assignedTherapist: values.assignedTherapist,
-              };
-              setTherapiesOverride((prev) => [...(prev ?? therapies), mapped]);
+              await reload();
               showToast({
                 title: 'Therapy Added',
                 message: `${values.name} has been added successfully.`,
               });
-              reload();
             } catch (err) {
               showToast({
                 title: 'Failed to add therapy',
@@ -235,24 +318,20 @@ export function ClinicSettingsTab() {
 
         <TherapistSection
           therapists={therapists}
+          therapyOptions={therapies.map((therapy) => ({
+            value: therapy.id,
+            label: therapy.name,
+          }))}
+          togglingId={togglingId}
+          onToggleStatus={handleToggleTherapistStatus}
           onAdd={async (values) => {
             try {
-              const created = await createTherapist({
-                therapistName: values.name,
-                specialization: values.assignedTherapies[0] ?? 'General',
-                mobileNumber: '9876543210',
-                email: emailFromName(values.name),
-                qualification: 'Therapist',
-                therapyRoom: 'Therapy Room',
+              await createTherapist({
+                name: values.name,
+                status: toApiStatus(values.status),
+                assignedTherapyIds: values.assignedTherapyIds,
               });
-              const mapped = {
-                ...mapTherapistToClinicRecord(created),
-                assignedTherapies: values.assignedTherapies,
-              };
-              setTherapistsOverride((prev) => [
-                ...(prev ?? therapists),
-                mapped,
-              ]);
+              await reload();
               showToast({
                 title: 'Therapist Added',
                 message: `${values.name} has been added successfully.`,
@@ -287,12 +366,97 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
+function TreatmentCategoriesSection({
+  categories,
+  onAdd,
+}: {
+  categories: ClinicTreatmentCategoryRecord[];
+  onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
+}) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ClinicCategoryFormValues>({
+    resolver: zodResolver(clinicCategorySchema),
+    defaultValues: { categoryName: '', description: '' },
+  });
+
+  const onSubmit = async (values: ClinicCategoryFormValues) => {
+    await onAdd(values);
+    reset();
+  };
+
+  return (
+    <Card className="min-w-0 overflow-hidden p-0">
+      <div className="border-b border-gray-100 px-5 py-4">
+        <SectionHeader title="Treatment Categories" />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full table-fixed text-left text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
+              <th className="px-4 py-3 font-medium">S No.</th>
+              <th className="px-4 py-3 font-medium">Category Name</th>
+              <th className="px-4 py-3 font-medium">Description</th>
+              <th className="px-4 py-3 font-medium">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr className="border-b border-gray-50 bg-cream/30">
+              <td className="px-4 py-3" />
+              <td className="px-4 py-3">
+                <Input
+                  placeholder="Category Name"
+                  error={errors.categoryName?.message}
+                  {...register('categoryName')}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <Input
+                  placeholder="Description"
+                  error={errors.description?.message}
+                  {...register('description')}
+                />
+              </td>
+              <td className="px-4 py-3">
+                <button
+                  type="button"
+                  onClick={handleSubmit(onSubmit)}
+                  disabled={isSubmitting}
+                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
+                  aria-label="Add category"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </td>
+            </tr>
+            {categories.map((category, index) => (
+              <tr key={category.id} className="border-b border-gray-50">
+                <td className="px-4 py-4 text-brown">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-brown">{category.name}</td>
+                <td className="px-4 py-4 text-brown">{category.description}</td>
+                <td className="px-4 py-4 text-text-muted">—</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
 function DoctorsSection({
   doctors,
+  togglingId,
+  onToggleStatus,
   onAdd,
   onDelete,
 }: {
   doctors: ClinicDoctorRecord[];
+  togglingId: string | null;
+  onToggleStatus: (record: ClinicDoctorRecord) => void | Promise<void>;
   onAdd: (values: ClinicDoctorFormValues) => void | Promise<void>;
   onDelete: (record: ClinicDoctorRecord) => void;
 }) {
@@ -379,7 +543,11 @@ function DoctorsSection({
                 <td className="px-4 py-4 font-medium text-brown">{doctor.name}</td>
                 <td className="px-4 py-4 text-brown">{doctor.specialization}</td>
                 <td className="px-4 py-4">
-                  <span className="font-medium text-success">{doctor.status}</span>
+                  <StatusToggle
+                    status={doctor.status}
+                    disabled={togglingId === doctor.id}
+                    onToggle={() => onToggleStatus(doctor)}
+                  />
                 </td>
                 <td className="px-4 py-4 text-brown">{formatCurrency(doctor.consultationFees)}</td>
                 <td className="px-4 py-4 text-brown">{formatCurrency(doctor.followUpFees)}</td>
@@ -405,14 +573,16 @@ function DoctorsSection({
 
 function TherapySection({
   therapies,
-  therapistOptions,
   categoryOptions,
+  togglingId,
+  onToggleStatus,
   onAdd,
   onDelete,
 }: {
   therapies: ClinicTherapyRecord[];
-  therapistOptions: string[];
   categoryOptions: { value: string; label: string }[];
+  togglingId: string | null;
+  onToggleStatus: (record: ClinicTherapyRecord) => void | Promise<void>;
   onAdd: (values: ClinicTherapyFormValues) => void | Promise<void>;
   onDelete: (record: ClinicTherapyRecord) => void;
 }) {
@@ -426,10 +596,9 @@ function TherapySection({
     defaultValues: {
       name: '',
       category: '',
-      status: 'Active',
       duration: '',
       price: '',
-      assignedTherapist: '',
+      description: '',
     },
   });
 
@@ -450,10 +619,10 @@ function TherapySection({
               <th className="px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Duration</th>
               <th className="px-4 py-3 font-medium">Price</th>
-              <th className="px-4 py-3 font-medium">Assigned Therapist</th>
+              <th className="px-4 py-3 font-medium">Description</th>
+              <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
           </thead>
@@ -465,33 +634,28 @@ function TherapySection({
               </td>
               <td className="px-4 py-3">
                 <Select
-                  placeholder="Category"
-                  options={
-                    categoryOptions.length > 0
-                      ? categoryOptions
-                      : ['Panchakarma', 'Wellness', 'Detox']
-                  }
+                  placeholder={categoryOptions.length ? 'Category' : 'Add category first'}
+                  options={categoryOptions}
+                  disabled={categoryOptions.length === 0}
                   error={errors.category?.message}
                   {...register('category')}
                 />
               </td>
               <td className="px-4 py-3">
-                <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input placeholder="Duration" error={errors.duration?.message} {...register('duration')} />
+                <Input placeholder="45" error={errors.duration?.message} {...register('duration')} />
               </td>
               <td className="px-4 py-3">
                 <Input placeholder="₹" error={errors.price?.message} {...register('price')} />
               </td>
               <td className="px-4 py-3">
-                <Select placeholder="Therapist" options={therapistOptions} error={errors.assignedTherapist?.message} {...register('assignedTherapist')} />
+                <Input placeholder="Description" error={errors.description?.message} {...register('description')} />
               </td>
+              <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <button
                   type="button"
                   onClick={handleSubmit(onSubmit)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || categoryOptions.length === 0}
                   className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
                   aria-label="Add therapy"
                 >
@@ -504,12 +668,16 @@ function TherapySection({
                 <td className="px-4 py-4 text-brown">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-brown">{therapy.name}</td>
                 <td className="px-4 py-4 text-brown">{therapy.category}</td>
-                <td className="px-4 py-4">
-                  <span className="font-medium text-success">{therapy.status}</span>
-                </td>
                 <td className="px-4 py-4 text-brown">{therapy.duration}</td>
                 <td className="px-4 py-4 text-brown">{formatCurrency(therapy.price)}</td>
-                <td className="px-4 py-4 text-brown">{therapy.assignedTherapist}</td>
+                <td className="px-4 py-4 text-brown">{therapy.description}</td>
+                <td className="px-4 py-4">
+                  <StatusToggle
+                    status={therapy.status}
+                    disabled={togglingId === therapy.id}
+                    onToggle={() => onToggleStatus(therapy)}
+                  />
+                </td>
                 <td className="px-4 py-4">
                   <button
                     type="button"
@@ -531,10 +699,16 @@ function TherapySection({
 
 function TherapistSection({
   therapists,
+  therapyOptions,
+  togglingId,
+  onToggleStatus,
   onAdd,
   onDelete,
 }: {
   therapists: ClinicTherapistRecord[];
+  therapyOptions: { value: string; label: string }[];
+  togglingId: string | null;
+  onToggleStatus: (record: ClinicTherapistRecord) => void | Promise<void>;
   onAdd: (values: ClinicTherapistFormValues) => void | Promise<void>;
   onDelete: (record: ClinicTherapistRecord) => void;
 }) {
@@ -550,26 +724,30 @@ function TherapistSection({
     defaultValues: {
       name: '',
       status: 'Active',
-      assignedTherapies: [],
+      assignedTherapyIds: [],
     },
   });
 
-  const assignedTherapies = watch('assignedTherapies') ?? [];
+  const assignedTherapyIds = watch('assignedTherapyIds') ?? [];
 
-  const addTherapyTag = (therapy: string) => {
-    if (!therapy || assignedTherapies.includes(therapy)) return;
-    setValue('assignedTherapies', [...assignedTherapies, therapy], {
+  const addTherapyTag = (therapyId: string) => {
+    if (!therapyId || assignedTherapyIds.includes(therapyId)) return;
+    setValue('assignedTherapyIds', [...assignedTherapyIds, therapyId], {
       shouldValidate: true,
     });
   };
 
-  const removeTherapyTag = (therapy: string) => {
+  const removeTherapyTag = (therapyId: string) => {
     setValue(
-      'assignedTherapies',
-      assignedTherapies.filter((t) => t !== therapy),
+      'assignedTherapyIds',
+      assignedTherapyIds.filter((id) => id !== therapyId),
       { shouldValidate: true },
     );
   };
+
+  const therapyLabel = (therapyId: string) =>
+    therapyOptions.find((option) => option.value === therapyId)?.label ??
+    therapyId;
 
   const onSubmit = async (values: ClinicTherapistFormValues) => {
     await onAdd(values);
@@ -604,33 +782,34 @@ function TherapistSection({
               <td className="px-4 py-3">
                 <div className="space-y-2">
                   <Select
-                    placeholder="Select therapy"
-                    options={[...THERAPY_ASSIGNMENT_OPTIONS]}
+                    placeholder={therapyOptions.length ? 'Select therapy' : 'Add therapies first'}
+                    options={therapyOptions}
+                    disabled={therapyOptions.length === 0}
                     onChange={(e) => {
                       addTherapyTag(e.target.value);
                       e.target.value = '';
                     }}
                   />
                   <div className="flex flex-wrap gap-1.5">
-                    {assignedTherapies.map((therapy) => (
+                    {assignedTherapyIds.map((therapyId) => (
                       <span
-                        key={therapy}
+                        key={therapyId}
                         className="inline-flex items-center gap-1 rounded-full bg-cream px-2.5 py-1 text-xs text-brown"
                       >
-                        {therapy}
+                        {therapyLabel(therapyId)}
                         <button
                           type="button"
-                          onClick={() => removeTherapyTag(therapy)}
+                          onClick={() => removeTherapyTag(therapyId)}
                           className="text-text-muted hover:text-brown"
-                          aria-label={`Remove ${therapy}`}
+                          aria-label={`Remove ${therapyLabel(therapyId)}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
                       </span>
                     ))}
                   </div>
-                  {errors.assignedTherapies?.message && (
-                    <p className="text-xs text-danger">{errors.assignedTherapies.message}</p>
+                  {errors.assignedTherapyIds?.message && (
+                    <p className="text-xs text-danger">{errors.assignedTherapyIds.message}</p>
                   )}
                 </div>
               </td>
@@ -650,9 +829,11 @@ function TherapistSection({
                 <td className="px-4 py-4 text-brown">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-brown">{therapist.name}</td>
                 <td className="px-4 py-4">
-                  <span className={cn('font-medium', therapist.status === 'Active' ? 'text-success' : 'text-text-muted')}>
-                    {therapist.status}
-                  </span>
+                  <StatusToggle
+                    status={therapist.status}
+                    disabled={togglingId === therapist.id}
+                    onToggle={() => onToggleStatus(therapist)}
+                  />
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-1.5">

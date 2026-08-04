@@ -5,12 +5,14 @@ interface CancelAppointmentModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  loading?: boolean;
 }
 
 export function CancelAppointmentModal({
   open,
   onClose,
   onConfirm,
+  loading = false,
 }: CancelAppointmentModalProps) {
   if (!open) return null;
 
@@ -39,14 +41,15 @@ export function CancelAppointmentModal({
           Are you sure you want to delete this appointment?
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
           <Button
             className="bg-danger hover:bg-danger/90"
             onClick={onConfirm}
+            disabled={loading}
           >
-            Delete
+            {loading ? 'Deleting…' : 'Delete'}
           </Button>
         </div>
       </div>

@@ -151,6 +151,7 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
       <SectionBlock title="Ayurvedic Assessment">
         <InfoGrid
           items={[
+            { label: 'Dosha', value: m.doshaName ?? '—' },
             { label: 'Body Constitution', value: m.bodyConstitution },
             { label: 'Current Imbalance', value: m.currentImbalance },
             { label: 'Previous Panchakarma', value: m.previousPanchakarma },
@@ -201,15 +202,44 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
             { label: 'Diet', value: m.diet },
             { label: 'Sleep', value: m.sleep },
             { label: 'Exercise', value: m.exercise },
+            { label: 'Addiction', value: m.addiction ?? '—' },
+          ]}
+        />
+      </SectionBlock>
+
+      <SectionBlock title="Systemic Examination">
+        <InfoGrid
+          items={[
+            { label: 'Cardiovascular', value: m.cardiovascular ?? '—' },
+            { label: 'Respiratory', value: m.respiratory ?? '—' },
+            { label: 'Nervous', value: m.nervous ?? '—' },
+            { label: 'Abdomen / GI', value: m.abdomenGi ?? '—' },
+            { label: 'Locomotor', value: m.locomotor ?? '—' },
+          ]}
+        />
+      </SectionBlock>
+
+      <SectionBlock title="Treatment Plan">
+        <InfoList
+          items={[
+            {
+              label: 'Investigation & Plan Suggested',
+              value: m.investigationPlan ?? '—',
+            },
+            { label: 'Plan Taken', value: m.planTaken ?? '—' },
           ]}
         />
       </SectionBlock>
 
       <SectionBlock title="Reports">
         <div className="space-y-2">
-          {m.reports.map((report) => (
-            <ReportRow key={report.name} {...report} />
-          ))}
+          {m.reports.length === 0 ? (
+            <p className="text-sm text-text-muted">No reports uploaded.</p>
+          ) : (
+            m.reports.map((report) => (
+              <ReportRow key={`${report.name}-${report.time}`} {...report} />
+            ))
+          )}
         </div>
       </SectionBlock>
     </div>

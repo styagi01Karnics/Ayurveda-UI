@@ -25,5 +25,5 @@ export const salesInvoices: SalesInvoiceRecord[] = Array.from(
 );
 
 export const SALES_FILTER_OPTIONS = {
-  serviceType: ['Panchakarma', 'Consultation', 'Therapy', 'Shirodhara'],
+  serviceType: ['Panchakarma', 'Consultation', 'Therapy', 'Monthly', 'Shirodhara'],
 } as const;

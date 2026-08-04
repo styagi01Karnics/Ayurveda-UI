@@ -1,0 +1,199 @@
+import { apiConfig } from './config';
+import { apiRequest, apiRequestList } from './client';
+import { apiEndpoints } from './endpoints';
+
+const url = (path: string) => `${apiConfig.billing}${path}`;
+const ep = apiEndpoints.billing;
+const dash = apiEndpoints.dashboard;
+
+export type InvoiceStatus = 'UNPAID' | 'ONGOING' | 'COMPLETED';
+export type BillingPeriod = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+export type VisitTypeApi =
+  | 'CONSULTATION'
+  | 'FOLLOW_UP'
+  | 'THERAPY'
+  | 'PACKAGE';
+
+export interface InvoiceMedicineItem {
+  medicineId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface InvoiceTherapyItem {
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  assignedTherapistId?: string;
+  assignedTherapistName?: string;
+  scheduleDate?: string;
+  scheduleTime?: string;
+  sessionDuration?: number;
+  sessionFrequency?: number;
+}
+
+export interface CreateInvoicePayload {
+  patientId: string;
+  patientDisplayId?: string;
+  patientCode?: string;
+  patientName: string;
+  contactNumber: string;
+  invoiceDate: string;
+  visitType: VisitTypeApi;
+  serviceFees: number;
+  packageType?: string | null;
+  packageCharges?: number;
+  medicines?: InvoiceMedicineItem[];
+  therapies?: InvoiceTherapyItem[];
+  discount?: number;
+  taxEnabled?: boolean;
+  cgstPercent?: number;
+  sgstPercent?: number;
+  amountPaid?: number;
+  paymentMethod?: string;
+  paymentRemarks?: string;
+}
+
+export interface InvoiceListItemDto {
+  invoiceId: string;
+  patientId: string;
+  patientDisplayId?: string;
+  patientCode?: string;
+  patientName?: string;
+  invoiceDate: string;
+  totalAmount: number;
+  paidAmount: number;
+  leftAmount: number;
+  status: InvoiceStatus;
+}
+
+export interface InvoicePaymentPayload {
+  amountPaid: number;
+  paymentMethod: string;
+  remarks?: string;
+}
+
+export interface SalesRecordDto {
+  invoiceId: string;
+  invoiceDate: string;
+  treatmentCategory?: string | null;
+  serviceType: string;
+  totalAmount: number;
+}
+
+export interface SalesResponseDto {
+  revenueThisMonth: number;
+  revenueFrom: string;
+  revenueTo: string;
+  sales: SalesRecordDto[];
+}
+
+export interface SalesRevenueDto {
+  year: number;
+  month: number;
+  totalRevenue: number;
+}
+
+export interface BillingSummaryDto {
+  period: BillingPeriod;
+  fromDate: string;
+  toDate: string;
+  totalRevenue: number;
+  totalBillsGenerated: number;
+  pendingPayments: number;
+  collectedPayments: number;
+}
+
+export interface InvoicesQuery {
+  patientId?: string;
+  status?: InvoiceStatus;
+}
+
+export interface SalesQuery {
+  serviceType?: string;
+  dateCreated?: string;
+}
+
+export function getInvoices(query: InvoicesQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.patientId) params.set('patientId', query.patientId);
+  if (query.status) params.set('status', query.status);
+  const qs = params.toString();
+  return apiRequestList<InvoiceListItemDto>(
+    url(`${ep.invoices}${qs ? `?${qs}` : ''}`),
+  );
+}
+
+export function getInvoiceById(invoiceId: string) {
+  return apiRequest<InvoiceListItemDto>(url(ep.invoiceById(invoiceId)));
+}
+
+export function createInvoice(payload: CreateInvoicePayload) {
+  return apiRequest<InvoiceListItemDto>(url(ep.invoices), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function addInvoicePayment(
+  invoiceId: string,
+  payload: InvoicePaymentPayload,
+) {
+  return apiRequest<InvoiceListItemDto>(url(ep.invoicePayment(invoiceId)), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function deleteInvoice(invoiceId: string) {
+  return apiRequest<void>(url(ep.invoiceById(invoiceId)), {
+    method: 'DELETE',
+  });
+}
+
+export function getSales(query: SalesQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.serviceType) params.set('serviceType', query.serviceType);
+  if (query.dateCreated) params.set('dateCreated', query.dateCreated);
+  const qs = params.toString();
+  return apiRequest<SalesResponseDto | SalesRecordDto[]>(
+    url(`${ep.sales}${qs ? `?${qs}` : ''}`),
+  ).then(normalizeSalesResponse);
+}
+
+function normalizeSalesResponse(
+  data: SalesResponseDto | SalesRecordDto[] | null | undefined,
+): SalesResponseDto {
+  if (Array.isArray(data)) {
+    const total = data.reduce((sum, row) => sum + (row.totalAmount ?? 0), 0);
+    return {
+      revenueThisMonth: total,
+      revenueFrom: '',
+      revenueTo: '',
+      sales: data,
+    };
+  }
+
+  return {
+    revenueThisMonth: data?.revenueThisMonth ?? 0,
+    revenueFrom: data?.revenueFrom ?? '',
+    revenueTo: data?.revenueTo ?? '',
+    sales: Array.isArray(data?.sales) ? data.sales : [],
+  };
+}
+
+export function getSalesRevenueMonth(year: number, month: number) {
+  const params = new URLSearchParams({
+    year: String(year),
+    month: String(month),
+  });
+  return apiRequest<SalesRevenueDto>(
+    url(`${ep.salesRevenueMonth}?${params.toString()}`),
+  );
+}
+
+export function getDashboardBillingSummary(period: BillingPeriod = 'MONTHLY') {
+  return apiRequest<BillingSummaryDto>(
+    url(`${dash.billingSummary}?period=${period}`),
+  );
+}
