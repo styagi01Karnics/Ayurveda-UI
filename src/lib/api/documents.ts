@@ -12,7 +12,7 @@ export type DocumentTypeApi =
 
 export interface DocumentDto {
   id: string;
-  bookingId: string;
+  patientId: string;
   documentType: DocumentTypeApi;
   fileName: string;
   fileType: string;
@@ -21,19 +21,19 @@ export interface DocumentDto {
 }
 
 export function uploadDocument(
-  bookingId: string,
+  patientId: string,
   documentType: DocumentTypeApi,
   file: File,
 ) {
   const formData = new FormData();
-  formData.append('bookingId', bookingId);
+  formData.append('patientId', patientId);
   formData.append('documentType', documentType);
   formData.append('file', file);
   return apiRequestFormData<DocumentDto>(url(ep.upload), formData);
 }
 
-export function getDocumentsByBookingId(bookingId: string) {
-  return apiRequestList<DocumentDto>(url(ep.byBookingId(bookingId)));
+export function getDocumentsByPatientId(patientId: string) {
+  return apiRequestList<DocumentDto>(url(ep.byPatientId(patientId)));
 }
 
 export function getDocumentDownloadUrl(documentId: string) {

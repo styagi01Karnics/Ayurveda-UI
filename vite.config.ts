@@ -49,6 +49,8 @@ export default defineConfig({
       '/api/v1/lifestyle-information': serviceProxy(8103),
       '/api/v1/ayurvedic-assessments': serviceProxy(8103),
       '/api/v1/dashboard/todays-schedule': serviceProxy(8103),
+      '/api/v1/treatments': serviceProxy(8103),
+      '/api/v1/follow-ups': serviceProxy(8103),
 
       // Auth-service :8111
       '/api/v1/auth': serviceProxy(8111),
@@ -71,6 +73,7 @@ export default defineConfig({
       '/api/v1/invoices': serviceProxy(8109),
       '/api/v1/sales': serviceProxy(8109),
       '/api/v1/dashboard/billing-summary': serviceProxy(8109),
+      '/api/v1/packages': serviceProxy(8109),
 
       // Notification-service :8110
       '/api/v1/notifications': serviceProxy(8110),

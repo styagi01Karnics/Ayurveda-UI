@@ -237,7 +237,7 @@ export const calendarEventDetails: Record<string, CalendarEventDetail> = {
 export const APPOINTMENT_FILTER_OPTIONS = {
   status: ['Scheduled', 'Completed', 'Cancelled'],
   visitType: ['Consultation', 'Therapy'],
-  followUpStatus: ['Upcoming', 'Missed', 'Completed'],
+  followUpStatus: ['Upcoming', 'Missed', 'Completed', 'Cancelled'],
 } as const;
 
 export const DOCTORS_LIST = [

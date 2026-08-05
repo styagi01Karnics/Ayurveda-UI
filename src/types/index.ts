@@ -215,7 +215,7 @@ export interface FollowUpRecord {
   visitType: VisitType;
   appointmentDate: string;
   dateCreated: string;
-  status: 'Upcoming' | 'Missed' | 'Completed';
+  status: 'Upcoming' | 'Missed' | 'Completed' | 'Cancelled';
 }
 
 export interface CalendarEvent {
@@ -250,12 +250,17 @@ export interface TreatmentRecord {
   id: string;
   patient: string;
   patientDetailId: string;
+  treatmentPlanName: string;
   treatmentCategory: string;
   therapyType: string;
   assignedTherapist: string;
   therapistSchedule: string;
+  startDate: string;
+  endDate: string;
   totalSessions: number;
-  status: 'Ongoing' | 'Completed';
+  completedSessions: number;
+  remainingSessions: number;
+  status: 'Scheduled' | 'Ongoing' | 'Completed';
   dateCreated: string;
 }
 

@@ -12,18 +12,20 @@ import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
-  getAppointmentTherapiesByPatientId,
   getAppointmentsByPatientId,
   getMedicalAssessmentByPatientId,
 } from '@/lib/api/appointments';
 import { getInvoices } from '@/lib/api/billing';
+import { getPackagesByPatientId } from '@/lib/api/packages';
 import {
   mapInvoicesToPatientBilling,
   mapMedicalAssessmentDtoToUi,
+  mapPatientPackageToBillingMembership,
   mapPatientToDetail,
   pickDosha,
 } from '@/lib/api/mappers';
 import { getPatientById } from '@/lib/api/patients';
+import { getTreatmentsByPatientId } from '@/lib/api/treatments';
 import type { PatientDetailTab } from '@/types/patientDetail';
 
 export function TreatmentPatientDetailPage() {
@@ -35,19 +37,23 @@ export function TreatmentPatientDetailPage() {
     async () => {
       if (!patientId) return null;
 
-      const [apiPatient, appointments, therapies, medicalAssessment, invoices] =
+      const [apiPatient, appointments, treatments, medicalAssessment, invoices, packages] =
         await Promise.all([
           getPatientById(patientId),
           getAppointmentsByPatientId(patientId).catch(() => []),
-          getAppointmentTherapiesByPatientId(patientId).catch(() => []),
+          getTreatmentsByPatientId(patientId).catch(() => []),
           getMedicalAssessmentByPatientId(patientId).catch(() => null),
           getInvoices({ patientId }).catch(() => []),
+          getPackagesByPatientId(patientId).catch(() => []),
         ]);
 
-      const therapy = therapies[0];
+      const treatment = treatments[0];
       const latestAppointment = appointments[0];
       const medicalUi = mapMedicalAssessmentDtoToUi(medicalAssessment);
       const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
+      const packageBilling = packages[0]
+        ? mapPatientPackageToBillingMembership(packages[0])
+        : {};
 
       return mapPatientToDetail(apiPatient, {
         dosha: pickDosha(
@@ -56,24 +62,16 @@ export function TreatmentPatientDetailPage() {
         doctor: latestAppointment?.doctorName ?? '—',
         medicalAssessment: medicalUi,
         treatmentFollowUp: {
-          treatmentName:
-            therapy?.treatmentCategoryName ??
-            therapy?.categoryName ??
-            therapy?.treatmentCategory?.categoryName ??
-            '—',
-          startDate: therapy?.scheduleDate ?? '—',
-          endDate: '—',
-          totalSessions: therapy?.sessionFrequency ?? 0,
-          sessionsCompleted: 0,
-          remainingSessions: therapy?.sessionFrequency ?? 0,
-          assignedTherapist:
-            therapy?.therapistName ??
-            therapy?.assignedTherapist?.name ??
-            therapy?.assignedTherapist?.therapistName ??
-            '—',
-          nextFollowUp: therapy?.scheduleDate ?? '—',
+          treatmentName: treatment?.treatmentPlanName ?? '—',
+          startDate: treatment?.startDate ?? '—',
+          endDate: treatment?.endDate ?? '—',
+          totalSessions: treatment?.totalSessions ?? 0,
+          sessionsCompleted: treatment?.completedSessions ?? 0,
+          remainingSessions: treatment?.remainingSessions ?? 0,
+          assignedTherapist: treatment?.assignedTherapistName ?? '—',
+          nextFollowUp: treatment?.endDate ?? '—',
           followUpDoctor: latestAppointment?.doctorName ?? '—',
-          reminder: therapy?.therapyInstructions ?? '—',
+          reminder: '—',
           appointmentHistory: appointments.slice(0, 5).map((appt) => ({
             visitType: (appt.consultationTypes?.[0] ?? 'Consultation')
               .toString()
@@ -89,7 +87,7 @@ export function TreatmentPatientDetailPage() {
             status: 'Scheduled' as const,
           })),
         },
-        billing,
+        billing: { ...billing, ...packageBilling },
         invoice: {
           ...invoice,
           address: apiPatient.address,

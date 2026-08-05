@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import { PageActionContext } from '@/app/PageActionContext';
+import { ToastProvider } from '@/app/ToastContext';
 import { TreatmentsPage } from '@/pages/TreatmentsPage';
 
 const mockNavigate = vi.fn();
@@ -17,16 +19,19 @@ vi.mock('react-router-dom', async () => {
 function renderTreatments() {
   return render(
     <MemoryRouter>
-      <TreatmentsPage />
+      <ToastProvider>
+        <PageActionContext.Provider value={{ setHeaderAction: () => {} }}>
+          <TreatmentsPage />
+        </PageActionContext.Provider>
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
-
 describe('TreatmentsPage', () => {
   it('renders treatments table', async () => {
     renderTreatments();
     expect((await screen.findAllByText('Khushi Shroff')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Panchakarma').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Detox Package').length).toBeGreaterThan(0);
   });
 
   it('filters by patient name', async () => {

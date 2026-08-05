@@ -21,9 +21,9 @@ function renderPatientDetail() {
 }
 
 describe('DoctorPatientDetailPage', () => {
-  it('renders patient header and tabs', () => {
+  it('renders patient header and tabs', async () => {
     renderPatientDetail();
-    expect(screen.getByText('#37944397')).toBeInTheDocument();
+    expect(await screen.findByText('#37944397')).toBeInTheDocument();
     expect(screen.getByText('Under Treatment')).toBeInTheDocument();
     expect(screen.getByText('Personal Information')).toBeInTheDocument();
     expect(screen.getByText('Medical Assessment')).toBeInTheDocument();
@@ -38,14 +38,14 @@ describe('DoctorPatientDetailPage', () => {
   it('switches to edit mode', async () => {
     const user = userEvent.setup();
     renderPatientDetail();
-    await user.click(screen.getByLabelText('Edit patient details'));
+    await user.click(await screen.findByLabelText('Edit patient details'));
     expect(screen.getByLabelText('Full Name')).toBeInTheDocument();
   });
 
   it('advances workflow stepper on next from billing tab', async () => {
     const user = userEvent.setup();
     renderPatientDetail();
-    await user.click(screen.getByRole('button', { name: 'Billing & Membership' }));
+    await user.click(await screen.findByRole('button', { name: 'Billing & Membership' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('Create Prescription')).toBeInTheDocument();
     expect(screen.getByLabelText('Diagnosis')).toBeInTheDocument();

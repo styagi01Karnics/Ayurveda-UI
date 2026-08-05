@@ -3,26 +3,37 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Select, type SelectOption } from '@/components/ui/Select';
 import {
   followUpSchema,
+  FOLLOW_UP_SCHEDULING_OPTIONS,
   type FollowUpFormValues,
 } from '@/lib/validation/patient.schema';
-import { DOCTORS_LIST } from '@/data/mock/appointments';
-import { APPOINTMENT_FILTER_OPTIONS } from '@/data/mock/appointments';
+
+export interface FollowUpLookupOptions {
+  patients: SelectOption[];
+  doctors: SelectOption[];
+}
 
 interface ScheduleFollowUpModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: FollowUpFormValues) => void;
-  doctorOptions?: string[];
+  onSubmit: (data: FollowUpFormValues) => void | Promise<void>;
+  lookupOptions: FollowUpLookupOptions;
+  submitting?: boolean;
 }
+
+const VISIT_TYPE_OPTIONS = [
+  { value: 'CONSULTATION', label: 'Consultation' },
+  { value: 'THERAPY', label: 'Therapy' },
+];
 
 export function ScheduleFollowUpModal({
   open,
   onClose,
   onSubmit,
-  doctorOptions,
+  lookupOptions,
+  submitting = false,
 }: ScheduleFollowUpModalProps) {
   const {
     register,
@@ -33,12 +44,12 @@ export function ScheduleFollowUpModal({
     resolver: zodResolver(followUpSchema),
     defaultValues: {
       patientId: '',
-      fullName: '',
-      contactNumber: '',
-      visitType: '',
-      doctor: '',
+      assignedDoctorId: '',
+      visitType: 'CONSULTATION',
+      schedulingOption: '7_DAYS',
       scheduleDate: '',
       scheduleTime: '',
+      smsReminderEnabled: false,
     },
   });
 
@@ -47,82 +58,84 @@ export function ScheduleFollowUpModal({
     onClose();
   };
 
-  const onFormSubmit = (data: FollowUpFormValues) => {
-    onSubmit(data);
+  const onFormSubmit = async (data: FollowUpFormValues) => {
+    await onSubmit(data);
     handleClose();
   };
+
+  const busy = submitting || isSubmitting;
 
   return (
     <Modal
       open={open}
       onClose={handleClose}
       title="Schedule Follow Up"
-      subtitle="Please fill out the patient details"
+      subtitle="Schedule a follow-up visit for a patient"
       size="lg"
       footer={
         <Button
           onClick={handleSubmit(onFormSubmit)}
-          disabled={isSubmitting}
+          disabled={busy}
         >
-          Confirm
+          {busy ? 'Scheduling…' : 'Confirm'}
         </Button>
       }
     >
       <form className="space-y-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Input
-            label="Patient ID"
-            placeholder="Patient ID"
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Select
+            label="Patient"
+            placeholder="Select patient"
+            options={lookupOptions.patients}
             error={errors.patientId?.message}
             {...register('patientId')}
           />
-          <Input
-            label="Full Name"
-            placeholder="Full Name"
-            error={errors.fullName?.message}
-            {...register('fullName')}
-          />
-          <Input
-            label="Contact Number"
-            placeholder="Contact Number"
-            error={errors.contactNumber?.message}
-            {...register('contactNumber')}
+          <Select
+            label="Doctor"
+            placeholder="Select doctor"
+            options={lookupOptions.doctors}
+            error={errors.assignedDoctorId?.message}
+            {...register('assignedDoctorId')}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Select
             label="Visit Type"
             placeholder="Visit Type"
-            options={[...APPOINTMENT_FILTER_OPTIONS.visitType]}
+            options={VISIT_TYPE_OPTIONS}
             error={errors.visitType?.message}
             {...register('visitType')}
           />
           <Select
-            label="Doctor"
-            placeholder="Doctor"
-            options={
-              doctorOptions && doctorOptions.length > 0
-                ? doctorOptions
-                : [...DOCTORS_LIST]
-            }
-            error={errors.doctor?.message}
-            {...register('doctor')}
+            label="Scheduling"
+            placeholder="Scheduling option"
+            options={[...FOLLOW_UP_SCHEDULING_OPTIONS]}
+            error={errors.schedulingOption?.message}
+            {...register('schedulingOption')}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            label="Schedule Date"
+            label="Appointment Date"
             type="date"
             error={errors.scheduleDate?.message}
             {...register('scheduleDate')}
           />
           <Input
-            label="Schedule Time"
+            label="Appointment Time"
             type="time"
             error={errors.scheduleTime?.message}
             {...register('scheduleTime')}
           />
         </div>
+        <label className="flex items-center gap-2 text-sm text-brown">
+          <input
+            type="checkbox"
+            className="rounded border-gray-300"
+            {...register('smsReminderEnabled')}
+          />
+          Enable SMS reminder (stored only)
+        </label>
       </form>
     </Modal>
   );

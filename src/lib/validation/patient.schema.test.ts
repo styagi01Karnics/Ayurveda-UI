@@ -80,24 +80,22 @@ describe('patientStep3Schema', () => {
 describe('followUpSchema', () => {
   it('accepts valid follow up data', () => {
     const result = followUpSchema.safeParse({
-      patientId: 'PT458652',
-      fullName: 'Khushi Shroff',
-      contactNumber: '9876543210',
-      visitType: 'Consultation',
-      doctor: 'Dr. Sheekha',
+      patientId: '37944397',
+      assignedDoctorId: 'doc-1',
+      visitType: 'CONSULTATION',
+      schedulingOption: '7_DAYS',
       scheduleDate: '2026-10-20',
       scheduleTime: '10:30',
     });
     expect(result.success).toBe(true);
   });
 
-  it('rejects invalid contact number', () => {
+  it('rejects missing doctor', () => {
     const result = followUpSchema.safeParse({
-      patientId: 'PT458652',
-      fullName: 'Khushi Shroff',
-      contactNumber: '123',
-      visitType: 'Consultation',
-      doctor: 'Dr. Sheekha',
+      patientId: '37944397',
+      assignedDoctorId: '',
+      visitType: 'CONSULTATION',
+      schedulingOption: '7_DAYS',
       scheduleDate: '2026-10-20',
       scheduleTime: '10:30',
     });

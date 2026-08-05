@@ -24,7 +24,6 @@ import { Select } from '@/components/ui/Select';
 import { Tabs } from '@/components/ui/Tabs';
 import {
   APPOINTMENT_FILTER_OPTIONS,
-  initialFollowUps,
 } from '@/data/mock/appointments';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
@@ -38,12 +37,15 @@ import {
 import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
 import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
+import { createFollowUp, getAllFollowUps } from '@/lib/api/followUps';
 import {
   mapAppointmentRecordToCalendarDetail,
   mapAppointmentToRecord,
+  mapFollowUpDtoToRecord,
   normalizeSlotTimeForApi,
   toApiConsultationTypes,
 } from '@/lib/api/mappers';
+import { getAllPatients } from '@/lib/api/patients';
 import { getAllTherapists } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
@@ -66,7 +68,6 @@ export function AppointmentsPage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<AppointmentTab>('appointments');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [followUps, setFollowUps] = useState(initialFollowUps);
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [visitTypeFilter, setVisitTypeFilter] = useState('');
@@ -84,6 +85,7 @@ export function AppointmentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
+  const [schedulingFollowUp, setSchedulingFollowUp] = useState(false);
   const [localAppointments, setLocalAppointments] = useState<
     AppointmentRecord[]
   >([]);
@@ -94,7 +96,7 @@ export function AppointmentsPage() {
     error,
     reload,
   } = useAsyncData(async () => {
-    const [doctors, therapists, categories, therapies, doshas, appointments] =
+    const [doctors, therapists, categories, therapies, doshas, appointments, patients, followUpDtos] =
       await Promise.all([
         getActiveDoctors().catch(() => getAllDoctors().catch(() => [])),
         getAllTherapists().catch(() => []),
@@ -102,6 +104,8 @@ export function AppointmentsPage() {
         getAllTherapies().catch(() => []),
         getBookingDoshas().catch(() => []),
         getAppointmentsByStatus('ALL').catch(() => []),
+        getAllPatients().catch(() => []),
+        getAllFollowUps().catch(() => []),
       ]);
 
     const doctorsById = new Map(doctors.map((d) => [d.id, d]));
@@ -131,9 +135,15 @@ export function AppointmentsPage() {
         value: d.id,
         label: d.name,
       })),
+      patients: patients.map((p) => ({
+        value: p.id,
+        label: p.fullName,
+      })),
     };
 
-    return { records, lookupOptions, doctors };
+    const followUpRecords = followUpDtos.map(mapFollowUpDtoToRecord);
+
+    return { records, lookupOptions, doctors, followUpRecords };
   }, {
     records: [] as AppointmentRecord[],
     lookupOptions: {
@@ -142,8 +152,10 @@ export function AppointmentsPage() {
       categories: [],
       therapies: [],
       doshas: [],
+      patients: [],
     },
     doctors: [],
+    followUpRecords: [] as FollowUpRecord[],
   });
 
   const appointments = useMemo(() => {
@@ -153,6 +165,8 @@ export function AppointmentsPage() {
       ...data.records.filter((r) => !ids.has(r.id)),
     ];
   }, [data.records, localAppointments]);
+
+  const followUps = data.followUpRecords;
 
   const headerAction = useMemo(
     () =>
@@ -197,7 +211,8 @@ export function AppointmentsPage() {
     return followUps.filter((item) => {
       const matchesId =
         !patientIdQuery ||
-        item.uhid.toLowerCase().includes(patientIdQuery.toLowerCase());
+        item.uhid.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
+        item.patient.toLowerCase().includes(patientIdQuery.toLowerCase());
       const matchesStatus = !statusFilter || item.status === statusFilter;
       const matchesVisit =
         !visitTypeFilter ||
@@ -344,24 +359,40 @@ export function AppointmentsPage() {
     }
   };
 
-  const handleScheduleFollowUp = (formData: FollowUpFormValues) => {
-    const newFollowUp: FollowUpRecord = {
-      id: `fu-${Date.now()}`,
-      uhid: formData.patientId.startsWith('#')
-        ? formData.patientId
-        : `#${formData.patientId}`,
-      patient: formData.fullName,
-      doctor: formData.doctor,
-      visitType: formData.visitType as VisitType,
-      appointmentDate: `${formData.scheduleDate}, ${formData.scheduleTime}`,
-      dateCreated: formData.scheduleDate,
-      status: 'Upcoming',
-    };
-    setFollowUps((prev) => [newFollowUp, ...prev]);
-    showToast({
-      title: 'Follow-up Scheduled',
-      message: `Follow-up for ${formData.fullName} has been scheduled successfully.`,
-    });
+  const handleScheduleFollowUp = async (formData: FollowUpFormValues) => {
+    setSchedulingFollowUp(true);
+    try {
+      const time = formData.scheduleTime.length === 5
+        ? `${formData.scheduleTime}:00`
+        : formData.scheduleTime;
+      await createFollowUp({
+        patientId: formData.patientId,
+        assignedDoctorId: formData.assignedDoctorId,
+        visitType: formData.visitType,
+        appointmentDate: `${formData.scheduleDate}T${time}`,
+        schedulingOption: formData.schedulingOption,
+        smsReminderEnabled: formData.smsReminderEnabled ?? false,
+        sourceBookingId: formData.sourceBookingId,
+        status: 'UPCOMING',
+      });
+      showToast({
+        title: 'Follow-up Scheduled',
+        message: 'Follow-up has been scheduled successfully.',
+      });
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Scheduling failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not schedule follow-up.',
+      });
+    } finally {
+      setSchedulingFollowUp(false);
+    }
   };
 
   const handleEventClick = (eventId: string) => {
@@ -481,7 +512,15 @@ export function AppointmentsPage() {
               />
             </AsyncStatus>
           ) : (
-            <FollowUpsTable embedded items={filteredFollowUps} />
+            <AsyncStatus
+              loading={loading}
+              error={error}
+              onRetry={reload}
+              empty={!loading && !error && filteredFollowUps.length === 0}
+              emptyMessage="No follow-ups found."
+            >
+              <FollowUpsTable embedded items={filteredFollowUps} />
+            </AsyncStatus>
           )}
         </ListPanel>
       ) : (
@@ -517,13 +556,11 @@ export function AppointmentsPage() {
         open={followUpOpen}
         onClose={() => setFollowUpOpen(false)}
         onSubmit={handleScheduleFollowUp}
-        doctorOptions={
-          data.lookupOptions.doctors.length > 0
-            ? data.lookupOptions.doctors.map((d) =>
-                typeof d === 'string' ? d : d.label,
-              )
-            : undefined
-        }
+        lookupOptions={{
+          patients: data.lookupOptions.patients ?? [],
+          doctors: data.lookupOptions.doctors,
+        }}
+        submitting={schedulingFollowUp}
       />
 
       <CancelAppointmentModal

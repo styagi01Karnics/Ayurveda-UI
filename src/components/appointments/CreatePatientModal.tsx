@@ -75,6 +75,7 @@ export interface BookingLookupOptions {
   categories: SelectOption[];
   therapies: TagOption[];
   doshas: SelectOption[];
+  patients?: SelectOption[];
 }
 
 interface CreatePatientModalProps {

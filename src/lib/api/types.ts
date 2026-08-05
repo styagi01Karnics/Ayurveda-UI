@@ -533,3 +533,98 @@ export interface MedicalAssessmentDocuments {
   labReports?: File[];
 }
 
+export type TreatmentStatusApi = 'SCHEDULED' | 'ONGOING' | 'COMPLETED';
+
+export interface TreatmentDto {
+  id: string;
+  patientId: string;
+  treatmentPlanName: string;
+  startDate: string;
+  endDate: string;
+  totalSessions: number;
+  completedSessions: number;
+  remainingSessions: number;
+  assignedTherapistId: string;
+  assignedTherapistName?: string;
+  treatmentStatus: TreatmentStatusApi;
+}
+
+export interface CreateTreatmentPayload {
+  patientId: string;
+  treatmentPlanName: string;
+  startDate: string;
+  endDate: string;
+  totalSessions: number;
+  completedSessions?: number;
+  assignedTherapistId: string;
+  treatmentStatus?: TreatmentStatusApi;
+}
+
+export interface UpdateTreatmentPayload {
+  treatmentPlanName: string;
+  startDate: string;
+  endDate: string;
+  totalSessions: number;
+  completedSessions: number;
+  assignedTherapistId: string;
+}
+
+export type FollowUpStatusApi =
+  | 'UPCOMING'
+  | 'MISSED'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export type FollowUpVisitTypeApi = 'CONSULTATION' | 'THERAPY';
+
+export interface FollowUpDto {
+  id: string;
+  patientId: string;
+  patientDisplayId?: string;
+  patientName?: string;
+  assignedDoctorId: string;
+  doctorName?: string;
+  sourceBookingId?: string;
+  visitType: FollowUpVisitTypeApi;
+  appointmentDate: string;
+  schedulingOption: string;
+  smsReminderEnabled: boolean;
+  status: FollowUpStatusApi;
+}
+
+export interface CreateFollowUpPayload {
+  patientId: string;
+  assignedDoctorId: string;
+  sourceBookingId?: string;
+  visitType: FollowUpVisitTypeApi;
+  appointmentDate: string;
+  schedulingOption: string;
+  smsReminderEnabled?: boolean;
+  status?: FollowUpStatusApi;
+}
+
+export type PatientPackageStatusApi = 'SCHEDULED' | 'ONGOING' | 'COMPLETED';
+
+export interface PatientPackageDto {
+  id: string;
+  patientId: string;
+  packageName: string;
+  validity: string;
+  status: PatientPackageStatusApi;
+  discountApplied: number;
+}
+
+export interface CreatePatientPackagePayload {
+  patientId: string;
+  packageName: string;
+  validity: string;
+  status?: PatientPackageStatusApi;
+  discountApplied: number;
+}
+
+export interface UpdatePatientPackagePayload {
+  packageName: string;
+  validity: string;
+  discountApplied: number;
+}
+

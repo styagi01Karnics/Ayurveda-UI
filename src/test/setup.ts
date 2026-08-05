@@ -1,7 +1,7 @@
 import { beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { mockPatientDtos } from './fixtures';
-import { initialAppointments } from '@/data/mock/appointments';
+import { initialAppointments, initialFollowUps } from '@/data/mock/appointments';
 import { initialTreatments } from '@/data/mock/treatments';
 import {
   initialClinicDoctors,
@@ -575,6 +575,91 @@ vi.mock('@/lib/api/appointments', () => ({
       createdAt: `${t.dateCreated}T00:00:00`,
     })),
   ),
+}));
+
+vi.mock('@/lib/api/treatments', () => ({
+  getAllTreatments: vi.fn(async () =>
+    initialTreatments.map((t) => ({
+      id: t.id,
+      patientId: t.patientDetailId,
+      treatmentPlanName: t.treatmentPlanName,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      totalSessions: t.totalSessions,
+      completedSessions: t.completedSessions,
+      remainingSessions: t.remainingSessions,
+      assignedTherapistId: 'th-1',
+      assignedTherapistName: t.assignedTherapist,
+      treatmentStatus:
+        t.status === 'Completed'
+          ? 'COMPLETED'
+          : t.status === 'Scheduled'
+            ? 'SCHEDULED'
+            : 'ONGOING',
+    })),
+  ),
+  getTreatmentsByPatientId: vi.fn(async (patientId: string) =>
+    initialTreatments
+      .filter((t) => t.patientDetailId === patientId)
+      .map((t) => ({
+        id: t.id,
+        patientId: t.patientDetailId,
+        treatmentPlanName: t.treatmentPlanName,
+        startDate: t.startDate,
+        endDate: t.endDate,
+        totalSessions: t.totalSessions,
+        completedSessions: t.completedSessions,
+        remainingSessions: t.remainingSessions,
+        assignedTherapistId: 'th-1',
+        assignedTherapistName: t.assignedTherapist,
+        treatmentStatus:
+          t.status === 'Completed'
+            ? 'COMPLETED'
+            : t.status === 'Scheduled'
+              ? 'SCHEDULED'
+              : 'ONGOING',
+      })),
+  ),
+  createTreatment: vi.fn(async () => ({ id: 'tr-new' })),
+  updateTreatment: vi.fn(),
+  updateTreatmentStatus: vi.fn(),
+}));
+
+vi.mock('@/lib/api/followUps', () => ({
+  getAllFollowUps: vi.fn(async () =>
+    initialFollowUps.map((f) => ({
+      id: f.id,
+      patientId: '37944397',
+      patientDisplayId: f.uhid,
+      patientName: f.patient,
+      assignedDoctorId: 'doc-1',
+      doctorName: f.doctor,
+      visitType: f.visitType.toUpperCase() === 'THERAPY' ? 'THERAPY' : 'CONSULTATION',
+      appointmentDate: `${f.dateCreated}T10:30:00`,
+      schedulingOption: '7_DAYS',
+      smsReminderEnabled: false,
+      status:
+        f.status === 'Missed'
+          ? 'MISSED'
+          : f.status === 'Completed'
+            ? 'COMPLETED'
+            : f.status === 'Cancelled'
+              ? 'CANCELLED'
+              : 'UPCOMING',
+    })),
+  ),
+  getFollowUpsByPatientId: vi.fn(async () => []),
+  createFollowUp: vi.fn(async () => ({ id: 'fu-new' })),
+  updateFollowUpStatus: vi.fn(),
+  cancelFollowUp: vi.fn(),
+}));
+
+vi.mock('@/lib/api/packages', () => ({
+  getAllPackages: vi.fn(async () => []),
+  getPackagesByPatientId: vi.fn(async () => []),
+  createPackage: vi.fn(),
+  updatePackage: vi.fn(),
+  updatePackageStatus: vi.fn(),
 }));
 
 vi.mock('@/lib/api/medicines', () => ({

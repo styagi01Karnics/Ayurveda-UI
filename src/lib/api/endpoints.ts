@@ -147,6 +147,24 @@ export const apiEndpoints = {
       getById: (doshaId: string) => `/api/v1/doshas/${doshaId}`,
       create: '/api/v1/doshas',
     },
+    treatments: {
+      base: '/api/v1/treatments',
+      getAll: '/api/v1/treatments',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/treatments/patient/${patientId}`,
+      update: (treatmentId: string) => `/api/v1/treatments/${treatmentId}`,
+      updateStatus: (treatmentId: string) =>
+        `/api/v1/treatments/${treatmentId}/status`,
+    },
+    followUps: {
+      base: '/api/v1/follow-ups',
+      getAll: '/api/v1/follow-ups',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/follow-ups/patient/${patientId}`,
+      updateStatus: (followUpId: string) =>
+        `/api/v1/follow-ups/${followUpId}/status`,
+      cancel: (followUpId: string) => `/api/v1/follow-ups/${followUpId}/cancel`,
+    },
   },
 
   /** Medicine & Dashboard-service :8108 */
@@ -173,6 +191,15 @@ export const apiEndpoints = {
       `/api/v1/invoices/${invoiceId}/payments`,
     sales: '/api/v1/sales',
     salesRevenueMonth: '/api/v1/sales/revenue/month',
+    packages: {
+      base: '/api/v1/packages',
+      getAll: '/api/v1/packages',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/packages/patient/${patientId}`,
+      update: (packageId: string) => `/api/v1/packages/${packageId}`,
+      updateStatus: (packageId: string) =>
+        `/api/v1/packages/${packageId}/status`,
+    },
   },
 
   /** Notification-service :8110 */
@@ -203,7 +230,7 @@ export const apiEndpoints = {
   /** File-upload-service :8105 */
   documents: {
     upload: '/api/v1/documents/upload',
-    byBookingId: (bookingId: string) => `/api/v1/documents/${bookingId}`,
+    byPatientId: (patientId: string) => `/api/v1/documents/${patientId}`,
     download: (documentId: string) => `/api/v1/documents/${documentId}/download`,
     delete: (documentId: string) => `/api/v1/documents/${documentId}`,
   },

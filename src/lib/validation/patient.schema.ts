@@ -200,19 +200,36 @@ export function wantsMedicalAssessment(types: string[]): boolean {
 }
 
 export const followUpSchema = z.object({
-  patientId: z.string().min(1, 'Patient ID is required'),
-  fullName: z.string().min(1, 'Full name is required'),
-  contactNumber: z
-    .string()
-    .min(1, 'Contact number is required')
-    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit contact number'),
-  visitType: z.string().min(1, 'Visit type is required'),
-  doctor: z.string().min(1, 'Doctor is required'),
+  patientId: z.string().min(1, 'Patient is required'),
+  assignedDoctorId: z.string().min(1, 'Doctor is required'),
+  visitType: z.enum(['CONSULTATION', 'THERAPY']),
+  schedulingOption: z.string().min(1, 'Scheduling option is required'),
   scheduleDate: z.string().min(1, 'Schedule date is required'),
   scheduleTime: z.string().min(1, 'Schedule time is required'),
+  smsReminderEnabled: z.boolean().optional(),
+  sourceBookingId: z.string().optional(),
 });
 
 export type FollowUpFormValues = z.infer<typeof followUpSchema>;
+
+export const FOLLOW_UP_SCHEDULING_OPTIONS = [
+  { value: '7_DAYS', label: '7 Days' },
+  { value: '14_DAYS', label: '14 Days' },
+  { value: '30_DAYS', label: '30 Days' },
+  { value: 'CUSTOM', label: 'Custom date' },
+] as const;
+
+export const bookTreatmentSchema = z.object({
+  patientId: z.string().min(1, 'Patient is required'),
+  treatmentPlanName: z.string().min(1, 'Treatment plan is required'),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().min(1, 'End date is required'),
+  totalSessions: z.string().min(1, 'Sessions required'),
+  assignedTherapistId: z.string().min(1, 'Therapist is required'),
+  treatmentStatus: z.enum(['SCHEDULED', 'ONGOING', 'COMPLETED']).optional(),
+});
+
+export type BookTreatmentFormValues = z.infer<typeof bookTreatmentSchema>;
 
 export const rescheduleAppointmentSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),

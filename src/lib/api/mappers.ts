@@ -11,6 +11,8 @@ import type {
   PatientAppointmentListItemDto,
   PatientDto,
   TherapistDto,
+  FollowUpDto,
+  TreatmentDto,
   TherapyDto,
   TodayAppointmentItemDto,
   TreatmentCategoryDto,
@@ -33,9 +35,11 @@ import type {
   PatientDetail,
   PatientRecord,
   PatientStatus,
+  FollowUpRecord,
   TreatmentRecord,
   VisitType,
 } from '@/types';
+import type { PatientPackageDto } from '@/lib/api/types';
 
 function titleCase(value: string | null | undefined): string {
   if (!value) return '';
@@ -97,9 +101,43 @@ function normalizeAppointmentStatus(
 function normalizeTreatmentStatus(
   raw?: string | null,
 ): TreatmentRecord['status'] {
-  const value = (raw ?? 'Ongoing').toLowerCase();
-  if (value.includes('complete')) return 'Completed';
+  const value = (raw ?? 'ONGOING').toUpperCase();
+  if (value.includes('COMPLETE')) return 'Completed';
+  if (value.includes('SCHEDULE')) return 'Scheduled';
   return 'Ongoing';
+}
+
+function formatIsoDateTime(iso?: string | null): string {
+  if (!iso) return '—';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function mapFollowUpVisitType(raw?: string | null): VisitType {
+  if ((raw ?? '').toUpperCase() === 'THERAPY') return 'Therapy';
+  return 'Consultation';
+}
+
+function mapFollowUpStatus(
+  raw?: string | null,
+): import('@/types').FollowUpRecord['status'] {
+  switch ((raw ?? 'UPCOMING').toUpperCase()) {
+    case 'MISSED':
+      return 'Missed';
+    case 'COMPLETED':
+      return 'Completed';
+    case 'CANCELLED':
+      return 'Cancelled';
+    default:
+      return 'Upcoming';
+  }
 }
 
 function pickDosha(name?: string | null): Dosha {
@@ -400,6 +438,11 @@ export function mapAppointmentTherapyToTreatment(
   const patientId =
     therapy.patientId ?? therapy.patient?.id ?? '';
 
+  const startDate = (therapy.scheduleDate ?? therapy.createdAt ?? '').slice(
+    0,
+    10,
+  );
+
   return {
     id: String(therapy.therapyId ?? therapy.id ?? crypto.randomUUID()),
     patient:
@@ -408,6 +451,7 @@ export function mapAppointmentTherapyToTreatment(
       therapy.patient?.fullName ??
       '—',
     patientDetailId: patientId,
+    treatmentPlanName: therapyType,
     treatmentCategory:
       therapy.treatmentCategoryName ??
       therapy.categoryName ??
@@ -419,11 +463,70 @@ export function mapAppointmentTherapyToTreatment(
       therapy.scheduleDate,
       therapy.scheduleTime,
     ),
+    startDate,
+    endDate: startDate,
     totalSessions: therapy.sessionFrequency ?? 0,
+    completedSessions: 0,
+    remainingSessions: therapy.sessionFrequency ?? 0,
     status: normalizeTreatmentStatus(
       therapy.therapyStatus ?? therapy.status,
     ),
-    dateCreated: (therapy.createdAt ?? therapy.scheduleDate ?? '').slice(0, 10),
+    dateCreated: startDate,
+  };
+}
+
+export function mapTreatmentDtoToRecord(
+  dto: TreatmentDto,
+  patientName?: string,
+): TreatmentRecord {
+  return {
+    id: dto.id,
+    patient: patientName ?? '—',
+    patientDetailId: dto.patientId,
+    treatmentPlanName: dto.treatmentPlanName,
+    treatmentCategory: '—',
+    therapyType: dto.treatmentPlanName,
+    assignedTherapist: dto.assignedTherapistName ?? '—',
+    therapistSchedule: `${formatDisplayDate(dto.startDate)} – ${formatDisplayDate(dto.endDate)}`,
+    startDate: dto.startDate,
+    endDate: dto.endDate,
+    totalSessions: dto.totalSessions,
+    completedSessions: dto.completedSessions ?? 0,
+    remainingSessions:
+      dto.remainingSessions ??
+      Math.max(0, dto.totalSessions - (dto.completedSessions ?? 0)),
+    status: normalizeTreatmentStatus(dto.treatmentStatus),
+    dateCreated: dto.startDate,
+  };
+}
+
+export function mapFollowUpDtoToRecord(dto: FollowUpDto): FollowUpRecord {
+  return {
+    id: dto.id,
+    uhid: dto.patientDisplayId ?? '—',
+    patient: dto.patientName ?? '—',
+    doctor: dto.doctorName ?? '—',
+    visitType: mapFollowUpVisitType(dto.visitType),
+    appointmentDate: formatIsoDateTime(dto.appointmentDate),
+    dateCreated: dto.appointmentDate?.slice(0, 10) ?? '',
+    status: mapFollowUpStatus(dto.status),
+  };
+}
+
+export function mapPatientPackageToBillingMembership(
+  pkg: PatientPackageDto,
+): Partial<import('@/types').PatientBillingMembership> {
+  const status = pkg.status.toUpperCase();
+  return {
+    packageName: pkg.packageName,
+    validity: formatDisplayDate(pkg.validity),
+    membershipStatus:
+      status === 'COMPLETED'
+        ? 'Completed'
+        : status === 'ONGOING'
+          ? 'Pending'
+          : 'Scheduled',
+    discountApplied: pkg.discountApplied,
   };
 }
 
