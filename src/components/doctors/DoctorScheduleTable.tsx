@@ -7,15 +7,19 @@ interface DoctorScheduleTableProps {
   items: DoctorScheduleItem[];
   onStart: (id: string) => void;
   onCancel: (id: string) => void;
+  startingId?: string | null;
+  embedded?: boolean;
 }
 
 export function DoctorScheduleTable({
   items,
   onStart,
   onCancel,
+  startingId = null,
+  embedded,
 }: DoctorScheduleTableProps) {
   return (
-    <DataTableShell>
+    <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
@@ -49,8 +53,9 @@ export function DoctorScheduleTable({
                         type="button"
                         className="px-4 py-1.5 text-xs bg-success hover:bg-success/90"
                         onClick={() => onStart(item.id)}
+                        disabled={startingId === item.id}
                       >
-                        Start
+                        {startingId === item.id ? 'Starting…' : 'Start'}
                       </Button>
                       <button
                         type="button"
@@ -60,6 +65,15 @@ export function DoctorScheduleTable({
                         Cancel
                       </button>
                     </div>
+                  ) : item.status === 'In Consultation' ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="px-4 py-1.5 text-xs"
+                      onClick={() => onStart(item.id)}
+                    >
+                      Continue
+                    </Button>
                   ) : (
                     <span className="text-text-muted">—</span>
                   )}
@@ -80,12 +94,20 @@ function VisitTypeText({ type }: { type: VisitType }) {
   );
 }
 
-function StatusText({ status }: { status: 'Scheduled' | 'Completed' }) {
+function StatusText({
+  status,
+}: {
+  status: DoctorScheduleItem['status'];
+}) {
   return (
     <span
       className={cn(
         'font-medium',
-        status === 'Scheduled' ? 'text-gold' : 'text-success',
+        status === 'Scheduled'
+          ? 'text-gold'
+          : status === 'In Consultation'
+            ? 'text-info'
+            : 'text-success',
       )}
     >
       {status}

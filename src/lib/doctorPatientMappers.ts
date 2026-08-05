@@ -178,13 +178,13 @@ export function applyMedicalFormToPatient(
     medicalAssessment: {
       ...patient.medicalAssessment,
       bodyConstitution: values.bodyConstitution.join(', '),
-      currentImbalance: values.currentImbalance,
+      currentImbalance: values.currentImbalance ?? '',
       previousPanchakarma: values.previousPanchakarma ?? '',
-      weight: values.weight,
-      height: values.height,
-      ibw: values.ibw,
-      pulse: values.pulse,
-      bp: values.bp,
+      weight: values.weight ?? '',
+      height: values.height ?? '',
+      ibw: values.ibw ?? '',
+      pulse: values.pulse ?? '',
+      bp: values.bp ?? '',
       temperature: values.temperature ?? '',
       pallor: values.pallor ?? '',
       icterus: values.icterus ?? '',
@@ -241,10 +241,14 @@ export function applyBillingFormToPatient(
       validity: values.validity,
       membershipStatus: values.membershipStatus as PatientDetail['billing']['membershipStatus'],
       discountApplied: Number(values.discountApplied),
-      registrationFees: Number(values.registrationFees),
-      paymentMode: values.paymentMode,
-      partialPayment: values.partialPayment,
-      outstandingAmount: Number(values.outstandingAmount),
+      registrationFees: values.registrationFees
+        ? Number(values.registrationFees)
+        : patient.billing.registrationFees,
+      paymentMode: values.paymentMode ?? patient.billing.paymentMode,
+      partialPayment: values.partialPayment ?? patient.billing.partialPayment,
+      outstandingAmount: values.outstandingAmount
+        ? Number(values.outstandingAmount)
+        : patient.billing.outstandingAmount,
       serviceType: values.serviceType,
       serviceFees: Number(values.serviceFees),
       packageType: values.packageType,

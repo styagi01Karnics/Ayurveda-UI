@@ -53,6 +53,6 @@ describe('PatientDetailPage', () => {
     renderDetail();
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Billing & Membership'));
-    expect(screen.getByText('Payment Setup')).toBeInTheDocument();
+    expect(screen.getByText('Billing Details')).toBeInTheDocument();
   });
 });

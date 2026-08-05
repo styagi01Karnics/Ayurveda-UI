@@ -1,6 +1,7 @@
 import type { CreatePatientValues } from '@/lib/validation/patient.schema';
 import type {
   AppointmentDto,
+  AppointmentStatsDto,
   AppointmentTherapyDto,
   CreateMedicalAssessmentPayload,
   DoctorDto,
@@ -11,16 +12,21 @@ import type {
   PatientDto,
   TherapistDto,
   TherapyDto,
+  TodayAppointmentItemDto,
   TreatmentCategoryDto,
 } from '@/lib/api/types';
 import type { InvoiceListItemDto } from '@/lib/api/billing';
 import type {
   AppointmentRecord,
+  CalendarEvent,
+  CalendarEventDetail,
   ClinicDoctorRecord,
   ClinicTherapistRecord,
   ClinicTherapyRecord,
   ClinicTreatmentCategoryRecord,
   DoctorDirectoryRecord,
+  DoctorScheduleItem,
+  DoctorStats,
   Dosha,
   MedicineRecord,
   MedicineStatus,
@@ -249,6 +255,7 @@ export function mapAppointmentToRecord(
   const doctorId = appointment.assignedDoctorId ?? appointment.doctorId;
   const doctor =
     appointment.doctorName ??
+    appointment.assignedDoctor?.doctorName ??
     appointment.assignedDoctor?.name ??
     (doctorId ? doctorsById.get(doctorId)?.name : undefined) ??
     (doctorId ? doctorsById.get(doctorId)?.doctorName : undefined) ??
@@ -261,6 +268,7 @@ export function mapAppointmentToRecord(
     '—';
 
   const patientCode =
+    appointment.patient?.patientDisplayId ??
     appointment.patient?.patientCode ??
     (typeof appointment.patientId === 'string'
       ? appointment.patientId.slice(0, 8)
@@ -292,6 +300,18 @@ export function mapAppointmentToRecord(
     status: normalizeAppointmentStatus(
       appointment.bookingStatus ?? appointment.status,
     ),
+    patientId: appointment.patientId ?? appointment.patient?.id,
+    assignedDoctorId:
+      appointment.assignedDoctorId ??
+      appointment.assignedDoctor?.id ??
+      doctorId,
+    registrationDate:
+      appointment.registrationDate ??
+      appointment.appointmentDate ??
+      appointment.scheduleDate ??
+      '',
+    slotTime: appointment.slotTime ?? appointment.scheduleTime ?? '',
+    consultationTypes: (appointment.consultationTypes ?? []).map(String),
   };
 }
 
@@ -675,10 +695,19 @@ export function toApiIdProofType(idProofType: string): string {
 export function toApiConsultationTypes(
   types: string[],
 ): Array<'CONSULTATION' | 'THERAPY'> {
-  return types.map((type) => {
+  const result = new Set<'CONSULTATION' | 'THERAPY'>();
+  for (const type of types) {
     const upper = type.toUpperCase();
-    return upper.includes('THERAPY') ? 'THERAPY' : 'CONSULTATION';
-  });
+    if (upper.includes('THERAPY')) result.add('THERAPY');
+    if (
+      upper.includes('CONSULTATION') ||
+      upper.includes('CATEGORY')
+    ) {
+      result.add('CONSULTATION');
+    }
+  }
+  if (result.size === 0) result.add('CONSULTATION');
+  return [...result];
 }
 
 export function fromApiConsultationTypes(
@@ -747,7 +776,7 @@ export function toMedicalAssessmentPayload(
       patientId,
       doshaId: data.doshaType,
       bodyConstitution: joinList(data.bodyConstitution),
-      currentImbalances: data.currentImbalance,
+      currentImbalances: data.currentImbalance ?? '',
     },
     physicalExamination: {
       patientId,
@@ -755,7 +784,7 @@ export function toMedicalAssessmentPayload(
       height,
       ibw: parseNumericField(data.ibw, weight > 0 ? weight : 60),
       pulse: parseIntegerField(data.pulse, 72),
-      bp: data.bp,
+      bp: data.bp ?? '',
       temperature: parseNumericField(data.temperature, 98.6),
       pallor: data.pallor ?? '',
       icterus: data.icterus ?? '',
@@ -913,5 +942,151 @@ export function buildDashboardStats(input: {
     billsGenerated: billing?.totalBillsGenerated ?? 0,
     pendingPayments: billing?.pendingPayments ?? 0,
     collectedPayments: billing?.collectedPayments ?? 0,
+  };
+}
+
+function formatSlotTimeDisplay(slotTime?: string | null): string {
+  if (!slotTime) return '—';
+  const [hourPart, minutePart = '00'] = slotTime.split(':');
+  const hours = Number.parseInt(hourPart, 10);
+  if (Number.isNaN(hours)) return slotTime;
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const h12 = hours % 12 || 12;
+  return `${h12}:${minutePart.padStart(2, '0')} ${period}`;
+}
+
+function normalizeDoctorScheduleStatus(
+  raw?: string | null,
+): DoctorScheduleItem['status'] {
+  const value = (raw ?? 'SCHEDULED').toUpperCase();
+  if (value.includes('COMPLETE')) return 'Completed';
+  if (value.includes('IN_CONSULTATION')) return 'In Consultation';
+  return 'Scheduled';
+}
+
+export function mapTodayAppointmentToScheduleItem(
+  item: TodayAppointmentItemDto,
+): DoctorScheduleItem {
+  return {
+    id: item.bookingId,
+    time: formatSlotTimeDisplay(item.slotTime),
+    patient: item.patientName ?? '—',
+    patientDetailId: item.patientId,
+    visitType: normalizeVisitType(item.consultationTypes),
+    status: normalizeDoctorScheduleStatus(item.bookingStatus),
+  };
+}
+
+export function mapAppointmentStatsToDoctorStats(
+  stats?: AppointmentStatsDto | null,
+): DoctorStats {
+  const scheduled = Number(stats?.scheduledCount ?? stats?.todayAppointmentCount ?? 0);
+  const completed = Number(stats?.completedCount ?? 0);
+  const ongoing = Number(
+    stats?.inConsultationCount ?? stats?.ongoingCount ?? scheduled,
+  );
+  const total = Number(
+    stats?.totalAppointments ?? stats?.currentMonthAppointmentCount ?? scheduled + completed,
+  );
+
+  return {
+    totalPatients: total,
+    completedPatients: completed,
+    ongoingPatients: ongoing,
+    activeTreatmentPlans: scheduled + ongoing,
+    completedTreatmentPlans: completed,
+    ongoingTreatmentPlans: ongoing,
+    completedTreatments: completed,
+    consultationCount: Math.max(0, Math.floor(completed * 0.55)),
+    therapyCount: Math.max(0, completed - Math.floor(completed * 0.55)),
+    followUpsDue: scheduled,
+    followUpsScheduled: scheduled,
+    followUpsPending: Number(stats?.rescheduledCount ?? 0),
+  };
+}
+
+const CALENDAR_EVENT_COLORS: Record<VisitType, string> = {
+  Consultation: 'bg-amber-200 border-amber-400',
+  Therapy: 'bg-sky-200 border-sky-400',
+  'Follow-Up': 'bg-purple-200 border-purple-400',
+  Treatment: 'bg-emerald-200 border-emerald-400',
+};
+
+function parseCalendarDayHour(
+  record: AppointmentRecord,
+  fallbackIndex: number,
+): { day: number; startHour: number } {
+  let day = fallbackIndex % 7;
+  let startHour = 9;
+
+  const dateSource = record.registrationDate || record.dateCreated;
+  if (dateSource) {
+    const parsed = new Date(dateSource);
+    if (!Number.isNaN(parsed.getTime())) {
+      day = parsed.getDay();
+    }
+  }
+
+  const slot = record.slotTime ?? '';
+  const slotMatch = slot.match(/^(\d{1,2})/);
+  if (slotMatch) {
+    const hour = Number(slotMatch[1]);
+    if (hour >= 7 && hour <= 16) startHour = hour;
+  } else {
+    const displayMatch = record.appointmentDate.match(
+      /(\d{1,2}):(\d{2})\s*(AM|PM)/i,
+    );
+    if (displayMatch) {
+      let hour = Number(displayMatch[1]);
+      const meridiem = displayMatch[3].toUpperCase();
+      if (meridiem === 'PM' && hour < 12) hour += 12;
+      if (meridiem === 'AM' && hour === 12) hour = 0;
+      if (hour >= 7 && hour <= 16) startHour = hour;
+    }
+  }
+
+  return { day, startHour };
+}
+
+export function mapAppointmentRecordToCalendarEvent(
+  record: AppointmentRecord,
+  index: number,
+): CalendarEvent {
+  const { day, startHour } = parseCalendarDayHour(record, index);
+  return {
+    id: record.id,
+    title: `${record.patient} · ${record.visitType}`,
+    day,
+    startHour,
+    durationHours: 1,
+    color:
+      CALENDAR_EVENT_COLORS[record.visitType] ??
+      'bg-amber-100 border-amber-300',
+  };
+}
+
+export function mapAppointmentRecordsToCalendarEvents(
+  records: AppointmentRecord[],
+): CalendarEvent[] {
+  return records.map(mapAppointmentRecordToCalendarEvent);
+}
+
+export function mapAppointmentRecordToCalendarDetail(
+  record: AppointmentRecord,
+): CalendarEventDetail {
+  return {
+    id: record.id,
+    title: `${record.patient} — ${record.visitType}`,
+    appointmentDate: record.appointmentDate,
+    doctorName: record.doctor,
+    doctorRole: 'Ayurvedic Physician',
+    patientName: record.patient,
+    patientAge: '—',
+    patientGender: '—',
+    visitType: record.visitType,
+    dosha: '—',
+    condition: record.status,
+    lastVisit: record.dateCreated || '—',
+    nextVisit: '—',
   };
 }

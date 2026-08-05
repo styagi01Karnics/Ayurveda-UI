@@ -213,7 +213,29 @@ export interface AppointmentStatsDto {
   cancelledCount?: number;
   inConsultationCount?: number;
   rescheduledCount?: number;
+  currentMonthAppointmentCount?: number;
+  todayAppointmentCount?: number;
+  ongoingCount?: number;
   [key: string]: unknown;
+}
+
+export interface TodayAppointmentItemDto {
+  bookingId: string;
+  assignedDoctorId?: string;
+  slotTime?: string;
+  bookingTime?: string;
+  bookingStatus?: BookingStatus | string;
+  patientId: string;
+  patientName?: string;
+  patientMobileNumber?: string;
+  consultationTypes?: string[];
+}
+
+export interface TodayAppointmentsResponseDto {
+  doctorId?: string | null;
+  date?: string;
+  totalAppointments?: number;
+  appointments?: TodayAppointmentItemDto[];
 }
 
 export interface RescheduleAppointmentPayload {
@@ -244,7 +266,13 @@ export interface AppointmentDto {
   assignedDoctorId?: string;
   doctorId?: string;
   doctorName?: string;
-  assignedDoctor?: { id?: string; name?: string };
+  assignedDoctor?: {
+    id?: string;
+    name?: string;
+    doctorName?: string;
+    specialization?: string;
+    status?: string;
+  };
   consultationTypes?: ConsultationTypeApi[] | string[];
   visitType?: string;
   registrationDate?: string;

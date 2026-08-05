@@ -29,33 +29,28 @@ function renderDoctors() {
 }
 
 describe('DoctorsPage', () => {
-  it('renders stat cards and doctors table from API', async () => {
+  it('renders schedule stat cards and today appointments', async () => {
     renderDoctors();
-    expect(await screen.findByText('Total Doctors')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Shweta Arya')).toBeInTheDocument();
-    expect(screen.getByText('BAMS (Ayurvedic Physician)')).toBeInTheDocument();
+    expect(await screen.findByText('Total Patients')).toBeInTheDocument();
+    expect(screen.getByText('Active Treatment Plans')).toBeInTheDocument();
+    expect((await screen.findAllByText('Khushi Shroff')).length).toBeGreaterThan(0);
   });
 
-  it('filters doctors by search query', async () => {
+  it('filters schedule by visit type', async () => {
     const user = userEvent.setup();
     renderDoctors();
-    await screen.findByText('Dr. Shweta Arya');
-    await user.type(screen.getByPlaceholderText('Search doctor'), 'Unknown');
-    expect(screen.queryByText('Dr. Shweta Arya')).not.toBeInTheDocument();
-  });
-
-  it('filters by status', async () => {
-    const user = userEvent.setup();
-    renderDoctors();
-    await screen.findByText('Dr. Shweta Arya');
+    await screen.findAllByText('Khushi Shroff');
     const selects = screen.getAllByRole('combobox');
-    await user.selectOptions(selects[0], 'Inactive');
-    expect(screen.queryByText('Dr. Shweta Arya')).not.toBeInTheDocument();
+    await user.selectOptions(selects[1], 'Therapy');
+    expect(screen.queryByText('Consultation')).not.toBeInTheDocument();
   });
 
-  it('shows department filter options', async () => {
+  it('navigates to patient detail when Start is clicked', async () => {
+    const user = userEvent.setup();
     renderDoctors();
-    await screen.findByText('Dr. Shweta Arya');
-    expect(screen.getByRole('option', { name: 'BAMS (Ayurvedic Physician)' })).toBeInTheDocument();
+    await screen.findAllByText('Khushi Shroff');
+    const startButtons = screen.getAllByRole('button', { name: 'Start' });
+    await user.click(startButtons[0]);
+    expect(mockNavigate).toHaveBeenCalledWith('/doctors/patient/37944397');
   });
 });

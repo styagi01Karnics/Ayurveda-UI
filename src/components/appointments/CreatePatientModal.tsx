@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { CloudUpload, FileText, Trash2, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,18 +24,22 @@ import {
 import { ApiError } from '@/lib/api/client';
 import { getTherapistsByTherapyIds } from '@/lib/api/therapists';
 import {
+  buildBookingSteps,
   CONSTITUTION_OPTIONS,
   CONSULTATION_TYPES,
   GENDER_OPTIONS,
   ID_PROOF_TYPES,
+  includesCategoryType,
   includesTherapyType,
-  LANGUAGE_OPTIONS,
   OCCUPATION_OPTIONS,
-  patientStep1Schema,
+  patientCategoryStepSchema,
+  patientStep1BookingSchema,
   patientStep2Schema,
   patientStep3Schema,
   RELATION_OPTIONS,
+  type BookingStepKey,
   type CreatePatientValues,
+  type PatientCategoryStepValues,
   type PatientStep1Values,
   type PatientStep2Values,
   type PatientStep3Values,
@@ -65,12 +69,6 @@ const DOCUMENT_TABS = [
   { id: 'labReports' as const, label: 'Lab Reports' },
 ];
 
-const STEPS = [
-  { id: 1, label: 'Personal Information' },
-  { id: 2, label: 'Therapy Details' },
-  { id: 3, label: 'Medical Assessment' },
-];
-
 export interface BookingLookupOptions {
   doctors: SelectOption[];
   therapists: SelectOption[];
@@ -98,7 +96,7 @@ export function CreatePatientModal({
   submitting = false,
 }: CreatePatientModalProps) {
   const { showToast } = useToast();
-  const [step, setStep] = useState(1);
+  const [stepIndex, setStepIndex] = useState(0);
   const [formData, setFormData] = useState<Partial<CreatePatientValues>>({});
   const [bookingSession, setBookingSession] = useState<BookingSession | null>(
     null,
@@ -121,12 +119,17 @@ export function CreatePatientModal({
   const [doshasError, setDoshasError] = useState<string | null>(null);
 
   const step1Form = useForm<PatientStep1Values>({
-    resolver: zodResolver(patientStep1Schema),
+    resolver: zodResolver(patientStep1BookingSchema),
     defaultValues: {
       consultationTypes: [],
       appointmentTime: '10:00',
       ...formData,
     },
+  });
+
+  const categoryForm = useForm<PatientCategoryStepValues>({
+    resolver: zodResolver(patientCategoryStepSchema),
+    defaultValues: { treatmentCategory: formData.treatmentCategory ?? '' },
   });
 
   const step2Form = useForm<PatientStep2Values>({
@@ -150,18 +153,46 @@ export function CreatePatientModal({
     },
   });
 
+  const watchedConsultationTypes =
+    step1Form.watch('consultationTypes') ??
+    (formData.consultationTypes as string[] | undefined) ??
+    [];
+
+  const activeSteps = useMemo(
+    () => buildBookingSteps(watchedConsultationTypes),
+    [watchedConsultationTypes],
+  );
+
+  const currentStepKey: BookingStepKey =
+    activeSteps[stepIndex]?.key ?? 'personal';
+  const isLastStep = stepIndex >= activeSteps.length - 1;
+  const showCategoryInTherapyStep =
+    includesTherapyType(watchedConsultationTypes) &&
+    !includesCategoryType(watchedConsultationTypes);
+
   const isBusy = submitting || stepSubmitting;
 
-  const handleClose = () => {
-    if (isBusy) return;
-    setStep(1);
+  const resetModal = () => {
+    setStepIndex(0);
     setFormData({});
     setBookingSession(null);
     setUploadedDocuments(EMPTY_DOCUMENTS);
     setDocumentTab('pastMedicalReports');
-    step1Form.reset();
-    step2Form.reset();
-    step3Form.reset();
+    step1Form.reset({ consultationTypes: [], appointmentTime: '10:00' });
+    categoryForm.reset({ treatmentCategory: '' });
+    step2Form.reset({
+      recommendedTherapies: [],
+      sessionDuration: '45',
+      sessionFrequency: '7',
+      therapyInstructions:
+        'Patient should avoid cold food during therapy and maintain warm diet.',
+    });
+    step3Form.reset({ bodyConstitution: [], allergies: [] });
+  };
+
+  const handleClose = () => {
+    if (isBusy) return;
+    resetModal();
     onClose();
   };
 
@@ -175,6 +206,24 @@ export function CreatePatientModal({
     showToast({ title: 'Booking failed', message });
   };
 
+  const mergeCompleteData = (
+    extra: Partial<CreatePatientValues> = {},
+  ): CreatePatientValues =>
+    ({
+      ...EMPTY_THERAPY,
+      ...formData,
+      ...extra,
+      uploadedDocuments,
+    }) as CreatePatientValues;
+
+  const finishBooking = async (
+    session: BookingSession,
+    complete: CreatePatientValues,
+    medicalAssessment: BookAppointmentResult['medicalAssessment'] = null,
+  ) => {
+    await onComplete({ ...session, medicalAssessment }, complete);
+  };
+
   const handleStep1 = step1Form.handleSubmit(async (data) => {
     setStepSubmitting(true);
     try {
@@ -182,14 +231,46 @@ export function CreatePatientModal({
       const session = await submitBookingStep1(merged);
       setBookingSession(session);
       setFormData((prev) => ({ ...prev, ...data }));
-      if (includesTherapyType(data.consultationTypes)) {
-        setStep(2);
-      } else {
-        setFormData((prev) => ({ ...prev, ...data, ...EMPTY_THERAPY }));
-        setStep(3);
+
+      const steps = buildBookingSteps(data.consultationTypes);
+      if (steps.length <= 1) {
+        await finishBooking(session, merged);
+        return;
       }
+
+      if (!includesTherapyType(data.consultationTypes)) {
+        setFormData((prev) => ({ ...prev, ...data, ...EMPTY_THERAPY }));
+      }
+
+      setStepIndex(1);
     } catch (err) {
       showStepError(err, 'Failed to create appointment.');
+    } finally {
+      setStepSubmitting(false);
+    }
+  });
+
+  const handleCategoryStep = categoryForm.handleSubmit(async (data) => {
+    if (!bookingSession) {
+      showToast({
+        title: 'Booking failed',
+        message: 'Complete personal information first.',
+      });
+      return;
+    }
+    setStepSubmitting(true);
+    try {
+      const merged = { ...formData, ...data } as CreatePatientValues;
+      setFormData((prev) => ({ ...prev, ...data }));
+      step2Form.setValue('treatmentCategory', data.treatmentCategory);
+
+      if (isLastStep) {
+        await finishBooking(bookingSession, merged);
+        return;
+      }
+      setStepIndex((index) => index + 1);
+    } catch (err) {
+      showStepError(err, 'Failed to save category.');
     } finally {
       setStepSubmitting(false);
     }
@@ -205,11 +286,23 @@ export function CreatePatientModal({
     }
     setStepSubmitting(true);
     try {
-      const merged = { ...formData, ...data } as CreatePatientValues;
+      const merged = {
+        ...formData,
+        ...data,
+        treatmentCategory:
+          data.treatmentCategory || formData.treatmentCategory || '',
+      } as CreatePatientValues;
+
       const therapy = await submitBookingStep2(merged, bookingSession);
-      setBookingSession({ ...bookingSession, therapy });
+      const session = { ...bookingSession, therapy };
+      setBookingSession(session);
       setFormData((prev) => ({ ...prev, ...data }));
-      setStep(3);
+
+      if (isLastStep) {
+        await finishBooking(session, mergeCompleteData(data));
+        return;
+      }
+      setStepIndex((index) => index + 1);
     } catch (err) {
       showStepError(err, 'Failed to book therapy appointment.');
     } finally {
@@ -221,26 +314,18 @@ export function CreatePatientModal({
     if (!bookingSession) {
       showToast({
         title: 'Booking failed',
-        message: 'Complete step 1 before medical assessment.',
+        message: 'Complete personal information first.',
       });
       return;
     }
     setStepSubmitting(true);
     try {
-      const complete = {
-        ...EMPTY_THERAPY,
-        ...formData,
-        ...data,
-        uploadedDocuments,
-      } as CreatePatientValues;
+      const complete = mergeCompleteData(data);
       const medicalAssessment = await submitBookingStep3(
         complete,
         bookingSession,
       );
-      await onComplete(
-        { ...bookingSession, medicalAssessment },
-        complete,
-      );
+      await finishBooking(bookingSession, complete, medicalAssessment);
     } catch (err) {
       showStepError(err, 'Failed to save medical assessment.');
     } finally {
@@ -248,14 +333,32 @@ export function CreatePatientModal({
     }
   });
 
-  const needsTherapy = includesTherapyType(
-    (formData.consultationTypes as string[] | undefined) ??
-      step1Form.watch('consultationTypes') ??
-      [],
-  );
+  const goBack = () => {
+    if (stepIndex > 0) setStepIndex((index) => index - 1);
+  };
+
+  const handlePrimaryAction = () => {
+    switch (currentStepKey) {
+      case 'personal':
+        handleStep1();
+        break;
+      case 'category':
+        handleCategoryStep();
+        break;
+      case 'therapy':
+        handleStep2();
+        break;
+      case 'medical':
+        handleStep3();
+        break;
+    }
+  };
 
   const selectedState = step1Form.watch('state');
-  const selectedCategory = step2Form.watch('treatmentCategory');
+  const selectedCategory =
+    categoryForm.watch('treatmentCategory') ||
+    step2Form.watch('treatmentCategory') ||
+    formData.treatmentCategory;
   const recommendedTherapies = step2Form.watch('recommendedTherapies') ?? [];
 
   const therapyOptions =
@@ -277,7 +380,7 @@ export function CreatePatientModal({
   }, [lookupOptions.doshas]);
 
   useEffect(() => {
-    if (!open || step !== 3) return;
+    if (!open || currentStepKey !== 'medical') return;
 
     let cancelled = false;
     setDoshasLoading(true);
@@ -310,7 +413,7 @@ export function CreatePatientModal({
     return () => {
       cancelled = true;
     };
-  }, [open, step, lookupOptions.doshas]);
+  }, [open, currentStepKey, lookupOptions.doshas]);
 
   useEffect(() => {
     setTherapistOptions(lookupOptions.therapists);
@@ -378,24 +481,31 @@ export function CreatePatientModal({
   }, [selectedState]);
 
   useEffect(() => {
-    if (!open) {
-      setStep(1);
-      setFormData({});
-      setBookingSession(null);
-      step1Form.reset({ consultationTypes: [], appointmentTime: '10:00' });
-      step2Form.reset({
-        recommendedTherapies: [],
-        sessionDuration: '45',
-        sessionFrequency: '7',
-        therapyInstructions:
-          'Patient should avoid cold food during therapy and maintain warm diet.',
-      });
-      step3Form.reset({ bodyConstitution: [], allergies: [] });
-      setUploadedDocuments(EMPTY_DOCUMENTS);
-      setDocumentTab('pastMedicalReports');
+    if (currentStepKey === 'therapy' && formData.treatmentCategory) {
+      step2Form.setValue('treatmentCategory', formData.treatmentCategory);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when modal opens/closes
+  }, [currentStepKey, formData.treatmentCategory, step2Form]);
+
+  useEffect(() => {
+    if (!open) resetModal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when modal closes
   }, [open]);
+
+  const primaryLabel =
+    currentStepKey === 'medical' && isLastStep
+      ? isBusy
+        ? 'Saving…'
+        : 'Confirm'
+      : isBusy
+        ? 'Saving…'
+        : isLastStep
+          ? 'Confirm'
+          : 'Next';
+
+  const primaryDisabled =
+    isBusy ||
+    (currentStepKey === 'medical' &&
+      (doshasLoading || doshaOptions.length === 0));
 
   return (
     <Modal
@@ -405,56 +515,42 @@ export function CreatePatientModal({
       subtitle="Please fill out the patient registration details"
       size="xl"
       footer={
-        step === 1 ? (
-          <Button onClick={handleStep1} disabled={isBusy}>
-            {stepSubmitting ? 'Saving…' : 'Next'}
+        <div className="flex gap-3">
+          {stepIndex > 0 && (
+            <Button variant="outline" onClick={goBack} disabled={isBusy}>
+              Back
+            </Button>
+          )}
+          <Button onClick={handlePrimaryAction} disabled={primaryDisabled}>
+            {primaryLabel}
           </Button>
-        ) : step === 2 ? (
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => setStep(1)} disabled={isBusy}>
-              Back
-            </Button>
-            <Button onClick={handleStep2} disabled={isBusy}>
-              {stepSubmitting ? 'Saving…' : 'Next'}
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setStep(needsTherapy ? 2 : 1)}
-              disabled={isBusy}
-            >
-              Back
-            </Button>
-            <Button
-              onClick={handleStep3}
-              disabled={isBusy || doshasLoading || doshaOptions.length === 0}
-            >
-              {isBusy ? 'Saving…' : 'Confirm'}
-            </Button>
-          </div>
-        )
+        </div>
       }
     >
-      <Stepper steps={STEPS} currentStep={step} />
+      <Stepper
+        steps={activeSteps.map((item, index) => ({
+          id: index + 1,
+          label: item.label,
+        }))}
+        currentStep={stepIndex + 1}
+      />
 
-      {step === 1 && (
+      {currentStepKey === 'personal' && (
         <div className="space-y-6">
           <FormSection title="Basic Information">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Input label="Full Name" placeholder="Full Name" error={step1Form.formState.errors.fullName?.message} {...step1Form.register('fullName')} />
-              <Select label="Gender" placeholder="Gender" options={[...GENDER_OPTIONS]} error={step1Form.formState.errors.gender?.message} {...step1Form.register('gender')} />
-              <Input label="Date of Birth" type="date" error={step1Form.formState.errors.dateOfBirth?.message} {...step1Form.register('dateOfBirth')} />
-              <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
-              <Select label="Preferred Language" placeholder="Select" options={[...LANGUAGE_OPTIONS]} error={step1Form.formState.errors.preferredLanguage?.message} {...step1Form.register('preferredLanguage')} />
+              <Input label="Full Name *" placeholder="Full Name" error={step1Form.formState.errors.fullName?.message} {...step1Form.register('fullName')} />
+              <Input label="Date of Birth *" type="date" error={step1Form.formState.errors.dateOfBirth?.message} {...step1Form.register('dateOfBirth')} />
+              <Input label="Mobile Number *" placeholder="Mobile Number" error={step1Form.formState.errors.mobileNumber?.message} {...step1Form.register('mobileNumber')} />
+              <Select label="Gender *" placeholder="Gender" options={[...GENDER_OPTIONS]} error={step1Form.formState.errors.gender?.message} {...step1Form.register('gender')} />
               <TagInput
-                label="Consultation Type"
+                label="Consultation Type *"
                 value={step1Form.watch('consultationTypes') ?? []}
                 onChange={(tags) => step1Form.setValue('consultationTypes', tags, { shouldValidate: true })}
                 options={CONSULTATION_TYPES}
                 error={step1Form.formState.errors.consultationTypes?.message}
               />
+              <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
               <Input label="Registration Date" type="date" error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
               <Input label="Appointment Time" type="time" error={step1Form.formState.errors.appointmentTime?.message} {...step1Form.register('appointmentTime')} />
               <Select
@@ -469,7 +565,6 @@ export function CreatePatientModal({
 
           <FormSection title="Contact Information">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Input label="Mobile Number" placeholder="Mobile Number" error={step1Form.formState.errors.mobileNumber?.message} {...step1Form.register('mobileNumber')} />
               <Input label="Email Address" type="email" placeholder="Email" error={step1Form.formState.errors.email?.message} {...step1Form.register('email')} />
               <Select label="State" placeholder="Select State" options={[...INDIAN_STATES]} error={step1Form.formState.errors.state?.message} {...step1Form.register('state', { onChange: (e) => { setCityOptions(CITIES_BY_STATE[e.target.value] ?? []); step1Form.setValue('city', ''); } })} />
               <Select label="City" placeholder="Select City" options={cityOptions} error={step1Form.formState.errors.city?.message} {...step1Form.register('city')} />
@@ -487,7 +582,6 @@ export function CreatePatientModal({
 
           <FormSection title="Identification & Admin">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Input label="Patient ID (optional)" placeholder="Auto-generated if empty" error={step1Form.formState.errors.patientId?.message} {...step1Form.register('patientId')} />
               <Select label="ID Proof Type" placeholder="Select" options={[...ID_PROOF_TYPES]} error={step1Form.formState.errors.idProofType?.message} {...step1Form.register('idProofType')} />
               <Input label="ID No." placeholder="ID No." error={step1Form.formState.errors.idNumber?.message} {...step1Form.register('idNumber')} />
               <Select label="Occupation" placeholder="Select" options={[...OCCUPATION_OPTIONS]} error={step1Form.formState.errors.occupation?.message} {...step1Form.register('occupation')} />
@@ -497,16 +591,16 @@ export function CreatePatientModal({
         </div>
       )}
 
-      {step === 2 && (
+      {currentStepKey === 'category' && (
         <div className="space-y-6">
-          <FormSection title="Therapy Treatment">
+          <FormSection title="Treatment Category">
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
-                label="Treatment Category"
+                label="Treatment Category *"
                 placeholder="Select"
                 options={lookupOptions.categories}
-                error={step2Form.formState.errors.treatmentCategory?.message}
-                {...step2Form.register('treatmentCategory', {
+                error={categoryForm.formState.errors.treatmentCategory?.message}
+                {...categoryForm.register('treatmentCategory', {
                   onChange: () => {
                     step2Form.setValue('recommendedTherapies', [], {
                       shouldValidate: true,
@@ -514,6 +608,30 @@ export function CreatePatientModal({
                   },
                 })}
               />
+            </div>
+          </FormSection>
+        </div>
+      )}
+
+      {currentStepKey === 'therapy' && (
+        <div className="space-y-6">
+          <FormSection title="Therapy Treatment">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {showCategoryInTherapyStep && (
+                <Select
+                  label="Treatment Category"
+                  placeholder="Select"
+                  options={lookupOptions.categories}
+                  error={step2Form.formState.errors.treatmentCategory?.message}
+                  {...step2Form.register('treatmentCategory', {
+                    onChange: () => {
+                      step2Form.setValue('recommendedTherapies', [], {
+                        shouldValidate: true,
+                      });
+                    },
+                  })}
+                />
+              )}
               <TagInput
                 label="Recommended Therapy"
                 value={step2Form.watch('recommendedTherapies') ?? []}
@@ -548,12 +666,12 @@ export function CreatePatientModal({
         </div>
       )}
 
-      {step === 3 && (
+      {currentStepKey === 'medical' && (
         <div className="space-y-6">
           <FormSection title="Ayurvedic Assessment">
             <div className="grid gap-4 sm:grid-cols-3">
               <Select
-                label="Dosha Type"
+                label="Dosha Type *"
                 placeholder={
                   doshasLoading
                     ? 'Loading doshas…'
@@ -570,7 +688,7 @@ export function CreatePatientModal({
                 {...step3Form.register('doshaType')}
               />
               <TagInput
-                label="Body Constitution"
+                label="Body Constitution *"
                 value={step3Form.watch('bodyConstitution') ?? []}
                 onChange={(tags) => step3Form.setValue('bodyConstitution', tags, { shouldValidate: true })}
                 options={CONSTITUTION_OPTIONS}

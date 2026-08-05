@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pencil, Plus } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
@@ -13,12 +13,14 @@ import {
   DoctorTreatmentForm,
 } from '@/components/doctors/DoctorPatientForms';
 import { UnsavedChangesModal } from '@/components/doctors/UnsavedChangesModal';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Stepper } from '@/components/ui/Stepper';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
-import { getPatientByDetailId } from '@/data/mock/patients';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
 import {
   applyBillingFormToPatient,
   applyMedicalFormToPatient,
@@ -38,7 +40,6 @@ import type {
 } from '@/lib/validation/doctorPatient.schema';
 import type { PatientDetail } from '@/types';
 import type { PatientDetailTab } from '@/types/patientDetail';
-import { NotFoundPage } from './NotFoundPage';
 
 const WORKFLOW_STEPS = [
   { id: 1, label: 'Patient Details' },
@@ -62,9 +63,19 @@ export function DoctorPatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const initialPatient = patientId ? getPatientByDetailId(patientId) : undefined;
 
-  const [patient, setPatient] = useState<PatientDetail | undefined>(initialPatient);
+  const {
+    data: loadedPatient,
+    loading,
+    error,
+    reload,
+  } = useAsyncData(
+    async () => (patientId ? loadPatientDetail(patientId) : null),
+    null,
+    [patientId],
+  );
+
+  const [patient, setPatient] = useState<PatientDetail | undefined>();
   const [workflowStep, setWorkflowStep] = useState(1);
   const [activeTab, setActiveTab] = useState<PatientDetailTab>('personal');
   const [isEditing, setIsEditing] = useState(false);
@@ -87,6 +98,12 @@ export function DoctorPatientDetailPage() {
   );
 
   usePageAction(headerAction);
+
+  useEffect(() => {
+    if (loadedPatient) {
+      setPatient(loadedPatient);
+    }
+  }, [loadedPatient]);
 
   const personalDefaults = useMemo(
     () => (patient ? mapPatientToPersonalForm(patient) : undefined),
@@ -237,10 +254,6 @@ export function DoctorPatientDetailPage() {
     navigate('/doctors');
   };
 
-  if (!patient || !personalDefaults || !medicalDefaults || !treatmentDefaults || !billingDefaults) {
-    return <NotFoundPage />;
-  }
-
   const nextLabel =
     workflowStep === 2
       ? 'Save Prescription'
@@ -254,9 +267,22 @@ export function DoctorPatientDetailPage() {
     <div className="space-y-5">
       <DoctorPatientBreadcrumbs />
 
-      <Stepper steps={WORKFLOW_STEPS} currentStep={workflowStep} />
+      <AsyncStatus
+        loading={loading}
+        error={error}
+        onRetry={reload}
+        empty={!loading && !error && !patient}
+        emptyMessage="Patient not found."
+      >
+        {patient &&
+          personalDefaults &&
+          medicalDefaults &&
+          treatmentDefaults &&
+          billingDefaults && (
+            <>
+              <Stepper steps={WORKFLOW_STEPS} currentStep={workflowStep} />
 
-      <Card className="p-5 sm:p-6">
+              <Card className="p-5 sm:p-6">
         <div className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -350,6 +376,9 @@ export function DoctorPatientDetailPage() {
           </div>
         </div>
       </Card>
+            </>
+          )}
+      </AsyncStatus>
 
       <UnsavedChangesModal
         open={unsavedOpen}

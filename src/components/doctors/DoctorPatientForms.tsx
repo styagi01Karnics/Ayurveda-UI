@@ -28,7 +28,6 @@ import {
   FOLLOW_UP_OPTIONS,
   MEMBERSHIP_STATUS_OPTIONS,
   PACKAGE_TYPE_OPTIONS,
-  PAYMENT_MODE_OPTIONS,
   SESSION_OPTIONS,
   TREATMENT_PLAN_OPTIONS,
   YES_NO_OPTIONS,
@@ -138,10 +137,9 @@ export function DoctorPersonalForm({
 
       <FormSection title="Identification & Admin">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Input label="Patient ID" error={form.formState.errors.patientId?.message} {...form.register('patientId')} />
           <Select label="ID Proof Type" options={[...ID_PROOF_TYPES]} error={form.formState.errors.idProofType?.message} {...form.register('idProofType')} />
           <Input label="ID No." error={form.formState.errors.idNumber?.message} {...form.register('idNumber')} />
-          <Select label="Occupation" options={[...OCCUPATION_OPTIONS]} error={form.formState.errors.occupation?.message} {...form.register('occupation')} />
+          <Select label="Occupation" placeholder="Select" options={[...OCCUPATION_OPTIONS]} error={form.formState.errors.occupation?.message} {...form.register('occupation')} />
           <Input label="Insurance Details (Optional)" {...form.register('insuranceDetails')} />
         </div>
       </FormSection>
@@ -374,15 +372,6 @@ export function DoctorBillingForm({
         </div>
       </FormSection>
 
-      <FormSection title="Payment Setup">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select label="Registration Fees" options={['400', '500', '800']} error={form.formState.errors.registrationFees?.message} {...form.register('registrationFees')} />
-          <Select label="Payment Mode" options={[...PAYMENT_MODE_OPTIONS]} error={form.formState.errors.paymentMode?.message} {...form.register('paymentMode')} />
-          <Select label="Partial Payment" options={[...YES_NO_OPTIONS]} error={form.formState.errors.partialPayment?.message} {...form.register('partialPayment')} />
-          <Input label="Outstanding Amount" error={form.formState.errors.outstandingAmount?.message} {...form.register('outstandingAmount')} />
-        </div>
-      </FormSection>
-
       <FormSection title="Billing Details">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Select label="Service Type" options={['Consultation', 'Therapy']} error={form.formState.errors.serviceType?.message} {...form.register('serviceType')} />
@@ -394,7 +383,7 @@ export function DoctorBillingForm({
             <label className="flex items-center gap-2 text-sm font-medium text-brown">
               <input
                 type="checkbox"
-                className="rounded border-gray-300 text-gold focus:ring-gold"
+                className="checkbox-gold"
                 {...form.register('applyTax')}
               />
               CGST & SGST

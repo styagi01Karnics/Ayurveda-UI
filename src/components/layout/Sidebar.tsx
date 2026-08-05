@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { Stethoscope } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
@@ -62,11 +63,22 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
           >
             {({ isActive }) => (
               <>
-                <NavIcon
-                  outline={assets.icons.nav[icon].outline}
-                  filled={assets.icons.nav[icon].filled}
-                  active={isActive}
-                />
+                {icon === 'doctors' ? (
+                  <Stethoscope
+                    className={cn(
+                      'h-[22px] w-[22px] shrink-0',
+                      isActive ? 'text-gold' : 'text-brown',
+                    )}
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                ) : (
+                  <NavIcon
+                    outline={assets.icons.nav[icon].outline}
+                    filled={assets.icons.nav[icon].filled}
+                    active={isActive}
+                  />
+                )}
                 <span className="truncate">{label}</span>
               </>
             )}

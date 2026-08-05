@@ -159,7 +159,7 @@ export interface DoctorScheduleItem {
   patient: string;
   patientDetailId: string;
   visitType: VisitType;
-  status: 'Scheduled' | 'Completed';
+  status: 'Scheduled' | 'Completed' | 'In Consultation';
 }
 
 export interface DoctorStats {
@@ -221,8 +221,11 @@ export interface FollowUpRecord {
 export interface CalendarEvent {
   id: string;
   title: string;
+  /** Column index 0–6 within the displayed week (Sun–Sat). */
   day: number;
   startHour: number;
+  startMinute?: number;
+  timeLabel?: string;
   durationHours: number;
   color: string;
 }

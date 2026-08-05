@@ -1,20 +1,20 @@
 import { z } from 'zod';
-import { patientStep1Schema } from './patient.schema';
+import { patientStep1FullSchema } from './patient.schema';
 
-export const doctorPersonalTabSchema = patientStep1Schema;
+export const doctorPersonalTabSchema = patientStep1FullSchema;
 
 export const doctorMedicalTabSchema = z.object({
   doshaType: z.string().min(1, 'Dosha type is required'),
   bodyConstitution: z
     .array(z.string())
     .min(1, 'Select at least one body constitution'),
-  currentImbalance: z.string().min(1, 'Current imbalance is required'),
+  currentImbalance: z.string().optional(),
   previousPanchakarma: z.string().optional(),
-  weight: z.string().min(1, 'Weight is required'),
-  height: z.string().min(1, 'Height is required'),
-  ibw: z.string().min(1, 'IBW is required'),
-  pulse: z.string().min(1, 'Pulse is required'),
-  bp: z.string().min(1, 'BP is required'),
+  weight: z.string().optional(),
+  height: z.string().optional(),
+  ibw: z.string().optional(),
+  pulse: z.string().optional(),
+  bp: z.string().optional(),
   temperature: z.string().optional(),
   pallor: z.string().optional(),
   icterus: z.string().optional(),
@@ -63,10 +63,10 @@ export const doctorBillingTabSchema = z.object({
   validity: z.string().min(1, 'Validity is required'),
   membershipStatus: z.string().min(1, 'Status is required'),
   discountApplied: z.string().min(1, 'Discount applied is required'),
-  registrationFees: z.string().min(1, 'Registration fees is required'),
-  paymentMode: z.string().min(1, 'Payment mode is required'),
-  partialPayment: z.string().min(1, 'Partial payment is required'),
-  outstandingAmount: z.string().min(1, 'Outstanding amount is required'),
+  registrationFees: z.string().optional(),
+  paymentMode: z.string().optional(),
+  partialPayment: z.string().optional(),
+  outstandingAmount: z.string().optional(),
   serviceType: z.string().min(1, 'Service type is required'),
   serviceFees: z.string().min(1, 'Service fees is required'),
   packageType: z.string().min(1, 'Package type is required'),

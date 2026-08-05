@@ -67,6 +67,6 @@ export const initialDoctorSchedule: DoctorScheduleItem[] = [
 ];
 
 export const DOCTOR_FILTER_OPTIONS = {
-  status: ['Scheduled', 'Completed'],
+  status: ['Scheduled', 'Completed', 'In Consultation'],
   visitType: ['Consultation', 'Therapy'],
 } as const;

@@ -79,6 +79,7 @@ export const apiEndpoints = {
         `/api/v1/appointments/status/${bookingStatus}`,
       getToday: (consultationType: string) =>
         `/api/v1/appointments/today/${consultationType}`,
+      getTodayAll: '/api/v1/appointments/today',
       getByDate: (registrationDate: string) =>
         `/api/v1/appointments/date/${registrationDate}`,
       getStats: '/api/v1/appointments/stats',

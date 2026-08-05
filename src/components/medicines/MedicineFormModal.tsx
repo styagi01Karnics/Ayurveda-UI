@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -329,28 +329,12 @@ export function MedicineFormModal({
             error={errors.stockQuantity?.message}
             {...register('stockQuantity')}
           />
-          <div className="flex w-full flex-col gap-1.5">
-            <label htmlFor="expiryDate" className="text-xs font-medium text-text-muted">
-              Expiry Date
-            </label>
-            <div className="relative">
-              <input
-                id="expiryDate"
-                type="date"
-                className={cn(
-                  'w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 pr-10 text-sm text-brown focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
-                  errors.expiryDate && 'border-danger focus:border-danger focus:ring-danger/20',
-                )}
-                {...register('expiryDate')}
-              />
-              <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            </div>
-            {errors.expiryDate?.message && (
-              <p className="text-xs text-danger" role="alert">
-                {errors.expiryDate.message}
-              </p>
-            )}
-          </div>
+          <Input
+            label="Expiry Date"
+            type="date"
+            error={errors.expiryDate?.message}
+            {...register('expiryDate')}
+          />
           <RupeeInput
             label="Purchase Price"
             placeholder="Purchase Price"

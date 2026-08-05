@@ -63,6 +63,6 @@ describe('AppointmentsPage', () => {
     const user = userEvent.setup();
     renderAppointments();
     await user.click(screen.getByLabelText('Calendar view'));
-    expect(screen.getByText('EST GMT-5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
   });
 });

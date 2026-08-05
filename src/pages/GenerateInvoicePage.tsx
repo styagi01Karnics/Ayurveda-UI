@@ -593,11 +593,10 @@ export function GenerateInvoicePage() {
                   key={mode.id}
                   type="button"
                   onClick={() => setSelectedPayment(mode.id)}
-                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${
-                    selectedPayment === mode.id
+                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${selectedPayment === mode.id
                       ? 'border-gold bg-gold/5'
                       : 'border-gray-100 hover:border-gold/30'
-                  }`}
+                    }`}
                 >
                   <div>
                     <p className="font-medium text-brown">{mode.title}</p>
@@ -985,23 +984,60 @@ function BillSummarySection({
 
       <LineItemsTable items={items} onRemove={onRemove} emptyLabel={`No items in ${billLabel.toLowerCase()} yet.`} />
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Input label="Discount (₹)" {...summaryForm.register('discount')} />
-        <div className="sm:col-span-2">
-          <label className="flex items-center gap-2 text-sm font-medium text-brown">
-            <input
-              type="checkbox"
-              className="rounded border-gray-300 text-gold focus:ring-gold"
-              {...summaryForm.register('applyTax')}
-            />
-            CGST & SGST
-          </label>
-          {applyTax && (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <Input label="CGST (%)" {...summaryForm.register('cgst')} />
-              <Input label="SGST (%)" {...summaryForm.register('sgst')} />
+      <div className="mt-6">
+        <div className="grid grid-cols-12 gap-4 items-end">
+
+          {/* Discount */}
+          <div className="col-span-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Discount (if any)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                ₹
+              </span>
+              <input
+                type="number"
+                placeholder="0"
+                className="w-full h-11 rounded-lg border border-gray-300 pl-8 pr-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
             </div>
-          )}
+          </div>
+
+          {/* GST Section */}
+          <div className="col-span-6">
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="checkbox"
+                id="gst"
+                defaultChecked
+                className="checkbox-gold"
+              />
+              <label
+                htmlFor="gst"
+                className="text-sm font-medium text-gray-700"
+              >
+                CGST & SGST
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="number"
+                defaultValue={3}
+                placeholder="CGST"
+                className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+
+              <input
+                type="number"
+                defaultValue={3}
+                placeholder="SGST"
+                className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              />
+            </div>
+          </div>
+
         </div>
       </div>
 

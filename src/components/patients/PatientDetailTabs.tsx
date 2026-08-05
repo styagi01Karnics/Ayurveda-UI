@@ -371,19 +371,6 @@ export function BillingMembershipTab({ patient }: { patient: PatientDetail }) {
         />
       </SectionBlock>
 
-      <SectionBlock title="Payment Setup">
-        <DataRow
-          headers={['Registration Fees', 'Payment Mode', 'Partial Payment', 'Outstanding Amount']}
-          values={[
-            `₹${b.registrationFees}`,
-            b.paymentMode,
-            b.partialPayment,
-            `₹${b.outstandingAmount}`,
-          ]}
-          highlights={[3]}
-        />
-      </SectionBlock>
-
       <SectionBlock title="Billing Details">
         <InfoList
           items={[

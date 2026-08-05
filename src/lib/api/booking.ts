@@ -23,6 +23,7 @@ import {
   toMedicalAssessmentPayload,
 } from '@/lib/api/mappers';
 import type { CreatePatientValues } from '@/lib/validation/patient.schema';
+import { wantsMedicalAssessment } from '@/lib/validation/patient.schema';
 
 export interface BookingSession {
   patientId: string;
@@ -31,7 +32,7 @@ export interface BookingSession {
 }
 
 export interface BookAppointmentResult extends BookingSession {
-  medicalAssessment: MedicalAssessmentDto;
+  medicalAssessment?: MedicalAssessmentDto | null;
 }
 
 const UUID_RE =
@@ -54,26 +55,46 @@ async function runBookingStep<T>(
   }
 }
 
+function computeAgeFromDob(dateOfBirth: string): number {
+  const birth = new Date(dateOfBirth);
+  if (Number.isNaN(birth.getTime())) return 0;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+  return Math.max(age, 0);
+}
+
 export function toPatientPayload(data: CreatePatientValues): CreatePatientPayload {
+  const age = data.age?.trim()
+    ? Number(data.age)
+    : computeAgeFromDob(data.dateOfBirth);
+
   return {
     fullName: data.fullName.trim(),
     gender: toApiGender(data.gender),
     dateOfBirth: data.dateOfBirth,
-    age: Number(data.age),
+    age: Number.isFinite(age) ? age : 0,
     preferredLanguage:
-      data.preferredLanguage.replace(/[^a-zA-Z\s]/g, '').trim() || 'English',
+      (data.preferredLanguage ?? 'English').replace(/[^a-zA-Z\s]/g, '').trim() ||
+      'English',
     mobileNumber: data.mobileNumber.trim(),
-    email: data.email.trim(),
-    state: data.state.replace(/[^a-zA-Z\s]/g, '').trim(),
-    city: data.city.replace(/[^a-zA-Z\s]/g, '').trim(),
-    address: data.permanentAddress.trim(),
-    emergencyContactName: data.emergencyName.replace(/[^a-zA-Z\s]/g, '').trim(),
-    emergencyRelationship: data.emergencyRelation
-      .replace(/[^a-zA-Z\s]/g, '')
-      .trim(),
-    emergencyPhoneNumber: data.emergencyPhone.trim(),
-    idProofType: toApiIdProofType(data.idProofType),
-    idProofNumber: data.idNumber.trim(),
+    email: data.email?.trim() || `${data.mobileNumber.trim()}@patient.local`,
+    state: (data.state ?? 'Maharashtra').replace(/[^a-zA-Z\s]/g, '').trim() || 'Maharashtra',
+    city: (data.city ?? 'Mumbai').replace(/[^a-zA-Z\s]/g, '').trim() || 'Mumbai',
+    address: data.permanentAddress?.trim() || 'Not provided',
+    emergencyContactName:
+      (data.emergencyName ?? data.fullName).replace(/[^a-zA-Z\s]/g, '').trim() ||
+      data.fullName.trim(),
+    emergencyRelationship:
+      (data.emergencyRelation ?? 'Other').replace(/[^a-zA-Z\s]/g, '').trim() ||
+      'Other',
+    emergencyPhoneNumber:
+      data.emergencyPhone?.trim() || data.mobileNumber.trim(),
+    idProofType: toApiIdProofType(data.idProofType || 'Aadhaar'),
+    idProofNumber: data.idNumber?.trim() || 'NA',
     occupation: data.occupation
       ? data.occupation.replace(/[^a-zA-Z\s]/g, '').trim() || 'Unknown'
       : 'Unknown',
@@ -112,8 +133,9 @@ export function buildAppointmentPayload(
 ): CreateAppointmentPayload {
   return {
     patient: toPatientPayload(data),
-    registrationDate: data.registrationDate,
-    assignedDoctorId: data.assignedDoctor,
+    registrationDate:
+      data.registrationDate || new Date().toISOString().slice(0, 10),
+    assignedDoctorId: data.assignedDoctor ?? '',
     consultationTypes: toApiConsultationTypes(data.consultationTypes),
     slotTime: resolveSlotTime(data),
   };
@@ -224,7 +246,10 @@ export async function bookAppointmentFlow(
     session.therapy = await submitBookingStep2(data, session);
   }
 
-  const medicalAssessment = await submitBookingStep3(data, session);
+  if (wantsMedicalAssessment(data.consultationTypes)) {
+    const medicalAssessment = await submitBookingStep3(data, session);
+    return { ...session, medicalAssessment };
+  }
 
-  return { ...session, medicalAssessment };
+  return { ...session, medicalAssessment: null };
 }

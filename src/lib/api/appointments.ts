@@ -18,6 +18,7 @@ import type {
   RescheduleAppointmentPayload,
   TreatmentCategoryDto,
   TherapyDto,
+  TodayAppointmentsResponseDto,
 } from './types';
 
 const url = (path: string) => `${apiConfig.appointment}${path}`;
@@ -148,7 +149,7 @@ export function getAppointmentById(bookingId: string) {
   return apiRequest<AppointmentDto>(url(ep.bookings.getByBookingId(bookingId)));
 }
 
-export function getAppointmentsByStatus(bookingStatus: string) {
+export function getAppointmentsByStatus(bookingStatus = 'ALL') {
   return apiRequestList<AppointmentDto>(
     url(ep.bookings.getByStatus(bookingStatus)),
   );
@@ -158,6 +159,10 @@ export function getAppointmentsToday(consultationType: string) {
   return apiRequestList<AppointmentDto>(
     url(ep.bookings.getToday(consultationType)),
   );
+}
+
+export function getTodayAppointments() {
+  return apiRequest<TodayAppointmentsResponseDto>(url(ep.bookings.getTodayAll));
 }
 
 export function getAppointmentsByDate(registrationDate: string) {

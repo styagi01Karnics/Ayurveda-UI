@@ -4,6 +4,7 @@ import { SalesStatCards } from '@/components/sales/SalesStatCards';
 import { SalesTable } from '@/components/sales/SalesTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SALES_FILTER_OPTIONS } from '@/data/mock/sales';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -89,19 +90,11 @@ export function SalesPage() {
               />
             </FilterControl>
             <FilterControl>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={dateFilter}
-                  onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-brown focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-                />
-                {!dateFilter && (
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                    Date Created
-                  </span>
-                )}
-              </div>
+              <Input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+              />
             </FilterControl>
           </>
         }

@@ -18,21 +18,20 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Input } from '@/components/ui/Input';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Tabs } from '@/components/ui/Tabs';
 import {
   APPOINTMENT_FILTER_OPTIONS,
-  calendarEventDetails,
-  calendarEvents,
   initialFollowUps,
 } from '@/data/mock/appointments';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
   cancelAppointment,
-  getAllAppointmentPatients,
   getAllTherapies,
   getAllTreatmentCategories,
+  getAppointmentsByStatus,
   getBookingDoshas,
   rescheduleAppointment,
 } from '@/lib/api/appointments';
@@ -40,7 +39,8 @@ import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
 import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
 import {
-  mapPatientAppointmentListItemToRecord,
+  mapAppointmentRecordToCalendarDetail,
+  mapAppointmentToRecord,
   normalizeSlotTimeForApi,
   toApiConsultationTypes,
 } from '@/lib/api/mappers';
@@ -101,10 +101,13 @@ export function AppointmentsPage() {
         getAllTreatmentCategories().catch(() => []),
         getAllTherapies().catch(() => []),
         getBookingDoshas().catch(() => []),
-        getAllAppointmentPatients().catch(() => []),
+        getAppointmentsByStatus('ALL').catch(() => []),
       ]);
 
-    const records = appointments.map(mapPatientAppointmentListItemToRecord);
+    const doctorsById = new Map(doctors.map((d) => [d.id, d]));
+    const records = appointments.map((item) =>
+      mapAppointmentToRecord(item, doctorsById),
+    );
 
     const lookupOptions: BookingLookupOptions = {
       doctors: doctors.map((d) => ({
@@ -317,11 +320,12 @@ export function AppointmentsPage() {
         ),
         uhid: patientCode.startsWith('#') ? patientCode : `#${patientCode}`,
         patient: formData.fullName,
-        doctor: doctorName,
+        doctor: doctorName || '—',
         visitType: (formData.consultationTypes[0] ??
           'Consultation') as VisitType,
         appointmentDate,
-        dateCreated: formData.registrationDate,
+        dateCreated:
+          formData.registrationDate ?? new Date().toISOString().slice(0, 10),
         status: 'Scheduled',
       };
 
@@ -361,28 +365,9 @@ export function AppointmentsPage() {
   };
 
   const handleEventClick = (eventId: string) => {
-    const detail = calendarEventDetails[eventId];
-    if (detail) {
-      setSelectedEvent(detail);
-      return;
-    }
-    const event = calendarEvents.find((e) => e.id === eventId);
-    if (event) {
-      setSelectedEvent({
-        id: event.id,
-        title: event.title,
-        appointmentDate: '15 Oct 2026, 01:05 AM',
-        doctorName: 'Dr. Sheekha',
-        doctorRole: 'Ayurvedic Physician',
-        patientName: 'Khushi Shroff',
-        patientAge: '23yrs',
-        patientGender: 'Female',
-        visitType: 'Consultation',
-        dosha: 'Vata',
-        condition: 'Joint Pain',
-        lastVisit: '10 Sep, 2025',
-        nextVisit: '10 Oct, 2025',
-      });
+    const record = filteredAppointments.find((item) => item.id === eventId);
+    if (record) {
+      setSelectedEvent(mapAppointmentRecordToCalendarDetail(record));
     }
   };
 
@@ -471,7 +456,11 @@ export function AppointmentsPage() {
                 />
               </FilterControl>
               <FilterControl>
-                <InputDate value={dateFilter} onChange={setDateFilter} />
+                <Input
+                  type="date"
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value)}
+                />
               </FilterControl>
             </>
           }
@@ -501,10 +490,18 @@ export function AppointmentsPage() {
             {tabsNode}
             {viewToggleNode}
           </div>
-          <AppointmentsCalendar
-            events={calendarEvents}
-            onEventClick={handleEventClick}
-          />
+          <AsyncStatus
+            loading={loading}
+            error={error}
+            onRetry={reload}
+            empty={!loading && !error && filteredAppointments.length === 0}
+            emptyMessage="No appointments found for calendar."
+          >
+            <AppointmentsCalendar
+              appointments={filteredAppointments}
+              onEventClick={handleEventClick}
+            />
+          </AsyncStatus>
         </div>
       )}
 
@@ -556,29 +553,5 @@ export function AppointmentsPage() {
         onClose={() => setSelectedEvent(null)}
       />
     </PageShell>
-  );
-}
-
-function InputDate({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="relative">
-      <input
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-brown focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
-      />
-      {!value && (
-        <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-          Date Created
-        </span>
-      )}
-    </div>
   );
 }

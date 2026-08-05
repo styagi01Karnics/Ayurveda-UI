@@ -1,0 +1,199 @@
+import type { AppointmentRecord } from '@/types';
+import type { CalendarEvent } from '@/types';
+
+const VISIT_COLORS: Record<string, string> = {
+  Consultation: 'bg-amber-200 border-amber-400',
+  Therapy: 'bg-sky-200 border-sky-400',
+  'Follow-Up': 'bg-purple-200 border-purple-400',
+  Treatment: 'bg-emerald-200 border-emerald-400',
+};
+
+export interface CalendarWeekDay {
+  label: string;
+  date: Date;
+  isToday: boolean;
+}
+
+export function startOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Sunday-start week containing `date`. */
+export function getWeekStart(date: Date = new Date()): Date {
+  const d = startOfDay(date);
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+export function addDays(date: Date, days: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+export function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+export function getWeekDays(weekStart: Date): CalendarWeekDay[] {
+  const today = startOfDay(new Date());
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(weekStart, index);
+    const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+    return {
+      label: `${weekday} ${date.getDate()}`,
+      date,
+      isToday: isSameDay(date, today),
+    };
+  });
+}
+
+export function formatWeekRangeLabel(weekStart: Date): string {
+  const weekEnd = addDays(weekStart, 6);
+  const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+  const startLabel = weekStart.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+  const endLabel = weekEnd.toLocaleDateString('en-US', {
+    month: sameMonth ? undefined : 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `${startLabel} – ${endLabel}`;
+}
+
+export function getLocalTimezoneLabel(): string {
+  try {
+    const parts = new Intl.DateTimeFormat(undefined, {
+      timeZoneName: 'short',
+    }).formatToParts(new Date());
+    const zone = parts.find((part) => part.type === 'timeZoneName')?.value;
+    return zone ?? 'Local';
+  } catch {
+    return 'Local';
+  }
+}
+
+function normalizeTimeForIso(time: string): string {
+  if (!time) return '09:00:00';
+  if (/^\d{2}:\d{2}:\d{2}$/.test(time)) return time;
+  if (/^\d{2}:\d{2}$/.test(time)) return `${time}:00`;
+  return '09:00:00';
+}
+
+function parseIsoDateTime(datePart: string, timePart?: string): Date | null {
+  if (!datePart) return null;
+  const isoDate = datePart.slice(0, 10);
+  const time = normalizeTimeForIso(timePart ?? '09:00');
+  const parsed = new Date(`${isoDate}T${time}`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function parseDisplayAppointmentDate(value: string): Date | null {
+  if (!value || value === '—') return null;
+
+  const direct = new Date(value);
+  if (!Number.isNaN(direct.getTime())) return direct;
+
+  const match = value.match(
+    /(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4}),?\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i,
+  );
+  if (match) {
+    const [, day, month, year, hour, minute, meridiem] = match;
+    let hours = Number(hour);
+    if (meridiem) {
+      const upper = meridiem.toUpperCase();
+      if (upper === 'PM' && hours < 12) hours += 12;
+      if (upper === 'AM' && hours === 12) hours = 0;
+    }
+    const parsed = new Date(`${month} ${day}, ${year} ${hours}:${minute}:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  return null;
+}
+
+/** Resolve the scheduled instant for a list/calendar appointment row. */
+export function parseAppointmentDateTime(record: AppointmentRecord): Date | null {
+  const candidates: Array<Date | null> = [
+    parseIsoDateTime(record.registrationDate ?? '', record.slotTime),
+    parseIsoDateTime(record.dateCreated ?? '', record.slotTime),
+    parseDisplayAppointmentDate(record.appointmentDate),
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate) return candidate;
+  }
+
+  return null;
+}
+
+function formatEventTime(date: Date): string {
+  return date.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+export function mapAppointmentToCalendarEvent(
+  record: AppointmentRecord,
+  weekStart: Date,
+): CalendarEvent | null {
+  const scheduledAt = parseAppointmentDateTime(record);
+  if (!scheduledAt) return null;
+
+  const weekEnd = addDays(weekStart, 7);
+  if (scheduledAt < weekStart || scheduledAt >= weekEnd) {
+    return null;
+  }
+
+  const dayIndex = Math.floor(
+    (startOfDay(scheduledAt).getTime() - weekStart.getTime()) /
+      (24 * 60 * 60 * 1000),
+  );
+
+  if (dayIndex < 0 || dayIndex > 6) return null;
+
+  return {
+    id: record.id,
+    title: `${record.patient} · ${record.visitType}`,
+    day: dayIndex,
+    startHour: scheduledAt.getHours(),
+    startMinute: scheduledAt.getMinutes(),
+    timeLabel: formatEventTime(scheduledAt),
+    durationHours: 1,
+    color:
+      VISIT_COLORS[record.visitType] ?? 'bg-amber-100 border-amber-300',
+  };
+}
+
+export function mapAppointmentsToCalendarEvents(
+  records: AppointmentRecord[],
+  weekStart: Date,
+): CalendarEvent[] {
+  return records
+    .map((record) => mapAppointmentToCalendarEvent(record, weekStart))
+    .filter((event): event is CalendarEvent => event !== null);
+}
+
+export function getCalendarHourRange(events: CalendarEvent[]): number[] {
+  let minHour = 7;
+  let maxHour = 18;
+
+  for (const event of events) {
+    minHour = Math.min(minHour, event.startHour);
+    maxHour = Math.max(maxHour, event.startHour + Math.ceil(event.durationHours));
+  }
+
+  minHour = Math.max(0, minHour - 1);
+  maxHour = Math.min(23, maxHour + 1);
+
+  return Array.from({ length: maxHour - minHour + 1 }, (_, i) => minHour + i);
+}

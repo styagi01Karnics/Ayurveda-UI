@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildBookingSteps,
   followUpSchema,
-  patientStep1Schema,
+  patientStep1BookingSchema,
   patientStep3Schema,
 } from '@/lib/validation/patient.schema';
 
@@ -9,51 +10,68 @@ const validStep1 = {
   fullName: 'Khushi Shroff',
   gender: 'Female',
   dateOfBirth: '1995-05-15',
-  age: '30',
-  preferredLanguage: 'English',
-  consultationTypes: ['Consultation'],
-  registrationDate: '2026-10-01',
-  appointmentTime: '10:00',
-  assignedDoctor: 'Dr. Sheekha',
   mobileNumber: '9876543210',
-  email: 'khushi@example.com',
-  state: 'Maharashtra',
-  city: 'Mumbai',
-  permanentAddress: '123 Main Street',
-  emergencyName: 'Parent Name',
-  emergencyRelation: 'Parent',
-  emergencyPhone: '9123456789',
-  patientId: 'PT458652',
-  idProofType: 'Aadhaar',
-  idNumber: '123456789012',
-  occupation: 'Employed',
+  consultationTypes: ['Consultation'],
 };
 
-describe('patientStep1Schema', () => {
-  it('accepts valid personal information', () => {
-    expect(patientStep1Schema.safeParse(validStep1).success).toBe(true);
+describe('patientStep1BookingSchema', () => {
+  it('accepts minimal required personal information', () => {
+    expect(patientStep1BookingSchema.safeParse(validStep1).success).toBe(true);
   });
 
   it('rejects missing consultation types', () => {
-    const result = patientStep1Schema.safeParse({
+    const result = patientStep1BookingSchema.safeParse({
       ...validStep1,
       consultationTypes: [],
     });
     expect(result.success).toBe(false);
   });
+
+  it('rejects invalid mobile number', () => {
+    const result = patientStep1BookingSchema.safeParse({
+      ...validStep1,
+      mobileNumber: '123',
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('buildBookingSteps', () => {
+  it('shows therapy steps when therapy is selected', () => {
+    expect(buildBookingSteps(['Therapy']).map((s) => s.key)).toEqual([
+      'personal',
+      'therapy',
+    ]);
+  });
+
+  it('shows category step when category is selected', () => {
+    expect(buildBookingSteps(['Category']).map((s) => s.key)).toEqual([
+      'personal',
+      'category',
+    ]);
+  });
+
+  it('shows consultation medical step when consultation is selected', () => {
+    expect(buildBookingSteps(['Consultation']).map((s) => s.key)).toEqual([
+      'personal',
+      'medical',
+    ]);
+  });
+
+  it('shows category and therapy when both are selected', () => {
+    expect(buildBookingSteps(['Category', 'Therapy']).map((s) => s.key)).toEqual([
+      'personal',
+      'category',
+      'therapy',
+    ]);
+  });
 });
 
 describe('patientStep3Schema', () => {
-  it('requires ayurvedic assessment fields', () => {
+  it('requires only dosha type and body constitution', () => {
     const result = patientStep3Schema.safeParse({
-      doshaType: 'Vata',
+      doshaType: '550e8400-e29b-41d4-a716-446655440000',
       bodyConstitution: ['Vata'],
-      currentImbalance: 'Vata aggravation',
-      height: '165',
-      weight: '60',
-      bmi: '22',
-      pulse: '72',
-      bp: '120/80',
     });
     expect(result.success).toBe(true);
   });
