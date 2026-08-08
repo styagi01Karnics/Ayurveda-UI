@@ -662,6 +662,41 @@ vi.mock('@/lib/api/packages', () => ({
   updatePackageStatus: vi.fn(),
 }));
 
+vi.mock('@/lib/api/consultationTypes', () => ({
+  getAllConsultationTypes: vi.fn(async () => [
+    { id: 'ct-consultation', name: 'CONSULTATION', status: 'ACTIVE' },
+    { id: 'ct-therapy', name: 'THERAPY', status: 'ACTIVE' },
+  ]),
+  getActiveConsultationTypes: vi.fn(async () => [
+    { id: 'ct-consultation', name: 'CONSULTATION', status: 'ACTIVE' },
+    { id: 'ct-therapy', name: 'THERAPY', status: 'ACTIVE' },
+  ]),
+  getConsultationTypeById: vi.fn(),
+  createConsultationType: vi.fn(),
+}));
+
+vi.mock('@/lib/api/treatmentPlanMasters', () => ({
+  getAllTreatmentPlanMasters: vi.fn(async () => [
+    { id: 'tp-1', name: 'Detox Package', status: 'ACTIVE' },
+  ]),
+  getActiveTreatmentPlanMasters: vi.fn(async () => [
+    { id: 'tp-1', name: 'Detox Package', status: 'ACTIVE' },
+  ]),
+  getTreatmentPlanMasterById: vi.fn(),
+  createTreatmentPlanMaster: vi.fn(),
+}));
+
+vi.mock('@/lib/api/packageMasters', () => ({
+  getAllPackageMasters: vi.fn(async () => [
+    { id: 'pkg-1', name: 'Gold Membership', packagePrice: 15000, status: 'ACTIVE' },
+  ]),
+  getActivePackageMasters: vi.fn(async () => [
+    { id: 'pkg-1', name: 'Gold Membership', packagePrice: 15000, status: 'ACTIVE' },
+  ]),
+  getPackageMasterById: vi.fn(),
+  createPackageMaster: vi.fn(),
+}));
+
 vi.mock('@/lib/api/medicines', () => ({
   getAllMedicines: vi.fn(async () =>
     initialMedicines.map((m) => ({

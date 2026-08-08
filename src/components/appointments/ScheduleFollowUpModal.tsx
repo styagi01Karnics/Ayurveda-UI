@@ -13,6 +13,7 @@ import {
 export interface FollowUpLookupOptions {
   patients: SelectOption[];
   doctors: SelectOption[];
+  visitTypes: SelectOption[];
 }
 
 interface ScheduleFollowUpModalProps {
@@ -22,11 +23,6 @@ interface ScheduleFollowUpModalProps {
   lookupOptions: FollowUpLookupOptions;
   submitting?: boolean;
 }
-
-const VISIT_TYPE_OPTIONS = [
-  { value: 'CONSULTATION', label: 'Consultation' },
-  { value: 'THERAPY', label: 'Therapy' },
-];
 
 export function ScheduleFollowUpModal({
   open,
@@ -45,7 +41,7 @@ export function ScheduleFollowUpModal({
     defaultValues: {
       patientId: '',
       assignedDoctorId: '',
-      visitType: 'CONSULTATION',
+      visitTypeId: '',
       schedulingOption: '7_DAYS',
       scheduleDate: '',
       scheduleTime: '',
@@ -102,9 +98,9 @@ export function ScheduleFollowUpModal({
           <Select
             label="Visit Type"
             placeholder="Visit Type"
-            options={VISIT_TYPE_OPTIONS}
-            error={errors.visitType?.message}
-            {...register('visitType')}
+            options={lookupOptions.visitTypes}
+            error={errors.visitTypeId?.message}
+            {...register('visitTypeId')}
           />
           <Select
             label="Scheduling"
@@ -128,14 +124,6 @@ export function ScheduleFollowUpModal({
             {...register('scheduleTime')}
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-brown">
-          <input
-            type="checkbox"
-            className="rounded border-gray-300"
-            {...register('smsReminderEnabled')}
-          />
-          Enable SMS reminder (stored only)
-        </label>
       </form>
     </Modal>
   );

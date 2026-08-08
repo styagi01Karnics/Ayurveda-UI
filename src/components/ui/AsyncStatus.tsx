@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { UI_MESSAGES } from '@/lib/uiMessages';
 
 interface AsyncStatusProps {
   loading: boolean;
@@ -7,6 +9,7 @@ interface AsyncStatusProps {
   children: ReactNode;
   empty?: boolean;
   emptyMessage?: string;
+  emptyDescription?: string;
 }
 
 export function AsyncStatus({
@@ -15,12 +18,13 @@ export function AsyncStatus({
   onRetry,
   children,
   empty = false,
-  emptyMessage = 'No records found.',
+  emptyMessage = UI_MESSAGES.empty.default,
+  emptyDescription,
 }: AsyncStatusProps) {
   if (loading) {
     return (
       <div className="rounded-xl border border-gray-100 bg-white px-4 py-10 text-center text-sm text-text-muted">
-        Loading…
+        {UI_MESSAGES.loading}
       </div>
     );
   }
@@ -35,7 +39,7 @@ export function AsyncStatus({
             onClick={onRetry}
             className="mt-3 text-sm font-medium text-gold hover:underline"
           >
-            Try again
+            {UI_MESSAGES.retry}
           </button>
         )}
       </div>
@@ -44,9 +48,10 @@ export function AsyncStatus({
 
   if (empty) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white px-4 py-10 text-center text-sm text-text-muted">
-        {emptyMessage}
-      </div>
+      <EmptyState
+        message={emptyMessage}
+        description={emptyDescription}
+      />
     );
   }
 

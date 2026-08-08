@@ -2,9 +2,20 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
+import { ToastProvider } from '@/app/ToastContext';
 import { PatientsPage } from '@/pages/PatientsPage';
 
 const mockNavigate = vi.fn();
+
+function renderPatientsPage() {
+  return render(
+    <MemoryRouter>
+      <ToastProvider>
+        <PatientsPage />
+      </ToastProvider>
+    </MemoryRouter>,
+  );
+}
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -16,11 +27,7 @@ vi.mock('react-router-dom', async () => {
 
 describe('PatientsPage', () => {
   it('renders patient tabs and table', async () => {
-    render(
-      <MemoryRouter>
-        <PatientsPage />
-      </MemoryRouter>,
-    );
+    renderPatientsPage();
 
     expect(screen.getByText('Active Patients')).toBeInTheDocument();
     expect(screen.getByText('Inactive Patients')).toBeInTheDocument();
@@ -31,11 +38,7 @@ describe('PatientsPage', () => {
 
   it('filters patients by search query', async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <PatientsPage />
-      </MemoryRouter>,
-    );
+    renderPatientsPage();
 
     await screen.findByText('Khushi Shroff');
     await user.type(screen.getByPlaceholderText('Patient ID'), 'PT458653');
@@ -45,11 +48,7 @@ describe('PatientsPage', () => {
 
   it('switches to inactive patients tab', async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <PatientsPage />
-      </MemoryRouter>,
-    );
+    renderPatientsPage();
 
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByText('Inactive Patients'));
@@ -59,11 +58,7 @@ describe('PatientsPage', () => {
 
   it('navigates to patient detail on row click', async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <PatientsPage />
-      </MemoryRouter>,
-    );
+    renderPatientsPage();
 
     await user.click(await screen.findByText('Khushi Shroff'));
     expect(mockNavigate).toHaveBeenCalledWith('/patients/37944397');
@@ -71,11 +66,7 @@ describe('PatientsPage', () => {
 
   it('opens bill modal when download clicked', async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <PatientsPage />
-      </MemoryRouter>,
-    );
+    renderPatientsPage();
 
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByLabelText('Download bill for Khushi Shroff'));
@@ -84,11 +75,7 @@ describe('PatientsPage', () => {
 
   it('opens upload modal when upload clicked', async () => {
     const user = userEvent.setup();
-    render(
-      <MemoryRouter>
-        <PatientsPage />
-      </MemoryRouter>,
-    );
+    renderPatientsPage();
 
     await screen.findByText('Khushi Shroff');
     const uploadButtons = screen.getAllByRole('button', { name: /Upload/i });

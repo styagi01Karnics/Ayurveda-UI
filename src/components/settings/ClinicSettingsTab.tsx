@@ -1,13 +1,22 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
+import { DoctorAvailabilityFields } from '@/components/settings/DoctorAvailabilityFields';
+import {
+  ConsultationTypesSection,
+  PackageMastersSection,
+  TreatmentPlanMastersSection,
+  mapConsultationTypeMasterToRecord,
+  mapPackageMasterToRecord,
+  mapTreatmentPlanMasterToRecord,
+} from '@/components/settings/MasterSettingsSections';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
   createTherapy,
@@ -17,7 +26,13 @@ import {
   getAllTreatmentCategories,
   updateTherapyStatus,
 } from '@/lib/api/appointments';
+import { createConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
+import { createPackageMaster, getAllPackageMasters } from '@/lib/api/packageMasters';
+import {
+  createTreatmentPlanMaster,
+  getAllTreatmentPlanMasters,
+} from '@/lib/api/treatmentPlanMasters';
 import {
   createDoctor,
   deleteDoctor,
@@ -49,6 +64,7 @@ import {
   type ClinicTherapyFormValues,
 } from '@/lib/validation/settings.schema';
 import { cn, formatCurrency } from '@/lib/utils';
+import { formatDoctorAvailability } from '@/lib/doctorAvailability';
 import type {
   ClinicDoctorRecord,
   ClinicStatus,
@@ -101,11 +117,22 @@ export function ClinicSettingsTab() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const { data, loading, error, reload } = useAsyncData(async () => {
-    const [doctors, therapists, therapies, categories] = await Promise.all([
+    const [
+      doctors,
+      therapists,
+      therapies,
+      categories,
+      consultationTypes,
+      treatmentPlans,
+      packageMasters,
+    ] = await Promise.all([
       getAllDoctors(),
       getAllTherapists(),
       getAllTherapies(),
       getAllTreatmentCategories(),
+      getAllConsultationTypes().catch(() => []),
+      getAllTreatmentPlanMasters().catch(() => []),
+      getAllPackageMasters().catch(() => []),
     ]);
 
     const categoriesById = new Map(categories.map((c) => [c.id, c]));
@@ -124,6 +151,9 @@ export function ClinicSettingsTab() {
         value: c.id,
         label: c.categoryName,
       })),
+      consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
+      treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
+      packageMasters: packageMasters.map(mapPackageMasterToRecord),
     };
   }, {
     doctors: [] as ClinicDoctorRecord[],
@@ -131,6 +161,9 @@ export function ClinicSettingsTab() {
     therapies: [] as ClinicTherapyRecord[],
     categories: [] as ClinicTreatmentCategoryRecord[],
     categoryOptions: [] as { value: string; label: string }[],
+    consultationTypes: [],
+    treatmentPlans: [],
+    packageMasters: [],
   });
 
   const { doctors, therapies, therapists } = data;
@@ -254,7 +287,11 @@ export function ClinicSettingsTab() {
                 status: toApiStatus(values.status),
                 consultationFees: Number(values.consultationFees),
                 followUpFees: Number(values.followUpFees),
-                availability: values.availability,
+                availability: formatDoctorAvailability(
+                  values.availabilityDays,
+                  values.availabilityStartTime,
+                  values.availabilityEndTime,
+                ),
               });
               await reload();
               showToast({
@@ -347,6 +384,82 @@ export function ClinicSettingsTab() {
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Therapist', record })}
+        />
+
+        <ConsultationTypesSection
+          records={data.consultationTypes}
+          onAdd={async (values) => {
+            try {
+              await createConsultationType({
+                name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
+                status: 'ACTIVE',
+              });
+              await reload();
+              showToast({
+                title: 'Consultation type added',
+                message: `${values.name} has been added successfully.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add consultation type',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create consultation type.',
+              });
+            }
+          }}
+        />
+
+        <TreatmentPlanMastersSection
+          records={data.treatmentPlans}
+          onAdd={async (values) => {
+            try {
+              await createTreatmentPlanMaster({
+                name: values.name.trim(),
+                status: 'ACTIVE',
+              });
+              await reload();
+              showToast({
+                title: 'Treatment plan added',
+                message: `${values.name} has been added successfully.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add treatment plan',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create treatment plan.',
+              });
+            }
+          }}
+        />
+
+        <PackageMastersSection
+          records={data.packageMasters}
+          onAdd={async (values) => {
+            try {
+              await createPackageMaster({
+                name: values.name.trim(),
+                packagePrice: Number(values.packagePrice),
+                status: 'ACTIVE',
+              });
+              await reload();
+              showToast({
+                title: 'Package master added',
+                message: `${values.name} has been added successfully.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add package',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create package master.',
+              });
+            }
+          }}
         />
 
         <DeleteClinicItemModal
@@ -464,6 +577,8 @@ function DoctorsSection({
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ClinicDoctorFormValues>({
     resolver: zodResolver(clinicDoctorSchema),
@@ -473,13 +588,26 @@ function DoctorsSection({
       status: 'Active',
       consultationFees: '',
       followUpFees: '',
-      availability: '',
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
     },
   });
 
+  const availabilityDays = watch('availabilityDays') ?? [];
+
   const onSubmit = async (values: ClinicDoctorFormValues) => {
     await onAdd(values);
-    reset();
+    reset({
+      name: '',
+      specialization: '',
+      status: 'Active',
+      consultationFees: '',
+      followUpFees: '',
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
+    });
   };
 
   return (
@@ -497,7 +625,7 @@ function DoctorsSection({
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Consultation Fees</th>
               <th className="px-4 py-3 font-medium">Follow Up Fees</th>
-              <th className="px-4 py-3 font-medium">Availability</th>
+              <th className="px-4 py-3 font-medium min-w-[220px]">Availability</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
           </thead>
@@ -519,13 +647,27 @@ function DoctorsSection({
               <td className="px-4 py-3">
                 <Input placeholder="₹" error={errors.followUpFees?.message} {...register('followUpFees')} />
               </td>
-              <td className="px-4 py-3">
-                <div className="relative">
-                  <Input placeholder="Availability" error={errors.availability?.message} {...register('availability')} />
-                  <Calendar className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                </div>
+              <td className="px-4 py-3 align-top">
+                <DoctorAvailabilityFields
+                  compact
+                  selectedDays={availabilityDays}
+                  onDaysChange={(days) =>
+                    setValue('availabilityDays', days, { shouldValidate: true })
+                  }
+                  startTime={watch('availabilityStartTime') ?? '09:00'}
+                  endTime={watch('availabilityEndTime') ?? '17:00'}
+                  onStartTimeChange={(value) =>
+                    setValue('availabilityStartTime', value, { shouldValidate: true })
+                  }
+                  onEndTimeChange={(value) =>
+                    setValue('availabilityEndTime', value, { shouldValidate: true })
+                  }
+                  daysError={errors.availabilityDays?.message}
+                  startTimeError={errors.availabilityStartTime?.message}
+                  endTimeError={errors.availabilityEndTime?.message}
+                />
               </td>
-              <td className="px-4 py-3">
+              <td className="px-4 py-3 align-top">
                 <button
                   type="button"
                   onClick={handleSubmit(onSubmit)}
@@ -551,7 +693,7 @@ function DoctorsSection({
                 </td>
                 <td className="px-4 py-4 text-brown">{formatCurrency(doctor.consultationFees)}</td>
                 <td className="px-4 py-4 text-brown">{formatCurrency(doctor.followUpFees)}</td>
-                <td className="px-4 py-4 text-brown">{doctor.availability}</td>
+                <td className="px-4 py-4 text-brown">{doctor.availability || '—'}</td>
                 <td className="px-4 py-4">
                   <button
                     type="button"

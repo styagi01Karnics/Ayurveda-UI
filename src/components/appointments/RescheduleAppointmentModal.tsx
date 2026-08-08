@@ -5,13 +5,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
-import { TagInput } from '@/components/ui/TagInput';
+import { TagInput, type TagOption } from '@/components/ui/TagInput';
+import { fromApiConsultationTypeIds, slotTimeForInput } from '@/lib/api/mappers';
 import {
-  fromApiConsultationTypes,
-  slotTimeForInput,
-} from '@/lib/api/mappers';
-import {
-  CONSULTATION_TYPES,
   rescheduleAppointmentSchema,
   type RescheduleAppointmentFormValues,
 } from '@/lib/validation/patient.schema';
@@ -23,6 +19,7 @@ interface RescheduleAppointmentModalProps {
   onSubmit: (data: RescheduleAppointmentFormValues) => void | Promise<void>;
   appointment: AppointmentRecord | null;
   doctorOptions: SelectOption[];
+  consultationTypeOptions: TagOption[];
   submitting?: boolean;
 }
 
@@ -45,6 +42,7 @@ export function RescheduleAppointmentModal({
   onSubmit,
   appointment,
   doctorOptions,
+  consultationTypeOptions,
   submitting = false,
 }: RescheduleAppointmentModalProps) {
   const {
@@ -61,7 +59,7 @@ export function RescheduleAppointmentModal({
       registrationDate: '',
       slotTime: '10:00',
       assignedDoctorId: '',
-      consultationTypes: ['Consultation'],
+      consultationTypeIds: [],
     },
   });
 
@@ -76,7 +74,9 @@ export function RescheduleAppointmentModal({
       assignedDoctorId:
         appointment.assignedDoctorId ??
         resolveDoctorId(appointment.doctor, doctorOptions),
-      consultationTypes: fromApiConsultationTypes(appointment.consultationTypes),
+      consultationTypeIds: fromApiConsultationTypeIds(
+        appointment.consultationTypes,
+      ),
     });
   }, [open, appointment, doctorOptions, reset]);
 
@@ -118,8 +118,6 @@ export function RescheduleAppointmentModal({
             <p className="mt-0.5 text-xs text-text-muted">{appointment.uhid}</p>
           </div>
 
-          <input type="hidden" {...register('patientId')} />
-
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
               label="Registration Date"
@@ -144,13 +142,13 @@ export function RescheduleAppointmentModal({
           />
 
           <TagInput
-            label="Consultation Types"
-            value={watch('consultationTypes') ?? []}
+            label="Consultation Type"
+            value={watch('consultationTypeIds') ?? []}
             onChange={(tags) =>
-              setValue('consultationTypes', tags, { shouldValidate: true })
+              setValue('consultationTypeIds', tags, { shouldValidate: true })
             }
-            options={CONSULTATION_TYPES}
-            error={errors.consultationTypes?.message}
+            options={consultationTypeOptions}
+            error={errors.consultationTypeIds?.message}
           />
         </form>
       )}

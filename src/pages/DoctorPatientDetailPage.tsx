@@ -11,6 +11,7 @@ import {
   DoctorPatientViewTab,
   DoctorPersonalForm,
   DoctorTreatmentForm,
+  type DoctorFormMasterOptions,
 } from '@/components/doctors/DoctorPatientForms';
 import { UnsavedChangesModal } from '@/components/doctors/UnsavedChangesModal';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
@@ -20,6 +21,10 @@ import { Card } from '@/components/ui/Card';
 import { Stepper } from '@/components/ui/Stepper';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
+import { getActivePackageMasters } from '@/lib/api/packageMasters';
+import { getAllTherapists } from '@/lib/api/therapists';
+import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
 import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
 import {
   applyBillingFormToPatient,
@@ -73,6 +78,42 @@ export function DoctorPatientDetailPage() {
     async () => (patientId ? loadPatientDetail(patientId) : null),
     null,
     [patientId],
+  );
+
+  const { data: masterOptions } = useAsyncData(
+    async () => {
+      const [consultationTypes, treatmentPlans, packageMasters, therapists] =
+        await Promise.all([
+          getActiveConsultationTypes().catch(() => []),
+          getActiveTreatmentPlanMasters().catch(() => []),
+          getActivePackageMasters().catch(() => []),
+          getAllTherapists().catch(() => []),
+        ]);
+      return {
+        consultationTypes: consultationTypes.map((type) => ({
+          value: type.id,
+          label: type.name,
+        })),
+        treatmentPlans: treatmentPlans.map((plan) => ({
+          value: plan.id,
+          label: plan.name,
+        })),
+        packageMasters: packageMasters.map((pkg) => ({
+          value: pkg.id,
+          label: pkg.name,
+        })),
+        therapists: therapists.map((therapist) => ({
+          value: therapist.id,
+          label: therapist.name || therapist.therapistName || '—',
+        })),
+      } satisfies DoctorFormMasterOptions;
+    },
+    {
+      consultationTypes: [],
+      treatmentPlans: [],
+      packageMasters: [],
+      therapists: [],
+    },
   );
 
   const [patient, setPatient] = useState<PatientDetail | undefined>();
@@ -140,7 +181,11 @@ export function DoctorPatientDetailPage() {
           updated = applyMedicalFormToPatient(patient, values as DoctorMedicalTabValues);
           break;
         case 'treatment':
-          updated = applyTreatmentFormToPatient(patient, values as DoctorTreatmentTabValues);
+          updated = applyTreatmentFormToPatient(
+            patient,
+            values as DoctorTreatmentTabValues,
+            masterOptions.therapists,
+          );
           break;
         case 'billing':
           updated = applyBillingFormToPatient(patient, values as DoctorBillingTabValues);
@@ -153,7 +198,7 @@ export function DoctorPatientDetailPage() {
         message: 'Patient details have been updated successfully.',
       });
     },
-    [activeTab, patient, showToast],
+    [activeTab, patient, showToast, masterOptions.therapists],
   );
 
   const handleTabChange = (tab: PatientDetailTab) => {
@@ -331,6 +376,7 @@ export function DoctorPatientDetailPage() {
                     formId={getFormId('personal')}
                     defaultValues={personalDefaults}
                     onSubmit={handleFormSubmit}
+                    masterOptions={masterOptions}
                   />
                 )}
                 {activeTab === 'medical' && (
@@ -346,6 +392,7 @@ export function DoctorPatientDetailPage() {
                     formId={getFormId('treatment')}
                     defaultValues={treatmentDefaults}
                     onSubmit={handleFormSubmit}
+                    masterOptions={masterOptions}
                   />
                 )}
                 {activeTab === 'billing' && (
@@ -353,6 +400,7 @@ export function DoctorPatientDetailPage() {
                     formId={getFormId('billing')}
                     defaultValues={billingDefaults}
                     onSubmit={handleFormSubmit}
+                    masterOptions={masterOptions}
                   />
                 )}
               </div>

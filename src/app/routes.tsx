@@ -10,6 +10,8 @@ import { MyProfilePage } from '@/pages/MyProfilePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PatientDetailPage } from '@/pages/PatientDetailPage';
 import { PatientsPage } from '@/pages/PatientsPage';
+import { BannerPage } from '@/pages/BannerPage';
+import { CommunicationsPage } from '@/pages/CommunicationsPage';
 import { BillingPage } from '@/pages/BillingPage';
 import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage';
 import { ActivityLogsPage } from '@/pages/ActivityLogsPage';
@@ -45,6 +47,8 @@ export function AppRoutes() {
             <Route path="/activity-logs" element={<ActivityLogsPage />} />
             <Route path="/billing" element={<BillingPage />} />
             <Route path="/billing/generate" element={<GenerateInvoicePage />} />
+            <Route path="/banners" element={<BannerPage />} />
+            <Route path="/communications" element={<CommunicationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

@@ -16,6 +16,7 @@ import {
   getBookingDoshas,
   type PatientListTab,
 } from '@/lib/api/appointments';
+import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import {
   mapPatientAppointmentListItemToPatientRecord,
   mapPatientToDetail,
@@ -25,11 +26,19 @@ import type { PatientRecord, PatientStatus, VisitType } from '@/types';
 
 type PatientTab = 'active' | 'inactive';
 
-function toApiConsultationType(
+function toApiConsultationTypeId(
   visitType: string,
-): 'CONSULTATION' | 'THERAPY' | undefined {
+  consultationTypes: { id: string; name: string }[],
+): string | undefined {
   if (!visitType) return undefined;
-  return visitType.toUpperCase().includes('THERAPY') ? 'THERAPY' : 'CONSULTATION';
+  const upper = visitType.toUpperCase();
+  const match = consultationTypes.find((type) => {
+    const name = type.name.toUpperCase();
+    return upper.includes('THERAPY')
+      ? name.includes('THERAPY')
+      : name.includes('CONSULTATION');
+  });
+  return match?.id;
 }
 
 function toApiBookingStatus(status: string): string | undefined {
@@ -62,12 +71,16 @@ export function PatientsPage() {
     reload,
   } = useAsyncData(
     async () => {
+      const consultationTypes = await getActiveConsultationTypes().catch(() => []);
       const [rows, doshas] = await Promise.all([
         getAppointmentPatients({
           statusTab,
           search: patientIdQuery.trim() || undefined,
           bookingStatus: toApiBookingStatus(statusFilter),
-          consultationType: toApiConsultationType(visitTypeFilter),
+          consultationTypeId: toApiConsultationTypeId(
+            visitTypeFilter,
+            consultationTypes,
+          ),
           doshaId: doshaFilter || undefined,
         }),
         getBookingDoshas().catch(() => []),

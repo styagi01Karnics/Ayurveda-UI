@@ -22,6 +22,8 @@ const pageTitles: Record<string, string> = {
   '/sales': 'Sales',
   '/activity-logs': 'Activity Log',
   '/billing': 'Billing',
+  '/banners': 'Banner Studio',
+  '/communications': 'SMS & Email',
   '/settings': 'Settings',
   '/profile': 'My Profile',
 };

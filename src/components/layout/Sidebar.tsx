@@ -1,19 +1,26 @@
 import { NavLink } from 'react-router-dom';
-import { Stethoscope } from 'lucide-react';
+import { Megaphone, MessageCircle, Stethoscope } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
 
-const navItems: { to: string; label: string; icon: NavIconKey }[] = [
+const navItems: {
+  to: string;
+  label: string;
+  icon?: NavIconKey;
+  lucide?: 'stethoscope' | 'megaphone' | 'message';
+}[] = [
   { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/patients', label: 'Patients', icon: 'patients' },
-  { to: '/doctors', label: 'Doctors', icon: 'doctors' },
+  { to: '/doctors', label: 'Doctors', lucide: 'stethoscope' },
   { to: '/appointments', label: 'Appointments', icon: 'appointments' },
   { to: '/treatments', label: 'Treatments', icon: 'treatments' },
   { to: '/medicines', label: 'Medicines', icon: 'medicines' },
   { to: '/sales', label: 'Sales', icon: 'sales' },
   { to: '/activity-logs', label: 'Activity Logs', icon: 'activityLogs' },
   { to: '/billing', label: 'Billing', icon: 'billing' },
+  { to: '/banners', label: 'Banners', lucide: 'megaphone' },
+  { to: '/communications', label: 'SMS & Email', lucide: 'message' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ];
 
@@ -46,7 +53,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
       </div>
 
       <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
-        {navItems.map(({ to, label, icon }) => (
+        {navItems.map(({ to, label, icon, lucide }) => (
           <NavLink
             key={to}
             to={to}
@@ -63,7 +70,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
           >
             {({ isActive }) => (
               <>
-                {icon === 'doctors' ? (
+                {lucide === 'stethoscope' ? (
                   <Stethoscope
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
@@ -72,13 +79,31 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                     strokeWidth={1.5}
                     aria-hidden
                   />
-                ) : (
+                ) : lucide === 'megaphone' ? (
+                  <Megaphone
+                    className={cn(
+                      'h-[22px] w-[22px] shrink-0',
+                      isActive ? 'text-gold' : 'text-brown',
+                    )}
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                ) : lucide === 'message' ? (
+                  <MessageCircle
+                    className={cn(
+                      'h-[22px] w-[22px] shrink-0',
+                      isActive ? 'text-gold' : 'text-brown',
+                    )}
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                ) : icon ? (
                   <NavIcon
                     outline={assets.icons.nav[icon].outline}
                     filled={assets.icons.nav[icon].filled}
                     active={isActive}
                   />
-                )}
+                ) : null}
                 <span className="truncate">{label}</span>
               </>
             )}

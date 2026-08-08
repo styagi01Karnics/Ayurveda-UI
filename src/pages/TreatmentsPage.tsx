@@ -33,6 +33,7 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { ApiError } from '@/lib/api/client';
 
 import { createTreatment, getAllTreatments } from '@/lib/api/treatments';
+import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
 
 import { mapTreatmentDtoToRecord } from '@/lib/api/mappers';
 
@@ -68,14 +69,11 @@ export function TreatmentsPage() {
 
   const { data, loading, error, reload } = useAsyncData(async () => {
 
-    const [patients, therapists, treatments] = await Promise.all([
-
+    const [patients, therapists, treatments, treatmentPlans] = await Promise.all([
       getAllPatients().catch(() => []),
-
       getAllTherapists().catch(() => []),
-
       getAllTreatments().catch(() => []),
-
+      getActiveTreatmentPlanMasters().catch(() => []),
     ]);
 
 
@@ -113,27 +111,31 @@ export function TreatmentsPage() {
         })),
 
         therapists: therapists.map((t) => ({
-
           value: t.id,
-
           label: t.name || t.therapistName || '—',
-
         })),
-
+        treatmentPlans: treatmentPlans.map((plan) => ({
+          value: plan.id,
+          label: plan.name,
+        })),
       },
-
+      planFilterOptions: treatmentPlans.map((plan) => ({
+        value: plan.name,
+        label: plan.name,
+      })),
     };
-
   }, {
     records: [],
-    lookupOptions: { patients: [], therapists: [] },
+    lookupOptions: { patients: [], therapists: [], treatmentPlans: [] },
+    planFilterOptions: [] as { value: string; label: string }[],
   });
 
 
 
   const treatments = data?.records ?? [];
 
-  const lookupOptions = data?.lookupOptions ?? { patients: [], therapists: [] };
+  const lookupOptions = data?.lookupOptions ?? { patients: [], therapists: [], treatmentPlans: [] };
+  const planFilterOptions = data?.planFilterOptions ?? [];
 
 
 
@@ -211,7 +213,7 @@ export function TreatmentsPage() {
 
         patientId: formData.patientId,
 
-        treatmentPlanName: formData.treatmentPlanName,
+        treatmentPlanId: formData.treatmentPlanId,
 
         startDate: formData.startDate,
 
@@ -313,7 +315,7 @@ export function TreatmentsPage() {
 
                 placeholder="Treatment plan"
 
-                options={[...TREATMENT_FILTER_OPTIONS.treatmentPlan]}
+                options={planFilterOptions}
 
                 value={planFilter}
 

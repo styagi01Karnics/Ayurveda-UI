@@ -1,9 +1,10 @@
 import type { PatientDetail } from '@/types';
-import type {
-  DoctorBillingTabValues,
-  DoctorMedicalTabValues,
-  DoctorPersonalTabValues,
-  DoctorTreatmentTabValues,
+import {
+  computeRemainingSessions,
+  type DoctorBillingTabValues,
+  type DoctorMedicalTabValues,
+  type DoctorPersonalTabValues,
+  type DoctorTreatmentTabValues,
 } from '@/lib/validation/doctorPatient.schema';
 
 function parseAge(age: string): string {
@@ -29,7 +30,7 @@ export function mapPatientToPersonalForm(
     dateOfBirth: parseDob(info.dob),
     age: parseAge(info.age),
     preferredLanguage: 'English',
-    consultationTypes: [info.serviceType],
+    consultationTypeIds: [],
     registrationDate: parseDob(info.registrationDate),
     appointmentTime: '10:00',
     assignedDoctor: info.assignedDoctor,
@@ -97,14 +98,16 @@ export function mapPatientToTreatmentForm(
   patient: PatientDetail,
 ): DoctorTreatmentTabValues {
   const t = patient.treatmentFollowUp;
+  const totalSessions = String(t.totalSessions);
+  const completedSessions = String(t.sessionsCompleted);
   return {
-    treatmentPlanName: t.treatmentName,
+    treatmentPlanId: t.treatmentPlanId ?? '',
     startDate: parseDob(t.startDate),
     endDate: parseDob(t.endDate),
-    totalSessions: String(t.totalSessions),
-    completedSessions: String(t.sessionsCompleted),
-    remainingSessions: String(t.remainingSessions),
-    assignedTherapist: t.assignedTherapist,
+    totalSessions,
+    completedSessions,
+    remainingSessions: computeRemainingSessions(totalSessions, completedSessions),
+    assignedTherapistId: t.assignedTherapistId ?? '',
     setupRequired: 'Yes',
     followUpScheduling: 'Monthly',
     assignedDoctor: t.followUpDoctor,
@@ -117,7 +120,7 @@ export function mapPatientToBillingForm(
 ): DoctorBillingTabValues {
   const b = patient.billing;
   return {
-    packageName: b.packageName,
+    packageMasterId: '',
     validity: parseDob(b.validity),
     membershipStatus: b.membershipStatus,
     discountApplied: String(b.discountApplied),
@@ -150,7 +153,7 @@ export function applyPersonalFormToPatient(
       gender: values.gender,
       age: `${values.age}yrs`,
       dob: values.dateOfBirth,
-      serviceType: values.consultationTypes[0] ?? patient.personalInfo.serviceType,
+      serviceType: patient.personalInfo.serviceType,
       registrationDate: values.registrationDate,
       assignedDoctor: values.assignedDoctor,
       email: values.email,
@@ -211,18 +214,27 @@ export function applyMedicalFormToPatient(
 export function applyTreatmentFormToPatient(
   patient: PatientDetail,
   values: DoctorTreatmentTabValues,
+  therapists: { value: string; label: string }[] = [],
 ): PatientDetail {
+  const therapistName =
+    therapists.find((therapist) => therapist.value === values.assignedTherapistId)
+      ?.label ?? patient.treatmentFollowUp.assignedTherapist;
+
   return {
     ...patient,
     treatmentFollowUp: {
       ...patient.treatmentFollowUp,
-      treatmentName: values.treatmentPlanName,
+      treatmentName: values.treatmentPlanId,
       startDate: values.startDate,
       endDate: values.endDate,
       totalSessions: Number(values.totalSessions),
       sessionsCompleted: Number(values.completedSessions),
-      remainingSessions: Number(values.remainingSessions),
-      assignedTherapist: values.assignedTherapist,
+      remainingSessions: Number(
+        values.remainingSessions ||
+          computeRemainingSessions(values.totalSessions, values.completedSessions),
+      ),
+      assignedTherapistId: values.assignedTherapistId,
+      assignedTherapist: therapistName,
       followUpDoctor: values.assignedDoctor,
       reminder: values.autoSmsReminder ? 'Auto SMS Enabled' : 'Auto SMS Disabled',
     },
@@ -237,7 +249,7 @@ export function applyBillingFormToPatient(
     ...patient,
     billing: {
       ...patient.billing,
-      packageName: values.packageName,
+      packageName: values.packageMasterId,
       validity: values.validity,
       membershipStatus: values.membershipStatus as PatientDetail['billing']['membershipStatus'],
       discountApplied: Number(values.discountApplied),

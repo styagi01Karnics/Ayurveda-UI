@@ -11,19 +11,20 @@ import type {
   CreateAppointmentPayload,
   CreateAppointmentTherapyPayload,
   CreateMedicalAssessmentPayload,
-  CreatePatientPayload,
   MedicalAssessmentDto,
 } from '@/lib/api/types';
 import {
   hasMedicalAssessmentDocuments,
   parseSessionNumber,
-  toApiConsultationTypes,
-  toApiGender,
-  toApiIdProofType,
+  toApiConsultationTypeIds,
   toMedicalAssessmentPayload,
 } from '@/lib/api/mappers';
+import { toPatientPayload } from '@/lib/api/bookingPatientPayload';
 import type { CreatePatientValues } from '@/lib/validation/patient.schema';
-import { wantsMedicalAssessment } from '@/lib/validation/patient.schema';
+import {
+  includesTherapyTypeIds,
+  wantsMedicalAssessment,
+} from '@/lib/validation/patient.schema';
 
 export interface BookingSession {
   patientId: string;
@@ -55,57 +56,13 @@ async function runBookingStep<T>(
   }
 }
 
-function computeAgeFromDob(dateOfBirth: string): number {
-  const birth = new Date(dateOfBirth);
-  if (Number.isNaN(birth.getTime())) return 0;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const monthDiff = today.getMonth() - birth.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1;
-  }
-  return Math.max(age, 0);
-}
+export { toPatientPayload } from '@/lib/api/bookingPatientPayload';
 
-export function toPatientPayload(data: CreatePatientValues): CreatePatientPayload {
-  const age = data.age?.trim()
-    ? Number(data.age)
-    : computeAgeFromDob(data.dateOfBirth);
-
-  return {
-    fullName: data.fullName.trim(),
-    gender: toApiGender(data.gender),
-    dateOfBirth: data.dateOfBirth,
-    age: Number.isFinite(age) ? age : 0,
-    preferredLanguage:
-      (data.preferredLanguage ?? 'English').replace(/[^a-zA-Z\s]/g, '').trim() ||
-      'English',
-    mobileNumber: data.mobileNumber.trim(),
-    email: data.email?.trim() || `${data.mobileNumber.trim()}@patient.local`,
-    state: (data.state ?? 'Maharashtra').replace(/[^a-zA-Z\s]/g, '').trim() || 'Maharashtra',
-    city: (data.city ?? 'Mumbai').replace(/[^a-zA-Z\s]/g, '').trim() || 'Mumbai',
-    address: data.permanentAddress?.trim() || 'Not provided',
-    emergencyContactName:
-      (data.emergencyName ?? data.fullName).replace(/[^a-zA-Z\s]/g, '').trim() ||
-      data.fullName.trim(),
-    emergencyRelationship:
-      (data.emergencyRelation ?? 'Other').replace(/[^a-zA-Z\s]/g, '').trim() ||
-      'Other',
-    emergencyPhoneNumber:
-      data.emergencyPhone?.trim() || data.mobileNumber.trim(),
-    idProofType: toApiIdProofType(data.idProofType || 'Aadhaar'),
-    idProofNumber: data.idNumber?.trim() || 'NA',
-    occupation: data.occupation
-      ? data.occupation.replace(/[^a-zA-Z\s]/g, '').trim() || 'Unknown'
-      : 'Unknown',
-    insuranceDetails: data.insuranceDetails?.trim() || 'None',
-  };
-}
-
-export function wantsTherapy(data: CreatePatientValues): boolean {
-  return data.consultationTypes.some((type) =>
-    type.toUpperCase().includes('THERAPY'),
-  );
+export function wantsTherapy(
+  data: CreatePatientValues,
+  masters: { id: string; name: string }[] = [],
+): boolean {
+  return includesTherapyTypeIds(data.consultationTypeIds, masters);
 }
 
 export function extractPatientId(appointment: AppointmentDto): string | undefined {
@@ -136,7 +93,7 @@ export function buildAppointmentPayload(
     registrationDate:
       data.registrationDate || new Date().toISOString().slice(0, 10),
     assignedDoctorId: data.assignedDoctor ?? '',
-    consultationTypes: toApiConsultationTypes(data.consultationTypes),
+    consultationTypeIds: toApiConsultationTypeIds(data.consultationTypeIds),
     slotTime: resolveSlotTime(data),
   };
 }
@@ -239,14 +196,15 @@ export async function submitBookingStep3(
 /** Runs all steps sequentially (used when not stepping through the modal). */
 export async function bookAppointmentFlow(
   data: CreatePatientValues,
+  masters: { id: string; name: string }[] = [],
 ): Promise<BookAppointmentResult> {
   const session = await submitBookingStep1(data);
 
-  if (wantsTherapy(data)) {
+  if (wantsTherapy(data, masters)) {
     session.therapy = await submitBookingStep2(data, session);
   }
 
-  if (wantsMedicalAssessment(data.consultationTypes)) {
+  if (wantsMedicalAssessment(data.consultationTypeIds, masters)) {
     const medicalAssessment = await submitBookingStep3(data, session);
     return { ...session, medicalAssessment };
   }

@@ -34,6 +34,7 @@ import {
   getBookingDoshas,
   rescheduleAppointment,
 } from '@/lib/api/appointments';
+import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
 import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
@@ -43,10 +44,10 @@ import {
   mapAppointmentToRecord,
   mapFollowUpDtoToRecord,
   normalizeSlotTimeForApi,
-  toApiConsultationTypes,
+  toApiConsultationTypeIds,
 } from '@/lib/api/mappers';
 import { getAllPatients } from '@/lib/api/patients';
-import { getAllTherapists } from '@/lib/api/therapists';
+import { getAllTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
 import type {
@@ -96,13 +97,14 @@ export function AppointmentsPage() {
     error,
     reload,
   } = useAsyncData(async () => {
-    const [doctors, therapists, categories, therapies, doshas, appointments, patients, followUpDtos] =
+    const [doctors, therapists, categories, therapies, doshas, consultationTypes, appointments, patients, followUpDtos] =
       await Promise.all([
         getActiveDoctors().catch(() => getAllDoctors().catch(() => [])),
         getAllTherapists().catch(() => []),
         getAllTreatmentCategories().catch(() => []),
         getAllTherapies().catch(() => []),
         getBookingDoshas().catch(() => []),
+        getActiveConsultationTypes().catch(() => []),
         getAppointmentsByStatus('ALL').catch(() => []),
         getAllPatients().catch(() => []),
         getAllFollowUps().catch(() => []),
@@ -118,10 +120,7 @@ export function AppointmentsPage() {
         value: d.id,
         label: d.name || d.doctorName || '—',
       })),
-      therapists: therapists.map((t) => ({
-        value: t.id,
-        label: t.name || t.therapistName || '—',
-      })),
+      therapists: mapTherapistSelectOptions(therapists),
       categories: categories.map((c) => ({
         value: c.id,
         label: c.categoryName,
@@ -134,6 +133,10 @@ export function AppointmentsPage() {
       doshas: doshas.map((d) => ({
         value: d.id,
         label: d.name,
+      })),
+      consultationTypes: consultationTypes.map((type) => ({
+        value: type.id,
+        label: type.name,
       })),
       patients: patients.map((p) => ({
         value: p.id,
@@ -152,6 +155,7 @@ export function AppointmentsPage() {
       categories: [],
       therapies: [],
       doshas: [],
+      consultationTypes: [],
       patients: [],
     },
     doctors: [],
@@ -272,7 +276,7 @@ export function AppointmentsPage() {
         registrationDate: formData.registrationDate,
         slotTime: normalizeSlotTimeForApi(formData.slotTime),
         assignedDoctorId: formData.assignedDoctorId,
-        consultationTypes: toApiConsultationTypes(formData.consultationTypes),
+        consultationTypeIds: toApiConsultationTypeIds(formData.consultationTypeIds),
       });
 
       const doctorLabel =
@@ -327,6 +331,16 @@ export function AppointmentsPage() {
           ? `${formData.scheduleDate}, ${formData.scheduleTime}`
           : `${formData.registrationDate}, ${formData.appointmentTime || '10:00'}`;
 
+      const firstType = data.lookupOptions.consultationTypes.find(
+        (t) =>
+          (typeof t === 'string' ? t : t.value) ===
+          formData.consultationTypeIds[0],
+      );
+      const firstTypeLabel =
+        typeof firstType === 'string'
+          ? firstType
+          : firstType?.label ?? 'Consultation';
+
       const newAppointment: AppointmentRecord = {
         id: String(
           result.appointment?.id ??
@@ -336,8 +350,9 @@ export function AppointmentsPage() {
         uhid: patientCode.startsWith('#') ? patientCode : `#${patientCode}`,
         patient: formData.fullName,
         doctor: doctorName || '—',
-        visitType: (formData.consultationTypes[0] ??
-          'Consultation') as VisitType,
+        visitType: (firstTypeLabel.toUpperCase().includes('THERAPY')
+          ? 'Therapy'
+          : 'Consultation') as VisitType,
         appointmentDate,
         dateCreated:
           formData.registrationDate ?? new Date().toISOString().slice(0, 10),
@@ -368,7 +383,7 @@ export function AppointmentsPage() {
       await createFollowUp({
         patientId: formData.patientId,
         assignedDoctorId: formData.assignedDoctorId,
-        visitType: formData.visitType,
+        visitTypeId: formData.visitTypeId,
         appointmentDate: `${formData.scheduleDate}T${time}`,
         schedulingOption: formData.schedulingOption,
         smsReminderEnabled: formData.smsReminderEnabled ?? false,
@@ -559,6 +574,11 @@ export function AppointmentsPage() {
         lookupOptions={{
           patients: data.lookupOptions.patients ?? [],
           doctors: data.lookupOptions.doctors,
+          visitTypes: data.lookupOptions.consultationTypes.map((type) =>
+            typeof type === 'string'
+              ? { value: type, label: type }
+              : type,
+          ),
         }}
         submitting={schedulingFollowUp}
       />
@@ -576,6 +596,7 @@ export function AppointmentsPage() {
         onSubmit={handleRescheduleSubmit}
         appointment={rescheduleTarget}
         doctorOptions={data.lookupOptions.doctors}
+        consultationTypeOptions={data.lookupOptions.consultationTypes}
         submitting={rescheduling}
       />
 

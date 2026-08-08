@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { UploadCloud } from 'lucide-react';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Badge } from '@/components/ui/Badge';
 import { DataTableShell } from '@/components/ui/DataTableShell';
@@ -107,7 +108,7 @@ export function PatientsTable({
                     }}
                     className="inline-flex max-w-full items-center gap-1 rounded-lg bg-sidebar px-2 py-1.5 text-xs font-medium text-brown hover:bg-gold/10"
                   >
-                    <AppIcon src={assets.icons.upload} className="h-3.5 w-3.5 shrink-0" />
+                    <UploadCloud className="h-3.5 w-3.5 shrink-0 text-brown" strokeWidth={2} />
                     <span className="truncate">Upload</span>
                   </button>
                 </td>

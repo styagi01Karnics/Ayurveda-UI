@@ -8,11 +8,11 @@ import {
   bookTreatmentSchema,
   type BookTreatmentFormValues,
 } from '@/lib/validation/patient.schema';
-import { TREATMENT_PLAN_OPTIONS, SESSION_OPTIONS } from '@/lib/validation/doctorPatient.schema';
 
 export interface BookTreatmentLookupOptions {
   patients: { value: string; label: string }[];
   therapists: { value: string; label: string }[];
+  treatmentPlans: { value: string; label: string }[];
 }
 
 interface BookTreatmentModalProps {
@@ -39,7 +39,7 @@ export function BookTreatmentModal({
     resolver: zodResolver(bookTreatmentSchema),
     defaultValues: {
       patientId: '',
-      treatmentPlanName: '',
+      treatmentPlanId: '',
       startDate: '',
       endDate: '',
       totalSessions: '7',
@@ -85,9 +85,9 @@ export function BookTreatmentModal({
           <Select
             label="Treatment Plan"
             placeholder="Select plan"
-            options={[...TREATMENT_PLAN_OPTIONS]}
-            error={errors.treatmentPlanName?.message}
-            {...register('treatmentPlanName')}
+            options={lookupOptions.treatmentPlans}
+            error={errors.treatmentPlanId?.message}
+            {...register('treatmentPlanId')}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -105,10 +105,11 @@ export function BookTreatmentModal({
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select
+          <Input
             label="Total Sessions"
-            placeholder="Sessions"
-            options={[...SESSION_OPTIONS]}
+            type="number"
+            min={0}
+            placeholder="e.g. 10"
             error={errors.totalSessions?.message}
             {...register('totalSessions')}
           />

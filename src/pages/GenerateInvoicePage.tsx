@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { BillingBreadcrumbs } from '@/components/billing/BillingBreadcrumbs';
-import { PaymentSuccessModal } from '@/components/billing/PaymentSuccessModal';
+import { PaymentSuccessModal, mapInvoiceToPaymentSuccess, type PaymentSuccessDetails } from '@/components/billing/PaymentSuccessModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -135,7 +135,8 @@ export function GenerateInvoicePage() {
   const [selectedPayment, setSelectedPayment] = useState<PaymentModeId>('upi');
   const [paymentSuccessOpen, setPaymentSuccessOpen] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
-  const [lastPaidAmount, setLastPaidAmount] = useState(0);
+  const [paymentSuccessDetails, setPaymentSuccessDetails] =
+    useState<PaymentSuccessDetails | null>(null);
   const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
   const [createdBillIds, setCreatedBillIds] = useState<
     Partial<Record<InvoiceBillType, string>>
@@ -527,7 +528,7 @@ export function GenerateInvoicePage() {
         ...prev,
         [bill]: result.invoiceId,
       }));
-      setLastPaidAmount(totals.total);
+      setPaymentSuccessDetails(mapInvoiceToPaymentSuccess(result));
       setPaymentSuccessOpen(true);
       setPaymentBill(null);
       showToast({
@@ -632,9 +633,10 @@ export function GenerateInvoicePage() {
           open={paymentSuccessOpen}
           onClose={() => {
             setPaymentSuccessOpen(false);
+            setPaymentSuccessDetails(null);
             navigate('/billing');
           }}
-          amount={lastPaidAmount}
+          payment={paymentSuccessDetails}
         />
 
         <BillInvoiceModal
@@ -989,7 +991,7 @@ function BillSummarySection({
 
           {/* Discount */}
           <div className="col-span-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Discount (if any)
             </label>
             <div className="relative">
@@ -998,44 +1000,50 @@ function BillSummarySection({
               </span>
               <input
                 type="number"
+                min={0}
                 placeholder="0"
-                className="w-full h-11 rounded-lg border border-gray-300 pl-8 pr-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="h-11 w-full rounded-lg border border-gray-300 pl-8 pr-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                {...summaryForm.register('discount')}
               />
             </div>
           </div>
 
           {/* GST Section */}
           <div className="col-span-6">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="mb-2 flex items-center gap-2">
               <input
                 type="checkbox"
-                id="gst"
-                defaultChecked
+                id={`apply-tax-${billLabel}`}
                 className="checkbox-gold"
+                {...summaryForm.register('applyTax')}
               />
               <label
-                htmlFor="gst"
+                htmlFor={`apply-tax-${billLabel}`}
                 className="text-sm font-medium text-gray-700"
               >
                 CGST & SGST
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                type="number"
-                defaultValue={3}
-                placeholder="CGST"
-                className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
+            {applyTax && (
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="CGST"
+                  className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  {...summaryForm.register('cgst')}
+                />
 
-              <input
-                type="number"
-                defaultValue={3}
-                placeholder="SGST"
-                className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              />
-            </div>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="SGST"
+                  className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  {...summaryForm.register('sgst')}
+                />
+              </div>
+            )}
           </div>
 
         </div>

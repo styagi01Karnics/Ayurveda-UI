@@ -69,6 +69,22 @@ export const apiEndpoints = {
       getByCategoryId: (categoryId: string) =>
         `/api/v1/therapies/category/${categoryId}`,
     },
+    consultationTypes: {
+      base: '/api/v1/consultation-types',
+      getAll: '/api/v1/consultation-types',
+      getActive: '/api/v1/consultation-types/active',
+      getById: (id: string) => `/api/v1/consultation-types/${id}`,
+    },
+    treatmentPlanMasters: {
+      base: '/api/v1/treatment-plan-masters',
+      getAll: '/api/v1/treatment-plan-masters',
+      getActive: '/api/v1/treatment-plan-masters/active',
+      getById: (id: string) => `/api/v1/treatment-plan-masters/${id}`,
+    },
+    treatmentPlans: {
+      create: '/api/v1/treatment-plans',
+      getByPatientId: (patientId: string) => `/api/v1/treatment-plans/${patientId}`,
+    },
     bookings: {
       getAllPatients: '/api/v1/appointments/patients',
       getByPatientId: (patientId: string) =>
@@ -77,8 +93,8 @@ export const apiEndpoints = {
         `/api/v1/appointments/${bookingId}`,
       getByStatus: (bookingStatus: string) =>
         `/api/v1/appointments/status/${bookingStatus}`,
-      getToday: (consultationType: string) =>
-        `/api/v1/appointments/today/${consultationType}`,
+      getTodayByConsultationTypeId: (consultationTypeId: string) =>
+        `/api/v1/appointments/today/consultation-type/${consultationTypeId}`,
       getTodayAll: '/api/v1/appointments/today',
       getByDate: (registrationDate: string) =>
         `/api/v1/appointments/date/${registrationDate}`,
@@ -105,11 +121,6 @@ export const apiEndpoints = {
     },
     schedule: {
       todaysSchedule: '/api/v1/dashboard/todays-schedule',
-    },
-    treatmentPlans: {
-      create: '/api/v1/treatment-plans',
-      getByPatientId: (patientId: string) =>
-        `/api/v1/treatment-plans/${patientId}`,
     },
     systemicExaminations: {
       create: '/api/v1/systemic-examinations',
@@ -185,6 +196,12 @@ export const apiEndpoints = {
 
   /** Billing-service :8109 */
   billing: {
+    packageMasters: {
+      base: '/api/v1/package-masters',
+      getAll: '/api/v1/package-masters',
+      getActive: '/api/v1/package-masters/active',
+      getById: (id: string) => `/api/v1/package-masters/${id}`,
+    },
     invoices: '/api/v1/invoices',
     invoiceById: (invoiceId: string) => `/api/v1/invoices/${invoiceId}`,
     invoicePayment: (invoiceId: string) =>
@@ -209,6 +226,13 @@ export const apiEndpoints = {
     byId: (id: string) => `/api/v1/notifications/${id}`,
     markRead: (id: string) => `/api/v1/notifications/${id}/read`,
     markAllRead: '/api/v1/notifications/read-all',
+  },
+
+  /** Messaging (SMS / Email) — notification-service :8110 */
+  messaging: {
+    sms: '/api/v1/messages/sms',
+    email: '/api/v1/messages/email',
+    history: '/api/v1/messages',
   },
 
   /** Activity-log-service :8107 */

@@ -15,6 +15,7 @@ export interface PatientRecord {
   id: string;
   secondaryId: string;
   detailId: string;
+  bookingId: string;
   name: string;
   phone: string;
   doctor: string;
@@ -87,6 +88,8 @@ export interface PatientMedicalAssessment {
 }
 
 export interface PatientTreatmentFollowUp {
+  treatmentPlanId?: string;
+  assignedTherapistId?: string;
   treatmentName: string;
   startDate: string;
   endDate: string;
@@ -449,6 +452,25 @@ export interface ClinicTreatmentCategoryRecord {
   id: string;
   name: string;
   description: string;
+}
+
+export interface ClinicConsultationTypeRecord {
+  id: string;
+  name: string;
+  status: ClinicStatus;
+}
+
+export interface ClinicTreatmentPlanMasterRecord {
+  id: string;
+  name: string;
+  status: ClinicStatus;
+}
+
+export interface ClinicPackageMasterRecord {
+  id: string;
+  name: string;
+  packagePrice: number;
+  status: ClinicStatus;
 }
 
 export interface ClinicTherapistRecord {

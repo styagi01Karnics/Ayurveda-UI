@@ -6,12 +6,18 @@ import {
   patientStep3Schema,
 } from '@/lib/validation/patient.schema';
 
+const masters = [
+  { id: 'ct-consultation', name: 'CONSULTATION' },
+  { id: 'ct-therapy', name: 'THERAPY' },
+  { id: 'ct-category', name: 'CATEGORY' },
+];
+
 const validStep1 = {
   fullName: 'Khushi Shroff',
   gender: 'Female',
   dateOfBirth: '1995-05-15',
   mobileNumber: '9876543210',
-  consultationTypes: ['Consultation'],
+  consultationTypeIds: ['ct-consultation'],
 };
 
 describe('patientStep1BookingSchema', () => {
@@ -22,7 +28,7 @@ describe('patientStep1BookingSchema', () => {
   it('rejects missing consultation types', () => {
     const result = patientStep1BookingSchema.safeParse({
       ...validStep1,
-      consultationTypes: [],
+      consultationTypeIds: [],
     });
     expect(result.success).toBe(false);
   });
@@ -38,32 +44,29 @@ describe('patientStep1BookingSchema', () => {
 
 describe('buildBookingSteps', () => {
   it('shows therapy steps when therapy is selected', () => {
-    expect(buildBookingSteps(['Therapy']).map((s) => s.key)).toEqual([
-      'personal',
-      'therapy',
-    ]);
+    expect(
+      buildBookingSteps(['ct-therapy'], masters).map((s) => s.key),
+    ).toEqual(['personal', 'therapy']);
   });
 
   it('shows category step when category is selected', () => {
-    expect(buildBookingSteps(['Category']).map((s) => s.key)).toEqual([
-      'personal',
-      'category',
-    ]);
+    expect(
+      buildBookingSteps(['ct-category'], masters).map((s) => s.key),
+    ).toEqual(['personal', 'category']);
   });
 
   it('shows consultation medical step when consultation is selected', () => {
-    expect(buildBookingSteps(['Consultation']).map((s) => s.key)).toEqual([
-      'personal',
-      'medical',
-    ]);
+    expect(
+      buildBookingSteps(['ct-consultation'], masters).map((s) => s.key),
+    ).toEqual(['personal', 'medical']);
   });
 
   it('shows category and therapy when both are selected', () => {
-    expect(buildBookingSteps(['Category', 'Therapy']).map((s) => s.key)).toEqual([
-      'personal',
-      'category',
-      'therapy',
-    ]);
+    expect(
+      buildBookingSteps(['ct-category', 'ct-therapy'], masters).map(
+        (s) => s.key,
+      ),
+    ).toEqual(['personal', 'category', 'therapy']);
   });
 });
 
@@ -82,7 +85,7 @@ describe('followUpSchema', () => {
     const result = followUpSchema.safeParse({
       patientId: '37944397',
       assignedDoctorId: 'doc-1',
-      visitType: 'CONSULTATION',
+      visitTypeId: 'ct-consultation',
       schedulingOption: '7_DAYS',
       scheduleDate: '2026-10-20',
       scheduleTime: '10:30',
@@ -94,7 +97,7 @@ describe('followUpSchema', () => {
     const result = followUpSchema.safeParse({
       patientId: '37944397',
       assignedDoctorId: '',
-      visitType: 'CONSULTATION',
+      visitTypeId: 'ct-consultation',
       schedulingOption: '7_DAYS',
       scheduleDate: '2026-10-20',
       scheduleTime: '10:30',

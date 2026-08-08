@@ -9,7 +9,7 @@ export const patientStep1BookingSchema = z.object({
     .string()
     .min(1, 'Mobile number is required')
     .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-  consultationTypes: z
+  consultationTypeIds: z
     .array(z.string())
     .min(1, 'Select at least one consultation type'),
   age: z.string().optional(),
@@ -38,7 +38,7 @@ export const patientStep1FullSchema = z.object({
   dateOfBirth: z.string().min(1, 'Date of birth is required'),
   age: z.string().min(1, 'Age is required').regex(/^\d+$/, 'Age must be a number'),
   preferredLanguage: z.string().optional(),
-  consultationTypes: z
+  consultationTypeIds: z
     .array(z.string())
     .min(1, 'Select at least one consultation type'),
   registrationDate: z.string().min(1, 'Registration date is required'),
@@ -166,43 +166,73 @@ export interface BookingStep {
   label: string;
 }
 
-export function includesTherapyType(types: string[]): boolean {
-  return types.some((type) => type.toUpperCase().includes('THERAPY'));
+export type ConsultationTypeMasterOption = { id: string; name: string };
+
+function masterNameById(
+  id: string,
+  masters: ConsultationTypeMasterOption[],
+): string {
+  return masters.find((m) => m.id === id)?.name ?? '';
 }
 
-export function includesConsultationType(types: string[]): boolean {
-  return types.some((type) => type.toUpperCase().includes('CONSULTATION'));
+export function includesTherapyTypeIds(
+  ids: string[],
+  masters: ConsultationTypeMasterOption[] = [],
+): boolean {
+  return ids.some((id) =>
+    masterNameById(id, masters).toUpperCase().includes('THERAPY'),
+  );
 }
 
-export function includesCategoryType(types: string[]): boolean {
-  return types.some((type) => type.toUpperCase().includes('CATEGORY'));
+export function includesConsultationTypeIds(
+  ids: string[],
+  masters: ConsultationTypeMasterOption[] = [],
+): boolean {
+  return ids.some((id) =>
+    masterNameById(id, masters).toUpperCase().includes('CONSULTATION'),
+  );
 }
 
-/** Dynamic progress steps from selected consultation types. */
-export function buildBookingSteps(types: string[]): BookingStep[] {
+export function includesCategoryTypeIds(
+  ids: string[],
+  masters: ConsultationTypeMasterOption[] = [],
+): boolean {
+  return ids.some((id) =>
+    masterNameById(id, masters).toUpperCase().includes('CATEGORY'),
+  );
+}
+
+/** Dynamic progress steps from selected consultation type master IDs. */
+export function buildBookingSteps(
+  ids: string[],
+  masters: ConsultationTypeMasterOption[] = [],
+): BookingStep[] {
   const steps: BookingStep[] = [
     { key: 'personal', label: 'Personal Information' },
   ];
-  if (includesCategoryType(types)) {
+  if (includesCategoryTypeIds(ids, masters)) {
     steps.push({ key: 'category', label: 'Category Details' });
   }
-  if (includesTherapyType(types)) {
+  if (includesTherapyTypeIds(ids, masters)) {
     steps.push({ key: 'therapy', label: 'Therapy Details' });
   }
-  if (includesConsultationType(types)) {
+  if (includesConsultationTypeIds(ids, masters)) {
     steps.push({ key: 'medical', label: 'Medical Assessment' });
   }
   return steps;
 }
 
-export function wantsMedicalAssessment(types: string[]): boolean {
-  return includesConsultationType(types);
+export function wantsMedicalAssessment(
+  ids: string[],
+  masters: ConsultationTypeMasterOption[] = [],
+): boolean {
+  return includesConsultationTypeIds(ids, masters);
 }
 
 export const followUpSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),
   assignedDoctorId: z.string().min(1, 'Doctor is required'),
-  visitType: z.enum(['CONSULTATION', 'THERAPY']),
+  visitTypeId: z.string().min(1, 'Visit type is required'),
   schedulingOption: z.string().min(1, 'Scheduling option is required'),
   scheduleDate: z.string().min(1, 'Schedule date is required'),
   scheduleTime: z.string().min(1, 'Schedule time is required'),
@@ -221,10 +251,16 @@ export const FOLLOW_UP_SCHEDULING_OPTIONS = [
 
 export const bookTreatmentSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),
-  treatmentPlanName: z.string().min(1, 'Treatment plan is required'),
+  treatmentPlanId: z.string().min(1, 'Treatment plan is required'),
   startDate: z.string().min(1, 'Start date is required'),
   endDate: z.string().min(1, 'End date is required'),
-  totalSessions: z.string().min(1, 'Sessions required'),
+  totalSessions: z
+    .string()
+    .min(1, 'Sessions required')
+    .refine(
+      (value) => /^\d+$/.test(value.trim()) && Number(value) >= 0,
+      'Sessions must be a valid number',
+    ),
   assignedTherapistId: z.string().min(1, 'Therapist is required'),
   treatmentStatus: z.enum(['SCHEDULED', 'ONGOING', 'COMPLETED']).optional(),
 });
@@ -236,7 +272,7 @@ export const rescheduleAppointmentSchema = z.object({
   registrationDate: z.string().min(1, 'Registration date is required'),
   slotTime: z.string().min(1, 'Appointment time is required'),
   assignedDoctorId: z.string().min(1, 'Assigned doctor is required'),
-  consultationTypes: z
+  consultationTypeIds: z
     .array(z.string())
     .min(1, 'Select at least one consultation type'),
 });
@@ -247,7 +283,6 @@ export type RescheduleAppointmentFormValues = z.infer<
 
 export const GENDER_OPTIONS = ['Male', 'Female', 'Other'] as const;
 export const LANGUAGE_OPTIONS = ['English', 'Hindi', 'Marathi', 'Gujarati'] as const;
-export const CONSULTATION_TYPES = ['Consultation', 'Therapy', 'Category'] as const;
 export const ID_PROOF_TYPES = ['Aadhaar', 'PAN', 'Passport', 'Driving License'] as const;
 export const RELATION_OPTIONS = ['Spouse', 'Parent', 'Sibling', 'Friend', 'Other'] as const;
 export const OCCUPATION_OPTIONS = ['Employed', 'Self-employed', 'Student', 'Retired', 'Other'] as const;

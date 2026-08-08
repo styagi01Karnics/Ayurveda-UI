@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
   CONSTITUTION_OPTIONS,
-  CONSULTATION_TYPES,
   DOSHA_OPTIONS,
   GENDER_OPTIONS,
   ID_PROOF_TYPES,
@@ -28,8 +27,7 @@ import {
   FOLLOW_UP_OPTIONS,
   MEMBERSHIP_STATUS_OPTIONS,
   PACKAGE_TYPE_OPTIONS,
-  SESSION_OPTIONS,
-  TREATMENT_PLAN_OPTIONS,
+  computeRemainingSessions,
   YES_NO_OPTIONS,
   type DoctorBillingTabValues,
   type DoctorMedicalTabValues,
@@ -81,11 +79,21 @@ interface TabFormProps<T> {
   formId: string;
 }
 
+export interface DoctorFormMasterOptions {
+  consultationTypes: { value: string; label: string }[];
+  treatmentPlans: { value: string; label: string }[];
+  packageMasters: { value: string; label: string }[];
+  therapists: { value: string; label: string }[];
+}
+
 export function DoctorPersonalForm({
   defaultValues,
   onSubmit,
   formId,
-}: TabFormProps<DoctorPersonalTabValues>) {
+  masterOptions,
+}: TabFormProps<DoctorPersonalTabValues> & {
+  masterOptions?: Pick<DoctorFormMasterOptions, 'consultationTypes'>;
+}) {
   const form = useForm<DoctorPersonalTabValues>({
     resolver: zodResolver(doctorPersonalTabSchema),
     defaultValues,
@@ -107,10 +115,12 @@ export function DoctorPersonalForm({
           <Select label="Preferred Language" options={[...LANGUAGE_OPTIONS]} error={form.formState.errors.preferredLanguage?.message} {...form.register('preferredLanguage')} />
           <TagInput
             label="Consultation Type"
-            value={form.watch('consultationTypes') ?? []}
-            onChange={(tags) => form.setValue('consultationTypes', tags, { shouldValidate: true })}
-            options={CONSULTATION_TYPES}
-            error={form.formState.errors.consultationTypes?.message}
+            value={form.watch('consultationTypeIds') ?? []}
+            onChange={(tags) =>
+              form.setValue('consultationTypeIds', tags, { shouldValidate: true })
+            }
+            options={masterOptions?.consultationTypes ?? []}
+            error={form.formState.errors.consultationTypeIds?.message}
           />
           <Input label="Registration Date" type="date" error={form.formState.errors.registrationDate?.message} {...form.register('registrationDate')} />
           <Select label="Assigned Doctor" options={[...THERAPIST_OPTIONS]} error={form.formState.errors.assignedDoctor?.message} {...form.register('assignedDoctor')} />
@@ -294,27 +304,41 @@ export function DoctorTreatmentForm({
   defaultValues,
   onSubmit,
   formId,
-}: TabFormProps<DoctorTreatmentTabValues>) {
+  masterOptions,
+}: TabFormProps<DoctorTreatmentTabValues> & {
+  masterOptions?: Pick<DoctorFormMasterOptions, 'treatmentPlans' | 'therapists'>;
+}) {
   const form = useForm<DoctorTreatmentTabValues>({
     resolver: zodResolver(doctorTreatmentTabSchema),
     defaultValues,
   });
 
+  const totalSessions = form.watch('totalSessions');
+  const completedSessions = form.watch('completedSessions');
+
   useEffect(() => {
     form.reset(defaultValues);
   }, [defaultValues, form]);
+
+  useEffect(() => {
+    form.setValue(
+      'remainingSessions',
+      computeRemainingSessions(totalSessions, completedSessions),
+      { shouldValidate: true },
+    );
+  }, [totalSessions, completedSessions, form]);
 
   return (
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <FormSection title="Active Treatment Plan">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select label="Treatment Plan Name" options={[...TREATMENT_PLAN_OPTIONS]} error={form.formState.errors.treatmentPlanName?.message} {...form.register('treatmentPlanName')} />
+          <Select label="Treatment Plan" options={masterOptions?.treatmentPlans ?? []} error={form.formState.errors.treatmentPlanId?.message} {...form.register('treatmentPlanId')} />
           <Input label="Start Date" type="date" error={form.formState.errors.startDate?.message} {...form.register('startDate')} />
           <Input label="End Date" type="date" error={form.formState.errors.endDate?.message} {...form.register('endDate')} />
-          <Select label="Total Sessions" options={[...SESSION_OPTIONS]} error={form.formState.errors.totalSessions?.message} {...form.register('totalSessions')} />
-          <Select label="Completed Sessions" options={[...SESSION_OPTIONS]} error={form.formState.errors.completedSessions?.message} {...form.register('completedSessions')} />
-          <Select label="Remaining Sessions" options={[...SESSION_OPTIONS]} error={form.formState.errors.remainingSessions?.message} {...form.register('remainingSessions')} />
-          <Select label="Assigned Therapist" options={[...THERAPIST_OPTIONS, 'Meera']} error={form.formState.errors.assignedTherapist?.message} {...form.register('assignedTherapist')} />
+          <Input label="Total Sessions" type="number" min={0} placeholder="e.g. 10" error={form.formState.errors.totalSessions?.message} {...form.register('totalSessions')} />
+          <Input label="Completed Sessions" type="number" min={0} placeholder="e.g. 3" error={form.formState.errors.completedSessions?.message} {...form.register('completedSessions')} />
+          <Input label="Remaining Sessions" type="number" readOnly tabIndex={-1} className="bg-gray-50" error={form.formState.errors.remainingSessions?.message} {...form.register('remainingSessions')} />
+          <Select label="Assigned Therapist" placeholder="Select" options={masterOptions?.therapists ?? []} error={form.formState.errors.assignedTherapistId?.message} {...form.register('assignedTherapistId')} />
         </div>
       </FormSection>
 
@@ -350,7 +374,10 @@ export function DoctorBillingForm({
   defaultValues,
   onSubmit,
   formId,
-}: TabFormProps<DoctorBillingTabValues>) {
+  masterOptions,
+}: TabFormProps<DoctorBillingTabValues> & {
+  masterOptions?: Pick<DoctorFormMasterOptions, 'packageMasters'>;
+}) {
   const form = useForm<DoctorBillingTabValues>({
     resolver: zodResolver(doctorBillingTabSchema),
     defaultValues,
@@ -365,7 +392,7 @@ export function DoctorBillingForm({
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <FormSection title="Billing & Membership">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select label="Package Name" options={[...TREATMENT_PLAN_OPTIONS]} error={form.formState.errors.packageName?.message} {...form.register('packageName')} />
+          <Select label="Package" options={masterOptions?.packageMasters ?? []} error={form.formState.errors.packageMasterId?.message} {...form.register('packageMasterId')} />
           <Input label="Validity" type="date" error={form.formState.errors.validity?.message} {...form.register('validity')} />
           <Select label="Status" options={[...MEMBERSHIP_STATUS_OPTIONS]} error={form.formState.errors.membershipStatus?.message} {...form.register('membershipStatus')} />
           <Input label="Discount Applied" error={form.formState.errors.discountApplied?.message} {...form.register('discountApplied')} />
@@ -390,8 +417,8 @@ export function DoctorBillingForm({
             </label>
             {applyTax && (
               <div className="mt-3 grid grid-cols-2 gap-3">
-                <Input label="CGST" {...form.register('cgst')} />
-                <Input label="SGST" {...form.register('sgst')} />
+                <Input {...form.register('cgst')} />
+                <Input  {...form.register('sgst')} />
               </div>
             )}
           </div>

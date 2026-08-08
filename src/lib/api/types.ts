@@ -40,18 +40,18 @@ export interface CreatePatientPayload {
   gender: string;
   dateOfBirth: string;
   age: number;
-  preferredLanguage: string;
   mobileNumber: string;
-  email: string;
-  state: string;
-  city: string;
-  address: string;
-  emergencyContactName: string;
-  emergencyRelationship: string;
-  emergencyPhoneNumber: string;
-  idProofType: string;
-  idProofNumber: string;
-  occupation: string;
+  preferredLanguage?: string;
+  email?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  emergencyContactName?: string;
+  emergencyRelationship?: string;
+  emergencyPhoneNumber?: string;
+  idProofType?: string;
+  idProofNumber?: string;
+  occupation?: string;
   insuranceDetails?: string;
 }
 
@@ -102,6 +102,7 @@ export interface TherapistDto {
   qualification?: string;
   therapyRoom?: string;
   assignedTherapyIds?: string[];
+  assignedTherapies?: { id: string; name?: string | null }[];
   status?: string;
   active?: boolean;
   createdAt?: string;
@@ -181,6 +182,48 @@ export interface CreateDoshaPayload {
   active?: boolean;
 }
 
+export type MasterStatus = 'ACTIVE' | 'INACTIVE';
+
+export interface ConsultationTypeMasterDto {
+  id: string;
+  name: string;
+  status?: MasterStatus | string;
+}
+
+export interface CreateConsultationTypeMasterPayload {
+  name: string;
+  status?: MasterStatus;
+}
+
+export interface TreatmentPlanMasterDto {
+  id: string;
+  name: string;
+  status?: MasterStatus | string;
+}
+
+export interface CreateTreatmentPlanMasterPayload {
+  name: string;
+  status?: MasterStatus;
+}
+
+export interface PackageMasterDto {
+  id: string;
+  name: string;
+  packagePrice: number;
+  status?: MasterStatus | string;
+}
+
+export interface CreatePackageMasterPayload {
+  name: string;
+  packagePrice: number;
+  status?: MasterStatus;
+}
+
+export interface ConsultationTypeRef {
+  id: string;
+  name: string;
+}
+
 export type BookingStatus =
   | 'SCHEDULED'
   | 'CANCELLED'
@@ -197,7 +240,7 @@ export interface PatientAppointmentListItemDto {
   patientMobileNumber?: string;
   assignedDoctorId?: string;
   doctorName?: string;
-  consultationTypes?: string[];
+  consultationTypes?: ConsultationTypeRef[] | string[];
   appointmentDate?: string;
   slotTime?: string;
   bookingTime?: string;
@@ -228,7 +271,7 @@ export interface TodayAppointmentItemDto {
   patientId: string;
   patientName?: string;
   patientMobileNumber?: string;
-  consultationTypes?: string[];
+  consultationTypes?: ConsultationTypeRef[] | string[];
 }
 
 export interface TodayAppointmentsResponseDto {
@@ -243,16 +286,14 @@ export interface RescheduleAppointmentPayload {
   registrationDate: string;
   slotTime: string;
   assignedDoctorId: string;
-  consultationTypes: string[];
+  consultationTypeIds: string[];
 }
-
-export type ConsultationTypeApi = 'CONSULTATION' | 'THERAPY';
 
 export interface CreateAppointmentPayload {
   patient: CreatePatientPayload;
   registrationDate: string;
   assignedDoctorId: string;
-  consultationTypes: ConsultationTypeApi[];
+  consultationTypeIds: string[];
   slotTime?: string;
 }
 
@@ -273,7 +314,7 @@ export interface AppointmentDto {
     specialization?: string;
     status?: string;
   };
-  consultationTypes?: ConsultationTypeApi[] | string[];
+  consultationTypes?: ConsultationTypeRef[] | string[];
   visitType?: string;
   registrationDate?: string;
   appointmentDate?: string;
@@ -538,7 +579,8 @@ export type TreatmentStatusApi = 'SCHEDULED' | 'ONGOING' | 'COMPLETED';
 export interface TreatmentDto {
   id: string;
   patientId: string;
-  treatmentPlanName: string;
+  treatmentPlanId: string;
+  treatmentPlanName?: string;
   startDate: string;
   endDate: string;
   totalSessions: number;
@@ -551,7 +593,7 @@ export interface TreatmentDto {
 
 export interface CreateTreatmentPayload {
   patientId: string;
-  treatmentPlanName: string;
+  treatmentPlanId: string;
   startDate: string;
   endDate: string;
   totalSessions: number;
@@ -561,7 +603,7 @@ export interface CreateTreatmentPayload {
 }
 
 export interface UpdateTreatmentPayload {
-  treatmentPlanName: string;
+  treatmentPlanId: string;
   startDate: string;
   endDate: string;
   totalSessions: number;
@@ -575,8 +617,6 @@ export type FollowUpStatusApi =
   | 'COMPLETED'
   | 'CANCELLED';
 
-export type FollowUpVisitTypeApi = 'CONSULTATION' | 'THERAPY';
-
 export interface FollowUpDto {
   id: string;
   patientId: string;
@@ -585,7 +625,8 @@ export interface FollowUpDto {
   assignedDoctorId: string;
   doctorName?: string;
   sourceBookingId?: string;
-  visitType: FollowUpVisitTypeApi;
+  visitTypeId: string;
+  visitTypeName?: string;
   appointmentDate: string;
   schedulingOption: string;
   smsReminderEnabled: boolean;
@@ -596,7 +637,7 @@ export interface CreateFollowUpPayload {
   patientId: string;
   assignedDoctorId: string;
   sourceBookingId?: string;
-  visitType: FollowUpVisitTypeApi;
+  visitTypeId: string;
   appointmentDate: string;
   schedulingOption: string;
   smsReminderEnabled?: boolean;
@@ -608,7 +649,9 @@ export type PatientPackageStatusApi = 'SCHEDULED' | 'ONGOING' | 'COMPLETED';
 export interface PatientPackageDto {
   id: string;
   patientId: string;
-  packageName: string;
+  packageMasterId: string;
+  packageName?: string;
+  packagePrice?: number;
   validity: string;
   status: PatientPackageStatusApi;
   discountApplied: number;
@@ -616,14 +659,14 @@ export interface PatientPackageDto {
 
 export interface CreatePatientPackagePayload {
   patientId: string;
-  packageName: string;
+  packageMasterId: string;
   validity: string;
   status?: PatientPackageStatusApi;
   discountApplied: number;
 }
 
 export interface UpdatePatientPackagePayload {
-  packageName: string;
+  packageMasterId: string;
   validity: string;
   discountApplied: number;
 }

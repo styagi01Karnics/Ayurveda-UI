@@ -2,7 +2,7 @@ const trimSlash = (url: string) => url.replace(/\/+$/, '');
 
 /**
  * Leave bases empty in local dev so requests are `/api/v1/...`
- * (Vite proxies to 103.174.103.250 — no CORS, no `/appointment-api` prefix).
+ * (Vite proxies to VITE_BACKEND_HOST — default localhost — no CORS).
  *
  * For production absolute hosts, set e.g.
  * VITE_APPOINTMENT_API_URL=http://103.174.103.250:8103

@@ -22,15 +22,15 @@ import {
   submitBookingStep3,
 } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
-import { getTherapistsByTherapyIds } from '@/lib/api/therapists';
+import { getAllTherapists, mapTherapistSelectOptions, filterTherapistsByTherapyIds } from '@/lib/api/therapists';
+import type { TherapistDto } from '@/lib/api/types';
 import {
   buildBookingSteps,
   CONSTITUTION_OPTIONS,
-  CONSULTATION_TYPES,
   GENDER_OPTIONS,
   ID_PROOF_TYPES,
-  includesCategoryType,
-  includesTherapyType,
+  includesCategoryTypeIds,
+  includesTherapyTypeIds,
   OCCUPATION_OPTIONS,
   patientCategoryStepSchema,
   patientStep1BookingSchema,
@@ -75,6 +75,7 @@ export interface BookingLookupOptions {
   categories: SelectOption[];
   therapies: TagOption[];
   doshas: SelectOption[];
+  consultationTypes: TagOption[];
   patients?: SelectOption[];
 }
 
@@ -110,6 +111,7 @@ export function CreatePatientModal({
   const [therapistOptions, setTherapistOptions] = useState<SelectOption[]>(
     lookupOptions.therapists,
   );
+  const [allTherapists, setAllTherapists] = useState<TherapistDto[]>([]);
   const [uploadedDocuments, setUploadedDocuments] = useState(EMPTY_DOCUMENTS);
   const [documentTab, setDocumentTab] =
     useState<(typeof DOCUMENT_TABS)[number]['id']>('pastMedicalReports');
@@ -122,7 +124,7 @@ export function CreatePatientModal({
   const step1Form = useForm<PatientStep1Values>({
     resolver: zodResolver(patientStep1BookingSchema),
     defaultValues: {
-      consultationTypes: [],
+      consultationTypeIds: [],
       appointmentTime: '10:00',
       ...formData,
     },
@@ -154,22 +156,34 @@ export function CreatePatientModal({
     },
   });
 
-  const watchedConsultationTypes =
-    step1Form.watch('consultationTypes') ??
-    (formData.consultationTypes as string[] | undefined) ??
+  const watchedConsultationTypeIds =
+    step1Form.watch('consultationTypeIds') ??
+    (formData.consultationTypeIds as string[] | undefined) ??
     [];
 
-  const activeSteps = useMemo(
-    () => buildBookingSteps(watchedConsultationTypes),
-    [watchedConsultationTypes],
+  const consultationTypeMasters = useMemo(
+    () =>
+      lookupOptions.consultationTypes.map((option) =>
+        typeof option === 'string'
+          ? { id: option, name: option }
+          : { id: option.value, name: option.label },
+      ),
+    [lookupOptions.consultationTypes],
   );
+
+  const bookingSteps = useMemo(
+    () => buildBookingSteps(watchedConsultationTypeIds, consultationTypeMasters),
+    [watchedConsultationTypeIds, consultationTypeMasters],
+  );
+
+  const activeSteps = bookingSteps;
 
   const currentStepKey: BookingStepKey =
     activeSteps[stepIndex]?.key ?? 'personal';
   const isLastStep = stepIndex >= activeSteps.length - 1;
   const showCategoryInTherapyStep =
-    includesTherapyType(watchedConsultationTypes) &&
-    !includesCategoryType(watchedConsultationTypes);
+    includesTherapyTypeIds(watchedConsultationTypeIds, consultationTypeMasters) &&
+    !includesCategoryTypeIds(watchedConsultationTypeIds, consultationTypeMasters);
 
   const isBusy = submitting || stepSubmitting;
 
@@ -179,7 +193,7 @@ export function CreatePatientModal({
     setBookingSession(null);
     setUploadedDocuments(EMPTY_DOCUMENTS);
     setDocumentTab('pastMedicalReports');
-    step1Form.reset({ consultationTypes: [], appointmentTime: '10:00' });
+    step1Form.reset({ consultationTypeIds: [], appointmentTime: '10:00' });
     categoryForm.reset({ treatmentCategory: '' });
     step2Form.reset({
       recommendedTherapies: [],
@@ -233,13 +247,16 @@ export function CreatePatientModal({
       setBookingSession(session);
       setFormData((prev) => ({ ...prev, ...data }));
 
-      const steps = buildBookingSteps(data.consultationTypes);
+      const steps = buildBookingSteps(
+        data.consultationTypeIds,
+        consultationTypeMasters,
+      );
       if (steps.length <= 1) {
         await finishBooking(session, merged);
         return;
       }
 
-      if (!includesTherapyType(data.consultationTypes)) {
+      if (!includesTherapyTypeIds(data.consultationTypeIds, consultationTypeMasters)) {
         setFormData((prev) => ({ ...prev, ...data, ...EMPTY_THERAPY }));
       }
 
@@ -417,8 +434,35 @@ export function CreatePatientModal({
   }, [open, currentStepKey, lookupOptions.doshas]);
 
   useEffect(() => {
-    setTherapistOptions(lookupOptions.therapists);
-  }, [lookupOptions.therapists]);
+    if (!open) return;
+
+    let cancelled = false;
+    getAllTherapists()
+      .then((therapists) => {
+        if (!cancelled) setAllTherapists(therapists);
+      })
+      .catch(() => {
+        if (!cancelled) setAllTherapists([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    const source = allTherapists.length > 0 ? allTherapists : [];
+    if (source.length === 0) {
+      setTherapistOptions(lookupOptions.therapists);
+      return;
+    }
+
+    setTherapistOptions(
+      mapTherapistSelectOptions(
+        filterTherapistsByTherapyIds(source, recommendedTherapies),
+      ),
+    );
+  }, [recommendedTherapies, allTherapists, lookupOptions.therapists]);
 
   useEffect(() => {
     if (!selectedCategory) {
@@ -446,32 +490,6 @@ export function CreatePatientModal({
       cancelled = true;
     };
   }, [selectedCategory]);
-
-  useEffect(() => {
-    if (!recommendedTherapies.length) {
-      setTherapistOptions(lookupOptions.therapists);
-      return;
-    }
-
-    let cancelled = false;
-    getTherapistsByTherapyIds(recommendedTherapies)
-      .then((therapists) => {
-        if (cancelled) return;
-        setTherapistOptions(
-          therapists.map((therapist) => ({
-            value: therapist.id,
-            label: therapist.name || therapist.therapistName || therapist.id,
-          })),
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setTherapistOptions(lookupOptions.therapists);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [recommendedTherapies, lookupOptions.therapists]);
 
   useEffect(() => {
     if (selectedState && CITIES_BY_STATE[selectedState]) {
@@ -546,10 +564,14 @@ export function CreatePatientModal({
               <Select label="Gender *" placeholder="Gender" options={[...GENDER_OPTIONS]} error={step1Form.formState.errors.gender?.message} {...step1Form.register('gender')} />
               <TagInput
                 label="Consultation Type *"
-                value={step1Form.watch('consultationTypes') ?? []}
-                onChange={(tags) => step1Form.setValue('consultationTypes', tags, { shouldValidate: true })}
-                options={CONSULTATION_TYPES}
-                error={step1Form.formState.errors.consultationTypes?.message}
+                value={step1Form.watch('consultationTypeIds') ?? []}
+                onChange={(tags) =>
+                  step1Form.setValue('consultationTypeIds', tags, {
+                    shouldValidate: true,
+                  })
+                }
+                options={lookupOptions.consultationTypes}
+                error={step1Form.formState.errors.consultationTypeIds?.message}
               />
               <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
               <Input label="Registration Date" type="date" error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />

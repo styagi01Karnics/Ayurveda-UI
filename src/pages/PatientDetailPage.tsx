@@ -110,6 +110,8 @@ export function PatientDetailPage() {
           insuranceDetails: '',
         },
         treatmentFollowUp: {
+          treatmentPlanId: treatment?.treatmentPlanId,
+          assignedTherapistId: treatment?.assignedTherapistId,
           treatmentName: treatment?.treatmentPlanName ?? '—',
           startDate: treatment?.startDate ?? '—',
           endDate: treatment?.endDate ?? '—',

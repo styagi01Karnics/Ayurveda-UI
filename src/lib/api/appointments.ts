@@ -107,7 +107,7 @@ export interface AppointmentPatientsQuery {
   statusTab: PatientListTab;
   search?: string;
   bookingStatus?: string;
-  consultationType?: 'CONSULTATION' | 'THERAPY';
+  consultationTypeId?: string;
   doshaId?: string;
   doctorId?: string;
 }
@@ -116,7 +116,9 @@ function buildAppointmentPatientsUrl(query: AppointmentPatientsQuery): string {
   const params = new URLSearchParams({ statusTab: query.statusTab });
   if (query.search) params.set('search', query.search);
   if (query.bookingStatus) params.set('bookingStatus', query.bookingStatus);
-  if (query.consultationType) params.set('consultationType', query.consultationType);
+  if (query.consultationTypeId) {
+    params.set('consultationTypeId', query.consultationTypeId);
+  }
   if (query.doshaId) params.set('doshaId', query.doshaId);
   if (query.doctorId) params.set('doctorId', query.doctorId);
   return `${url(ep.bookings.getAllPatients)}?${params.toString()}`;
@@ -155,9 +157,9 @@ export function getAppointmentsByStatus(bookingStatus = 'ALL') {
   );
 }
 
-export function getAppointmentsToday(consultationType: string) {
+export function getAppointmentsToday(consultationTypeId: string) {
   return apiRequestList<AppointmentDto>(
-    url(ep.bookings.getToday(consultationType)),
+    url(ep.bookings.getTodayByConsultationTypeId(consultationTypeId)),
   );
 }
 
@@ -428,12 +430,15 @@ export function getLifestyleInformationByPatientId(patientId: string) {
 }
 
 export function createTreatmentPlan(payload: Record<string, unknown>) {
-  return postAssessment<unknown>(ep.treatmentPlans.create, payload);
+  return postAssessment<unknown>(
+    apiEndpoints.appointments.treatmentPlans.create,
+    payload,
+  );
 }
 
 export function getTreatmentPlansByPatientId(patientId: string) {
   return apiRequestList<unknown>(
-    url(ep.treatmentPlans.getByPatientId(patientId)),
+    url(apiEndpoints.appointments.treatmentPlans.getByPatientId(patientId)),
   );
 }
 

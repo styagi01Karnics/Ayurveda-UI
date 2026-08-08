@@ -44,22 +44,55 @@ export const doctorMedicalTabSchema = z.object({
   planDetails: z.string().optional(),
 });
 
-export const doctorTreatmentTabSchema = z.object({
-  treatmentPlanName: z.string().min(1, 'Treatment plan name is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
-  totalSessions: z.string().min(1, 'Total sessions is required'),
-  completedSessions: z.string().min(1, 'Completed sessions is required'),
-  remainingSessions: z.string().min(1, 'Remaining sessions is required'),
-  assignedTherapist: z.string().min(1, 'Assigned therapist is required'),
-  setupRequired: z.string().min(1, 'Setup required is required'),
-  followUpScheduling: z.string().min(1, 'Follow-up scheduling is required'),
-  assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
-  autoSmsReminder: z.boolean(),
-});
+function numericSessionField(label: string) {
+  return z
+    .string()
+    .min(1, `${label} is required`)
+    .refine(
+      (value) => /^\d+$/.test(value.trim()) && Number(value) >= 0,
+      `${label} must be a valid number`,
+    );
+}
+
+export function computeRemainingSessions(
+  totalSessions: string,
+  completedSessions: string,
+): string {
+  if (!totalSessions.trim() || !completedSessions.trim()) return '';
+  const total = Number(totalSessions);
+  const completed = Number(completedSessions);
+  if (!Number.isFinite(total) || !Number.isFinite(completed)) return '';
+  return String(Math.max(0, total - completed));
+}
+
+export const doctorTreatmentTabSchema = z
+  .object({
+    treatmentPlanId: z.string().min(1, 'Treatment plan is required'),
+    startDate: z.string().min(1, 'Start date is required'),
+    endDate: z.string().min(1, 'End date is required'),
+    totalSessions: numericSessionField('Total sessions'),
+    completedSessions: numericSessionField('Completed sessions'),
+    remainingSessions: z.string().optional(),
+    assignedTherapistId: z.string().min(1, 'Assigned therapist is required'),
+    setupRequired: z.string().min(1, 'Setup required is required'),
+    followUpScheduling: z.string().min(1, 'Follow-up scheduling is required'),
+    assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
+    autoSmsReminder: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    const total = Number(data.totalSessions);
+    const completed = Number(data.completedSessions);
+    if (completed > total) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Completed sessions cannot exceed total sessions',
+        path: ['completedSessions'],
+      });
+    }
+  });
 
 export const doctorBillingTabSchema = z.object({
-  packageName: z.string().min(1, 'Package name is required'),
+  packageMasterId: z.string().min(1, 'Package is required'),
   validity: z.string().min(1, 'Validity is required'),
   membershipStatus: z.string().min(1, 'Status is required'),
   discountApplied: z.string().min(1, 'Discount applied is required'),
@@ -91,12 +124,6 @@ export type DoctorMedicalTabValues = z.infer<typeof doctorMedicalTabSchema>;
 export type DoctorTreatmentTabValues = z.infer<typeof doctorTreatmentTabSchema>;
 export type DoctorBillingTabValues = z.infer<typeof doctorBillingTabSchema>;
 export type DoctorPrescriptionValues = z.infer<typeof doctorPrescriptionSchema>;
-
-export const TREATMENT_PLAN_OPTIONS = [
-  'Joint Pain Package',
-  'Stress Relief Package',
-  'Detox Package',
-] as const;
 
 export const SESSION_OPTIONS = ['1', '5', '10', '12', '23', '30'] as const;
 export const PAYMENT_MODE_OPTIONS = ['Cash', 'Debit Card', 'UPI', 'Credit Card'] as const;

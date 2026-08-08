@@ -32,20 +32,32 @@ export const PERMISSION_MODULES = [
   'Settings',
 ] as const;
 
-export const clinicDoctorSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  specialization: z.string().min(1, 'Specialization is required'),
-  status: z.enum(CLINIC_STATUS_OPTIONS),
-  consultationFees: z
-    .string()
-    .min(1, 'Consultation fees are required')
-    .regex(/^\d+$/, 'Enter a valid amount'),
-  followUpFees: z
-    .string()
-    .min(1, 'Follow up fees are required')
-    .regex(/^\d+$/, 'Enter a valid amount'),
-  availability: z.string().min(1, 'Availability is required'),
-});
+export const clinicDoctorSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    specialization: z.string().min(1, 'Specialization is required'),
+    status: z.enum(CLINIC_STATUS_OPTIONS),
+    consultationFees: z
+      .string()
+      .min(1, 'Consultation fees are required')
+      .regex(/^\d+$/, 'Enter a valid amount'),
+    followUpFees: z
+      .string()
+      .min(1, 'Follow up fees are required')
+      .regex(/^\d+$/, 'Enter a valid amount'),
+    availabilityDays: z
+      .array(z.enum(['weekdays', 'saturday', 'sunday']))
+      .min(1, 'Select at least one day'),
+    availabilityStartTime: z.string().min(1, 'Start time is required'),
+    availabilityEndTime: z.string().min(1, 'End time is required'),
+  })
+  .refine(
+    (data) => data.availabilityStartTime < data.availabilityEndTime,
+    {
+      message: 'End time must be after start time',
+      path: ['availabilityEndTime'],
+    },
+  );
 
 export type ClinicDoctorFormValues = z.infer<typeof clinicDoctorSchema>;
 
@@ -81,6 +93,34 @@ export const clinicTherapistSchema = z.object({
 });
 
 export type ClinicTherapistFormValues = z.infer<typeof clinicTherapistSchema>;
+
+export const clinicConsultationTypeSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+});
+
+export type ClinicConsultationTypeFormValues = z.infer<
+  typeof clinicConsultationTypeSchema
+>;
+
+export const clinicTreatmentPlanMasterSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+});
+
+export type ClinicTreatmentPlanMasterFormValues = z.infer<
+  typeof clinicTreatmentPlanMasterSchema
+>;
+
+export const clinicPackageMasterSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  packagePrice: z
+    .string()
+    .min(1, 'Price is required')
+    .regex(/^\d+(\.\d{1,2})?$/, 'Enter a valid price'),
+});
+
+export type ClinicPackageMasterFormValues = z.infer<
+  typeof clinicPackageMasterSchema
+>;
 
 export const addUserSchema = z
   .object({

@@ -4,6 +4,7 @@ const khushiDetail: PatientDetail = {
   id: '#PT458652',
   secondaryId: 'GAN2025-0129',
   detailId: '37944397',
+  bookingId: 'ap-1',
   name: 'Khushi Shroff',
   phone: '+91-9205061339',
   doctor: 'Dr. Sheekha',

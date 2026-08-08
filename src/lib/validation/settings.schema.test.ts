@@ -15,7 +15,9 @@ describe('settings.schema', () => {
       status: 'Active',
       consultationFees: '500',
       followUpFees: '500',
-      availability: 'Mon - Fri 5:00pm - 9:00pm',
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
     });
     expect(result.success).toBe(true);
   });
@@ -27,7 +29,9 @@ describe('settings.schema', () => {
       status: 'Active',
       consultationFees: 'abc',
       followUpFees: '500',
-      availability: 'Mon - Fri',
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
     });
     expect(result.success).toBe(false);
   });

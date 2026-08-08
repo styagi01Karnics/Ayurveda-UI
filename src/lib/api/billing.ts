@@ -54,6 +54,60 @@ export interface CreateInvoicePayload {
   paymentRemarks?: string;
 }
 
+export interface InvoicePaymentDto {
+  id: string;
+  amountPaid: number;
+  paymentDate: string;
+  paymentMethod: string;
+  remarks?: string | null;
+}
+
+export interface InvoiceItemDto {
+  id: string;
+  itemType: string;
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  medicineId?: string | null;
+  assignedTherapistId?: string | null;
+  assignedTherapistName?: string | null;
+  scheduleDate?: string | null;
+  scheduleTime?: string | null;
+  sessionDuration?: number | null;
+  sessionFrequency?: number | null;
+}
+
+export interface InvoiceDto {
+  id: string;
+  invoiceId: string;
+  patientId: string;
+  patientDisplayId?: string;
+  formattedPatientId?: string;
+  patientCode?: string;
+  patientName: string;
+  contactNumber?: string;
+  invoiceDate: string;
+  visitType?: VisitTypeApi | string;
+  serviceFees?: number;
+  packageType?: string | null;
+  packageCharges?: number;
+  subtotal?: number;
+  discount?: number;
+  taxEnabled?: boolean;
+  cgstPercent?: number;
+  cgstAmount?: number;
+  sgstPercent?: number;
+  sgstAmount?: number;
+  totalAmount: number;
+  paidAmount: number;
+  leftAmount?: number;
+  status: InvoiceStatus;
+  billSections?: string[];
+  items?: InvoiceItemDto[];
+  payments?: InvoicePaymentDto[];
+}
+
 export interface InvoiceListItemDto {
   invoiceId: string;
   patientId: string;
@@ -129,7 +183,7 @@ export function getInvoiceById(invoiceId: string) {
 }
 
 export function createInvoice(payload: CreateInvoicePayload) {
-  return apiRequest<InvoiceListItemDto>(url(ep.invoices), {
+  return apiRequest<InvoiceDto>(url(ep.invoices), {
     method: 'POST',
     body: payload,
   });

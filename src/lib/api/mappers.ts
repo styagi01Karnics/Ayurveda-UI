@@ -3,6 +3,7 @@ import type {
   AppointmentDto,
   AppointmentStatsDto,
   AppointmentTherapyDto,
+  ConsultationTypeRef,
   CreateMedicalAssessmentPayload,
   DoctorDto,
   MedicineDto,
@@ -79,8 +80,29 @@ function formatDisplayDateTime(date?: string | null, time?: string | null): stri
   return formatDisplayDate(date);
 }
 
-function normalizeVisitType(raw?: string | string[] | null): VisitType {
-  const value = Array.isArray(raw) ? raw[0] : raw;
+function extractConsultationTypeNames(
+  types?: ConsultationTypeRef[] | string[] | null,
+): string[] {
+  if (!types?.length) return [];
+  return types.map((type) =>
+    typeof type === 'string' ? type : type.name,
+  );
+}
+
+function extractConsultationTypeIds(
+  types?: ConsultationTypeRef[] | string[] | null,
+): string[] {
+  if (!types?.length) return [];
+  return types.map((type) => (typeof type === 'string' ? type : type.id));
+}
+
+function normalizeVisitType(
+  raw?: string | string[] | ConsultationTypeRef[] | null,
+): VisitType {
+  const names = extractConsultationTypeNames(
+    Array.isArray(raw) ? raw : raw ? [raw] : null,
+  );
+  const value = names[0];
   if (!value) return 'Consultation';
   const upper = value.toUpperCase();
   if (upper.includes('THERAPY')) return 'Therapy';
@@ -120,8 +142,9 @@ function formatIsoDateTime(iso?: string | null): string {
   });
 }
 
-function mapFollowUpVisitType(raw?: string | null): VisitType {
-  if ((raw ?? '').toUpperCase() === 'THERAPY') return 'Therapy';
+function mapFollowUpVisitType(dto: FollowUpDto): VisitType {
+  const name = dto.visitTypeName ?? '';
+  if (name.toUpperCase().includes('THERAPY')) return 'Therapy';
   return 'Consultation';
 }
 
@@ -156,6 +179,7 @@ export function mapPatientToRecord(
     id: code.startsWith('#') ? code : `#${code}`,
     secondaryId: patient.patientCode || patient.id,
     detailId: patient.id,
+    bookingId: extras?.bookingId ?? '',
     name: patient.fullName,
     phone: patient.mobileNumber ? `+91-${patient.mobileNumber}` : '—',
     doctor: extras?.doctor ?? '—',
@@ -349,7 +373,7 @@ export function mapAppointmentToRecord(
       appointment.scheduleDate ??
       '',
     slotTime: appointment.slotTime ?? appointment.scheduleTime ?? '',
-    consultationTypes: (appointment.consultationTypes ?? []).map(String),
+    consultationTypes: extractConsultationTypeIds(appointment.consultationTypes),
   };
 }
 
@@ -373,6 +397,7 @@ export function mapPatientAppointmentListItemToPatientRecord(
     id: displayId.startsWith('#') ? displayId : `#${displayId}`,
     secondaryId: item.patientCode ?? item.patientId,
     detailId: item.patientId,
+    bookingId: item.bookingId,
     name: item.patientFullName,
     phone: item.patientMobileNumber
       ? item.patientMobileNumber.startsWith('+')
@@ -415,7 +440,7 @@ export function mapPatientAppointmentListItemToRecord(
     assignedDoctorId: item.assignedDoctorId,
     registrationDate: item.appointmentDate ?? '',
     slotTime: item.slotTime ?? '',
-    consultationTypes: item.consultationTypes ?? [],
+    consultationTypes: extractConsultationTypeIds(item.consultationTypes),
   };
 }
 
@@ -483,9 +508,9 @@ export function mapTreatmentDtoToRecord(
     id: dto.id,
     patient: patientName ?? '—',
     patientDetailId: dto.patientId,
-    treatmentPlanName: dto.treatmentPlanName,
+    treatmentPlanName: dto.treatmentPlanName ?? dto.treatmentPlanId,
     treatmentCategory: '—',
-    therapyType: dto.treatmentPlanName,
+    therapyType: dto.treatmentPlanName ?? dto.treatmentPlanId,
     assignedTherapist: dto.assignedTherapistName ?? '—',
     therapistSchedule: `${formatDisplayDate(dto.startDate)} – ${formatDisplayDate(dto.endDate)}`,
     startDate: dto.startDate,
@@ -506,7 +531,7 @@ export function mapFollowUpDtoToRecord(dto: FollowUpDto): FollowUpRecord {
     uhid: dto.patientDisplayId ?? '—',
     patient: dto.patientName ?? '—',
     doctor: dto.doctorName ?? '—',
-    visitType: mapFollowUpVisitType(dto.visitType),
+    visitType: mapFollowUpVisitType(dto),
     appointmentDate: formatIsoDateTime(dto.appointmentDate),
     dateCreated: dto.appointmentDate?.slice(0, 10) ?? '',
     status: mapFollowUpStatus(dto.status),
@@ -518,7 +543,7 @@ export function mapPatientPackageToBillingMembership(
 ): Partial<import('@/types').PatientBillingMembership> {
   const status = pkg.status.toUpperCase();
   return {
-    packageName: pkg.packageName,
+    packageName: pkg.packageName ?? '—',
     validity: formatDisplayDate(pkg.validity),
     membershipStatus:
       status === 'COMPLETED'
@@ -795,32 +820,34 @@ export function toApiIdProofType(idProofType: string): string {
   return idProofType.trim().toUpperCase().replace(/\s+/g, '_');
 }
 
-export function toApiConsultationTypes(
-  types: string[],
-): Array<'CONSULTATION' | 'THERAPY'> {
-  const result = new Set<'CONSULTATION' | 'THERAPY'>();
-  for (const type of types) {
-    const upper = type.toUpperCase();
-    if (upper.includes('THERAPY')) result.add('THERAPY');
-    if (
-      upper.includes('CONSULTATION') ||
-      upper.includes('CATEGORY')
-    ) {
-      result.add('CONSULTATION');
-    }
-  }
-  if (result.size === 0) result.add('CONSULTATION');
-  return [...result];
+export function toApiConsultationTypeIds(ids: string[]): string[] {
+  return ids.filter(Boolean);
 }
 
-export function fromApiConsultationTypes(
-  types?: string[] | null,
+/** @deprecated Use consultation type master IDs directly. */
+export function toApiConsultationTypes(
+  types: string[],
 ): string[] {
-  if (!types?.length) return ['Consultation'];
-  return types.map((type) => {
-    const upper = type.toUpperCase();
-    return upper.includes('THERAPY') ? 'Therapy' : 'Consultation';
+  return types.filter(Boolean);
+}
+
+/** Maps stored consultation type IDs to display labels using active masters. */
+export function consultationTypeIdsToLabels(
+  ids: string[],
+  masters: { id: string; name: string }[],
+): string[] {
+  const byId = new Map(masters.map((m) => [m.id, m.name]));
+  return ids.map((id) => {
+    const name = byId.get(id) ?? id;
+    return name.toUpperCase().includes('THERAPY') ? 'Therapy' : 'Consultation';
   });
+}
+
+/** Resolves consultation type IDs from API response objects or legacy strings. */
+export function fromApiConsultationTypeIds(
+  types?: ConsultationTypeRef[] | string[] | null,
+): string[] {
+  return extractConsultationTypeIds(types);
 }
 
 export function slotTimeForInput(slotTime?: string | null): string {

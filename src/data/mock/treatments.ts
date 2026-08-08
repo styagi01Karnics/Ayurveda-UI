@@ -1,5 +1,4 @@
 import type { TreatmentRecord } from '@/types';
-import { TREATMENT_PLAN_OPTIONS } from '@/lib/validation/doctorPatient.schema';
 
 const baseTreatment = {
   patient: 'Khushi Shroff',
@@ -27,5 +26,5 @@ export const initialTreatments: TreatmentRecord[] = [
 
 export const TREATMENT_FILTER_OPTIONS = {
   status: ['Scheduled', 'Ongoing', 'Completed'],
-  treatmentPlan: [...TREATMENT_PLAN_OPTIONS],
+  treatmentPlan: [] as string[],
 } as const;
