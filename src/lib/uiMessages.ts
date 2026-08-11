@@ -33,7 +33,8 @@ export const UI_MESSAGES = {
     forbidden: 'You do not have permission to perform this action.',
     notFound: 'The requested item could not be found.',
     validation: 'Please check the form and fix the highlighted fields.',
-    bookingRequired: 'A booking is required before uploading documents.',
+    bookingRequired:
+      'Patient and booking details are required before uploading documents.',
     messagingFailed: 'Unable to send message. Please try again.',
   },
 

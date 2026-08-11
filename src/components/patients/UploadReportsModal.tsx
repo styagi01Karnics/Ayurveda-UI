@@ -95,7 +95,7 @@ export function UploadReportsModal({
   };
 
   const handleConfirm = async () => {
-    if (!patient?.bookingId) {
+    if (!patient?.detailId || !patient?.bookingId) {
       showToast({
         title: 'Error',
         message: UI_MESSAGES.error.bookingRequired,
@@ -126,7 +126,12 @@ export function UploadReportsModal({
       );
 
       try {
-        await uploadDocument(patient.bookingId, staged.documentType, staged.file);
+        await uploadDocument(
+          patient.detailId,
+          patient.bookingId,
+          staged.documentType,
+          staged.file,
+        );
         successCount += 1;
         setFiles((prev) =>
           prev.map((file) =>
@@ -201,9 +206,9 @@ export function UploadReportsModal({
         </p>
       )}
 
-      {!patient?.bookingId && (
+      {(!patient?.detailId || !patient?.bookingId) && (
         <p className="mb-4 rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
-          No booking ID is linked to this appointment. Document upload is unavailable.
+          Patient or booking ID is missing for this row. Document upload is unavailable.
         </p>
       )}
 
@@ -227,7 +232,7 @@ export function UploadReportsModal({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        disabled={!patient?.bookingId || submitting}
+        disabled={!patient?.detailId || !patient?.bookingId || submitting}
         className="mb-4 flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gold/40 bg-gold/5 py-8 text-center hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <CloudUpload className="h-8 w-8 text-brown" />

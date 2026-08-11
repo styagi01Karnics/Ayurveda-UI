@@ -2,7 +2,7 @@
 
 **Version:** 1.0  
 **Date:** 3 Aug 2026  
-**Base host (server):** `http://103.174.103.250`  
+**Base host (server):** `http://45.195.229.15`  
 **Local:** `http://localhost`
 
 All business APIs return a common wrapper unless noted (file download / biometric device).
@@ -33,17 +33,17 @@ All business APIs return a common wrapper unless noted (file download / biometri
 
 | Service | Port | Base URL example |
 |---|---|---|
-| Auth | **8100** | `http://103.174.103.250:8100` |
-| Patient | **8101** | `http://103.174.103.250:8101` |
-| Doctor | **8102** | `http://103.174.103.250:8102` |
-| Appointment | **8103** | `http://103.174.103.250:8103` |
-| Therapist | **8104** | `http://103.174.103.250:8104` |
-| File Upload | **8105** | `http://103.174.103.250:8105` |
-| Attendance | **8106** | `http://103.174.103.250:8106` |
-| Activity Log | **8107** | `http://103.174.103.250:8107` |
-| Medicine | **8108** | `http://103.174.103.250:8108` |
-| Billing | **8109** | `http://103.174.103.250:8109` |
-| Notification | **8110** | `http://103.174.103.250:8110` |
+| Auth | **8100** | `http://45.195.229.15:8100` |
+| Patient | **8101** | `http://45.195.229.15:8101` |
+| Doctor | **8102** | `http://45.195.229.15:8102` |
+| Appointment | **8103** | `http://45.195.229.15:8103` |
+| Therapist | **8104** | `http://45.195.229.15:8104` |
+| File Upload | **8105** | `http://45.195.229.15:8105` |
+| Attendance | **8106** | `http://45.195.229.15:8106` |
+| Activity Log | **8107** | `http://45.195.229.15:8107` |
+| Medicine | **8108** | `http://45.195.229.15:8108` |
+| Billing | **8109** | `http://45.195.229.15:8109` |
+| Notification | **8110** | `http://45.195.229.15:8110` |
 
 Swagger UI (per service): `http://HOST:PORT/swagger-ui/index.html`
 

@@ -1,13 +1,14 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PageActionContext } from '@/app/PageActionContext';
 import { ToastProvider } from '@/app/ToastContext';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
-import { LogoutModal } from '@/components/auth/LogoutModal';
 import { PasswordSuccessModal } from '@/components/auth/PasswordSuccessModal';
 import { RedeemCouponModal } from '@/components/dashboard/RedeemCouponModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { clearAuthSession } from '@/lib/auth';
+import { UI_MESSAGES } from '@/lib/uiMessages';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { TopBanner } from './TopBanner';
@@ -125,10 +126,15 @@ export function DashboardLayout() {
           open={passwordSuccessOpen}
           onClose={() => setPasswordSuccessOpen(false)}
         />
-        <LogoutModal
+        <ConfirmDialog
           open={logoutOpen}
           onClose={() => setLogoutOpen(false)}
           onConfirm={handleLogout}
+          title={UI_MESSAGES.confirm.logoutTitle}
+          message={UI_MESSAGES.confirm.logoutMessage}
+          confirmLabel={UI_MESSAGES.confirm.logout}
+          variant="default"
+          icon={LogOut}
         />
         <RedeemCouponModal
           open={couponOpen}

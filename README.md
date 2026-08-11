@@ -14,12 +14,12 @@ Vite proxies them to the backend hosts (avoids CORS):
 
 | Browser path | Proxied to |
 |--------------|------------|
-| `/api/v1/patients/...` | `http://103.174.103.250:8101` |
-| `/api/v1/doctors/...` | `http://103.174.103.250:8102` |
-| `/api/v1/appointments/...` | `http://103.174.103.250:8103` |
-| `/api/v1/therapists/...` | `http://103.174.103.250:8104` |
+| `/api/v1/patients/...` | `http://45.195.229.15:8101` |
+| `/api/v1/doctors/...` | `http://45.195.229.15:8102` |
+| `/api/v1/appointments/...` | `http://45.195.229.15:8103` |
+| `/api/v1/therapists/...` | `http://45.195.229.15:8104` |
 
-Example: `POST /api/v1/appointments` → `POST http://103.174.103.250:8103/api/v1/appointments`
+Example: `POST /api/v1/appointments` → `POST http://45.195.229.15:8103/api/v1/appointments`
 
 **Restart `npm run dev` after changing `.env` or `vite.config.ts`.**
 

@@ -5,7 +5,7 @@ const trimSlash = (url: string) => url.replace(/\/+$/, '');
  * (Vite proxies to VITE_BACKEND_HOST — default localhost — no CORS).
  *
  * For production absolute hosts, set e.g.
- * VITE_APPOINTMENT_API_URL=http://103.174.103.250:8103
+ * VITE_APPOINTMENT_API_URL=http://45.195.229.15:8103
  */
 function resolveBase(envValue: string | undefined): string {
   if (envValue == null || envValue.trim() === '') return '';

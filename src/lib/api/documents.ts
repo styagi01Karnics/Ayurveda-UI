@@ -21,11 +21,13 @@ export interface DocumentDto {
 }
 
 export function uploadDocument(
+  patientId: string,
   bookingId: string,
   documentType: DocumentTypeApi,
   file: File,
 ) {
   const params = new URLSearchParams({
+    patientId,
     bookingId,
     documentType,
   });

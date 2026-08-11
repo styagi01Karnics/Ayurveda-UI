@@ -18,7 +18,7 @@ function resolveBackendHost(raw: string): string {
  * no `/appointment-api` prefix. Vite forwards to the correct service port.
  *
  * Override in `.env.development.local`:
- *   VITE_BACKEND_HOST=http://103.174.103.250   (remote staging)
+ *   VITE_BACKEND_HOST=http://45.195.229.15   (remote staging)
  *   VITE_BACKEND_HOST=http://127.0.0.1         (local microservices)
  */
 function serviceProxy(backendHost: string, port: number) {
@@ -32,7 +32,7 @@ function serviceProxy(backendHost: string, port: number) {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const backendHost = resolveBackendHost(
-    env.VITE_BACKEND_HOST || 'http://103.174.103.250',
+    env.VITE_BACKEND_HOST || 'http://45.195.229.15',
   );
 
   return {
