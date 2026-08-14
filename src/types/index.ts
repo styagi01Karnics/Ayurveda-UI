@@ -147,6 +147,14 @@ export interface PatientInvoice {
   website: string;
 }
 
+/** Populated from GET /api/v1/invoices/{invoiceId} for bill download modal. */
+export interface BillInvoiceView {
+  patientName: string;
+  patientId: string;
+  contactNumber: string;
+  invoice: PatientInvoice;
+}
+
 export interface PatientDetail extends PatientRecord {
   treatmentStatus: 'Under Treatment' | 'Discharged' | 'Pending';
   personalInfo: PatientPersonalInfo;
@@ -288,7 +296,9 @@ export interface MedicineRecord {
 export type BillingStatus = 'Ongoing' | 'Completed';
 
 export interface BillingRecord {
+  /** Invoice UUID for GET /api/v1/invoices/{id}. */
   id: string;
+  /** Display invoice number, e.g. INV-1002. */
   invoiceId: string;
   patientId: string;
   secondaryPatientId: string;

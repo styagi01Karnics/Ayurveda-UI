@@ -7,17 +7,34 @@ import {
   type DoctorTreatmentTabValues,
 } from '@/lib/validation/doctorPatient.schema';
 
-function parseAge(age: string): string {
-  return age.replace(/\D/g, '') || age;
+function asString(value: string | null | undefined, fallback = ''): string {
+  return value ?? fallback;
 }
 
-function parseDob(dob: string): string {
-  const parts = dob.split('/');
+function parseAge(age: string | null | undefined): string {
+  const raw = asString(age);
+  return raw.replace(/\D/g, '') || raw;
+}
+
+function parseDob(dob: string | null | undefined): string {
+  const raw = asString(dob);
+  if (!raw) return '';
+  const parts = raw.split('/');
   if (parts.length === 3) {
     const [day, month, year] = parts;
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
-  return dob;
+  return raw;
+}
+
+function normalizeEmail(email: string | null | undefined): string {
+  const raw = asString(email);
+  if (!raw) return '';
+  return raw.includes('@') ? raw : `${raw}@gmail.com`;
+}
+
+function phoneDigits(value: string | null | undefined): string {
+  return asString(value).replace(/\D/g, '').slice(-10);
 }
 
 export function mapPatientToPersonalForm(
@@ -26,27 +43,28 @@ export function mapPatientToPersonalForm(
   const info = patient.personalInfo;
   return {
     fullName: patient.name,
-    gender: info.gender,
+    gender: asString(info.gender),
     dateOfBirth: parseDob(info.dob),
     age: parseAge(info.age),
     preferredLanguage: 'English',
     consultationTypeIds: [],
     registrationDate: parseDob(info.registrationDate),
     appointmentTime: '10:00',
-    assignedDoctor: info.assignedDoctor,
-    mobileNumber: patient.phone.replace(/\D/g, '').slice(-10),
-    email: info.email.includes('@') ? info.email : `${info.email}@gmail.com`,
-    state: info.state,
-    city: info.city,
-    permanentAddress: info.address,
-    emergencyName: info.emergencyName,
-    emergencyRelation: info.emergencyRelation,
-    emergencyPhone: info.emergencyPhone.replace(/\D/g, '').slice(-10),
+    assignedDoctor: asString(info.assignedDoctor),
+    mobileNumber: phoneDigits(patient.phone),
+    email: normalizeEmail(info.email),
+    state: asString(info.state),
+    city: asString(info.city),
+    permanentAddress: asString(info.address),
+    emergencyName: asString(info.emergencyName),
+    emergencyRelation: asString(info.emergencyRelation),
+    emergencyPhone: phoneDigits(info.emergencyPhone),
     patientId: `${patient.id} | ${patient.secondaryId}`,
-    idProofType: info.idProofType,
-    idNumber: info.idProofNumber,
-    occupation: info.occupation,
-    insuranceDetails: info.insuranceDetails === 'N/A' ? '' : info.insuranceDetails,
+    idProofType: asString(info.idProofType),
+    idNumber: asString(info.idProofNumber),
+    occupation: asString(info.occupation),
+    insuranceDetails:
+      asString(info.insuranceDetails) === 'N/A' ? '' : asString(info.insuranceDetails),
   };
 }
 
@@ -56,7 +74,10 @@ export function mapPatientToMedicalForm(
   const m = patient.medicalAssessment;
   return {
     doshaType: patient.dosha,
-    bodyConstitution: m.bodyConstitution.split(',').map((s) => s.trim()),
+    bodyConstitution: asString(m.bodyConstitution)
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
     currentImbalance: m.currentImbalance,
     previousPanchakarma: m.previousPanchakarma,
     weight: m.weight,
@@ -111,7 +132,7 @@ export function mapPatientToTreatmentForm(
     setupRequired: 'Yes',
     followUpScheduling: 'Monthly',
     assignedDoctor: t.followUpDoctor,
-    autoSmsReminder: t.reminder.includes('Enabled'),
+    autoSmsReminder: asString(t.reminder).includes('Enabled'),
   };
 }
 

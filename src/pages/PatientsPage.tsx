@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { PatientsTable } from '@/components/patients/PatientsTable';
@@ -17,11 +18,9 @@ import {
   type PatientListTab,
 } from '@/lib/api/appointments';
 import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
-import {
-  mapPatientAppointmentListItemToPatientRecord,
-  mapPatientToDetail,
-} from '@/lib/api/mappers';
-import { getPatientById } from '@/lib/api/patients';
+import { getInvoices } from '@/lib/api/billing';
+import { mapPatientAppointmentListItemToPatientRecord } from '@/lib/api/mappers';
+import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import type { PatientRecord, PatientStatus, VisitType } from '@/types';
 
 type PatientTab = 'active' | 'inactive';
@@ -54,13 +53,14 @@ function toApiBookingStatus(status: string): string | undefined {
 
 export function PatientsPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<PatientTab>('active');
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [visitTypeFilter, setVisitTypeFilter] = useState('');
   const [doshaFilter, setDoshaFilter] = useState('');
   const [uploadPatient, setUploadPatient] = useState<PatientRecord | null>(null);
-  const [billPatientId, setBillPatientId] = useState<string | null>(null);
+  const [billInvoiceId, setBillInvoiceId] = useState<string | null>(null);
 
   const statusTab: PatientListTab = activeTab === 'active' ? 'ACTIVE' : 'INACTIVE';
 
@@ -108,26 +108,28 @@ export function PatientsPage() {
     });
   }, [data.patients, statusFilter, visitTypeFilter]);
 
-  const { data: billPatient } = useAsyncData(
-    async () => {
-      if (!billPatientId) return null;
-      try {
-        const dto = await getPatientById(billPatientId);
-        return mapPatientToDetail(dto);
-      } catch {
-        return null;
-      }
-    },
-    null,
-    [billPatientId],
-  );
-
   const handleRowClick = (record: PatientRecord) => {
     navigate(`/patients/${record.detailId}`);
   };
 
-  const handleDownloadBill = (record: PatientRecord) => {
-    setBillPatientId(record.detailId);
+  const handleDownloadBill = async (record: PatientRecord) => {
+    try {
+      const invoices = await getInvoices({ patientId: record.detailId });
+      const latest = invoices[0];
+      if (!latest?.id) {
+        showToast({
+          title: 'No invoice found',
+          message: 'This patient does not have a bill to download yet.',
+        });
+        return;
+      }
+      setBillInvoiceId(latest.id);
+    } catch (err) {
+      showToast({
+        title: 'Error',
+        message: resolveErrorMessage(err, UI_MESSAGES.error.loadFailed),
+      });
+    }
   };
 
   return (
@@ -204,9 +206,9 @@ export function PatientsPage() {
       />
 
       <BillInvoiceModal
-        open={Boolean(billPatient)}
-        patient={billPatient}
-        onClose={() => setBillPatientId(null)}
+        open={Boolean(billInvoiceId)}
+        invoiceId={billInvoiceId}
+        onClose={() => setBillInvoiceId(null)}
       />
     </PageShell>
   );

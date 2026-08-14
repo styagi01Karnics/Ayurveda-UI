@@ -18,7 +18,7 @@ import type {
   TodayAppointmentItemDto,
   TreatmentCategoryDto,
 } from '@/lib/api/types';
-import type { InvoiceListItemDto } from '@/lib/api/billing';
+import type { InvoiceDto, InvoiceListItemDto } from '@/lib/api/billing';
 import type {
   AppointmentRecord,
   CalendarEvent,
@@ -205,25 +205,25 @@ export function mapPatientToDetail(
     ...summary,
     treatmentStatus: extras?.treatmentStatus ?? 'Pending',
     personalInfo: {
-      gender: titleCase(patient.gender),
-      age: `${patient.age}yrs`,
+      gender: titleCase(patient.gender ?? ''),
+      age: patient.age != null ? `${patient.age}yrs` : '',
       dob: formatDisplayDate(patient.dateOfBirth),
       serviceType: extras?.personalInfo?.serviceType ?? summary.visitType,
       registrationDate: formatDisplayDate(patient.createdAt),
       assignedDoctor: extras?.personalInfo?.assignedDoctor ?? summary.doctor,
       therapyDuration: extras?.personalInfo?.therapyDuration ?? '—',
-      email: patient.email,
-      city: patient.city,
-      state: patient.state,
-      address: patient.address,
-      emergencyName: patient.emergencyContactName,
-      emergencyRelation: patient.emergencyRelationship,
+      email: patient.email ?? '',
+      city: patient.city ?? '',
+      state: patient.state ?? '',
+      address: patient.address ?? '',
+      emergencyName: patient.emergencyContactName ?? '',
+      emergencyRelation: patient.emergencyRelationship ?? '',
       emergencyPhone: patient.emergencyPhoneNumber
         ? `+91-${patient.emergencyPhoneNumber}`
         : '—',
-      idProofType: titleCase(patient.idProofType),
-      idProofNumber: patient.idProofNumber,
-      occupation: patient.occupation,
+      idProofType: titleCase(patient.idProofType ?? ''),
+      idProofNumber: patient.idProofNumber ?? '',
+      occupation: patient.occupation ?? '',
       insuranceDetails: patient.insuranceDetails || 'N/A',
     },
     medicalAssessment: extras?.medicalAssessment ?? {
@@ -691,6 +691,90 @@ function formatCurrencyLike(amount: number): string {
   return `₹${amount.toLocaleString('en-IN')}`;
 }
 
+function formatInvoiceItemDescription(
+  item: import('@/lib/api/billing').InvoiceItemDto,
+): string {
+  const parts: string[] = [];
+  if (item.itemType) parts.push(titleCase(item.itemType.replace(/_/g, ' ')));
+  if (item.quantity != null) parts.push(`Qty: ${item.quantity}`);
+  if (item.assignedTherapistName) {
+    parts.push(`Therapist: ${item.assignedTherapistName}`);
+  }
+  if (item.scheduleDate) parts.push(`Date: ${formatDisplayDate(item.scheduleDate)}`);
+  if (item.scheduleTime) parts.push(`Time: ${item.scheduleTime}`);
+  return parts.join(' · ') || '—';
+}
+
+function mapInvoiceItems(
+  dto: InvoiceDto,
+): import('@/types').PatientInvoice['items'] {
+  const rows = (dto.items ?? []).map((item) => ({
+    detail: item.itemName || titleCase(item.itemType?.replace(/_/g, ' ') ?? 'Item'),
+    description: formatInvoiceItemDescription(item),
+    amount: item.amount ?? item.quantity * item.unitPrice,
+  }));
+
+  if (rows.length === 0) {
+    if (dto.serviceFees && dto.serviceFees > 0) {
+      rows.push({
+        detail: 'Service Fees',
+        description: titleCase((dto.visitType ?? 'Service').replace(/_/g, ' ')),
+        amount: dto.serviceFees,
+      });
+    }
+    if (dto.packageCharges && dto.packageCharges > 0) {
+      rows.push({
+        detail: 'Package Charges',
+        description: dto.packageType ?? 'Package',
+        amount: dto.packageCharges,
+      });
+    }
+  }
+
+  return rows;
+}
+
+export function mapInvoiceDtoToBillView(dto: InvoiceDto): import('@/types').BillInvoiceView {
+  const displayPatientId =
+    dto.formattedPatientId ??
+    dto.patientDisplayId ??
+    dto.patientCode ??
+    dto.patientId;
+  const formattedPatientId = displayPatientId.startsWith('#')
+    ? displayPatientId
+    : `#${displayPatientId}`;
+
+  const latestPayment = dto.payments?.[0];
+
+  return {
+    patientName: dto.patientName,
+    patientId: formattedPatientId,
+    contactNumber: dto.contactNumber ?? '—',
+    invoice: {
+      clinicName: 'Ganesha Ayurvedaa',
+      gstNo: '—',
+      doctorName: '—',
+      doctorCredentials: '—',
+      workingHours: '—',
+      doctorPhone: '—',
+      invoiceNo: dto.invoiceId,
+      invoiceDate: formatDisplayDate(dto.invoiceDate),
+      paymentMode: latestPayment?.paymentMethod ?? dto.status ?? '—',
+      amountDue: dto.leftAmount ?? Math.max(0, dto.totalAmount - dto.paidAmount),
+      items: mapInvoiceItems(dto),
+      subtotal: dto.subtotal ?? dto.totalAmount,
+      cgst: dto.cgstAmount ?? 0,
+      sgst: dto.sgstAmount ?? 0,
+      discount: dto.discount ?? 0,
+      total: dto.totalAmount,
+      conditions: 'Thank you for choosing Ganesha Ayurvedaa.',
+      address: '—',
+      email: '—',
+      website: 'www.ganeshaayurvedaa.com',
+    },
+  };
+}
+
 export function mapDoctorToClinicRecord(doctor: DoctorDto): ClinicDoctorRecord {
   return {
     id: doctor.id,
@@ -988,7 +1072,7 @@ export function mapInvoiceToBillingRecord(
 ): import('@/types').BillingRecord {
   const displayId = invoice.patientDisplayId ?? invoice.patientId;
   return {
-    id: invoice.invoiceId || `bill-${index}`,
+    id: invoice.id || invoice.invoiceId || `bill-${index}`,
     invoiceId: invoice.invoiceId,
     patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
     secondaryPatientId: invoice.patientCode ?? invoice.patientId,

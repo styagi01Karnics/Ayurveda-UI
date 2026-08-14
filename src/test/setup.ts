@@ -823,6 +823,7 @@ vi.mock('@/lib/api/auth', () => ({
 vi.mock('@/lib/api/billing', () => ({
   getInvoices: vi.fn(async () => [
     {
+      id: 'd565b93d-f8ef-43e1-9ca0-3d29fcab750d',
       invoiceId: 'INV-1024',
       patientId: '37944397',
       patientDisplayId: 'PT458652',
@@ -834,7 +835,46 @@ vi.mock('@/lib/api/billing', () => ({
       status: 'COMPLETED',
     },
   ]),
+  getInvoiceById: vi.fn(async (invoiceId: string) => ({
+    id: 'inv-1',
+    invoiceId,
+    patientId: '37944397',
+    patientDisplayId: 'PT458652',
+    patientCode: 'GAN2025-0129',
+    patientName: 'Khushi Shroff',
+    contactNumber: '+919876543210',
+    invoiceDate: '2026-10-05',
+    visitType: 'CONSULTATION',
+    serviceFees: 15000,
+    subtotal: 15000,
+    discount: 0,
+    cgstAmount: 0,
+    sgstAmount: 0,
+    totalAmount: 15000,
+    paidAmount: 15000,
+    leftAmount: 0,
+    status: 'COMPLETED',
+    items: [
+      {
+        id: 'item-1',
+        itemType: 'SERVICE',
+        itemName: 'Consultation',
+        quantity: 1,
+        unitPrice: 15000,
+        amount: 15000,
+      },
+    ],
+    payments: [
+      {
+        id: 'pay-1',
+        amountPaid: 15000,
+        paymentDate: '2026-10-05T10:00:00',
+        paymentMethod: 'Cash',
+      },
+    ],
+  })),
   createInvoice: vi.fn(async () => ({
+    id: 'inv-uuid-new',
     invoiceId: 'INV-NEW',
     patientId: '37944397',
     invoiceDate: '2026-10-15',

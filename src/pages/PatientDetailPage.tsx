@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useToast } from '@/app/ToastContext';
 import {
   BillingMembershipTab,
   MedicalAssessmentTab,
@@ -7,6 +8,7 @@ import {
   PersonalInfoTab,
   TreatmentFollowUpTab,
 } from '@/components/patients/PatientDetailTabs';
+import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { PatientBreadcrumbs } from '@/components/patients/PatientsTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
@@ -32,7 +34,10 @@ import type { PatientDetailTab } from '@/types/patientDetail';
 export function PatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<PatientDetailTab>('personal');
+  const [billInvoiceId, setBillInvoiceId] = useState<string | null>(null);
+  const [latestInvoiceId, setLatestInvoiceId] = useState<string | null>(null);
 
   const { data: patient, loading, error, reload } = useAsyncData(
     async () => {
@@ -75,6 +80,8 @@ export function PatientDetailPage() {
       const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
       const doshaName =
         medicalAssessment?.ayurvedicAssessment?.dosha?.name ?? undefined;
+
+      setLatestInvoiceId(invoices[0]?.id ?? null);
 
       return mapPatientToDetail(apiPatient, {
         doctor: doctorName ?? '—',
@@ -162,6 +169,17 @@ export function PatientDetailPage() {
     [patientId],
   );
 
+  const handleDownloadBill = () => {
+    if (!latestInvoiceId) {
+      showToast({
+        title: 'No invoice found',
+        message: 'This patient does not have a bill to download yet.',
+      });
+      return;
+    }
+    setBillInvoiceId(latestInvoiceId);
+  };
+
   return (
     <div className="space-y-5">
       <PatientBreadcrumbs />
@@ -190,12 +208,21 @@ export function PatientDetailPage() {
                 <TreatmentFollowUpTab patient={patient} />
               )}
               {activeTab === 'billing' && (
-                <BillingMembershipTab patient={patient} />
+                <BillingMembershipTab
+                  patient={patient}
+                  onDownloadBill={handleDownloadBill}
+                />
               )}
             </div>
           </Card>
         )}
       </AsyncStatus>
+
+      <BillInvoiceModal
+        open={Boolean(billInvoiceId)}
+        invoiceId={billInvoiceId}
+        onClose={() => setBillInvoiceId(null)}
+      />
 
       <button
         type="button"

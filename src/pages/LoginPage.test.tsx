@@ -38,10 +38,30 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     );
 
+    const emailInput = screen.getByPlaceholderText(
+      'Enter your username or email address',
+    );
+    const passwordInput = screen.getByPlaceholderText('Password');
+    await user.clear(emailInput);
+    await user.clear(passwordInput);
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(await screen.findByText('Username or email is required')).toBeInTheDocument();
     expect(screen.getByText('Password is required')).toBeInTheDocument();
+  });
+
+  it('logs in with dummy credentials without calling the API', async () => {
+    const user = userEvent.setup();
+    mockNavigate.mockClear();
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Login' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 
   it('links to signup page', () => {

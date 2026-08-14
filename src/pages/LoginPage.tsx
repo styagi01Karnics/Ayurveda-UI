@@ -8,9 +8,10 @@ import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { login as loginApi } from '@/lib/api/auth';
-import { ApiError } from '@/lib/api/client';
-import { mapAuthTokenToSession, setAuthSession } from '@/lib/auth';
+import {
+  DUMMY_LOGIN_CREDENTIALS,
+  mockLogin,
+} from '@/lib/auth';
 import {
   loginSchema,
   type LoginFormValues,
@@ -27,30 +28,22 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      emailOrUsername: '',
-      password: '',
+      emailOrUsername: DUMMY_LOGIN_CREDENTIALS.emailOrUsername,
+      password: DUMMY_LOGIN_CREDENTIALS.password,
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = (values: LoginFormValues) => {
     setSubmitError(null);
-    try {
-      const response = await loginApi({
-        usernameOrEmail: values.emailOrUsername.trim(),
-        password: values.password,
-      });
-      const session = mapAuthTokenToSession(response);
-      setAuthSession(session.token, session.user);
-      navigate('/dashboard');
-    } catch (err) {
-      setSubmitError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : 'Invalid credentials. Please try again.',
-      );
+    const user = mockLogin(
+      values.emailOrUsername.trim(),
+      values.password,
+    );
+    if (!user) {
+      setSubmitError('Invalid credentials. Password must be at least 6 characters.');
+      return;
     }
+    navigate('/dashboard');
   };
 
   return (
@@ -63,7 +56,13 @@ export function LoginPage() {
             Welcome back!
           </h2>
           <p className="mt-2 text-sm text-text-muted">
-            Enter your Credentials to access your account
+            Enter your credentials to access your account
+          </p>
+          <p className="mt-2 rounded-lg bg-gold/10 px-3 py-2 text-xs text-brown">
+            Demo login (no API):{' '}
+            <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.emailOrUsername}</span>
+            {' / '}
+            <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.password}</span>
           </p>
         </div>
 
@@ -107,7 +106,7 @@ export function LoginPage() {
             disabled={isSubmitting}
             className="mt-1 rounded-xl py-3 text-base font-semibold"
           >
-            {isSubmitting ? 'Logging in...' : 'Login'}
+            Login
           </Button>
         </form>
 

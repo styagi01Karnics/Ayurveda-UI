@@ -4,6 +4,14 @@ import type { AuthTokenResponse, UserResponse } from '@/lib/api/auth';
 const AUTH_KEY = 'ganesha_auth_user';
 const TOKEN_KEY = 'ganesha_auth_token';
 
+export const MOCK_AUTH_TOKEN = 'mock-dev-token';
+
+/** Default credentials for local UI login (no API). */
+export const DUMMY_LOGIN_CREDENTIALS = {
+  emailOrUsername: 'admin@clinic.com',
+  password: 'Secret@123',
+} as const;
+
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   TENANT_ADMIN: 'Tenant Admin',
@@ -78,33 +86,51 @@ export function mapAuthTokenToSession(response: AuthTokenResponse): {
   };
 }
 
-/** @deprecated Use login() from @/lib/api/auth */
-export function mockLogin(emailOrUsername: string, password: string): AuthUser | null {
-  if (password.length >= 6) {
-    const user: AuthUser = {
-      fullName: 'Rahul Sharma',
+export function createMockAuthSession(input: {
+  emailOrUsername: string;
+  fullName?: string;
+}): { token: string; user: AuthUser } {
+  const trimmed = input.emailOrUsername.trim();
+  const email = trimmed.includes('@')
+    ? trimmed
+    : `${trimmed}@ganeshaayurvedaa.com`;
+
+  return {
+    token: MOCK_AUTH_TOKEN,
+    user: {
+      id: '00000000-0000-4000-8000-000000000001',
+      fullName: input.fullName ?? 'Rahul Sharma',
       role: 'Super Admin',
-      email: emailOrUsername.includes('@')
-        ? emailOrUsername
-        : 'rahul@ganeshaayurvedaa.com',
-    };
-    setStoredUser(user);
-    return user;
-  }
-  return null;
+      email,
+      username: trimmed.includes('@') ? trimmed.split('@')[0] : trimmed,
+      tenantId: '00000000-0000-4000-8000-000000000002',
+      tenantCode: 'GAN',
+    },
+  };
 }
 
-/** @deprecated Use registerTenant() + login() from @/lib/api/auth */
+/** Local login without calling the auth API. Password must be at least 6 characters. */
+export function mockLogin(emailOrUsername: string, password: string): AuthUser | null {
+  if (password.length < 6) return null;
+  const session = createMockAuthSession({ emailOrUsername });
+  setAuthSession(session.token, session.user);
+  return session.user;
+}
+
+/** Local signup session without calling the auth API. */
 export function mockSignup(data: {
   fullName: string;
   email: string;
   userId: string;
 }): AuthUser {
-  const user: AuthUser = {
+  const session = createMockAuthSession({
+    emailOrUsername: data.userId || data.email,
     fullName: data.fullName,
-    role: 'Super Admin',
-    email: data.email,
-  };
-  setStoredUser(user);
-  return user;
+  });
+  setAuthSession(session.token, session.user);
+  return session.user;
+}
+
+export function isMockAuthToken(token: string | null | undefined): boolean {
+  return token === MOCK_AUTH_TOKEN;
 }

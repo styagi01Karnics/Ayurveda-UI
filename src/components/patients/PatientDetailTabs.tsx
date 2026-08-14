@@ -1,5 +1,6 @@
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { assets } from '@/lib/assets';
 import type { PatientDetail } from '@/types';
@@ -353,11 +354,29 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
   );
 }
 
-export function BillingMembershipTab({ patient }: { patient: PatientDetail }) {
+export function BillingMembershipTab({
+  patient,
+  onDownloadBill,
+}: {
+  patient: PatientDetail;
+  onDownloadBill?: () => void;
+}) {
   const b = patient.billing;
 
   return (
     <div className="space-y-8">
+      {onDownloadBill && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={onDownloadBill}
+          >
+            <AppIcon src={assets.icons.download} className="h-4 w-4" />
+            Download Bill
+          </Button>
+        </div>
+      )}
       <SectionBlock title="Billing & Membership">
         <DataRow
           headers={['Package Name', 'Validity', 'Status', 'Discount Applied']}

@@ -109,6 +109,9 @@ export interface InvoiceDto {
 }
 
 export interface InvoiceListItemDto {
+  /** Invoice UUID — use for GET/DELETE /api/v1/invoices/{id} */
+  id: string;
+  /** Human-readable invoice number, e.g. INV-1002 */
   invoiceId: string;
   patientId: string;
   patientDisplayId?: string;
@@ -178,8 +181,9 @@ export function getInvoices(query: InvoicesQuery = {}) {
   );
 }
 
-export function getInvoiceById(invoiceId: string) {
-  return apiRequest<InvoiceListItemDto>(url(ep.invoiceById(invoiceId)));
+/** @param id Invoice UUID (not the display number like INV-1002). */
+export function getInvoiceById(id: string) {
+  return apiRequest<InvoiceDto>(url(ep.invoiceById(id)));
 }
 
 export function createInvoice(payload: CreateInvoicePayload) {

@@ -141,6 +141,9 @@ export function GenerateInvoicePage() {
   const [createdBillIds, setCreatedBillIds] = useState<
     Partial<Record<InvoiceBillType, string>>
   >({});
+  const [createdBillNumbers, setCreatedBillNumbers] = useState<
+    Partial<Record<InvoiceBillType, string>>
+  >({});
   const [patientContext, setPatientContext] = useState<InvoicePatientContext | null>(
     null,
   );
@@ -526,6 +529,10 @@ export function GenerateInvoicePage() {
 
       setCreatedBillIds((prev) => ({
         ...prev,
+        [bill]: result.id,
+      }));
+      setCreatedBillNumbers((prev) => ({
+        ...prev,
         [bill]: result.invoiceId,
       }));
       setPaymentSuccessDetails(mapInvoiceToPaymentSuccess(result));
@@ -564,8 +571,8 @@ export function GenerateInvoicePage() {
             <div>
               <h2 className="text-lg font-bold text-brown">{BILL_LABELS[bill]}</h2>
               <p className="mt-1 text-sm text-text-muted">
-                {createdBillIds[bill]
-                  ? `Bill ID: ${createdBillIds[bill]}`
+                {createdBillNumbers[bill]
+                  ? `Bill ID: ${createdBillNumbers[bill]}`
                   : 'Separate bill — not combined with other tabs'}
               </p>
             </div>
@@ -642,7 +649,7 @@ export function GenerateInvoicePage() {
         <BillInvoiceModal
           open={invoicePreviewOpen}
           onClose={() => setInvoicePreviewOpen(false)}
-          patient={null}
+          invoiceId={createdBillIds[bill] ?? null}
         />
       </div>
     );
@@ -731,7 +738,7 @@ export function GenerateInvoicePage() {
 
               <BillSummarySection
                 billLabel={BILL_LABELS.service}
-                billId={createdBillIds.service}
+                billId={createdBillNumbers.service}
                 items={serviceLineItems}
                 summaryForm={summaryForm}
                 totals={activeTotals}
@@ -781,7 +788,7 @@ export function GenerateInvoicePage() {
 
               <BillSummarySection
                 billLabel={BILL_LABELS.medicine}
-                billId={createdBillIds.medicine}
+                billId={createdBillNumbers.medicine}
                 items={medicineItems}
                 summaryForm={summaryForm}
                 totals={activeTotals}
@@ -863,7 +870,7 @@ export function GenerateInvoicePage() {
 
               <BillSummarySection
                 billLabel={BILL_LABELS.therapy}
-                billId={createdBillIds.therapy}
+                billId={createdBillNumbers.therapy}
                 items={therapyItems}
                 summaryForm={summaryForm}
                 totals={activeTotals}
@@ -919,7 +926,7 @@ export function GenerateInvoicePage() {
       </Card>
 
       <CreatedBillsOverview
-        createdBillIds={createdBillIds}
+        createdBillNumbers={createdBillNumbers}
         onGoToBill={handleTabChange}
       />
     </div>
@@ -1102,13 +1109,13 @@ function BillSummaryTotals({
 }
 
 function CreatedBillsOverview({
-  createdBillIds,
+  createdBillNumbers,
   onGoToBill,
 }: {
-  createdBillIds: Partial<Record<InvoiceBillType, string>>;
+  createdBillNumbers: Partial<Record<InvoiceBillType, string>>;
   onGoToBill: (bill: InvoiceBillType) => void;
 }) {
-  const created = BILL_ORDER.filter((b) => createdBillIds[b]);
+  const created = BILL_ORDER.filter((b) => createdBillNumbers[b]);
   if (created.length === 0) return null;
 
   return (
@@ -1124,7 +1131,7 @@ function CreatedBillsOverview({
           >
             <span className="font-medium text-brown">{BILL_LABELS[bill]}</span>
             <span className="mt-0.5 block text-xs text-text-muted">
-              {createdBillIds[bill]}
+              {createdBillNumbers[bill]}
             </span>
           </button>
         ))}
