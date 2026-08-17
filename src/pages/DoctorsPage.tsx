@@ -4,6 +4,7 @@ import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
+import { ConsultationNotStartedModal } from '@/components/doctors/ConsultationNotStartedModal';
 import { DoctorScheduleStatCards } from '@/components/doctors/DoctorScheduleStatCards';
 import { DoctorScheduleTable } from '@/components/doctors/DoctorScheduleTable';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -24,6 +25,7 @@ import {
   mapAppointmentStatsToDoctorStats,
   mapTodayAppointmentToScheduleItem,
 } from '@/lib/api/mappers';
+import { canStartConsultation } from '@/lib/appointmentAlerts';
 import { assets } from '@/lib/assets';
 import type { DoctorScheduleItem, VisitType } from '@/types';
 
@@ -36,6 +38,9 @@ export function DoctorsPage() {
     null,
   );
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [notStartedTarget, setNotStartedTarget] = useState<DoctorScheduleItem | null>(
+    null,
+  );
   const [cancelling, setCancelling] = useState(false);
   const [localSchedule, setLocalSchedule] = useState<DoctorScheduleItem[]>([]);
 
@@ -96,6 +101,14 @@ export function DoctorsPage() {
 
     if (item.status === 'In Consultation') {
       navigate(`/doctors/patient/${item.patientDetailId}`);
+      return;
+    }
+
+    if (
+      item.scheduledAt != null &&
+      !canStartConsultation(new Date(item.scheduledAt))
+    ) {
+      setNotStartedTarget(item);
       return;
     }
 
@@ -204,6 +217,12 @@ export function DoctorsPage() {
         onClose={() => !cancelling && setCancelTarget(null)}
         onConfirm={handleCancelConfirm}
         loading={cancelling}
+      />
+
+      <ConsultationNotStartedModal
+        open={Boolean(notStartedTarget)}
+        appointment={notStartedTarget}
+        onClose={() => setNotStartedTarget(null)}
       />
     </PageShell>
   );

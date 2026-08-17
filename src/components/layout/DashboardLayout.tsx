@@ -9,6 +9,7 @@ import { RedeemCouponModal } from '@/components/dashboard/RedeemCouponModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { clearAuthSession } from '@/lib/auth';
 import { UI_MESSAGES } from '@/lib/uiMessages';
+import { useTodayAppointmentAlerts } from '@/hooks/useTodayAppointmentAlerts';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { TopBanner } from './TopBanner';
@@ -37,6 +38,11 @@ function getPageTitle(pathname: string): string {
   return pageTitles[pathname] ?? 'Dashboard';
 }
 
+function AppointmentAlertsListener() {
+  useTodayAppointmentAlerts(true);
+  return null;
+}
+
 export function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,6 +65,7 @@ export function DashboardLayout() {
 
   return (
     <ToastProvider>
+      <AppointmentAlertsListener />
       <PageActionContext.Provider value={contextValue}>
         <div className="app-shell flex h-screen w-screen max-w-[100vw] overflow-hidden bg-cream-light">
           <div className="sidebar-slot hidden shrink-0 lg:block">

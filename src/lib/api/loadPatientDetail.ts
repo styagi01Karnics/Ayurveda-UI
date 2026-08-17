@@ -11,6 +11,7 @@ import {
   mapPatientPackageToBillingMembership,
   mapPatientToDetail,
   pickDosha,
+  fromApiConsultationTypeIds,
 } from '@/lib/api/mappers';
 import { getPatientById } from '@/lib/api/patients';
 import { getTreatmentsByPatientId } from '@/lib/api/treatments';
@@ -54,14 +55,28 @@ export async function loadPatientDetail(
     ? mapPatientPackageToBillingMembership(packages[0])
     : {};
 
-  const medicalUi = mapMedicalAssessmentDtoToUi(medicalAssessment);
+  const medicalUi = mapMedicalAssessmentDtoToUi(
+    medicalAssessment,
+    apiPatient.gender,
+  );
   const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
   const doshaName =
     medicalAssessment?.ayurvedicAssessment?.dosha?.name ?? undefined;
 
+  const registrationDate =
+    latestAppointment?.registrationDate ??
+    latestAppointment?.appointmentDate ??
+    apiPatient.createdAt ??
+    '';
+
   return mapPatientToDetail(apiPatient, {
-    doctor: doctorName ?? '—',
+    bookingId:
+      latestAppointment?.bookingId ?? latestAppointment?.id ?? '',
+    doctor: doctorName ?? '',
     dosha: pickDosha(doshaName),
+    consultationTypeIds: fromApiConsultationTypeIds(
+      latestAppointment?.consultationTypes,
+    ),
     visitType: latestAppointment
       ? (latestAppointment.consultationTypes?.[0] ?? 'Consultation')
           .toString()
@@ -70,41 +85,26 @@ export async function loadPatientDetail(
         ? 'Therapy'
         : 'Consultation'
       : 'Consultation',
-    appointmentDate: latestAppointment?.registrationDate ?? undefined,
+    appointmentDate: registrationDate || undefined,
     medicalAssessment: medicalUi,
     personalInfo: {
-      gender: '',
-      age: '',
-      dob: '',
-      serviceType: 'Consultation',
-      registrationDate: '',
-      assignedDoctor: doctorName ?? '—',
-      therapyDuration: '—',
-      email: '',
-      city: '',
-      state: '',
-      address: '',
-      emergencyName: '',
-      emergencyRelation: '',
-      emergencyPhone: '',
-      idProofType: '',
-      idProofNumber: '',
-      occupation: '',
-      insuranceDetails: '',
+      registrationDate: registrationDate.slice(0, 10),
+      assignedDoctor: doctorName ?? '',
+      therapyDuration: '',
     },
     treatmentFollowUp: {
       treatmentPlanId: treatment?.treatmentPlanId,
-      treatmentName: treatment?.treatmentPlanName ?? '—',
-      startDate: treatment?.startDate ?? '—',
-      endDate: treatment?.endDate ?? '—',
+      treatmentName: treatment?.treatmentPlanName ?? '',
+      startDate: treatment?.startDate ?? '',
+      endDate: treatment?.endDate ?? '',
       totalSessions: treatment?.totalSessions ?? 0,
       sessionsCompleted: treatment?.completedSessions ?? 0,
       remainingSessions: treatment?.remainingSessions ?? 0,
       assignedTherapistId: treatment?.assignedTherapistId,
-      assignedTherapist: treatment?.assignedTherapistName ?? '—',
-      nextFollowUp: treatment?.endDate ?? '—',
-      followUpDoctor: doctorName ?? '—',
-      reminder: '—',
+      assignedTherapist: treatment?.assignedTherapistName ?? '',
+      nextFollowUp: treatment?.endDate ?? '',
+      followUpDoctor: doctorName ?? '',
+      reminder: '',
       appointmentHistory: appointments.slice(0, 5).map((appt) => ({
         visitType: (appt.consultationTypes?.[0] ?? 'Consultation')
           .toString()
@@ -116,7 +116,7 @@ export async function loadPatientDetail(
           appt.registrationDate ??
           appt.appointmentDate ??
           appt.createdAt?.slice(0, 10) ??
-          '—',
+          '',
         status: 'Scheduled' as const,
       })),
     },

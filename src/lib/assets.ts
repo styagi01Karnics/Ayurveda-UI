@@ -3,6 +3,8 @@
 import scheduleDecor from '@/assets/signup/tulsi.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
+import doctorReenaAvatar from '@/assets/appointments/doctor-reena.png';
+import patientRajAvatar from '@/assets/appointments/patient-raj.png';
 import searchIcon from '@/assets/appointments/search.svg';
 import downloadIcon from '@/assets/appointments/arrow-download.svg';
 import uploadIcon from '@/assets/doctors/upload-cloud.svg';
@@ -40,6 +42,11 @@ export const assets = {
   sidebarBg,
   scheduleDecor,
   avatar,
+  calendarEvent: {
+    doctor: doctorReenaAvatar,
+    patientMale: patientRajAvatar,
+    patientFemale: avatar,
+  },
   icons: {
     nav: navIconSet,
     search: searchIcon,

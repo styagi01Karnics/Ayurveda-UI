@@ -44,6 +44,35 @@ describe('calendarUtils', () => {
     expect(events[0]?.timeLabel).toMatch(/10:00/);
   });
 
+  it('parses ISO datetime in registration date', () => {
+    const parsed = parseAppointmentDateTime({
+      ...baseRecord,
+      registrationDate: '2026-10-15T13:05:00',
+      slotTime: '',
+      appointmentDate: '15 Oct 2026, 10:00 AM',
+    });
+    expect(parsed).not.toBeNull();
+    expect(parsed?.getHours()).toBe(13);
+    expect(parsed?.getMinutes()).toBe(5);
+  });
+
+  it('places events at the correct minute offset within the hour row', () => {
+    const weekStart = getWeekStart(new Date('2026-10-12T12:00:00'));
+    const events = mapAppointmentsToCalendarEvents(
+      [
+        {
+          ...baseRecord,
+          registrationDate: '2026-10-15T13:30:00',
+          slotTime: '13:30:00',
+        },
+      ],
+      weekStart,
+    );
+    expect(events).toHaveLength(1);
+    expect(events[0]?.startHour).toBe(13);
+    expect(events[0]?.startMinute).toBe(30);
+  });
+
   it('excludes appointments outside the visible week', () => {
     const weekStart = getWeekStart(new Date('2026-11-01T12:00:00'));
     const events = mapAppointmentsToCalendarEvents([baseRecord], weekStart);

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link2, X } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { PAYMENT_MODES } from '@/data/mock/billing';
@@ -99,22 +100,31 @@ function parseSessionFrequency(value: string): number {
 }
 
 function buildServiceLineItems(data: InvoiceServiceStepValues): InvoiceLineItem[] {
-  return [
-    {
-      id: 'svc-treatment',
-      name: 'Treatments',
+  const items: InvoiceLineItem[] = [];
+  const serviceFees = Number(data.serviceFees) || 0;
+
+  if (data.serviceFees.trim() && serviceFees >= 0) {
+    items.push({
+      id: 'svc-consultation',
+      name: data.visitType?.trim() || 'Consultation',
       quantity: 1,
-      amount: Number(data.serviceFees),
+      amount: serviceFees,
       type: 'service',
-    },
-    {
+    });
+  }
+
+  const packageType = data.packageType?.trim();
+  if (packageType) {
+    items.push({
       id: 'svc-package',
-      name: data.packageType,
+      name: packageType,
       quantity: 1,
-      amount: Number(data.packageCharges),
+      amount: Number(data.packageCharges) || 0,
       type: 'service',
-    },
-  ];
+    });
+  }
+
+  return items;
 }
 
 export function GenerateInvoicePage() {
@@ -208,8 +218,8 @@ export function GenerateInvoicePage() {
       invoiceDate: todayIsoDate(),
       visitType: 'Consultation',
       serviceFees: '',
-      packageType: 'Monthly',
-      packageCharges: '0',
+      packageType: '',
+      packageCharges: '',
     },
   });
 
@@ -711,28 +721,98 @@ export function GenerateInvoicePage() {
                     error={serviceForm.formState.errors.invoiceDate?.message}
                     {...serviceForm.register('invoiceDate')}
                   />
-                  <Select
-                    label="Visit Type"
-                    options={[...VISIT_TYPE_OPTIONS]}
-                    error={serviceForm.formState.errors.visitType?.message}
-                    {...serviceForm.register('visitType')}
-                  />
-                  <Input
-                    label="Service Fees (₹)"
-                    error={serviceForm.formState.errors.serviceFees?.message}
-                    {...serviceForm.register('serviceFees')}
-                  />
-                  <Select
-                    label="Package Type"
-                    options={[...PACKAGE_TYPE_OPTIONS]}
-                    error={serviceForm.formState.errors.packageType?.message}
-                    {...serviceForm.register('packageType')}
-                  />
-                  <Input
-                    label="Package Charges (₹)"
-                    error={serviceForm.formState.errors.packageCharges?.message}
-                    {...serviceForm.register('packageCharges')}
-                  />
+                </div>
+              </FormSection>
+
+              <FormSection title="Billing Details">
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      label="Service Type *"
+                      placeholder="Service Type"
+                      options={[...VISIT_TYPE_OPTIONS]}
+                      error={serviceForm.formState.errors.visitType?.message}
+                      {...serviceForm.register('visitType')}
+                    />
+                    <RupeeInput
+                      label="Service Fees *"
+                      placeholder="0"
+                      error={serviceForm.formState.errors.serviceFees?.message}
+                      {...serviceForm.register('serviceFees')}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Select
+                      label="Package Type"
+                      placeholder="Package Type"
+                      options={[
+                        { value: '', label: 'None' },
+                        ...PACKAGE_TYPE_OPTIONS.map((option) => ({
+                          value: option,
+                          label: option,
+                        })),
+                      ]}
+                      error={serviceForm.formState.errors.packageType?.message}
+                      {...serviceForm.register('packageType')}
+                    />
+                    <RupeeInput
+                      label={
+                        serviceForm.watch('packageType')
+                          ? 'Package Charges *'
+                          : 'Package Charges'
+                      }
+                      placeholder="0"
+                      disabled={!serviceForm.watch('packageType')}
+                      error={serviceForm.formState.errors.packageCharges?.message}
+                      {...serviceForm.register('packageCharges')}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <RupeeInput
+                      label="Discount (if any)"
+                      placeholder="0"
+                      error={summaryForm.formState.errors.discount?.message}
+                      {...summaryForm.register('discount')}
+                    />
+                    <div className="space-y-3">
+                      <Controller
+                        name="applyTax"
+                        control={summaryForm.control}
+                        render={({ field }) => (
+                          <label className="flex items-center gap-2 text-sm font-medium text-brown">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-gray-300 text-gold focus:ring-gold"
+                              checked={Boolean(field.value)}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                              onBlur={field.onBlur}
+                              name={field.name}
+                              ref={field.ref}
+                            />
+                            CGST & SGST
+                          </label>
+                        )}
+                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          label="CGST *"
+                          placeholder="3"
+                          disabled={!applyTax}
+                          error={summaryForm.formState.errors.cgst?.message}
+                          {...summaryForm.register('cgst')}
+                        />
+                        <Input
+                          label="SGST *"
+                          placeholder="3"
+                          disabled={!applyTax}
+                          error={summaryForm.formState.errors.sgst?.message}
+                          {...summaryForm.register('sgst')}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </FormSection>
 
@@ -744,6 +824,7 @@ export function GenerateInvoicePage() {
                 totals={activeTotals}
                 discount={discount}
                 applyTax={applyTax}
+                hideDiscountAndTax
               />
             </form>
           )}
@@ -966,6 +1047,7 @@ function BillSummarySection({
   discount,
   applyTax,
   onRemove,
+  hideDiscountAndTax = false,
 }: {
   billLabel: string;
   billId?: string;
@@ -975,6 +1057,7 @@ function BillSummarySection({
   discount: number;
   applyTax: boolean;
   onRemove?: (id: string) => void;
+  hideDiscountAndTax?: boolean;
 }) {
   const cgstRate = Number(summaryForm.watch('cgst') || 3);
   const sgstRate = Number(summaryForm.watch('sgst') || 3);
@@ -993,68 +1076,73 @@ function BillSummarySection({
 
       <LineItemsTable items={items} onRemove={onRemove} emptyLabel={`No items in ${billLabel.toLowerCase()} yet.`} />
 
-      <div className="mt-6">
-        <div className="grid grid-cols-12 gap-4 items-end">
-
-          {/* Discount */}
-          <div className="col-span-6">
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Discount (if any)
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                ₹
-              </span>
-              <input
-                type="number"
-                min={0}
-                placeholder="0"
-                className="h-11 w-full rounded-lg border border-gray-300 pl-8 pr-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                {...summaryForm.register('discount')}
-              />
-            </div>
-          </div>
-
-          {/* GST Section */}
-          <div className="col-span-6">
-            <div className="mb-2 flex items-center gap-2">
-              <input
-                type="checkbox"
-                id={`apply-tax-${billLabel}`}
-                className="checkbox-gold"
-                {...summaryForm.register('applyTax')}
-              />
-              <label
-                htmlFor={`apply-tax-${billLabel}`}
-                className="text-sm font-medium text-gray-700"
-              >
-                CGST & SGST
+      {!hideDiscountAndTax ? (
+        <div className="mt-6">
+          <div className="grid grid-cols-12 items-end gap-4">
+            <div className="col-span-6">
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                Discount (if any)
               </label>
-            </div>
-
-            {applyTax && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  ₹
+                </span>
                 <input
                   type="number"
                   min={0}
-                  placeholder="CGST"
-                  className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  placeholder="0"
+                  className="h-11 w-full rounded-lg border border-gray-300 pl-8 pr-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                  {...summaryForm.register('discount')}
+                />
+              </div>
+            </div>
+
+            <div className="col-span-6">
+              <div className="mb-2 flex items-center gap-2">
+                <Controller
+                  name="applyTax"
+                  control={summaryForm.control}
+                  render={({ field }) => (
+                    <>
+                      <input
+                        type="checkbox"
+                        id={`apply-tax-${billLabel}`}
+                        className="checkbox-gold"
+                        checked={Boolean(field.value)}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                      <label
+                        htmlFor={`apply-tax-${billLabel}`}
+                        className="text-sm font-medium text-gray-700"
+                      >
+                        CGST & SGST
+                      </label>
+                    </>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="CGST"
+                  placeholder="3"
+                  disabled={!applyTax}
                   {...summaryForm.register('cgst')}
                 />
-
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="SGST"
-                  className="h-11 rounded-lg border border-gray-300 px-3 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                <Input
+                  label="SGST"
+                  placeholder="3"
+                  disabled={!applyTax}
                   {...summaryForm.register('sgst')}
                 />
               </div>
-            )}
+            </div>
           </div>
-
         </div>
-      </div>
+      ) : null}
 
       <BillSummaryTotals
         totals={totals}

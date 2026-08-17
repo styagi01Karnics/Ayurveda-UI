@@ -76,7 +76,10 @@ export function PatientDetailPage() {
         ? mapPatientPackageToBillingMembership(packages[0])
         : {};
 
-      const medicalUi = mapMedicalAssessmentDtoToUi(medicalAssessment);
+      const medicalUi = mapMedicalAssessmentDtoToUi(
+        medicalAssessment,
+        apiPatient.gender,
+      );
       const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
       const doshaName =
         medicalAssessment?.ayurvedicAssessment?.dosha?.name ?? undefined;
@@ -84,6 +87,8 @@ export function PatientDetailPage() {
       setLatestInvoiceId(invoices[0]?.id ?? null);
 
       return mapPatientToDetail(apiPatient, {
+        bookingId:
+          latestAppointment?.bookingId ?? latestAppointment?.id ?? '',
         doctor: doctorName ?? '—',
         dosha: pickDosha(doshaName),
         visitType: latestAppointment

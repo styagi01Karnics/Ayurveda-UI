@@ -5,7 +5,6 @@ import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { DoctorPatientBreadcrumbs } from '@/components/doctors/DoctorPatientBreadcrumbs';
 import {
-  CreatePrescriptionForm,
   DoctorBillingForm,
   DoctorMedicalForm,
   DoctorPatientViewTab,
@@ -13,6 +12,8 @@ import {
   DoctorTreatmentForm,
   type DoctorFormMasterOptions,
 } from '@/components/doctors/DoctorPatientForms';
+import { CreatePrescriptionForm } from '@/components/doctors/CreatePrescriptionForm';
+import { PrescriptionPreviewModal } from '@/components/doctors/PrescriptionPreviewModal';
 import { UnsavedChangesModal } from '@/components/doctors/UnsavedChangesModal';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Badge } from '@/components/ui/Badge';
@@ -21,9 +22,10 @@ import { Card } from '@/components/ui/Card';
 import { Stepper } from '@/components/ui/Stepper';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { getActiveDoctors } from '@/lib/api/doctors';
 import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import { getActivePackageMasters } from '@/lib/api/packageMasters';
-import { getAllTherapists } from '@/lib/api/therapists';
+import { getActiveTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
 import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
 import {
@@ -60,6 +62,11 @@ const detailTabs: { id: PatientDetailTab; label: string }[] = [
 
 const TAB_ORDER: PatientDetailTab[] = ['personal', 'medical', 'treatment', 'billing'];
 
+function scrollWorkflowToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function getFormId(tab: PatientDetailTab): string {
   return `doctor-patient-${tab}-form`;
 }
@@ -67,6 +74,10 @@ function getFormId(tab: PatientDetailTab): string {
 export function DoctorPatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const [prescriptionPreviewOpen, setPrescriptionPreviewOpen] = useState(false);
+  const [prescriptionDraft, setPrescriptionDraft] =
+    useState<DoctorPrescriptionValues | null>(null);
+  const [prescriptionSubmitting, setPrescriptionSubmitting] = useState(false);
   const { showToast } = useToast();
 
   const {
@@ -82,12 +93,13 @@ export function DoctorPatientDetailPage() {
 
   const { data: masterOptions } = useAsyncData(
     async () => {
-      const [consultationTypes, treatmentPlans, packageMasters, therapists] =
+      const [consultationTypes, treatmentPlans, packageMasters, therapists, doctors] =
         await Promise.all([
           getActiveConsultationTypes().catch(() => []),
           getActiveTreatmentPlanMasters().catch(() => []),
           getActivePackageMasters().catch(() => []),
-          getAllTherapists().catch(() => []),
+          getActiveTherapists().catch(() => []),
+          getActiveDoctors().catch(() => []),
         ]);
       return {
         consultationTypes: consultationTypes.map((type) => ({
@@ -102,9 +114,10 @@ export function DoctorPatientDetailPage() {
           value: pkg.id,
           label: pkg.name,
         })),
-        therapists: therapists.map((therapist) => ({
-          value: therapist.id,
-          label: therapist.name || therapist.therapistName || '—',
+        therapists: mapTherapistSelectOptions(therapists),
+        doctors: doctors.map((doctor) => ({
+          value: doctor.name || doctor.doctorName || doctor.id,
+          label: doctor.name || doctor.doctorName || '—',
         })),
       } satisfies DoctorFormMasterOptions;
     },
@@ -113,6 +126,7 @@ export function DoctorPatientDetailPage() {
       treatmentPlans: [],
       packageMasters: [],
       therapists: [],
+      doctors: [],
     },
   );
 
@@ -221,6 +235,10 @@ export function DoctorPatientDetailPage() {
     setIsDirty(false);
   };
 
+  useEffect(() => {
+    scrollWorkflowToTop();
+  }, [activeTab, workflowStep]);
+
   const handleNext = () => {
     if (workflowStep === 2) {
       const form = document.getElementById('doctor-prescription-form') as HTMLFormElement | null;
@@ -237,9 +255,11 @@ export function DoctorPatientDetailPage() {
     const currentIndex = TAB_ORDER.indexOf(activeTab);
     if (currentIndex < TAB_ORDER.length - 1) {
       setActiveTab(TAB_ORDER[currentIndex + 1]);
+      scrollWorkflowToTop();
       return;
     }
     setWorkflowStep(2);
+    scrollWorkflowToTop();
   };
 
   const handleUnsavedConfirm = () => {
@@ -286,22 +306,35 @@ export function DoctorPatientDetailPage() {
     const currentIndex = TAB_ORDER.indexOf(activeTab);
     if (currentIndex < TAB_ORDER.length - 1) {
       setActiveTab(TAB_ORDER[currentIndex + 1]);
+      scrollWorkflowToTop();
       return;
     }
     setWorkflowStep(2);
+    scrollWorkflowToTop();
   };
 
-  const handlePrescriptionSubmit = (_values: DoctorPrescriptionValues) => {
-    showToast({
-      title: 'Prescription Created',
-      message: 'Prescription has been saved successfully.',
-    });
-    navigate('/doctors');
+  const handlePrescriptionSubmit = (values: DoctorPrescriptionValues) => {
+    setPrescriptionDraft(values);
+    setPrescriptionPreviewOpen(true);
+  };
+
+  const handlePrescriptionConfirm = async () => {
+    setPrescriptionSubmitting(true);
+    try {
+      showToast({
+        title: 'Prescription Created',
+        message: 'Prescription has been saved successfully.',
+      });
+      setPrescriptionPreviewOpen(false);
+      navigate('/doctors');
+    } finally {
+      setPrescriptionSubmitting(false);
+    }
   };
 
   const nextLabel =
     workflowStep === 2
-      ? 'Save Prescription'
+      ? 'Generate Prescription'
       : activeTab === 'billing' && !isEditing
         ? 'Next'
         : activeTab === 'billing' && isEditing
@@ -333,7 +366,7 @@ export function DoctorPatientDetailPage() {
             <div>
               <p className="text-xs text-text-muted">Patient ID</p>
               <div className="mt-1 flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-bold text-brown">#{patient.detailId}</h2>
+                <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
                 <Badge variant="gold" className="rounded-md px-3 py-1">
                   {patient.treatmentStatus}
                 </Badge>
@@ -409,6 +442,7 @@ export function DoctorPatientDetailPage() {
             {workflowStep === 2 && (
               <CreatePrescriptionForm
                 formId="doctor-prescription-form"
+                patient={patient}
                 onSubmit={handlePrescriptionSubmit}
               />
             )}
@@ -427,6 +461,17 @@ export function DoctorPatientDetailPage() {
             </>
           )}
       </AsyncStatus>
+
+      {patient ? (
+        <PrescriptionPreviewModal
+          open={prescriptionPreviewOpen}
+          onClose={() => setPrescriptionPreviewOpen(false)}
+          onConfirm={() => void handlePrescriptionConfirm()}
+          patient={patient}
+          prescription={prescriptionDraft}
+          submitting={prescriptionSubmitting}
+        />
+      ) : null}
 
       <UnsavedChangesModal
         open={unsavedOpen}

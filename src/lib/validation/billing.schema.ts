@@ -13,11 +13,19 @@ export const invoiceServiceStepSchema = z.object({
     .string()
     .min(1, 'Service fees is required')
     .regex(/^\d+$/, 'Enter a valid amount'),
-  packageType: z.string().min(1, 'Package type is required'),
+  packageType: z.string().optional(),
   packageCharges: z
     .string()
-    .min(1, 'Package charges is required')
-    .regex(/^\d+$/, 'Enter a valid amount'),
+    .optional()
+    .refine((value) => !value || /^\d+$/.test(value), 'Enter a valid amount'),
+}).superRefine((data, ctx) => {
+  if (data.packageType?.trim() && !data.packageCharges?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Package charges is required when package type is selected',
+      path: ['packageCharges'],
+    });
+  }
 });
 
 export const invoiceMedicineItemSchema = z.object({
@@ -48,6 +56,23 @@ export const invoiceSummarySchema = z.object({
   applyTax: z.boolean(),
   cgst: z.string().optional(),
   sgst: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.applyTax) {
+    if (!data.cgst?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'CGST is required',
+        path: ['cgst'],
+      });
+    }
+    if (!data.sgst?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'SGST is required',
+        path: ['sgst'],
+      });
+    }
+  }
 });
 
 export type InvoiceServiceStepValues = z.infer<typeof invoiceServiceStepSchema>;

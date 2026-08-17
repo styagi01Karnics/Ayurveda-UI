@@ -13,7 +13,7 @@ const minimalBooking: CreatePatientValues = {
   scheduleDate: '',
   scheduleTime: '',
   sessionDuration: '',
-  sessionFrequency: '',
+  sessionFrequency: '1',
   assignedTherapist: '',
   therapyInstructions: '',
   doshaType: '',

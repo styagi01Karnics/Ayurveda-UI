@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import {
+  DEFAULT_SESSION_FREQUENCY,
+  bookingDateNotPastMessage,
+  isBookingDateOnOrAfterToday,
+  optionalBookingDateSchema,
+  optionalBookingTimeSchema,
+  requiredBookingDateSchema,
+  requiredBookingTimeSchema,
+} from '@/lib/bookingConstraints';
 
 /** Step 1 — booking flow: only core fields required on first screen. */
 export const patientStep1BookingSchema = z.object({
@@ -14,8 +23,8 @@ export const patientStep1BookingSchema = z.object({
     .min(1, 'Select at least one consultation type'),
   age: z.string().optional(),
   preferredLanguage: z.string().optional(),
-  registrationDate: z.string().optional(),
-  appointmentTime: z.string().optional(),
+  registrationDate: optionalBookingDateSchema,
+  appointmentTime: optionalBookingTimeSchema,
   assignedDoctor: z.string().optional(),
   email: z.string().optional(),
   state: z.string().optional(),
@@ -42,7 +51,7 @@ export const patientStep1FullSchema = z.object({
     .array(z.string())
     .min(1, 'Select at least one consultation type'),
   registrationDate: z.string().min(1, 'Registration date is required'),
-  appointmentTime: z.string().optional(),
+  appointmentTime: optionalBookingTimeSchema,
   assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
   mobileNumber: z
     .string()
@@ -77,16 +86,13 @@ export const patientStep2Schema = z.object({
   recommendedTherapies: z
     .array(z.string())
     .min(1, 'Select at least one recommended therapy'),
-  scheduleDate: z.string().min(1, 'Schedule date is required'),
-  scheduleTime: z.string().min(1, 'Schedule time is required'),
+  scheduleDate: requiredBookingDateSchema,
+  scheduleTime: requiredBookingTimeSchema,
   sessionDuration: z
     .string()
     .min(1, 'Session duration is required')
     .regex(/^\d+/, 'Enter duration in minutes (e.g. 45)'),
-  sessionFrequency: z
-    .string()
-    .min(1, 'Session frequency is required')
-    .regex(/^\d+/, 'Enter number of sessions (e.g. 7)'),
+  sessionFrequency: z.literal(DEFAULT_SESSION_FREQUENCY),
   assignedTherapist: z.string().min(1, 'Assigned therapist is required'),
   therapyInstructions: z.string().min(1, 'Therapy instructions are required'),
 });
@@ -98,7 +104,7 @@ export const patientStep2OptionalSchema = z.object({
   scheduleDate: z.string().optional().default(''),
   scheduleTime: z.string().optional().default(''),
   sessionDuration: z.string().optional().default(''),
-  sessionFrequency: z.string().optional().default(''),
+  sessionFrequency: z.literal(DEFAULT_SESSION_FREQUENCY).default(DEFAULT_SESSION_FREQUENCY),
   assignedTherapist: z.string().optional().default(''),
   therapyInstructions: z.string().optional().default(''),
 });
@@ -234,8 +240,8 @@ export const followUpSchema = z.object({
   assignedDoctorId: z.string().min(1, 'Doctor is required'),
   visitTypeId: z.string().min(1, 'Visit type is required'),
   schedulingOption: z.string().min(1, 'Scheduling option is required'),
-  scheduleDate: z.string().min(1, 'Schedule date is required'),
-  scheduleTime: z.string().min(1, 'Schedule time is required'),
+  scheduleDate: requiredBookingDateSchema,
+  scheduleTime: requiredBookingTimeSchema,
   smsReminderEnabled: z.boolean().optional(),
   sourceBookingId: z.string().optional(),
 });
@@ -252,8 +258,13 @@ export const FOLLOW_UP_SCHEDULING_OPTIONS = [
 export const bookTreatmentSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),
   treatmentPlanId: z.string().min(1, 'Treatment plan is required'),
-  startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
+  startDate: requiredBookingDateSchema,
+  endDate: z
+    .string()
+    .min(1, 'End date is required')
+    .refine(isBookingDateOnOrAfterToday, {
+      message: bookingDateNotPastMessage,
+    }),
   totalSessions: z
     .string()
     .min(1, 'Sessions required')
@@ -269,8 +280,8 @@ export type BookTreatmentFormValues = z.infer<typeof bookTreatmentSchema>;
 
 export const rescheduleAppointmentSchema = z.object({
   patientId: z.string().min(1, 'Patient is required'),
-  registrationDate: z.string().min(1, 'Registration date is required'),
-  slotTime: z.string().min(1, 'Appointment time is required'),
+  registrationDate: requiredBookingDateSchema,
+  slotTime: requiredBookingTimeSchema,
   assignedDoctorId: z.string().min(1, 'Assigned doctor is required'),
   consultationTypeIds: z
     .array(z.string())

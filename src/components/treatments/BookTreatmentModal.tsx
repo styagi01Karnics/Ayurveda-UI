@@ -8,6 +8,7 @@ import {
   bookTreatmentSchema,
   type BookTreatmentFormValues,
 } from '@/lib/validation/patient.schema';
+import { bookingDateInputProps } from '@/lib/bookingConstraints';
 
 export interface BookTreatmentLookupOptions {
   patients: { value: string; label: string }[];
@@ -94,12 +95,14 @@ export function BookTreatmentModal({
           <Input
             label="Start Date"
             type="date"
+            min={bookingDateInputProps().min}
             error={errors.startDate?.message}
             {...register('startDate')}
           />
           <Input
             label="End Date"
             type="date"
+            min={bookingDateInputProps().min}
             error={errors.endDate?.message}
             {...register('endDate')}
           />

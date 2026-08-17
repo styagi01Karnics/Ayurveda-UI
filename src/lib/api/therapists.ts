@@ -9,6 +9,19 @@ export function getAllTherapists() {
   return apiRequestList<TherapistDto>(url(apiEndpoints.therapists.getAll));
 }
 
+export function isTherapistActive(therapist: TherapistDto): boolean {
+  if (therapist.active === false) return false;
+  const status = (therapist.status ?? 'ACTIVE').toUpperCase();
+  return status === 'ACTIVE';
+}
+
+/** ACTIVE therapists only — use for assignment dropdowns. */
+export function getActiveTherapists() {
+  return getAllTherapists().then((therapists) =>
+    therapists.filter(isTherapistActive),
+  );
+}
+
 export function getTherapistById(therapistId: string) {
   return apiRequest<TherapistDto>(
     url(apiEndpoints.therapists.getById(therapistId)),
@@ -47,7 +60,7 @@ export function mapTherapistSelectOptions(
   therapists: TherapistDto[],
 ): { value: string; label: string }[] {
   return therapists
-    .filter((therapist) => (therapist.status ?? 'ACTIVE').toUpperCase() !== 'INACTIVE')
+    .filter(isTherapistActive)
     .map((therapist) => ({
       value: therapist.id,
       label: therapist.name || therapist.therapistName || '—',

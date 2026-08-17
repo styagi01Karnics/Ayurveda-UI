@@ -104,6 +104,13 @@ export interface InvoiceDto {
   leftAmount?: number;
   status: InvoiceStatus;
   billSections?: string[];
+  /** Assigned doctor UUID when returned by billing list/detail APIs. */
+  assignedDoctorId?: string;
+  doctorName?: string;
+  doctorPhone?: string;
+  doctorQualification?: string;
+  doctorSpecialization?: string;
+  doctorAvailability?: string;
   items?: InvoiceItemDto[];
   payments?: InvoicePaymentDto[];
 }

@@ -24,7 +24,7 @@ describe('medicineSchema', () => {
 });
 
 describe('invoiceServiceStepSchema', () => {
-  it('accepts valid service step data', () => {
+  it('accepts service step without package type', () => {
     const result = invoiceServiceStepSchema.safeParse({
       patientId: '#PT458652',
       fullName: 'Khushi Shroff',
@@ -32,8 +32,6 @@ describe('invoiceServiceStepSchema', () => {
       invoiceDate: '2026-10-15',
       visitType: 'Consultation',
       serviceFees: '800',
-      packageType: 'Monthly',
-      packageCharges: '800',
     });
     expect(result.success).toBe(true);
   });

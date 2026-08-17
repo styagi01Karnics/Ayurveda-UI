@@ -142,6 +142,7 @@ export interface PatientInvoice {
   discount: number;
   total: number;
   conditions: string;
+  notes?: string;
   address: string;
   email: string;
   website: string;
@@ -157,6 +158,7 @@ export interface BillInvoiceView {
 
 export interface PatientDetail extends PatientRecord {
   treatmentStatus: 'Under Treatment' | 'Discharged' | 'Pending';
+  consultationTypeIds?: string[];
   personalInfo: PatientPersonalInfo;
   medicalAssessment: PatientMedicalAssessment;
   treatmentFollowUp: PatientTreatmentFollowUp;
@@ -171,6 +173,10 @@ export interface DoctorScheduleItem {
   patientDetailId: string;
   visitType: VisitType;
   status: 'Scheduled' | 'Completed' | 'In Consultation';
+  slotTime?: string;
+  bookingTime?: string;
+  /** Epoch ms for the scheduled start (today + slot time). */
+  scheduledAt?: number;
 }
 
 export interface DoctorStats {
@@ -247,9 +253,11 @@ export interface CalendarEventDetail {
   appointmentDate: string;
   doctorName: string;
   doctorRole: string;
+  doctorAvatar?: string;
   patientName: string;
   patientAge: string;
   patientGender: string;
+  patientAvatar?: string;
   visitType: string;
   dosha: string;
   condition: string;

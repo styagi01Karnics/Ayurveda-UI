@@ -1,0 +1,440 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { TagInput } from '@/components/ui/TagInput';
+import { Textarea } from '@/components/ui/Textarea';
+import { useAsyncData } from '@/hooks/useAsyncData';
+import {
+  getAllTreatmentCategories,
+  getTherapiesByCategory,
+} from '@/lib/api/appointments';
+import { getAllMedicines } from '@/lib/api/medicines';
+import {
+  PRESCRIPTION_DOSAGE_OPTIONS,
+  PRESCRIPTION_FREQUENCY_OPTIONS,
+  PRESCRIPTION_SETUP_OPTIONS,
+} from '@/lib/prescriptionOptions';
+import {
+  doctorPrescriptionSchema,
+  FOLLOW_UP_OPTIONS,
+  type DoctorPrescriptionValues,
+} from '@/lib/validation/doctorPatient.schema';
+import { cn } from '@/lib/utils';
+import type { PatientDetail } from '@/types';
+
+function PrescriptionSection({
+  title,
+  onRemove,
+  children,
+  className,
+}: {
+  title: string;
+  onRemove?: () => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        'rounded-xl border border-gray-100 bg-white p-4 sm:p-5',
+        className,
+      )}
+    >
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-brown">{title}</h3>
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="rounded p-1 text-text-muted hover:bg-brown/5"
+            aria-label={`Remove ${title}`}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function TherapyRowFields({
+  index,
+  categoryOptions,
+  onRemove,
+  canRemove,
+  register,
+  watch,
+  setValue,
+  errors,
+}: {
+  index: number;
+  categoryOptions: { value: string; label: string }[];
+  onRemove: () => void;
+  canRemove: boolean;
+  register: ReturnType<typeof useForm<DoctorPrescriptionValues>>['register'];
+  watch: ReturnType<typeof useForm<DoctorPrescriptionValues>>['watch'];
+  setValue: ReturnType<typeof useForm<DoctorPrescriptionValues>>['setValue'];
+  errors: ReturnType<
+    typeof useForm<DoctorPrescriptionValues>
+  >['formState']['errors'];
+}) {
+  const categoryId = watch(`therapies.${index}.categoryId`);
+  const { data: therapyOptions, loading } = useAsyncData(
+    async () => {
+      if (!categoryId) return [];
+      const therapies = await getTherapiesByCategory(categoryId).catch(() => []);
+      return therapies.map((therapy) => ({
+        value: therapy.id,
+        label: therapy.name || therapy.therapyName || therapy.id,
+      }));
+    },
+    [] as { value: string; label: string }[],
+    [categoryId],
+  );
+
+  useEffect(() => {
+    setValue(`therapies.${index}.therapyIds`, [], { shouldValidate: true });
+  }, [categoryId, index, setValue]);
+
+  const rowErrors = errors.therapies?.[index];
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-[1fr_1.2fr_auto] sm:items-start">
+      <Select
+        label="Therapy Category"
+        placeholder="Therapy Category"
+        options={categoryOptions}
+        error={rowErrors?.categoryId?.message}
+        {...register(`therapies.${index}.categoryId`)}
+      />
+      <TagInput
+        label="Recommended Therapy"
+        placeholder={
+          !categoryId
+            ? 'Select category first'
+            : loading
+              ? 'Loading therapies…'
+              : therapyOptions.length
+                ? 'Select therapies'
+                : 'No therapies available'
+        }
+        value={watch(`therapies.${index}.therapyIds`) ?? []}
+        onChange={(tags) =>
+          setValue(`therapies.${index}.therapyIds`, tags, {
+            shouldValidate: true,
+          })
+        }
+        options={therapyOptions}
+        error={rowErrors?.therapyIds?.message}
+      />
+      {canRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          className="mt-6 rounded p-2 text-text-muted hover:bg-brown/5 hover:text-danger sm:mt-7"
+          aria-label="Remove therapy row"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      ) : (
+        <div className="hidden sm:block" />
+      )}
+    </div>
+  );
+}
+
+export function CreatePrescriptionForm({
+  formId,
+  patient,
+  onSubmit,
+}: {
+  formId: string;
+  patient: PatientDetail;
+  onSubmit: (values: DoctorPrescriptionValues) => void;
+}) {
+  const [showTherapy, setShowTherapy] = useState(true);
+  const [showFollowUp, setShowFollowUp] = useState(true);
+
+  const defaultDiagnosis =
+    patient.medicalAssessment.presentConditions &&
+    patient.medicalAssessment.presentConditions !== '—'
+      ? patient.medicalAssessment.presentConditions
+      : '';
+
+  const form = useForm<DoctorPrescriptionValues>({
+    resolver: zodResolver(doctorPrescriptionSchema),
+    defaultValues: {
+      diagnosis: defaultDiagnosis,
+      medicines: [
+        {
+          medicineId: '',
+          dosage: '',
+          frequency: '',
+          duration: '',
+          notes: '',
+        },
+      ],
+      therapies: [{ categoryId: '', therapyIds: [] }],
+      setupRequired: '',
+      followUpScheduling: '',
+      suggestions: '',
+    },
+  });
+
+  const {
+    control,
+    register,
+    watch,
+    setValue,
+    handleSubmit,
+    formState: { errors },
+  } = form;
+
+  const submitPrescription = handleSubmit((values: DoctorPrescriptionValues) => {
+    const cleaned: DoctorPrescriptionValues = {
+      ...values,
+      therapies:
+        values.therapies?.filter(
+          (row) => Boolean(row.categoryId) && (row.therapyIds?.length ?? 0) > 0,
+        ) ?? [],
+      setupRequired: showFollowUp ? values.setupRequired : 'No',
+      followUpScheduling: showFollowUp ? values.followUpScheduling : 'Monthly',
+    };
+    onSubmit(cleaned);
+  });
+
+  const {
+    fields: medicineFields,
+    append: appendMedicine,
+    remove: removeMedicine,
+  } = useFieldArray({ control, name: 'medicines' });
+
+  const {
+    fields: therapyFields,
+    append: appendTherapy,
+    remove: removeTherapy,
+  } = useFieldArray({ control, name: 'therapies' });
+
+  const { data: medicineOptions, loading: medicinesLoading } = useAsyncData(
+    async () => {
+      const medicines = await getAllMedicines().catch(() => []);
+      return medicines.map((medicine) => ({
+        value: medicine.id,
+        label: medicine.medicineName,
+      }));
+    },
+    [] as { value: string; label: string }[],
+  );
+
+  const { data: categoryOptions, loading: categoriesLoading } = useAsyncData(
+    async () => {
+      const categories = await getAllTreatmentCategories().catch(() => []);
+      return categories.map((category) => ({
+        value: category.id,
+        label: category.categoryName,
+      }));
+    },
+    [] as { value: string; label: string }[],
+  );
+
+  const followUpOptions = useMemo(
+    () => FOLLOW_UP_OPTIONS.map((option) => ({ value: option, label: option })),
+    [],
+  );
+
+  return (
+    <form
+      id={formId}
+      onSubmit={submitPrescription}
+      className="space-y-5"
+    >
+      <PrescriptionSection title="Prescribe Medicine">
+        <div className="space-y-4">
+          {medicineFields.map((field, index) => (
+            <div
+              key={field.id}
+              className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto]"
+            >
+              <Select
+                label="Medicine Name"
+                placeholder={
+                  medicinesLoading ? 'Loading…' : 'Select medicine'
+                }
+                options={medicineOptions}
+                error={errors.medicines?.[index]?.medicineId?.message}
+                {...register(`medicines.${index}.medicineId`)}
+              />
+              <Select
+                label="Dosage"
+                placeholder="Dosage"
+                options={[...PRESCRIPTION_DOSAGE_OPTIONS]}
+                error={errors.medicines?.[index]?.dosage?.message}
+                {...register(`medicines.${index}.dosage`)}
+              />
+              <Select
+                label="Frequency"
+                placeholder="Frequency"
+                options={[...PRESCRIPTION_FREQUENCY_OPTIONS]}
+                error={errors.medicines?.[index]?.frequency?.message}
+                {...register(`medicines.${index}.frequency`)}
+              />
+              <Input
+                label="Duration"
+                placeholder="e.g. 5 days"
+                error={errors.medicines?.[index]?.duration?.message}
+                {...register(`medicines.${index}.duration`)}
+              />
+              <Input
+                label="Notes"
+                placeholder="e.g. After food"
+                error={errors.medicines?.[index]?.notes?.message}
+                {...register(`medicines.${index}.notes`)}
+              />
+              {medicineFields.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => removeMedicine(index)}
+                  className="mt-6 rounded p-2 text-text-muted hover:bg-brown/5 hover:text-danger lg:mt-7"
+                  aria-label="Remove medicine row"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : (
+                <div className="hidden lg:block" />
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() =>
+              appendMedicine({
+                medicineId: '',
+                dosage: '',
+                frequency: '',
+                duration: '',
+                notes: '',
+              })
+            }
+          >
+            Add More Medicine
+          </Button>
+        </div>
+        {errors.medicines?.message ? (
+          <p className="mt-2 text-xs text-danger">{errors.medicines.message}</p>
+        ) : null}
+      </PrescriptionSection>
+
+      {showTherapy ? (
+        <PrescriptionSection
+          title="Suggest Therapy"
+          onRemove={() => {
+            setShowTherapy(false);
+            setValue('therapies', [], { shouldValidate: true });
+          }}
+        >
+          <div className="space-y-4">
+            {therapyFields.map((field, index) => (
+              <TherapyRowFields
+                key={field.id}
+                index={index}
+                categoryOptions={
+                  categoriesLoading
+                    ? [{ value: '', label: 'Loading categories…' }]
+                    : categoryOptions
+                }
+                canRemove={therapyFields.length > 1}
+                onRemove={() => removeTherapy(index)}
+                register={register}
+                watch={watch}
+                setValue={setValue}
+                errors={errors}
+              />
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                appendTherapy({ categoryId: '', therapyIds: [] })
+              }
+              disabled={categoriesLoading}
+            >
+              Add More Therapy
+            </Button>
+          </div>
+        </PrescriptionSection>
+      ) : (
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setShowTherapy(true);
+              setValue('therapies', [{ categoryId: '', therapyIds: [] }], {
+                shouldValidate: true,
+              });
+            }}
+          >
+            Add Suggest Therapy
+          </Button>
+        </div>
+      )}
+
+      {showFollowUp ? (
+        <PrescriptionSection
+          title="Next Follow Up"
+          onRemove={() => {
+            setValue('setupRequired', 'No', { shouldValidate: true });
+            setValue('followUpScheduling', 'Monthly', { shouldValidate: true });
+            setShowFollowUp(false);
+          }}
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Select
+              label="Set Up Required"
+              placeholder="Set Follow Up"
+              options={[...PRESCRIPTION_SETUP_OPTIONS]}
+              error={errors.setupRequired?.message}
+              {...register('setupRequired')}
+            />
+            <Select
+              label="Follow-up Scheduling Options"
+              placeholder="Follow-up Scheduling Options"
+              options={followUpOptions}
+              error={errors.followUpScheduling?.message}
+              {...register('followUpScheduling')}
+            />
+            <div className="sm:col-span-2">
+              <Textarea
+                label="Suggestions"
+                placeholder="Enter Suggestions (if any)"
+                rows={3}
+                error={errors.suggestions?.message}
+                {...register('suggestions')}
+              />
+            </div>
+          </div>
+        </PrescriptionSection>
+      ) : (
+        <div className="flex justify-end">
+          <Button type="button" variant="outline" onClick={() => setShowFollowUp(true)}>
+            Add Next Follow Up
+          </Button>
+        </div>
+      )}
+
+      <div className="hidden">
+        <Input label="Diagnosis" {...register('diagnosis')} />
+      </div>
+    </form>
+  );
+}

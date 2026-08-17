@@ -49,7 +49,10 @@ export function TreatmentPatientDetailPage() {
 
       const treatment = treatments[0];
       const latestAppointment = appointments[0];
-      const medicalUi = mapMedicalAssessmentDtoToUi(medicalAssessment);
+      const medicalUi = mapMedicalAssessmentDtoToUi(
+        medicalAssessment,
+        apiPatient.gender,
+      );
       const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
       const packageBilling = packages[0]
         ? mapPatientPackageToBillingMembership(packages[0])

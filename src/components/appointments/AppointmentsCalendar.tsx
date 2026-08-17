@@ -1,5 +1,9 @@
+import { createPortal } from 'react-dom';
 import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  CalendarEventCard,
+} from '@/components/appointments/CalendarEventCard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import {
@@ -11,6 +15,7 @@ import {
   getWeekStart,
   mapAppointmentsToCalendarEvents,
 } from '@/lib/calendarUtils';
+import { mapAppointmentRecordToCalendarDetail } from '@/lib/api/mappers';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord } from '@/types';
 
@@ -34,6 +39,11 @@ export function AppointmentsCalendar({
   onEventClick,
 }: AppointmentsCalendarProps) {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [hoverPosition, setHoverPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
 
   const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart]);
   const events = useMemo(
@@ -45,11 +55,28 @@ export function AppointmentsCalendar({
     return range.length > 0 ? range : DEFAULT_HOURS;
   }, [events]);
 
+  const appointmentById = useMemo(
+    () => new Map(appointments.map((item) => [item.id, item])),
+    [appointments],
+  );
+
+  const hoveredPreview = useMemo(() => {
+    if (!hoveredEventId) return null;
+    const record = appointmentById.get(hoveredEventId);
+    if (!record) return null;
+    return mapAppointmentRecordToCalendarDetail(record);
+  }, [appointmentById, hoveredEventId]);
+
   const now = new Date();
   const todayColumn = weekDays.findIndex((day) => day.isToday);
-  const showNowIndicator = todayColumn >= 0 && isSameLocalDay(now, weekStart, todayColumn);
-  const nowTopPx =
-    (now.getHours() - hours[0] + now.getMinutes() / 60) * ROW_HEIGHT_PX;
+  const showNowIndicator =
+    todayColumn >= 0 && isSameLocalDay(now, weekStart, todayColumn);
+  const gridHeightPx = hours.length * ROW_HEIGHT_PX;
+
+  const showHoverCard =
+    hoveredPreview &&
+    hoverPosition &&
+    typeof document !== 'undefined';
 
   return (
     <Card className="min-w-0 overflow-hidden p-0">
@@ -125,47 +152,6 @@ export function AppointmentsCalendar({
                     )}
                   />
                 ))}
-
-                {showNowIndicator &&
-                  now.getHours() >= hours[0] &&
-                  now.getHours() <= hours[hours.length - 1] &&
-                  hour === now.getHours() && (
-                    <div
-                      className="pointer-events-none absolute z-20 h-0.5 bg-red-400"
-                      style={{
-                        top: `${(now.getMinutes() / 60) * ROW_HEIGHT_PX}px`,
-                        left: `${(todayColumn / 7) * 100}%`,
-                        width: `calc(${100 / 7}% - 4px)`,
-                        marginLeft: '2px',
-                      }}
-                    />
-                  )}
-
-                {events
-                  .filter((event) => event.startHour === hour)
-                  .map((event) => (
-                    <button
-                      key={event.id}
-                      type="button"
-                      onClick={() => onEventClick?.(event.id)}
-                      className={cn(
-                        'absolute z-10 m-0.5 overflow-hidden rounded border px-1.5 py-1 text-left text-[10px] font-medium leading-tight text-brown transition-opacity hover:opacity-90',
-                        event.color,
-                      )}
-                      style={{
-                        left: `${(event.day / 7) * 100}%`,
-                        width: `calc(${100 / 7}% - 4px)`,
-                        height: `${event.durationHours * ROW_HEIGHT_PX - 4}px`,
-                        top:
-                          event.startMinute != null
-                            ? `${(event.startMinute / 60) * ROW_HEIGHT_PX}px`
-                            : undefined,
-                      }}
-                    >
-                      {event.timeLabel ?? formatHourLabel(hour)}{' '}
-                      {event.title}
-                    </button>
-                  ))}
               </div>
               <span className="px-2 py-2 text-xs text-text-muted">
                 {formatHourLabel(hour)}
@@ -173,25 +159,104 @@ export function AppointmentsCalendar({
             </div>
           ))}
 
-          {showNowIndicator &&
-            now.getHours() >= hours[0] &&
-            now.getHours() <= hours[hours.length - 1] &&
-            !hours.includes(now.getHours()) && (
-              <div
-                className="pointer-events-none absolute z-20 h-0.5 bg-red-400"
-                style={{
-                  top: `${nowTopPx}px`,
-                  left: `calc(48px + ${(todayColumn / 7) * 100}% * (100% - 96px) / 100%)`,
-                }}
-              />
-            )}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 grid grid-cols-[48px_1fr_48px]"
+            style={{ height: `${gridHeightPx}px` }}
+          >
+            <div />
+            <div className="relative">
+              {showNowIndicator &&
+                now.getHours() >= hours[0] &&
+                now.getHours() <= hours[hours.length - 1] && (
+                  <div
+                    className="pointer-events-none absolute z-20 h-0.5 bg-red-400"
+                    style={{
+                      top: `${
+                        (now.getHours() -
+                          hours[0] +
+                          now.getMinutes() / 60) *
+                        ROW_HEIGHT_PX
+                      }px`,
+                      left: `${(todayColumn / 7) * 100}%`,
+                      width: `calc(${100 / 7}% - 4px)`,
+                      marginLeft: '2px',
+                    }}
+                  />
+                )}
+
+              {events.map((event) => {
+                const topPx =
+                  (event.startHour -
+                    hours[0] +
+                    (event.startMinute ?? 0) / 60) *
+                  ROW_HEIGHT_PX;
+
+                return (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => onEventClick?.(event.id)}
+                    onMouseEnter={(mouseEvent) => {
+                      const rect = mouseEvent.currentTarget.getBoundingClientRect();
+                      setHoveredEventId(event.id);
+                      setHoverPosition({
+                        top: rect.top + window.scrollY,
+                        left: rect.left + rect.width / 2 + window.scrollX,
+                      });
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredEventId(null);
+                      setHoverPosition(null);
+                    }}
+                    className={cn(
+                      'pointer-events-auto absolute z-10 m-0.5 overflow-hidden rounded border px-1.5 py-1 text-left text-[10px] font-medium leading-tight text-brown transition-opacity hover:opacity-90',
+                      event.color,
+                      hoveredEventId === event.id && 'ring-2 ring-gold/60',
+                    )}
+                    style={{
+                      left: `${(event.day / 7) * 100}%`,
+                      width: `calc(${100 / 7}% - 4px)`,
+                      height: `${Math.max(
+                        event.durationHours * ROW_HEIGHT_PX - 4,
+                        28,
+                      )}px`,
+                      top: `${topPx}px`,
+                    }}
+                  >
+                    {event.timeLabel ?? formatHourLabel(event.startHour)}{' '}
+                    {event.title}
+                  </button>
+                );
+              })}
+            </div>
+            <div />
+          </div>
         </div>
       </div>
+
+      {showHoverCard
+        ? createPortal(
+            <div
+              className="pointer-events-none fixed z-50 w-[22rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-full overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-2xl"
+              style={{
+                top: `${hoverPosition.top - 12}px`,
+                left: `${hoverPosition.left}px`,
+              }}
+            >
+              <CalendarEventCard event={hoveredPreview} />
+            </div>,
+            document.body,
+          )
+        : null}
     </Card>
   );
 }
 
-function isSameLocalDay(now: Date, weekStart: Date, columnIndex: number): boolean {
+function isSameLocalDay(
+  now: Date,
+  weekStart: Date,
+  columnIndex: number,
+): boolean {
   const columnDate = addDays(weekStart, columnIndex);
   return (
     now.getFullYear() === columnDate.getFullYear() &&

@@ -30,7 +30,7 @@ export function PatientDetailHeader({
         <div>
           <p className="text-xs text-text-muted">Patient ID</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-bold text-brown">#{patient.detailId}</h2>
+            <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
             <Badge variant="gold" className="rounded-md px-3 py-1">
               {patient.treatmentStatus}
             </Badge>
@@ -132,7 +132,7 @@ export function PersonalInfoTab({ patient }: { patient: PatientDetail }) {
       <SectionBlock title="Identification & Admin">
         <InfoGrid
           items={[
-            { label: 'Patient ID', value: `${patient.id} | ${patient.secondaryId}` },
+            { label: 'Patient ID', value: patient.id },
             { label: 'ID Proof type', value: info.idProofType },
             { label: 'ID No.', value: info.idProofNumber },
             { label: 'Occupation', value: info.occupation },
@@ -395,8 +395,15 @@ export function BillingMembershipTab({
           items={[
             { label: 'Service Type', value: b.serviceType },
             { label: 'Service Fees', value: `₹${b.serviceFees}` },
-            { label: 'Package Type', value: b.packageType },
-            { label: 'Package Charges', value: `₹${b.packageCharges}` },
+            ...(b.packageType && b.packageType !== '—'
+              ? [
+                  { label: 'Package Type', value: b.packageType },
+                  {
+                    label: 'Package Charges',
+                    value: `₹${b.packageCharges}`,
+                  },
+                ]
+              : []),
             { label: 'Discount', value: `₹${b.discount}` },
             { label: 'CGST & SGST', value: b.taxRate },
           ]}

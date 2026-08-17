@@ -39,6 +39,7 @@ import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
 import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
 import { createFollowUp, getAllFollowUps } from '@/lib/api/followUps';
+import { loadCalendarEventDetail } from '@/lib/api/loadCalendarEventDetail';
 import {
   mapAppointmentRecordToCalendarDetail,
   mapAppointmentToRecord,
@@ -83,6 +84,8 @@ export function AppointmentsPage() {
   const [confirmedOpen, setConfirmedOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarEventDetail | null>(null);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
+  const [eventDetailLoading, setEventDetailLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
@@ -410,10 +413,24 @@ export function AppointmentsPage() {
     }
   };
 
-  const handleEventClick = (eventId: string) => {
+  const handleEventClick = async (eventId: string) => {
     const record = filteredAppointments.find((item) => item.id === eventId);
-    if (record) {
-      setSelectedEvent(mapAppointmentRecordToCalendarDetail(record));
+    if (!record) return;
+
+    setEventModalOpen(true);
+    setEventDetailLoading(true);
+    setSelectedEvent(mapAppointmentRecordToCalendarDetail(record));
+
+    try {
+      const detail = await loadCalendarEventDetail(record);
+      setSelectedEvent(detail);
+    } catch {
+      showToast({
+        title: 'Could not load appointment details',
+        message: 'Showing basic appointment information instead.',
+      });
+    } finally {
+      setEventDetailLoading(false);
     }
   };
 
@@ -438,14 +455,17 @@ export function AppointmentsPage() {
         onClick={() => setViewMode('list')}
         className={cn(
           'rounded-md p-2 transition-colors',
-          viewMode === 'list' ? 'bg-gold/15 text-gold' : 'text-text-muted',
+          viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50',
         )}
         aria-label="List view"
+        aria-pressed={viewMode === 'list'}
       >
         <AppIcon
           src={assets.icons.listView}
-          className="h-4 w-4"
-          active={viewMode === 'list'}
+          className={cn(
+            'h-4 w-4',
+            viewMode === 'list' ? 'brightness-0' : 'opacity-40',
+          )}
         />
       </button>
       <button
@@ -453,14 +473,17 @@ export function AppointmentsPage() {
         onClick={() => setViewMode('calendar')}
         className={cn(
           'rounded-md p-2 transition-colors',
-          viewMode === 'calendar' ? 'bg-gold/15 text-gold' : 'text-text-muted',
+          viewMode === 'calendar' ? 'bg-gray-100' : 'hover:bg-gray-50',
         )}
         aria-label="Calendar view"
+        aria-pressed={viewMode === 'calendar'}
       >
         <AppIcon
           src={assets.icons.calendarView}
-          className="h-4 w-4"
-          active={viewMode === 'calendar'}
+          className={cn(
+            'h-4 w-4',
+            viewMode === 'calendar' ? 'brightness-0' : 'opacity-45',
+          )}
         />
       </button>
     </div>
@@ -606,9 +629,13 @@ export function AppointmentsPage() {
       />
 
       <CalendarEventModal
-        open={Boolean(selectedEvent)}
+        open={eventModalOpen}
         event={selectedEvent}
-        onClose={() => setSelectedEvent(null)}
+        loading={eventDetailLoading}
+        onClose={() => {
+          setEventModalOpen(false);
+          setSelectedEvent(null);
+        }}
       />
     </PageShell>
   );

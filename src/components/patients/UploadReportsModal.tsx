@@ -1,19 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   CheckCircle,
-  CloudUpload,
   FileText,
   Folder,
   Trash2,
 } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { DocumentUploadDropzone } from '@/components/ui/DocumentUploadDropzone';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import {
   uploadDocument,
   type DocumentTypeApi,
 } from '@/lib/api/documents';
+import {
+  DOCUMENT_SECTIONS,
+  formatDocumentFileSize,
+} from '@/lib/documentUpload';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import { cn } from '@/lib/utils';
 import type { PatientRecord } from '@/types';
@@ -33,20 +37,7 @@ interface StagedFile {
   error?: string;
 }
 
-const DOCUMENT_SECTIONS: {
-  label: string;
-  type: DocumentTypeApi;
-}[] = [
-  { label: 'Past Medical Reports', type: 'PAST_MEDICAL_REPORT' },
-  { label: 'Prescriptions', type: 'PRESCRIPTION' },
-  { label: 'Lab Reports', type: 'LAB_REPORT' },
-];
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+const DOCUMENT_SECTIONS_CONFIG = DOCUMENT_SECTIONS;
 
 export function UploadReportsModal({
   open,
@@ -54,21 +45,20 @@ export function UploadReportsModal({
   patient,
 }: UploadReportsModalProps) {
   const { showToast } = useToast();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<StagedFile[]>([]);
-  const [activeSection, setActiveSection] = useState(DOCUMENT_SECTIONS[0].label);
+  const [activeSection, setActiveSection] = useState(DOCUMENT_SECTIONS_CONFIG[0].label);
   const [submitting, setSubmitting] = useState(false);
   const [confirmUploadOpen, setConfirmUploadOpen] = useState(false);
   const [removeFileId, setRemoveFileId] = useState<string | null>(null);
 
   const activeDocumentType =
-    DOCUMENT_SECTIONS.find((section) => section.label === activeSection)?.type ??
+    DOCUMENT_SECTIONS_CONFIG.find((section) => section.label === activeSection)?.type ??
     'PAST_MEDICAL_REPORT';
 
   useEffect(() => {
     if (!open) {
       setFiles([]);
-      setActiveSection(DOCUMENT_SECTIONS[0].label);
+      setActiveSection(DOCUMENT_SECTIONS_CONFIG[0].label);
       setSubmitting(false);
     }
   }, [open]);
@@ -167,7 +157,7 @@ export function UploadReportsModal({
   };
 
   const sectionLabel = (type: DocumentTypeApi) =>
-    DOCUMENT_SECTIONS.find((section) => section.type === type)?.label ?? type;
+    DOCUMENT_SECTIONS_CONFIG.find((section) => section.type === type)?.label ?? type;
 
   return (
     <Modal
@@ -213,7 +203,7 @@ export function UploadReportsModal({
       )}
 
       <div className="mb-4 flex flex-wrap gap-4 text-xs font-medium uppercase tracking-wide">
-        {DOCUMENT_SECTIONS.map((section) => (
+        {DOCUMENT_SECTIONS_CONFIG.map((section) => (
           <button
             key={section.type}
             type="button"
@@ -229,28 +219,10 @@ export function UploadReportsModal({
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
+      <DocumentUploadDropzone
         disabled={!patient?.detailId || !patient?.bookingId || submitting}
-        className="mb-4 flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-gold/40 bg-gold/5 py-8 text-center hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        <CloudUpload className="h-8 w-8 text-brown" />
-        <span className="text-sm font-medium text-brown">Tap to upload document</span>
-        <span className="text-xs text-text-muted">
-          Supported: .jpg, .jpeg, .png, .pdf
-        </span>
-      </button>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/jpg,application/pdf,.pdf"
-        multiple
-        className="hidden"
-        onChange={(e) => {
-          addFiles(e.target.files);
-          e.target.value = '';
-        }}
+        title="Tap to upload document"
+        onFilesSelected={addFiles}
       />
 
       <div className="space-y-3">
@@ -269,7 +241,7 @@ export function UploadReportsModal({
                       {file.file.name}
                     </p>
                     <p className="text-xs text-text-muted">
-                      {sectionLabel(file.documentType)} · {formatFileSize(file.file.size)}
+                      {sectionLabel(file.documentType)} · {formatDocumentFileSize(file.file.size)}
                     </p>
                     {file.error && (
                       <p className="mt-1 text-xs text-danger">{file.error}</p>

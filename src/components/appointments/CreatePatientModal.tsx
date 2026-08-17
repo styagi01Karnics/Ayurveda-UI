@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { CloudUpload, FileText, Trash2, X } from 'lucide-react';
+import { FileText, Trash2, X } from 'lucide-react';
+import { DocumentUploadDropzone } from '@/components/ui/DocumentUploadDropzone';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
@@ -22,7 +23,8 @@ import {
   submitBookingStep3,
 } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
-import { getAllTherapists, mapTherapistSelectOptions, filterTherapistsByTherapyIds } from '@/lib/api/therapists';
+import { getActiveTherapists, mapTherapistSelectOptions, filterTherapistsByTherapyIds } from '@/lib/api/therapists';
+import { getMedicalHistoryOptions } from '@/data/mock/medicalHistoryDefaults';
 import type { TherapistDto } from '@/lib/api/types';
 import {
   buildBookingSteps,
@@ -45,6 +47,12 @@ import {
   type PatientStep3Values,
 } from '@/lib/validation/patient.schema';
 import { INDIAN_STATES, CITIES_BY_STATE } from '@/lib/validation/signup.schema';
+import {
+  bookingDateInputProps,
+  BOOKING_TIME_OPTIONS,
+  DEFAULT_SESSION_FREQUENCY,
+  getTodayIsoDate,
+} from '@/lib/bookingConstraints';
 
 const EMPTY_THERAPY: PatientStep2Values = {
   treatmentCategory: '',
@@ -52,7 +60,7 @@ const EMPTY_THERAPY: PatientStep2Values = {
   scheduleDate: '',
   scheduleTime: '',
   sessionDuration: '',
-  sessionFrequency: '',
+  sessionFrequency: DEFAULT_SESSION_FREQUENCY,
   assignedTherapist: '',
   therapyInstructions: '',
 };
@@ -126,6 +134,7 @@ export function CreatePatientModal({
     defaultValues: {
       consultationTypeIds: [],
       appointmentTime: '10:00',
+      registrationDate: getTodayIsoDate(),
       ...formData,
     },
   });
@@ -140,7 +149,7 @@ export function CreatePatientModal({
     defaultValues: {
       recommendedTherapies: [],
       sessionDuration: '45',
-      sessionFrequency: '7',
+      sessionFrequency: DEFAULT_SESSION_FREQUENCY,
       therapyInstructions:
         'Patient should avoid cold food during therapy and maintain warm diet.',
       ...formData,
@@ -185,6 +194,7 @@ export function CreatePatientModal({
     includesTherapyTypeIds(watchedConsultationTypeIds, consultationTypeMasters) &&
     !includesCategoryTypeIds(watchedConsultationTypeIds, consultationTypeMasters);
 
+  const dateInputProps = useMemo(() => bookingDateInputProps(), [open]);
   const isBusy = submitting || stepSubmitting;
 
   const resetModal = () => {
@@ -193,12 +203,16 @@ export function CreatePatientModal({
     setBookingSession(null);
     setUploadedDocuments(EMPTY_DOCUMENTS);
     setDocumentTab('pastMedicalReports');
-    step1Form.reset({ consultationTypeIds: [], appointmentTime: '10:00' });
+    step1Form.reset({
+      consultationTypeIds: [],
+      appointmentTime: '10:00',
+      registrationDate: getTodayIsoDate(),
+    });
     categoryForm.reset({ treatmentCategory: '' });
     step2Form.reset({
       recommendedTherapies: [],
       sessionDuration: '45',
-      sessionFrequency: '7',
+      sessionFrequency: DEFAULT_SESSION_FREQUENCY,
       therapyInstructions:
         'Patient should avoid cold food during therapy and maintain warm diet.',
     });
@@ -373,6 +387,8 @@ export function CreatePatientModal({
   };
 
   const selectedState = step1Form.watch('state');
+  const selectedGender = step1Form.watch('gender');
+  const historyOptions = getMedicalHistoryOptions(selectedGender);
   const selectedCategory =
     categoryForm.watch('treatmentCategory') ||
     step2Form.watch('treatmentCategory') ||
@@ -437,7 +453,7 @@ export function CreatePatientModal({
     if (!open) return;
 
     let cancelled = false;
-    getAllTherapists()
+    getActiveTherapists()
       .then((therapists) => {
         if (!cancelled) setAllTherapists(therapists);
       })
@@ -532,7 +548,7 @@ export function CreatePatientModal({
       onClose={handleClose}
       title="Create New Patient"
       subtitle="Please fill out the patient registration details"
-      size="xl"
+      size="2xl"
       footer={
         <div className="flex gap-3">
           {stepIndex > 0 && (
@@ -574,8 +590,14 @@ export function CreatePatientModal({
                 error={step1Form.formState.errors.consultationTypeIds?.message}
               />
               <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
-              <Input label="Registration Date" type="date" error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
-              <Input label="Appointment Time" type="time" error={step1Form.formState.errors.appointmentTime?.message} {...step1Form.register('appointmentTime')} />
+              <Input label="Registration Date" type="date" min={dateInputProps.min} error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
+              <Select
+                label="Appointment Time"
+                placeholder="Select time"
+                options={BOOKING_TIME_OPTIONS}
+                error={step1Form.formState.errors.appointmentTime?.message}
+                {...step1Form.register('appointmentTime')}
+              />
               <Select
                 label="Assigned Doctor"
                 placeholder="Select Doctor"
@@ -604,7 +626,7 @@ export function CreatePatientModal({
           </FormSection>
 
           <FormSection title="Identification & Admin">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <Select label="ID Proof Type" placeholder="Select" options={[...ID_PROOF_TYPES]} error={step1Form.formState.errors.idProofType?.message} {...step1Form.register('idProofType')} />
               <Input label="ID No." placeholder="ID No." error={step1Form.formState.errors.idNumber?.message} {...step1Form.register('idNumber')} />
               <Select label="Occupation" placeholder="Select" options={[...OCCUPATION_OPTIONS]} error={step1Form.formState.errors.occupation?.message} {...step1Form.register('occupation')} />
@@ -667,10 +689,22 @@ export function CreatePatientModal({
 
           <FormSection title="Therapy Schedule">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Input label="Schedule Date" type="date" error={step2Form.formState.errors.scheduleDate?.message} {...step2Form.register('scheduleDate')} />
-              <Input label="Schedule Time" type="time" error={step2Form.formState.errors.scheduleTime?.message} {...step2Form.register('scheduleTime')} />
+              <Input label="Schedule Date" type="date" min={dateInputProps.min} error={step2Form.formState.errors.scheduleDate?.message} {...step2Form.register('scheduleDate')} />
+              <Select
+                label="Schedule Time"
+                placeholder="Select time"
+                options={BOOKING_TIME_OPTIONS}
+                error={step2Form.formState.errors.scheduleTime?.message}
+                {...step2Form.register('scheduleTime')}
+              />
               <Input label="Session Duration (mins)" placeholder="e.g. 45" error={step2Form.formState.errors.sessionDuration?.message} {...step2Form.register('sessionDuration')} />
-              <Input label="Session Frequency (count)" placeholder="e.g. 7" error={step2Form.formState.errors.sessionFrequency?.message} {...step2Form.register('sessionFrequency')} />
+              <Input
+                label="Session Frequency (count)"
+                readOnly
+                className="cursor-not-allowed bg-gray-50"
+                error={step2Form.formState.errors.sessionFrequency?.message}
+                {...step2Form.register('sessionFrequency')}
+              />
             </div>
           </FormSection>
 
@@ -743,14 +777,14 @@ export function CreatePatientModal({
 
           <FormSection title="Medical History">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Past Medical Conditions" placeholder="Select" options={['Hypertension', 'Diabetes', 'None']} {...step3Form.register('pastMedicalConditions')} />
-              <Select label="Past Surgeries" placeholder="Select" options={['Yes', 'No', 'None']} {...step3Form.register('pastSurgeries')} />
-              <Select label="Current Medications" placeholder="Select" options={['BP tablets', 'None', 'Other']} {...step3Form.register('currentMedications')} />
+              <Select label="Past Medical Conditions" placeholder="Select" options={historyOptions.pastConditions} {...step3Form.register('pastMedicalConditions')} />
+              <Select label="Past Surgeries" placeholder="Select" options={historyOptions.pastSurgeries} {...step3Form.register('pastSurgeries')} />
+              <Select label="Current Medications" placeholder="Select" options={historyOptions.currentMedications} {...step3Form.register('currentMedications')} />
               <TagInput
                 label="Allergies"
                 value={step3Form.watch('allergies') ?? []}
                 onChange={(tags) => step3Form.setValue('allergies', tags)}
-                options={['Allergy 1', 'Allergy 2', 'Allergy 3']}
+                options={historyOptions.allergies}
               />
               <Textarea label="Family History" className="sm:col-span-2" rows={2} {...step3Form.register('familyHistory')} />
             </div>
@@ -849,25 +883,10 @@ function UploadReportsSection({
           </button>
         ))}
       </div>
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-8 text-center">
-        <CloudUpload className="h-8 w-8 text-gold" />
-        <p className="text-sm font-medium text-brown">
-          Tap to upload {DOCUMENT_TABS.find((t) => t.id === activeTab)?.label}
-        </p>
-        <p className="text-xs text-text-muted">
-          Supported: .jpg, .jpeg, .png, .pdf
-        </p>
-        <input
-          type="file"
-          className="sr-only"
-          accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
-          multiple
-          onChange={(e) => {
-            addFiles(e.target.files);
-            e.target.value = '';
-          }}
-        />
-      </label>
+      <DocumentUploadDropzone
+        title={`Tap to upload ${DOCUMENT_TABS.find((t) => t.id === activeTab)?.label}`}
+        onFilesSelected={(files) => addFiles(files)}
+      />
       {activeFiles.length > 0 && (
         <div className="space-y-2">
           {activeFiles.map((file, index) => (

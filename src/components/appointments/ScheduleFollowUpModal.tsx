@@ -9,6 +9,10 @@ import {
   FOLLOW_UP_SCHEDULING_OPTIONS,
   type FollowUpFormValues,
 } from '@/lib/validation/patient.schema';
+import {
+  bookingDateInputProps,
+  BOOKING_TIME_OPTIONS,
+} from '@/lib/bookingConstraints';
 
 export interface FollowUpLookupOptions {
   patients: SelectOption[];
@@ -114,12 +118,14 @@ export function ScheduleFollowUpModal({
           <Input
             label="Appointment Date"
             type="date"
+            min={bookingDateInputProps().min}
             error={errors.scheduleDate?.message}
             {...register('scheduleDate')}
           />
-          <Input
+          <Select
             label="Appointment Time"
-            type="time"
+            placeholder="Select time"
+            options={BOOKING_TIME_OPTIONS}
             error={errors.scheduleTime?.message}
             {...register('scheduleTime')}
           />

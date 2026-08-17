@@ -1,13 +1,23 @@
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, type ReactNode } from 'react';
-import { CloudUpload, FileText, Folder, Trash2, X } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { FileText, Folder, X } from 'lucide-react';
+import { useToast } from '@/app/ToastContext';
+import { DocumentUploadDropzone } from '@/components/ui/DocumentUploadDropzone';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { TagInput } from '@/components/ui/TagInput';
-import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { uploadDocument, type DocumentTypeApi } from '@/lib/api/documents';
+import {
+  DOCUMENT_SECTIONS,
+  formatDocumentFileSize,
+} from '@/lib/documentUpload';
+import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
+import { cn } from '@/lib/utils';
 import {
   CONSTITUTION_OPTIONS,
   DOSHA_OPTIONS,
@@ -16,13 +26,12 @@ import {
   LANGUAGE_OPTIONS,
   OCCUPATION_OPTIONS,
   RELATION_OPTIONS,
-  THERAPIST_OPTIONS,
 } from '@/lib/validation/patient.schema';
+import { getMedicalHistoryOptions } from '@/data/mock/medicalHistoryDefaults';
 import {
   doctorBillingTabSchema,
   doctorMedicalTabSchema,
   doctorPersonalTabSchema,
-  doctorPrescriptionSchema,
   doctorTreatmentTabSchema,
   FOLLOW_UP_OPTIONS,
   MEMBERSHIP_STATUS_OPTIONS,
@@ -32,9 +41,9 @@ import {
   type DoctorBillingTabValues,
   type DoctorMedicalTabValues,
   type DoctorPersonalTabValues,
-  type DoctorPrescriptionValues,
   type DoctorTreatmentTabValues,
 } from '@/lib/validation/doctorPatient.schema';
+import { VISIT_TYPE_OPTIONS } from '@/lib/validation/billing.schema';
 import { INDIAN_STATES, CITIES_BY_STATE } from '@/lib/validation/signup.schema';
 import type { PatientDetail } from '@/types';
 import {
@@ -84,6 +93,7 @@ export interface DoctorFormMasterOptions {
   treatmentPlans: { value: string; label: string }[];
   packageMasters: { value: string; label: string }[];
   therapists: { value: string; label: string }[];
+  doctors: { value: string; label: string }[];
 }
 
 export function DoctorPersonalForm({
@@ -92,7 +102,7 @@ export function DoctorPersonalForm({
   formId,
   masterOptions,
 }: TabFormProps<DoctorPersonalTabValues> & {
-  masterOptions?: Pick<DoctorFormMasterOptions, 'consultationTypes'>;
+  masterOptions?: Pick<DoctorFormMasterOptions, 'consultationTypes' | 'doctors'>;
 }) {
   const form = useForm<DoctorPersonalTabValues>({
     resolver: zodResolver(doctorPersonalTabSchema),
@@ -123,7 +133,13 @@ export function DoctorPersonalForm({
             error={form.formState.errors.consultationTypeIds?.message}
           />
           <Input label="Registration Date" type="date" error={form.formState.errors.registrationDate?.message} {...form.register('registrationDate')} />
-          <Select label="Assigned Doctor" options={[...THERAPIST_OPTIONS]} error={form.formState.errors.assignedDoctor?.message} {...form.register('assignedDoctor')} />
+          <Select
+            label="Assigned Doctor"
+            placeholder="Select doctor"
+            options={masterOptions?.doctors ?? []}
+            error={form.formState.errors.assignedDoctor?.message}
+            {...form.register('assignedDoctor')}
+          />
         </div>
       </FormSection>
 
@@ -177,6 +193,7 @@ export function DoctorMedicalForm({
     'icterus', 'cyanosis', 'lymphNodes', 'oedema', 'sensorium',
     'acidityGas', 'motion', 'micturition',
   ] as const;
+  const historyOptions = getMedicalHistoryOptions(patient.personalInfo.gender);
 
   return (
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -210,14 +227,26 @@ export function DoctorMedicalForm({
       <FormSection title="Medical History">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Present Medical Conditions" {...form.register('presentConditions')} />
-          <Input label="Past Medical Conditions" {...form.register('pastConditions')} />
-          <Select label="Past Surgeries" options={[...YES_NO_OPTIONS]} {...form.register('pastSurgeries')} />
-          <Select label="Current Medications" options={['BP tablets', 'None', 'Other']} {...form.register('currentMedications')} />
+          <Select
+            label="Past Medical Conditions"
+            options={historyOptions.pastConditions}
+            {...form.register('pastConditions')}
+          />
+          <Select
+            label="Past Surgeries"
+            options={historyOptions.pastSurgeries}
+            {...form.register('pastSurgeries')}
+          />
+          <Select
+            label="Current Medications"
+            options={historyOptions.currentMedications}
+            {...form.register('currentMedications')}
+          />
           <TagInput
             label="Allergies"
             value={form.watch('allergies') ?? []}
             onChange={(tags) => form.setValue('allergies', tags)}
-            options={['Allergy 1', 'Allergy 2', 'Allergy 3']}
+            options={historyOptions.allergies}
           />
           <Textarea label="Family History" className="sm:col-span-2" rows={2} {...form.register('familyHistory')} />
         </div>
@@ -250,51 +279,134 @@ export function DoctorMedicalForm({
       </FormSection>
 
       <FormSection title="Upload Reports">
-        <ReportUploadSection reports={patient.medicalAssessment.reports} />
+        <ReportUploadSection patient={patient} />
       </FormSection>
     </form>
   );
 }
 
-function ReportUploadSection({
-  reports,
-}: {
-  reports: PatientDetail['medicalAssessment']['reports'];
-}) {
+function ReportUploadSection({ patient }: { patient: PatientDetail }) {
+  const { showToast } = useToast();
+  const [activeType, setActiveType] = useState<DocumentTypeApi>(
+    DOCUMENT_SECTIONS[0].type,
+  );
+  const [reports, setReports] = useState(patient.medicalAssessment.reports);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    setReports(patient.medicalAssessment.reports);
+  }, [patient.medicalAssessment.reports]);
+
+  const canUpload = Boolean(patient.detailId && patient.bookingId);
+
+  const sectionLabel = (type: DocumentTypeApi) =>
+    DOCUMENT_SECTIONS.find((section) => section.type === type)?.label ?? type;
+
+  const handleFilesSelected = async (fileList: FileList) => {
+    if (!patient.detailId || !patient.bookingId) {
+      showToast({
+        title: 'Upload unavailable',
+        message: UI_MESSAGES.error.bookingRequired,
+      });
+      return;
+    }
+
+    setUploading(true);
+    let successCount = 0;
+
+    for (const file of Array.from(fileList)) {
+      try {
+        await uploadDocument(
+          patient.detailId,
+          patient.bookingId,
+          activeType,
+          file,
+        );
+        successCount += 1;
+        setReports((prev) => [
+          {
+            name: file.name,
+            size: formatDocumentFileSize(file.size),
+            time: sectionLabel(activeType),
+            type: 'file' as const,
+          },
+          ...prev,
+        ]);
+      } catch (err) {
+        showToast({
+          title: 'Upload failed',
+          message: resolveErrorMessage(err, UI_MESSAGES.error.uploadFailed),
+        });
+      }
+    }
+
+    setUploading(false);
+
+    if (successCount > 0) {
+      showToast({
+        title: 'Documents uploaded',
+        message: UI_MESSAGES.success.uploaded,
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex gap-4 border-b border-gray-100 pb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
-        <span className="text-gold">Past Medical Reports</span>
-        <span>Prescriptions</span>
-        <span>Lab Reports</span>
-      </div>
-      <div className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-8 text-center">
-        <CloudUpload className="h-8 w-8 text-gold" />
-        <p className="text-sm font-medium text-brown">Tap to upload photo</p>
-        <p className="text-xs text-text-muted">Only Supported: .jpg, .jpeg, .png</p>
-      </div>
-      <div className="space-y-2">
-        {reports.map((report) => (
-          <div key={report.name} className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
-            <div className="flex items-center gap-3">
-              {report.type === 'folder' ? (
-                <Folder className="h-5 w-5 text-gold" />
-              ) : (
-                <FileText className="h-5 w-5 text-gold" />
-              )}
-              <div>
-                <p className="text-sm font-medium text-brown">{report.name}</p>
-                <p className="text-xs text-text-muted">{report.time}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Badge variant="gold">{report.size}</Badge>
-              <button type="button" className="text-text-muted hover:text-danger" aria-label="Delete report">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
+      <div className="flex flex-wrap gap-4 border-b border-gray-100 pb-2 text-xs font-semibold uppercase tracking-wide">
+        {DOCUMENT_SECTIONS.map((section) => (
+          <button
+            key={section.type}
+            type="button"
+            onClick={() => setActiveType(section.type)}
+            className={cn(
+              activeType === section.type
+                ? 'text-gold'
+                : 'text-text-muted hover:text-brown',
+            )}
+          >
+            {section.label}
+          </button>
         ))}
+      </div>
+
+      {!canUpload && (
+        <p className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-danger">
+          Patient or booking ID is missing. Document upload is unavailable.
+        </p>
+      )}
+
+      <DocumentUploadDropzone
+        title={`Tap to upload ${sectionLabel(activeType).toLowerCase()}`}
+        disabled={!canUpload || uploading}
+        onFilesSelected={(files) => void handleFilesSelected(files)}
+      />
+
+      <div className="space-y-2">
+        {reports.length === 0 ? (
+          <p className="text-center text-sm text-text-muted">
+            {UI_MESSAGES.empty.uploadFiles}
+          </p>
+        ) : (
+          reports.map((report) => (
+            <div
+              key={`${report.name}-${report.time}`}
+              className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3"
+            >
+              <div className="flex items-center gap-3">
+                {report.type === 'folder' ? (
+                  <Folder className="h-5 w-5 text-gold" />
+                ) : (
+                  <FileText className="h-5 w-5 text-gold" />
+                )}
+                <div>
+                  <p className="text-sm font-medium text-brown">{report.name}</p>
+                  <p className="text-xs text-text-muted">{report.time}</p>
+                </div>
+              </div>
+              <Badge variant="gold">{report.size}</Badge>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -306,7 +418,7 @@ export function DoctorTreatmentForm({
   formId,
   masterOptions,
 }: TabFormProps<DoctorTreatmentTabValues> & {
-  masterOptions?: Pick<DoctorFormMasterOptions, 'treatmentPlans' | 'therapists'>;
+  masterOptions?: Pick<DoctorFormMasterOptions, 'treatmentPlans' | 'therapists' | 'doctors'>;
 }) {
   const form = useForm<DoctorTreatmentTabValues>({
     resolver: zodResolver(doctorTreatmentTabSchema),
@@ -338,7 +450,13 @@ export function DoctorTreatmentForm({
           <Input label="Total Sessions" type="number" min={0} placeholder="e.g. 10" error={form.formState.errors.totalSessions?.message} {...form.register('totalSessions')} />
           <Input label="Completed Sessions" type="number" min={0} placeholder="e.g. 3" error={form.formState.errors.completedSessions?.message} {...form.register('completedSessions')} />
           <Input label="Remaining Sessions" type="number" readOnly tabIndex={-1} className="bg-gray-50" error={form.formState.errors.remainingSessions?.message} {...form.register('remainingSessions')} />
-          <Select label="Assigned Therapist" placeholder="Select" options={masterOptions?.therapists ?? []} error={form.formState.errors.assignedTherapistId?.message} {...form.register('assignedTherapistId')} />
+          <Select
+            label="Assigned Therapist"
+            placeholder="Select therapist"
+            options={masterOptions?.therapists ?? []}
+            error={form.formState.errors.assignedTherapistId?.message}
+            {...form.register('assignedTherapistId')}
+          />
         </div>
       </FormSection>
 
@@ -346,7 +464,13 @@ export function DoctorTreatmentForm({
         <div className="grid gap-4 sm:grid-cols-3">
           <Select label="Set Up Required" options={[...YES_NO_OPTIONS]} error={form.formState.errors.setupRequired?.message} {...form.register('setupRequired')} />
           <Select label="Follow-up Scheduling Options" options={[...FOLLOW_UP_OPTIONS]} error={form.formState.errors.followUpScheduling?.message} {...form.register('followUpScheduling')} />
-          <Select label="Assigned Doctor" options={[...THERAPIST_OPTIONS]} error={form.formState.errors.assignedDoctor?.message} {...form.register('assignedDoctor')} />
+          <Select
+            label="Assigned Doctor"
+            placeholder="Select doctor"
+            options={masterOptions?.doctors ?? []}
+            error={form.formState.errors.assignedDoctor?.message}
+            {...form.register('assignedDoctor')}
+          />
         </div>
       </FormSection>
 
@@ -382,7 +506,18 @@ export function DoctorBillingForm({
     resolver: zodResolver(doctorBillingTabSchema),
     defaultValues,
   });
-  const applyTax = form.watch('applyTax');
+
+  const {
+    control,
+    register,
+    watch,
+    formState: { errors },
+  } = form;
+
+  const { fields: serviceFields, append: appendService, remove: removeService } =
+    useFieldArray({ control, name: 'billingServices' });
+
+  const applyTax = watch('applyTax');
 
   useEffect(() => {
     form.reset(defaultValues);
@@ -392,75 +527,155 @@ export function DoctorBillingForm({
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
       <FormSection title="Billing & Membership">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select label="Package" options={masterOptions?.packageMasters ?? []} error={form.formState.errors.packageMasterId?.message} {...form.register('packageMasterId')} />
-          <Input label="Validity" type="date" error={form.formState.errors.validity?.message} {...form.register('validity')} />
-          <Select label="Status" options={[...MEMBERSHIP_STATUS_OPTIONS]} error={form.formState.errors.membershipStatus?.message} {...form.register('membershipStatus')} />
-          <Input label="Discount Applied" error={form.formState.errors.discountApplied?.message} {...form.register('discountApplied')} />
+          <Select
+            label="Package Name"
+            placeholder="Select package"
+            options={masterOptions?.packageMasters ?? []}
+            error={errors.packageMasterId?.message}
+            {...register('packageMasterId')}
+          />
+          <Input label="Validity" type="date" error={errors.validity?.message} {...register('validity')} />
+          <Select
+            label="Status"
+            options={[...MEMBERSHIP_STATUS_OPTIONS]}
+            error={errors.membershipStatus?.message}
+            {...register('membershipStatus')}
+          />
+          <Input label="Discount Applied" error={errors.discountApplied?.message} {...register('discountApplied')} />
         </div>
       </FormSection>
 
       <FormSection title="Billing Details">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Select label="Service Type" options={['Consultation', 'Therapy']} error={form.formState.errors.serviceType?.message} {...form.register('serviceType')} />
-          <Input label="Service Fees (₹)" error={form.formState.errors.serviceFees?.message} {...form.register('serviceFees')} />
-          <Select label="Package Type" options={[...PACKAGE_TYPE_OPTIONS]} error={form.formState.errors.packageType?.message} {...form.register('packageType')} />
-          <Input label="Package Charges (₹)" error={form.formState.errors.packageCharges?.message} {...form.register('packageCharges')} />
-          <Input label="Discount (if any) (₹)" error={form.formState.errors.discount?.message} {...form.register('discount')} />
-          <div className="sm:col-span-2 lg:col-span-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-brown">
-              <input
-                type="checkbox"
-                className="checkbox-gold"
-                {...form.register('applyTax')}
-              />
-              CGST & SGST
-            </label>
-            {applyTax && (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <Input {...form.register('cgst')} />
-                <Input  {...form.register('sgst')} />
+        <div className="space-y-6">
+          {serviceFields.map((field, index) => (
+            <div
+              key={field.id}
+              className={cn(index > 0 && 'border-t border-gray-100 pt-6')}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Select
+                  label="Service Type *"
+                  placeholder="Service Type"
+                  options={[...VISIT_TYPE_OPTIONS]}
+                  error={errors.billingServices?.[index]?.serviceType?.message}
+                  {...register(`billingServices.${index}.serviceType`)}
+                />
+                <RupeeInput
+                  label="Service Fees *"
+                  placeholder="0"
+                  error={errors.billingServices?.[index]?.serviceFees?.message}
+                  {...register(`billingServices.${index}.serviceFees`)}
+                />
               </div>
-            )}
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <Select
+                  label="Package Type"
+                  placeholder="Package Type"
+                  options={[
+                    { value: '', label: 'None' },
+                    ...PACKAGE_TYPE_OPTIONS.map((option) => ({
+                      value: option,
+                      label: option,
+                    })),
+                  ]}
+                  error={errors.billingServices?.[index]?.packageType?.message}
+                  {...register(`billingServices.${index}.packageType`)}
+                />
+                <RupeeInput
+                  label={
+                    watch(`billingServices.${index}.packageType`)
+                      ? 'Package Charges *'
+                      : 'Package Charges'
+                  }
+                  placeholder="0"
+                  disabled={!watch(`billingServices.${index}.packageType`)}
+                  error={errors.billingServices?.[index]?.packageCharges?.message}
+                  {...register(`billingServices.${index}.packageCharges`)}
+                />
+              </div>
+
+              {serviceFields.length > 1 ? (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removeService(index)}
+                    className="rounded p-2 text-text-muted hover:bg-brown/5 hover:text-danger"
+                    aria-label="Remove service"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ))}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <RupeeInput
+              label="Discount (if any)"
+              placeholder="0"
+              error={errors.billingServices?.[0]?.discount?.message}
+              {...register('billingServices.0.discount')}
+            />
+            <div className="space-y-3">
+              <Controller
+                name="applyTax"
+                control={control}
+                render={({ field }) => (
+                  <label className="flex items-center gap-2 text-sm font-medium text-brown">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-gold focus:ring-gold"
+                      checked={Boolean(field.value)}
+                      onChange={(e) => field.onChange(e.target.checked)}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                    CGST & SGST
+                  </label>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  
+                  placeholder="3"
+                  disabled={!applyTax}
+                  error={errors.cgst?.message}
+                  {...register('cgst')}
+                />
+                <Input
+                 
+                  placeholder="3"
+                  disabled={!applyTax}
+                  error={errors.sgst?.message}
+                  {...register('sgst')}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                appendService({
+                  serviceType: '',
+                  serviceFees: '',
+                  packageType: '',
+                  packageCharges: '',
+                  discount: '',
+                })
+              }
+            >
+              + Add More Service
+            </Button>
           </div>
         </div>
-        <Button type="button" variant="outline" className="mt-4">
-          + Add More Service
-        </Button>
-      </FormSection>
-    </form>
-  );
-}
-
-export function CreatePrescriptionForm({
-  onSubmit,
-  formId,
-}: {
-  onSubmit: (values: DoctorPrescriptionValues) => void;
-  formId: string;
-}) {
-  const form = useForm<DoctorPrescriptionValues>({
-    resolver: zodResolver(doctorPrescriptionSchema),
-    defaultValues: {
-      diagnosis: '',
-      medicines: '',
-      dosageInstructions: '',
-      duration: '',
-      followUpDate: '',
-      notes: '',
-    },
-  });
-
-  return (
-    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <FormSection title="Prescription Details">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input label="Diagnosis" error={form.formState.errors.diagnosis?.message} {...form.register('diagnosis')} />
-          <Input label="Duration" placeholder="e.g. 14 days" error={form.formState.errors.duration?.message} {...form.register('duration')} />
-          <Textarea label="Medicines" className="sm:col-span-2" rows={3} error={form.formState.errors.medicines?.message} {...form.register('medicines')} />
-          <Textarea label="Dosage Instructions" className="sm:col-span-2" rows={3} error={form.formState.errors.dosageInstructions?.message} {...form.register('dosageInstructions')} />
-          <Input label="Follow-up Date" type="date" error={form.formState.errors.followUpDate?.message} {...form.register('followUpDate')} />
-          <Textarea label="Notes (Optional)" rows={2} {...form.register('notes')} />
-        </div>
+        {errors.billingServices?.message ? (
+          <p className="mt-2 text-xs text-danger">{errors.billingServices.message}</p>
+        ) : null}
       </FormSection>
     </form>
   );

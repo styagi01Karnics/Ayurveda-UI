@@ -8,6 +8,10 @@ import { Select, type SelectOption } from '@/components/ui/Select';
 import { TagInput, type TagOption } from '@/components/ui/TagInput';
 import { fromApiConsultationTypeIds, slotTimeForInput } from '@/lib/api/mappers';
 import {
+  bookingDateInputProps,
+  BOOKING_TIME_OPTIONS,
+} from '@/lib/bookingConstraints';
+import {
   rescheduleAppointmentSchema,
   type RescheduleAppointmentFormValues,
 } from '@/lib/validation/patient.schema';
@@ -122,12 +126,14 @@ export function RescheduleAppointmentModal({
             <Input
               label="Registration Date"
               type="date"
+              min={bookingDateInputProps().min}
               error={errors.registrationDate?.message}
               {...register('registrationDate')}
             />
-            <Input
+            <Select
               label="Appointment Time"
-              type="time"
+              placeholder="Select time"
+              options={BOOKING_TIME_OPTIONS}
               error={errors.slotTime?.message}
               {...register('slotTime')}
             />
