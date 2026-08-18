@@ -16,6 +16,7 @@ export interface PatientRecord {
   secondaryId: string;
   detailId: string;
   bookingId: string;
+  assignedDoctorId?: string;
   name: string;
   phone: string;
   doctor: string;
@@ -109,6 +110,7 @@ export interface PatientTreatmentFollowUp {
 
 export interface PatientBillingMembership {
   packageName: string;
+  packageMasterId?: string;
   validity: string;
   membershipStatus: PatientStatus;
   discountApplied: number;
@@ -122,6 +124,16 @@ export interface PatientBillingMembership {
   packageCharges: number;
   discount: number;
   taxRate: string;
+  billingDraftId?: string;
+  billingDraftStatus?: 'PENDING' | 'COMPLETED';
+  billingServices?: {
+    serviceType: string;
+    serviceFees: number;
+    packageMasterId?: string;
+    packageName?: string;
+    packageType?: string;
+    packageCharges?: number;
+  }[];
 }
 
 export interface PatientInvoice {
@@ -301,12 +313,12 @@ export interface MedicineRecord {
   lowStockAlertEnabled?: boolean;
 }
 
-export type BillingStatus = 'Ongoing' | 'Completed';
+export type BillingStatus = 'Pending' | 'Unpaid' | 'Ongoing' | 'Completed';
 
 export interface BillingRecord {
-  /** Invoice UUID for GET /api/v1/invoices/{id}. */
+  /** Invoice UUID for GET /api/v1/invoices/{id}, or billing draft UUID. */
   id: string;
-  /** Display invoice number, e.g. INV-1002. */
+  /** Display invoice number, e.g. INV-1002. Drafts use "—" until generated. */
   invoiceId: string;
   patientId: string;
   secondaryPatientId: string;
@@ -317,6 +329,7 @@ export interface BillingRecord {
   paidAmount: number;
   leftAmount: number;
   status: BillingStatus;
+  kind?: 'invoice' | 'billing-draft';
 }
 
 export interface SalesInvoiceRecord {

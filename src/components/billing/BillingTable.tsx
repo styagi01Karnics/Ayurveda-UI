@@ -1,4 +1,5 @@
 import { AppIcon } from '@/components/ui/AppIcon';
+import { Button } from '@/components/ui/Button';
 import { DataTableShell } from '@/components/ui/DataTableShell';
 import { assets } from '@/lib/assets';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -7,12 +8,14 @@ import type { BillingRecord } from '@/types';
 interface BillingTableProps {
   records: BillingRecord[];
   onDownload: (record: BillingRecord) => void;
+  onStartInvoice?: (record: BillingRecord) => void;
   embedded?: boolean;
 }
 
 export function BillingTable({
   records,
   onDownload,
+  onStartInvoice,
   embedded,
 }: BillingTableProps) {
   return (
@@ -27,7 +30,7 @@ export function BillingTable({
               <th className="px-5 py-3 font-medium">Paid Amount</th>
               <th className="px-5 py-3 font-medium">Left Amount</th>
               <th className="px-5 py-3 font-medium">Status</th>
-              <th className="px-5 py-3 font-medium">Bill</th>
+              <th className="px-5 py-3 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -38,7 +41,9 @@ export function BillingTable({
                 </td>
               </tr>
             ) : (
-              records.map((record) => (
+              records.map((record) => {
+                const isDraft = record.kind === 'billing-draft' || record.status === 'Pending';
+                return (
                 <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-5 py-4 font-medium text-brown">
                     {record.invoiceId}
@@ -63,17 +68,28 @@ export function BillingTable({
                     <BillingStatus status={record.status} />
                   </td>
                   <td className="px-5 py-4">
-                    <button
-                      type="button"
-                      onClick={() => onDownload(record)}
-                      className="rounded-lg border border-gray-200 bg-cream p-2 text-gold hover:bg-gold/10"
-                      aria-label="Download bill"
-                    >
-                      <AppIcon src={assets.icons.download} className="h-4 w-4" />
-                    </button>
+                    {isDraft ? (
+                      <Button
+                        type="button"
+                        className="px-3 py-1.5 text-xs"
+                        onClick={() => onStartInvoice?.(record)}
+                      >
+                        Start Invoice
+                      </Button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onDownload(record)}
+                        className="rounded-lg border border-gray-200 bg-cream p-2 text-gold hover:bg-gold/10"
+                        aria-label="Download bill"
+                      >
+                        <AppIcon src={assets.icons.download} className="h-4 w-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
@@ -86,7 +102,11 @@ function BillingStatus({ status }: { status: BillingRecord['status'] }) {
     <span
       className={cn(
         'font-medium',
-        status === 'Ongoing' ? 'text-gold' : 'text-success',
+        status === 'Pending' || status === 'Unpaid'
+          ? 'text-gold'
+          : status === 'Ongoing'
+            ? 'text-gold'
+            : 'text-success',
       )}
     >
       {status}

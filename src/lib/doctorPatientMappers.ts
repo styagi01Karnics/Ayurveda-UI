@@ -152,7 +152,9 @@ export function mapPatientToPersonalForm(
 
     appointmentTime: '10:00',
 
-    assignedDoctor: sanitizeFormField(info.assignedDoctor),
+    assignedDoctor: sanitizeFormField(
+      patient.assignedDoctorId || info.assignedDoctor,
+    ),
 
     mobileNumber: phoneDigits(patient.phone),
 
@@ -312,7 +314,7 @@ export function mapPatientToTreatmentForm(
 
     followUpScheduling: 'Monthly',
 
-    assignedDoctor: sanitizeFormField(t.followUpDoctor),
+    assignedDoctor: sanitizeFormField(patient.assignedDoctorId || t.followUpDoctor),
 
     autoSmsReminder: sanitizeFormField(t.reminder).includes('Enabled'),
 
@@ -329,10 +331,25 @@ export function mapPatientToBillingForm(
 ): DoctorBillingTabValues {
 
   const b = patient.billing;
+  const services = b.billingServices?.length
+    ? b.billingServices.map((row) => ({
+        serviceType: sanitizeFormField(row.serviceType),
+        serviceFees: sanitizeFormField(String(row.serviceFees ?? '')),
+        packageType: sanitizeFormField(row.packageType ?? ''),
+        packageCharges: sanitizeFormField(String(row.packageCharges ?? '')),
+      }))
+    : [
+        {
+          serviceType: sanitizeFormField(b.serviceType),
+          serviceFees: sanitizeFormField(String(b.serviceFees)),
+          packageType: sanitizeFormField(b.packageType ?? ''),
+          packageCharges: sanitizeFormField(String(b.packageCharges)),
+        },
+      ];
 
   return {
 
-    packageMasterId: '',
+    packageMasterId: sanitizeFormField(b.packageMasterId ?? ''),
 
     validity: toIsoDate(b.validity),
 
@@ -348,21 +365,7 @@ export function mapPatientToBillingForm(
 
     outstandingAmount: sanitizeFormField(String(b.outstandingAmount)),
 
-    billingServices: [
-      {
-        serviceType: sanitizeFormField(b.serviceType),
-        serviceFees: sanitizeFormField(String(b.serviceFees)),
-        packageType: sanitizeFormField(b.packageType),
-        packageCharges: sanitizeFormField(String(b.packageCharges)),
-        discount: sanitizeFormField(String(b.discount)),
-      },
-    ],
-
-    applyTax: b.taxRate === '0%' || b.taxRate === '0'
-      ? false
-      : true,
-    cgst: '3',
-    sgst: '3',
+    billingServices: services,
 
   };
 
@@ -376,7 +379,13 @@ export function applyPersonalFormToPatient(
 
   values: DoctorPersonalTabValues,
 
+  doctors: { value: string; label: string }[] = [],
+
 ): PatientDetail {
+
+  const doctorName =
+    doctors.find((doctor) => doctor.value === values.assignedDoctor)?.label ??
+    patient.doctor;
 
   return {
 
@@ -386,7 +395,9 @@ export function applyPersonalFormToPatient(
 
     phone: `+91-${values.mobileNumber}`,
 
-    doctor: values.assignedDoctor,
+    assignedDoctorId: values.assignedDoctor,
+
+    doctor: doctorName,
 
     consultationTypeIds: values.consultationTypeIds,
 
@@ -404,7 +415,7 @@ export function applyPersonalFormToPatient(
 
       registrationDate: values.registrationDate,
 
-      assignedDoctor: values.assignedDoctor,
+      assignedDoctor: doctorName,
 
       email: sanitizeFormField(values.email),
 
@@ -524,6 +535,8 @@ export function applyTreatmentFormToPatient(
 
   therapists: { value: string; label: string }[] = [],
 
+  doctors: { value: string; label: string }[] = [],
+
 ): PatientDetail {
 
   const therapistName =
@@ -532,11 +545,17 @@ export function applyTreatmentFormToPatient(
 
       ?.label ?? patient.treatmentFollowUp.assignedTherapist;
 
+  const doctorName =
+    doctors.find((doctor) => doctor.value === values.assignedDoctor)
+      ?.label ?? patient.treatmentFollowUp.followUpDoctor;
+
 
 
   return {
 
     ...patient,
+
+    assignedDoctorId: values.assignedDoctor || patient.assignedDoctorId,
 
     treatmentFollowUp: {
 
@@ -564,7 +583,7 @@ export function applyTreatmentFormToPatient(
 
       assignedTherapist: therapistName,
 
-      followUpDoctor: values.assignedDoctor,
+      followUpDoctor: doctorName,
 
       reminder: values.autoSmsReminder ? 'Auto SMS Enabled' : 'Auto SMS Disabled',
 
@@ -592,13 +611,18 @@ export function applyBillingFormToPatient(
 
       ...patient.billing,
 
-      packageName: values.packageMasterId,
+      packageName: values.packageMasterId || patient.billing.packageName,
 
-      validity: values.validity,
+      packageMasterId: values.packageMasterId || patient.billing.packageMasterId,
 
-      membershipStatus: values.membershipStatus as PatientDetail['billing']['membershipStatus'],
+      validity: values.validity || patient.billing.validity,
 
-      discountApplied: Number(values.discountApplied),
+      membershipStatus: (values.membershipStatus ||
+        patient.billing.membershipStatus) as PatientDetail['billing']['membershipStatus'],
+
+      discountApplied: values.discountApplied
+        ? Number(values.discountApplied)
+        : patient.billing.discountApplied,
 
       registrationFees: values.registrationFees
 
@@ -622,26 +646,18 @@ export function applyBillingFormToPatient(
         ? Number(values.billingServices[0].serviceFees)
         : patient.billing.serviceFees,
 
-      packageType:
-        values.billingServices[0]?.packageType?.trim()
-          ? values.billingServices[0].packageType
-          : patient.billing.packageType,
+      packageType: patient.billing.packageType,
 
-      packageCharges:
-        values.billingServices[0]?.packageType?.trim() &&
-        values.billingServices[0]?.packageCharges
-          ? Number(values.billingServices[0].packageCharges)
-          : values.billingServices[0]?.packageType?.trim()
-            ? 0
-            : patient.billing.packageCharges,
+      packageCharges: values.billingServices[0]?.packageCharges
+        ? Number(values.billingServices[0].packageCharges)
+        : patient.billing.packageCharges,
 
-      discount: values.billingServices[0]?.discount
-        ? Number(values.billingServices[0].discount)
-        : patient.billing.discount,
-
-      taxRate: values.applyTax
-        ? `${values.cgst ?? '3'}%`
-        : patient.billing.taxRate,
+      billingServices: values.billingServices.map((row) => ({
+        serviceType: row.serviceType,
+        serviceFees: Number(row.serviceFees) || 0,
+        packageType: row.packageType,
+        packageCharges: row.packageCharges ? Number(row.packageCharges) : 0,
+      })),
 
     },
 

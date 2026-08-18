@@ -100,7 +100,11 @@ export function updateTherapy(
 
 // ── Appointments ─────────────────────────────────────────────────────────────
 
-/** List appointment rows for the patients/appointments screen (requires statusTab). */
+/**
+ * Appointment booking list tabs.
+ * ACTIVE = non-closed bookings, or closed bookings that already have a follow-up.
+ * INACTIVE = cancelled/completed bookings with no follow-up linked via sourceBookingId.
+ */
 export type PatientListTab = 'ACTIVE' | 'INACTIVE';
 
 export interface AppointmentPatientsQuery {

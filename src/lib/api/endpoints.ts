@@ -176,6 +176,13 @@ export const apiEndpoints = {
         `/api/v1/follow-ups/${followUpId}/status`,
       cancel: (followUpId: string) => `/api/v1/follow-ups/${followUpId}/cancel`,
     },
+    prescriptions: {
+      base: '/api/v1/prescriptions',
+      getById: (prescriptionId: string) =>
+        `/api/v1/prescriptions/${prescriptionId}`,
+      getByPatientId: (patientId: string) =>
+        `/api/v1/prescriptions/patient/${patientId}`,
+    },
   },
 
   /** Medicine & Dashboard-service :8108 */
@@ -202,8 +209,16 @@ export const apiEndpoints = {
       getActive: '/api/v1/package-masters/active',
       getById: (id: string) => `/api/v1/package-masters/${id}`,
     },
+    billings: '/api/v1/billings',
+    billingById: (billingId: string) => `/api/v1/billings/${billingId}`,
+    billingsByPatient: (patientId: string) =>
+      `/api/v1/billings/patient/${patientId}`,
+    generateInvoiceFromBilling: (billingId: string) =>
+      `/api/v1/billings/${billingId}/generate-invoice`,
     invoices: '/api/v1/invoices',
     invoiceById: (invoiceId: string) => `/api/v1/invoices/${invoiceId}`,
+    invoicesByPatient: (patientId: string) =>
+      `/api/v1/invoices/patient/${patientId}`,
     invoicePayment: (invoiceId: string) =>
       `/api/v1/invoices/${invoiceId}/payments`,
     sales: '/api/v1/sales',

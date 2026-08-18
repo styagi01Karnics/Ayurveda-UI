@@ -83,6 +83,19 @@ vi.mock('@/lib/api/therapists', () => ({
       active: t.status === 'Active',
     })),
   ),
+  getActiveTherapists: vi.fn(async () =>
+    initialClinicTherapists
+      .filter((t) => t.status === 'Active')
+      .map((t) => ({
+        id: t.id,
+        name: t.name,
+        therapistName: t.name,
+        therapistCode: t.id,
+        assignedTherapyIds: ['therapy-1'],
+        status: 'ACTIVE',
+        active: true,
+      })),
+  ),
   getTherapistById: vi.fn(),
   createTherapist: vi.fn(async (payload: { name?: string; therapistName?: string }) => ({
     id: `therapist-${Date.now()}`,
@@ -879,10 +892,63 @@ vi.mock('@/lib/api/billing', () => ({
     patientId: '37944397',
     invoiceDate: '2026-10-15',
     totalAmount: 1000,
+    paidAmount: 0,
+    leftAmount: 1000,
+    status: 'UNPAID',
+  })),
+  addInvoicePayment: vi.fn(async () => ({
+    id: 'inv-uuid-new',
+    invoiceId: 'INV-NEW',
+    patientId: '37944397',
+    invoiceDate: '2026-10-15',
+    totalAmount: 1000,
     paidAmount: 1000,
     leftAmount: 0,
     status: 'COMPLETED',
   })),
+  createBilling: vi.fn(async () => ({
+    id: 'billing-draft-1',
+    patientId: '37944397',
+    status: 'PENDING',
+    services: [],
+  })),
+  getBillings: vi.fn(async () => []),
+  getBillingById: vi.fn(async () => ({
+    id: 'billing-draft-1',
+    patientId: '37944397',
+    patientDisplayId: 'PT458652',
+    patientCode: 'GAN2025-0129',
+    patientName: 'Khushi Shroff',
+    contactNumber: '9876543210',
+    billingDate: '2026-10-15',
+    visitType: 'CONSULTATION',
+    status: 'PENDING',
+    services: [
+      {
+        serviceType: 'Consultation',
+        serviceFees: 800,
+        packageCharges: 800,
+      },
+    ],
+  })),
+  getBillingsByPatient: vi.fn(async () => []),
+  generateInvoiceFromBilling: vi.fn(async () => ({
+    id: 'inv-from-billing',
+    invoiceId: 'INV-BILL',
+    patientId: '37944397',
+    invoiceDate: '2026-10-15',
+    totalAmount: 800,
+    paidAmount: 0,
+    leftAmount: 800,
+    status: 'UNPAID',
+  })),
+  toVisitTypeApi: (value: string) => {
+    const upper = value.toUpperCase();
+    if (upper.includes('THERAPY')) return 'THERAPY';
+    if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
+    if (upper.includes('PACKAGE')) return 'PACKAGE';
+    return 'CONSULTATION';
+  },
   getSales: vi.fn(async () => ({
     revenueThisMonth: 2756,
     revenueFrom: '2026-08-01',
@@ -918,6 +984,33 @@ vi.mock('@/lib/api/billing', () => ({
     pendingPayments: 228000,
     collectedPayments: 228000,
   })),
+}));
+
+vi.mock('@/lib/api/prescriptions', () => ({
+  createPrescription: vi.fn(async () => ({
+    id: 'rx-1',
+    patientId: '37944397',
+    diagnosis: 'Migraine',
+  })),
+  getPrescriptionById: vi.fn(async () => ({
+    id: 'rx-1',
+    patientId: '37944397',
+    diagnosis: 'Migraine',
+    medicines: [],
+    therapySuggestions: [],
+    consultant: {
+      name: 'Dr. Sheekha',
+      qualification: 'BAMS',
+      mobileNumber: '9876543210',
+    },
+    patient: {
+      displayId: '#PT458652',
+      name: 'Khushi Shroff',
+      age: 32,
+      gender: 'Female',
+    },
+  })),
+  getPrescriptionsByPatient: vi.fn(async () => []),
 }));
 
 vi.mock('@/lib/api/activityLogs', () => ({

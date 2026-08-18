@@ -312,6 +312,8 @@ export interface AppointmentDto {
     name?: string;
     doctorName?: string;
     specialization?: string;
+    qualification?: string;
+    mobileNumber?: string;
     status?: string;
   };
   consultationTypes?: ConsultationTypeRef[] | string[];

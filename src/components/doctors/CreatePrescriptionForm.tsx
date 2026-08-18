@@ -20,7 +20,7 @@ import {
 } from '@/lib/prescriptionOptions';
 import {
   doctorPrescriptionSchema,
-  FOLLOW_UP_OPTIONS,
+  PRESCRIPTION_SCHEDULING_OPTIONS,
   type DoctorPrescriptionValues,
 } from '@/lib/validation/doctorPatient.schema';
 import { cn } from '@/lib/utils';
@@ -181,7 +181,7 @@ export function CreatePrescriptionForm({
       ],
       therapies: [{ categoryId: '', therapyIds: [] }],
       setupRequired: '',
-      followUpScheduling: '',
+      followUpScheduling: '7_DAYS',
       suggestions: '',
     },
   });
@@ -198,12 +198,14 @@ export function CreatePrescriptionForm({
   const submitPrescription = handleSubmit((values: DoctorPrescriptionValues) => {
     const cleaned: DoctorPrescriptionValues = {
       ...values,
+      medicines:
+        values.medicines?.filter((row) => Boolean(row.medicineId)) ?? [],
       therapies:
         values.therapies?.filter(
           (row) => Boolean(row.categoryId) && (row.therapyIds?.length ?? 0) > 0,
         ) ?? [],
       setupRequired: showFollowUp ? values.setupRequired : 'No',
-      followUpScheduling: showFollowUp ? values.followUpScheduling : 'Monthly',
+      followUpScheduling: showFollowUp ? values.followUpScheduling : '',
     };
     onSubmit(cleaned);
   });
@@ -243,7 +245,7 @@ export function CreatePrescriptionForm({
   );
 
   const followUpOptions = useMemo(
-    () => FOLLOW_UP_OPTIONS.map((option) => ({ value: option, label: option })),
+    () => [...PRESCRIPTION_SCHEDULING_OPTIONS],
     [],
   );
 
@@ -394,7 +396,7 @@ export function CreatePrescriptionForm({
           title="Next Follow Up"
           onRemove={() => {
             setValue('setupRequired', 'No', { shouldValidate: true });
-            setValue('followUpScheduling', 'Monthly', { shouldValidate: true });
+            setValue('followUpScheduling', '7_DAYS', { shouldValidate: true });
             setShowFollowUp(false);
           }}
         >

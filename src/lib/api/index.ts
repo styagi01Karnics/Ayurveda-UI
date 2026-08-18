@@ -10,6 +10,7 @@ export * as medicinesApi from './medicines';
 export * as dashboardApi from './dashboard';
 export * as authApi from './auth';
 export * as billingApi from './billing';
+export * as prescriptionsApi from './prescriptions';
 export * as activityLogsApi from './activityLogs';
 export * as notificationsApi from './notifications';
 export * as messagingApi from './messaging';

@@ -227,6 +227,7 @@ export function mapPatientToRecord(
     secondaryId: patient.patientCode || patient.id,
     detailId: patient.id,
     bookingId: extras?.bookingId ?? '',
+    assignedDoctorId: extras?.assignedDoctorId,
     name: patient.fullName,
     phone: patient.mobileNumber ? `+91-${patient.mobileNumber}` : '—',
     doctor: extras?.doctor ?? '—',
@@ -620,6 +621,7 @@ export function mapPatientPackageToBillingMembership(
   const status = pkg.status.toUpperCase();
   return {
     packageName: pkg.packageName ?? '—',
+    packageMasterId: pkg.packageMasterId,
     validity: formatDisplayDate(pkg.validity),
     membershipStatus:
       status === 'COMPLETED'
@@ -1162,7 +1164,62 @@ function formatInvoiceDate(date: string): string {
 function mapInvoiceStatus(status: string): import('@/types').BillingStatus {
   const upper = status.toUpperCase();
   if (upper === 'COMPLETED') return 'Completed';
+  if (upper === 'PENDING') return 'Pending';
+  if (upper === 'UNPAID') return 'Unpaid';
   return 'Ongoing';
+}
+
+export function mapBillingDraftToRecord(
+  billing: import('@/lib/api/billing').BillingDto,
+  index = 0,
+): import('@/types').BillingRecord {
+  const displayId =
+    billing.patientDisplayId ?? billing.formattedPatientId ?? billing.patientId;
+  const serviceTotal = (billing.services ?? []).reduce(
+    (sum, item) =>
+      sum + (item.serviceFees ?? 0) + (item.packageCharges ?? 0),
+    0,
+  );
+  const status = String(billing.status ?? 'PENDING').toUpperCase();
+
+  return {
+    id: billing.id || `billing-${index}`,
+    invoiceId: billing.invoiceNumber || billing.invoiceId || '—',
+    patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
+    secondaryPatientId: billing.patientCode ?? billing.patientId,
+    patientUuid: billing.patientId,
+    invoiceDate: formatInvoiceDate(billing.billingDate ?? ''),
+    totalAmount: serviceTotal,
+    paidAmount: 0,
+    leftAmount: serviceTotal,
+    status: status === 'COMPLETED' ? 'Completed' : 'Pending',
+    kind: 'billing-draft',
+  };
+}
+
+export function mapBillingDraftToPatientBilling(
+  billing: import('@/lib/api/billing').BillingDto,
+): Partial<import('@/types').PatientBillingMembership> {
+  const first = billing.services?.[0];
+  return {
+    billingDraftId: billing.id,
+    billingDraftStatus:
+      String(billing.status ?? 'PENDING').toUpperCase() === 'COMPLETED'
+        ? 'COMPLETED'
+        : 'PENDING',
+    serviceType: first?.serviceType ?? '',
+    serviceFees: first?.serviceFees ?? 0,
+    packageType: first?.packageName ?? first?.packageType ?? '',
+    packageCharges: first?.packageCharges ?? 0,
+    billingServices: (billing.services ?? []).map((item) => ({
+      serviceType: item.serviceType ?? '',
+      serviceFees: item.serviceFees ?? 0,
+      packageMasterId: item.packageMasterId ?? undefined,
+      packageName: item.packageName ?? undefined,
+      packageType: item.packageType ?? undefined,
+      packageCharges: item.packageCharges ?? 0,
+    })),
+  };
 }
 
 function mapActivityAction(action: string): import('@/types').ActivityLogAction {
@@ -1191,6 +1248,7 @@ export function mapInvoiceToBillingRecord(
     paidAmount: invoice.paidAmount ?? 0,
     leftAmount: invoice.leftAmount ?? 0,
     status: mapInvoiceStatus(invoice.status),
+    kind: 'invoice',
   };
 }
 

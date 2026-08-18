@@ -8,8 +8,6 @@ import {
 } from '@/lib/appointmentAlerts';
 import { mapTodayAppointmentToScheduleItem } from '@/lib/api/mappers';
 
-const POLL_INTERVAL_MS = 30_000;
-
 export function useTodayAppointmentAlerts(enabled = true) {
   const { showToast } = useToast();
   const notifiedIds = useRef(new Set<string>());
@@ -55,10 +53,8 @@ export function useTodayAppointmentAlerts(enabled = true) {
     };
 
     void checkAppointments();
-    const timer = window.setInterval(checkAppointments, POLL_INTERVAL_MS);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
     };
   }, [enabled, showToast]);
 }

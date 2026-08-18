@@ -70,7 +70,7 @@ describe('PatientsPage', () => {
 
     await screen.findByText('Khushi Shroff');
     await user.click(screen.getByLabelText('Download bill for Khushi Shroff'));
-    expect(await screen.findByText('Invoice No.')).toBeInTheDocument();
+    expect(await screen.findByText(/Invoice No/)).toBeInTheDocument();
   });
 
   it('opens upload modal when upload clicked', async () => {

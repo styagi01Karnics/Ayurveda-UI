@@ -25,7 +25,7 @@ import {
   mapAppointmentStatsToDoctorStats,
   mapTodayAppointmentToScheduleItem,
 } from '@/lib/api/mappers';
-import { canStartConsultation } from '@/lib/appointmentAlerts';
+import { isConsultationNotStartedError } from '@/lib/appointmentAlerts';
 import { assets } from '@/lib/assets';
 import type { DoctorScheduleItem, VisitType } from '@/types';
 
@@ -104,14 +104,6 @@ export function DoctorsPage() {
       return;
     }
 
-    if (
-      item.scheduledAt != null &&
-      !canStartConsultation(new Date(item.scheduledAt))
-    ) {
-      setNotStartedTarget(item);
-      return;
-    }
-
     setStartingId(bookingId);
     try {
       await markAppointmentInConsultation(bookingId);
@@ -124,6 +116,10 @@ export function DoctorsPage() {
       );
       navigate(`/doctors/patient/${item.patientDetailId}`);
     } catch (err) {
+      if (isConsultationNotStartedError(err)) {
+        setNotStartedTarget(item);
+        return;
+      }
       showToast({
         title: 'Could not start consultation',
         message:

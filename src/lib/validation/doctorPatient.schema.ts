@@ -134,10 +134,10 @@ export const doctorTreatmentTabSchema = z
   });
 
 export const doctorBillingTabSchema = z.object({
-  packageMasterId: z.string().min(1, 'Package is required'),
-  validity: z.string().min(1, 'Validity is required'),
-  membershipStatus: z.string().min(1, 'Status is required'),
-  discountApplied: z.string().min(1, 'Discount applied is required'),
+  packageMasterId: z.string().optional(),
+  validity: z.string().optional(),
+  membershipStatus: z.string().optional(),
+  discountApplied: z.string().optional(),
   registrationFees: z.string().optional(),
   paymentMode: z.string().optional(),
   partialPayment: z.string().optional(),
@@ -149,19 +149,49 @@ export const doctorBillingTabSchema = z.object({
         serviceFees: z.string().min(1, 'Service fees is required'),
         packageType: z.string().optional(),
         packageCharges: z.string().optional(),
-        discount: z.string().optional(),
       }),
     )
     .min(1, 'Add at least one service'),
-  applyTax: z.boolean(),
-  cgst: z.string().optional(),
-  sgst: z.string().optional(),
 }).superRefine((data, ctx) => {
+  if (data.packageMasterId?.trim()) {
+    if (!data.validity?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Validity is required when a package is selected',
+        path: ['validity'],
+      });
+    }
+    if (!data.membershipStatus?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Status is required when a package is selected',
+        path: ['membershipStatus'],
+      });
+    }
+    if (
+      data.discountApplied?.trim() &&
+      !/^\d+(?:\.\d{1,2})?$/.test(data.discountApplied.trim())
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Enter a valid discount amount',
+        path: ['discountApplied'],
+      });
+    }
+  }
+
   data.billingServices.forEach((row, index) => {
+    if (row.packageType?.trim() && !data.packageMasterId?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Select a package name before choosing a package type',
+        path: ['packageMasterId'],
+      });
+    }
     if (row.packageType?.trim() && !row.packageCharges?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Package charges is required when package type is selected',
+        message: 'Package charges is required when a package is selected',
         path: ['billingServices', index, 'packageCharges'],
       });
     }
@@ -179,56 +209,79 @@ export const doctorBillingTabSchema = z.object({
         path: ['billingServices', index, 'serviceFees'],
       });
     }
-    if (row.discount?.trim() && !/^\d+$/.test(row.discount.trim())) {
+  });
+});
+
+export const doctorPrescriptionSchema = z
+  .object({
+    diagnosis: z.string().optional(),
+    notes: z.string().optional(),
+    medicines: z.array(
+      z.object({
+        medicineId: z.string().optional(),
+        dosage: z.string().optional(),
+        frequency: z.string().optional(),
+        duration: z.string().optional(),
+        notes: z.string().optional(),
+      }),
+    ),
+    therapies: z.array(
+      z.object({
+        categoryId: z.string().optional(),
+        therapyIds: z.array(z.string()).optional(),
+      }),
+    ),
+    setupRequired: z.string().optional(),
+    followUpScheduling: z.string().optional(),
+    suggestions: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const medicines = data.medicines.filter((row) => row.medicineId?.trim());
+    const therapies = data.therapies.filter(
+      (row) => Boolean(row.categoryId?.trim()) && (row.therapyIds?.length ?? 0) > 0,
+    );
+
+    if (medicines.length === 0 && therapies.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Enter a valid amount',
-        path: ['billingServices', index, 'discount'],
+        message: 'Add at least one medicine or one therapy suggestion',
+        path: ['medicines'],
+      });
+    }
+
+    data.medicines.forEach((row, index) => {
+      if (!row.medicineId?.trim()) return;
+      if (!row.dosage?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Dosage is required',
+          path: ['medicines', index, 'dosage'],
+        });
+      }
+      if (!row.frequency?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Frequency is required',
+          path: ['medicines', index, 'frequency'],
+        });
+      }
+      if (!row.duration?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Duration is required',
+          path: ['medicines', index, 'duration'],
+        });
+      }
+    });
+
+    if (data.setupRequired === 'Yes' && !data.followUpScheduling?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Follow-up scheduling is required',
+        path: ['followUpScheduling'],
       });
     }
   });
-
-  if (data.applyTax) {
-    if (!data.cgst?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'CGST is required',
-        path: ['cgst'],
-      });
-    }
-    if (!data.sgst?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'SGST is required',
-        path: ['sgst'],
-      });
-    }
-  }
-});
-
-export const doctorPrescriptionSchema = z.object({
-  diagnosis: z.string().optional(),
-  medicines: z
-    .array(
-      z.object({
-        medicineId: z.string().min(1, 'Medicine is required'),
-        dosage: z.string().min(1, 'Dosage is required'),
-        frequency: z.string().min(1, 'Frequency is required'),
-        duration: z.string().min(1, 'Duration is required'),
-        notes: z.string().optional(),
-      }),
-    )
-    .min(1, 'Add at least one medicine'),
-  therapies: z.array(
-    z.object({
-      categoryId: z.string().optional(),
-      therapyIds: z.array(z.string()).optional(),
-    }),
-  ),
-  setupRequired: z.string().min(1, 'Set up required is required'),
-  followUpScheduling: z.string().min(1, 'Follow-up scheduling is required'),
-  suggestions: z.string().optional(),
-});
 
 export type DoctorPersonalTabValues = z.infer<typeof doctorPersonalTabSchema>;
 export type DoctorMedicalTabValues = z.infer<typeof doctorMedicalTabSchema>;
@@ -242,3 +295,8 @@ export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;
 export const MEMBERSHIP_STATUS_OPTIONS = ['Completed', 'Active', 'Pending'] as const;
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
 export const FOLLOW_UP_OPTIONS = ['Weekly', 'Bi-weekly', 'Monthly'] as const;
+export const PRESCRIPTION_SCHEDULING_OPTIONS = [
+  { value: '7_DAYS', label: '7 days' },
+  { value: '14_DAYS', label: '14 days' },
+  { value: '30_DAYS', label: '30 days' },
+] as const;

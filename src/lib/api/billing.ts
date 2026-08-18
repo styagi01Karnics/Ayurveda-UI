@@ -7,12 +7,21 @@ const ep = apiEndpoints.billing;
 const dash = apiEndpoints.dashboard;
 
 export type InvoiceStatus = 'UNPAID' | 'ONGOING' | 'COMPLETED';
+export type BillingDraftStatus = 'PENDING' | 'COMPLETED';
 export type BillingPeriod = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
 export type VisitTypeApi =
   | 'CONSULTATION'
   | 'FOLLOW_UP'
   | 'THERAPY'
   | 'PACKAGE';
+
+export function toVisitTypeApi(value: string): VisitTypeApi {
+  const upper = value.toUpperCase().replace(/[\s-]+/g, '_');
+  if (upper.includes('THERAPY')) return 'THERAPY';
+  if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
+  if (upper.includes('PACKAGE')) return 'PACKAGE';
+  return 'CONSULTATION';
+}
 
 export interface InvoiceMedicineItem {
   medicineId: string;
@@ -41,6 +50,7 @@ export interface CreateInvoicePayload {
   invoiceDate: string;
   visitType: VisitTypeApi;
   serviceFees: number;
+  packageMasterId?: string | null;
   packageType?: string | null;
   packageCharges?: number;
   medicines?: InvoiceMedicineItem[];
@@ -195,6 +205,85 @@ export function getInvoiceById(id: string) {
 
 export function createInvoice(payload: CreateInvoicePayload) {
   return apiRequest<InvoiceDto>(url(ep.invoices), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export interface BillingServiceItemPayload {
+  serviceType: string;
+  serviceFees: number;
+}
+
+export interface CreateBillingPayload {
+  patientId: string;
+  patientName: string;
+  contactNumber: string;
+  billingDate: string;
+  services: BillingServiceItemPayload[];
+}
+
+export interface BillingServiceItemDto {
+  id?: string;
+  serviceType?: string;
+  serviceFees?: number;
+  packageMasterId?: string | null;
+  packageName?: string | null;
+  packageType?: string | null;
+  packageCharges?: number;
+}
+
+export interface BillingDto {
+  id: string;
+  patientId: string;
+  patientDisplayId?: string;
+  formattedPatientId?: string;
+  patientCode?: string;
+  patientName?: string;
+  contactNumber?: string;
+  billingDate?: string;
+  visitType?: VisitTypeApi | string;
+  status: BillingDraftStatus | string;
+  invoiceId?: string | null;
+  invoiceNumber?: string | null;
+  services?: BillingServiceItemDto[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BillingsQuery {
+  status?: BillingDraftStatus;
+}
+
+export function createBilling(payload: CreateBillingPayload) {
+  return apiRequest<BillingDto>(url(ep.billings), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function getBillings(query: BillingsQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.status) params.set('status', query.status);
+  const qs = params.toString();
+  return apiRequestList<BillingDto>(
+    url(`${ep.billings}${qs ? `?${qs}` : ''}`),
+  );
+}
+
+export function getBillingById(billingId: string) {
+  return apiRequest<BillingDto>(url(ep.billingById(billingId)));
+}
+
+export function getBillingsByPatient(patientId: string) {
+  return apiRequestList<BillingDto>(url(ep.billingsByPatient(patientId)));
+}
+
+export function generateInvoiceFromBilling(
+  billingId: string,
+  payload: Partial<CreateInvoicePayload> = {},
+) {
+  return apiRequest<InvoiceDto>(url(ep.generateInvoiceFromBilling(billingId)), {
     method: 'POST',
     body: payload,
   });

@@ -27,7 +27,19 @@ import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import { getActivePackageMasters } from '@/lib/api/packageMasters';
 import { getActiveTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
+import { createPackage } from '@/lib/api/packages';
 import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
+import {
+  createBilling,
+} from '@/lib/api/billing';
+import { ApiError } from '@/lib/api/client';
+import { getAllMedicines } from '@/lib/api/medicines';
+import {
+  createPrescription,
+  getPrescriptionById,
+  type PrescriptionDto,
+} from '@/lib/api/prescriptions';
+import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import {
   applyBillingFormToPatient,
   applyMedicalFormToPatient,
@@ -60,6 +72,15 @@ const detailTabs: { id: PatientDetailTab; label: string }[] = [
   { id: 'billing', label: 'Billing & Membership' },
 ];
 
+function toPatientPackageStatus(
+  status?: string,
+): 'SCHEDULED' | 'ONGOING' | 'COMPLETED' {
+  const normalized = status?.trim().toUpperCase();
+  if (normalized === 'COMPLETED') return 'COMPLETED';
+  if (normalized === 'ACTIVE' || normalized === 'ONGOING') return 'ONGOING';
+  return 'SCHEDULED';
+}
+
 const TAB_ORDER: PatientDetailTab[] = ['personal', 'medical', 'treatment', 'billing'];
 
 function scrollWorkflowToTop() {
@@ -77,6 +98,8 @@ export function DoctorPatientDetailPage() {
   const [prescriptionPreviewOpen, setPrescriptionPreviewOpen] = useState(false);
   const [prescriptionDraft, setPrescriptionDraft] =
     useState<DoctorPrescriptionValues | null>(null);
+  const [savedPrescription, setSavedPrescription] =
+    useState<PrescriptionDto | null>(null);
   const [prescriptionSubmitting, setPrescriptionSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -113,10 +136,11 @@ export function DoctorPatientDetailPage() {
         packageMasters: packageMasters.map((pkg) => ({
           value: pkg.id,
           label: pkg.name,
+          packagePrice: pkg.packagePrice,
         })),
         therapists: mapTherapistSelectOptions(therapists),
         doctors: doctors.map((doctor) => ({
-          value: doctor.name || doctor.doctorName || doctor.id,
+          value: doctor.id,
           label: doctor.name || doctor.doctorName || '—',
         })),
       } satisfies DoctorFormMasterOptions;
@@ -178,41 +202,90 @@ export function DoctorPatientDetailPage() {
   );
 
   const saveCurrentTab = useCallback(
-    (
+    async (
       values:
         | DoctorPersonalTabValues
         | DoctorMedicalTabValues
         | DoctorTreatmentTabValues
         | DoctorBillingTabValues,
     ) => {
-      if (!patient) return;
+      if (!patient) return false;
       let updated = patient;
       switch (activeTab) {
         case 'personal':
-          updated = applyPersonalFormToPatient(patient, values as DoctorPersonalTabValues);
+          updated = applyPersonalFormToPatient(
+            patient,
+            values as DoctorPersonalTabValues,
+            masterOptions.doctors,
+          );
           break;
         case 'medical':
           updated = applyMedicalFormToPatient(patient, values as DoctorMedicalTabValues);
           break;
         case 'treatment':
-          updated = applyTreatmentFormToPatient(
+          updated =           applyTreatmentFormToPatient(
             patient,
             values as DoctorTreatmentTabValues,
             masterOptions.therapists,
+            masterOptions.doctors,
           );
           break;
-        case 'billing':
-          updated = applyBillingFormToPatient(patient, values as DoctorBillingTabValues);
+        case 'billing': {
+          const billingValues = values as DoctorBillingTabValues;
+          updated = applyBillingFormToPatient(patient, billingValues);
+          try {
+            if (billingValues.packageMasterId) {
+              await createPackage({
+                patientId: patient.detailId,
+                packageMasterId: billingValues.packageMasterId,
+                validity: billingValues.validity || '',
+                status: toPatientPackageStatus(
+                  billingValues.membershipStatus,
+                ),
+                discountApplied: Number(billingValues.discountApplied) || 0,
+              });
+            }
+
+            const draft = await createBilling({
+              patientId: patient.detailId,
+              patientName: patient.name,
+              contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
+              billingDate: new Date().toISOString().slice(0, 10),
+              services: billingValues.billingServices.map((row) => ({
+                serviceType: row.serviceType,
+                serviceFees: Number(row.serviceFees) || 0,
+              })),
+            });
+            updated = {
+              ...updated,
+              billing: {
+                ...updated.billing,
+                billingDraftId: draft.id,
+                billingDraftStatus: 'PENDING',
+              },
+            };
+          } catch (err) {
+            showToast({
+              title: 'Billing draft failed',
+              message: resolveErrorMessage(err, UI_MESSAGES.error.saveFailed),
+            });
+            return false;
+          }
           break;
+        }
       }
       setPatient(updated);
       setIsDirty(false);
       showToast({
         title: 'Changes Saved',
-        message: 'Patient details have been updated successfully.',
+        message:
+          activeTab === 'billing'
+            ? 'Pending billing draft has been saved for reception.'
+            : 'Patient details have been updated successfully.',
       });
+      return true;
     },
-    [activeTab, patient, showToast, masterOptions.therapists],
+    [activeTab, patient, showToast, masterOptions.therapists, masterOptions.doctors],
   );
 
   const handleTabChange = (tab: PatientDetailTab) => {
@@ -283,14 +356,15 @@ export function DoctorPatientDetailPage() {
     setPendingAction(null);
   };
 
-  const handleFormSubmit = (
+  const handleFormSubmit = async (
     values:
       | DoctorPersonalTabValues
       | DoctorMedicalTabValues
       | DoctorTreatmentTabValues
       | DoctorBillingTabValues,
   ) => {
-    saveCurrentTab(values);
+    const saved = await saveCurrentTab(values);
+    if (!saved) return;
     if (pendingTab) {
       setActiveTab(pendingTab);
       setPendingTab(null);
@@ -314,19 +388,81 @@ export function DoctorPatientDetailPage() {
   };
 
   const handlePrescriptionSubmit = (values: DoctorPrescriptionValues) => {
+    setSavedPrescription(null);
     setPrescriptionDraft(values);
     setPrescriptionPreviewOpen(true);
   };
 
   const handlePrescriptionConfirm = async () => {
+    if (!patient || !prescriptionDraft) return;
+    const assignedDoctorId = patient.assignedDoctorId?.trim();
+    if (!patient.bookingId || !assignedDoctorId) {
+      showToast({
+        title: 'Missing appointment details',
+        message:
+          'A booking and assigned doctor are required before generating a prescription.',
+      });
+      return;
+    }
+
     setPrescriptionSubmitting(true);
     try {
+      const catalogue = await getAllMedicines().catch(() => []);
+      const medicineNames = new Map(
+        catalogue.map((item) => [item.id, item.medicineName]),
+      );
+      const medicines = (prescriptionDraft.medicines ?? [])
+        .filter((row) => row.medicineId)
+        .map((row) => ({
+          medicineId: row.medicineId as string,
+          medicineName: medicineNames.get(row.medicineId as string),
+          dosage: row.dosage ?? '',
+          frequency: row.frequency ?? '',
+          duration: row.duration ?? '',
+          notes: row.notes,
+        }));
+      const therapySuggestions = (prescriptionDraft.therapies ?? [])
+        .filter(
+          (row) => Boolean(row.categoryId) && (row.therapyIds?.length ?? 0) > 0,
+        )
+        .map((row) => ({
+          therapyCategoryId: row.categoryId as string,
+          recommendedTherapyIds: row.therapyIds ?? [],
+        }));
+
+      const created = await createPrescription({
+        patientId: patient.detailId,
+        appointmentBookingId: patient.bookingId,
+        assignedDoctorId,
+        medicines: medicines.length ? medicines : undefined,
+        therapySuggestions: therapySuggestions.length
+          ? therapySuggestions
+          : undefined,
+        nextFollowUp: {
+          setUpRequired: prescriptionDraft.setupRequired === 'Yes',
+          schedulingOption:
+            prescriptionDraft.setupRequired === 'Yes'
+              ? prescriptionDraft.followUpScheduling
+              : undefined,
+          suggestions: prescriptionDraft.suggestions,
+        },
+        diagnosis: prescriptionDraft.diagnosis,
+        notes: prescriptionDraft.notes,
+      });
+      const enriched = await getPrescriptionById(created.id).catch(() => created);
+      setSavedPrescription(enriched);
       showToast({
         title: 'Prescription Created',
         message: 'Prescription has been saved successfully.',
       });
-      setPrescriptionPreviewOpen(false);
-      navigate('/doctors');
+    } catch (err) {
+      showToast({
+        title: 'Prescription failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : resolveErrorMessage(err, UI_MESSAGES.error.saveFailed),
+      });
     } finally {
       setPrescriptionSubmitting(false);
     }
@@ -456,10 +592,16 @@ export function DoctorPatientDetailPage() {
       {patient ? (
         <PrescriptionPreviewModal
           open={prescriptionPreviewOpen}
-          onClose={() => setPrescriptionPreviewOpen(false)}
+          onClose={() => {
+            setPrescriptionPreviewOpen(false);
+            if (savedPrescription) {
+              navigate('/doctors');
+            }
+          }}
           onConfirm={() => void handlePrescriptionConfirm()}
           patient={patient}
           prescription={prescriptionDraft}
+          enriched={savedPrescription}
           submitting={prescriptionSubmitting}
         />
       ) : null}

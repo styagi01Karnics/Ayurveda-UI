@@ -136,15 +136,18 @@ export function PatientsPage() {
     <PageShell>
       <ListPanel
         tabs={
-          <UnderlineTabs
-            tabs={[
-              { id: 'active' as const, label: 'Active Patients' },
-              { id: 'inactive' as const, label: 'Inactive Patients' },
-            ]}
-            activeTab={activeTab}
-            onChange={setActiveTab}
-            className="border-none"
-          />
+          <div>
+            <UnderlineTabs
+              tabs={[
+                { id: 'active' as const, label: 'Active Patients' },
+                { id: 'inactive' as const, label: 'Inactive Patients' },
+              ]}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+              className="border-none"
+            />
+            
+          </div>
         }
         filters={
           <>

@@ -71,6 +71,7 @@ export default defineConfig(({ mode }) => {
         '/api/v1/dashboard/todays-schedule': serviceProxy(backendHost, 8103),
         '/api/v1/treatments': serviceProxy(backendHost, 8103),
         '/api/v1/follow-ups': serviceProxy(backendHost, 8103),
+        '/api/v1/prescriptions': serviceProxy(backendHost, 8103),
 
         // Auth-service :8111
         '/api/v1/auth': serviceProxy(backendHost, 8111),
@@ -90,6 +91,7 @@ export default defineConfig(({ mode }) => {
         '/api/v1/dashboard/medicine-stock': serviceProxy(backendHost, 8108),
 
         // Billing-service :8109
+        '/api/v1/billings': serviceProxy(backendHost, 8109),
         '/api/v1/invoices': serviceProxy(backendHost, 8109),
         '/api/v1/sales': serviceProxy(backendHost, 8109),
         '/api/v1/dashboard/billing-summary': serviceProxy(backendHost, 8109),

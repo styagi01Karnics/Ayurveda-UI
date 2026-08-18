@@ -39,7 +39,7 @@ import { mapTreatmentDtoToRecord } from '@/lib/api/mappers';
 
 import { getAllPatients } from '@/lib/api/patients';
 
-import { getAllTherapists } from '@/lib/api/therapists';
+import { getActiveTherapists } from '@/lib/api/therapists';
 
 import { assets } from '@/lib/assets';
 
@@ -71,7 +71,7 @@ export function TreatmentsPage() {
 
     const [patients, therapists, treatments, treatmentPlans] = await Promise.all([
       getAllPatients().catch(() => []),
-      getAllTherapists().catch(() => []),
+      getActiveTherapists().catch(() => []),
       getAllTreatments().catch(() => []),
       getActiveTreatmentPlanMasters().catch(() => []),
     ]);

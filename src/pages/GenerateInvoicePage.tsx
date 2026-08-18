@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link2, X } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { BillingBreadcrumbs } from '@/components/billing/BillingBreadcrumbs';
@@ -13,15 +13,25 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
-import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { PAYMENT_MODES } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getAllTherapies } from '@/lib/api/appointments';
-import { createInvoice, type VisitTypeApi } from '@/lib/api/billing';
+import {
+  addInvoicePayment,
+  createInvoice,
+  generateInvoiceFromBilling,
+  getBillingById,
+  getInvoiceById,
+  toVisitTypeApi,
+  type CreateInvoicePayload,
+  type InvoiceDto,
+  type VisitTypeApi,
+} from '@/lib/api/billing';
 import { ApiError } from '@/lib/api/client';
 import { getAllMedicines } from '@/lib/api/medicines';
+import { getActivePackageMasters } from '@/lib/api/packageMasters';
 import { getAllPatients } from '@/lib/api/patients';
-import { getAllTherapists } from '@/lib/api/therapists';
+import { getActiveTherapists } from '@/lib/api/therapists';
 import {
   calculateInvoiceTotals,
   invoiceMedicineItemSchema,
@@ -29,8 +39,6 @@ import {
   invoiceSummarySchema,
   invoiceTherapyItemSchema,
   PACKAGE_TYPE_OPTIONS,
-  QUANTITY_OPTIONS,
-  VISIT_TYPE_OPTIONS,
   type InvoiceMedicineItemValues,
   type InvoiceServiceStepValues,
   type InvoiceSummaryValues,
@@ -39,19 +47,73 @@ import {
 import { formatCurrency } from '@/lib/utils';
 import type {
   BillSummaryState,
-  InvoiceBillType,
   InvoiceLineItem,
   PaymentModeId,
   TherapyInvoiceLineItem,
 } from '@/types';
 
-const BILL_TABS: { id: InvoiceBillType; label: string }[] = [
-  { id: 'service', label: 'Service Type' },
-  { id: 'medicine', label: 'Medicine' },
-  { id: 'therapy', label: 'Therapy' },
+type InvoiceTypeId =
+  | 'consultation'
+  | 'therapy'
+  | 'medicine'
+  | 'consultation-medicine'
+  | 'consultation-therapy'
+  | 'consultation-medicine-therapy';
+
+interface InvoiceTypeOption {
+  id: InvoiceTypeId;
+  label: string;
+  includeConsultation: boolean;
+  includeMedicine: boolean;
+  includeTherapy: boolean;
+}
+
+const INVOICE_TYPE_OPTIONS: InvoiceTypeOption[] = [
+  {
+    id: 'consultation',
+    label: 'Consultation',
+    includeConsultation: true,
+    includeMedicine: false,
+    includeTherapy: false,
+  },
+  {
+    id: 'therapy',
+    label: 'Therapy',
+    includeConsultation: false,
+    includeMedicine: false,
+    includeTherapy: true,
+  },
+  {
+    id: 'medicine',
+    label: 'Medicine',
+    includeConsultation: false,
+    includeMedicine: true,
+    includeTherapy: false,
+  },
+  {
+    id: 'consultation-medicine',
+    label: 'Consultation + Medicine',
+    includeConsultation: true,
+    includeMedicine: true,
+    includeTherapy: false,
+  },
+  {
+    id: 'consultation-therapy',
+    label: 'Consultation + Therapy',
+    includeConsultation: true,
+    includeMedicine: false,
+    includeTherapy: true,
+  },
+  {
+    id: 'consultation-medicine-therapy',
+    label: 'Consultation + Medicine + Therapy',
+    includeConsultation: true,
+    includeMedicine: true,
+    includeTherapy: true,
+  },
 ];
 
-const BILL_ORDER: InvoiceBillType[] = ['service', 'medicine', 'therapy'];
+const CONSULTATION_VISIT_OPTIONS = ['Consultation', 'Follow-up', 'Package'] as const;
 
 const DEFAULT_SUMMARY: BillSummaryState = {
   discount: '0',
@@ -60,11 +122,16 @@ const DEFAULT_SUMMARY: BillSummaryState = {
   sgst: '3',
 };
 
-const BILL_LABELS: Record<InvoiceBillType, string> = {
-  service: 'Service Bill',
-  medicine: 'Medicine Bill',
-  therapy: 'Therapy Bill',
-};
+const PATIENT_FIELDS = [
+  'patientId',
+  'fullName',
+  'contactNumber',
+  'invoiceDate',
+] as const;
+
+function getInvoiceType(id: InvoiceTypeId): InvoiceTypeOption {
+  return INVOICE_TYPE_OPTIONS.find((option) => option.id === id) ?? INVOICE_TYPE_OPTIONS[0];
+}
 
 interface InvoicePatientContext {
   uuid: string;
@@ -81,12 +148,33 @@ function normalizeInvoiceTime(time: string): string {
   return time.length === 5 ? `${time}:00` : time;
 }
 
-function toApiVisitType(visitType: string): VisitTypeApi {
-  const upper = visitType.toUpperCase();
-  if (upper.includes('THERAPY')) return 'THERAPY';
-  if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
-  if (upper.includes('PACKAGE')) return 'PACKAGE';
-  return 'CONSULTATION';
+function toConsultationVisitLabel(value: string): string {
+  const upper = value.toUpperCase().replace(/[\s-]+/g, '_');
+  if (upper.includes('FOLLOW')) return 'Follow-up';
+  if (upper.includes('PACKAGE')) return 'Package';
+  return 'Consultation';
+}
+
+async function settleInvoicePayment(
+  invoice: InvoiceDto,
+  paymentMethod: string,
+  remarks: string,
+  partial: boolean,
+): Promise<InvoiceDto> {
+  const due =
+    invoice.leftAmount ??
+    Math.max(0, (invoice.totalAmount ?? 0) - (invoice.paidAmount ?? 0));
+  if (due <= 0) return invoice;
+
+  const amountPaid = partial ? Math.min(500, due) : due;
+  if (amountPaid <= 0) return invoice;
+
+  await addInvoicePayment(invoice.id, {
+    amountPaid,
+    paymentMethod,
+    remarks,
+  });
+  return getInvoiceById(invoice.id);
 }
 
 function parseSessionMinutes(value: string): number {
@@ -103,7 +191,7 @@ function buildServiceLineItems(data: InvoiceServiceStepValues): InvoiceLineItem[
   const items: InvoiceLineItem[] = [];
   const serviceFees = Number(data.serviceFees) || 0;
 
-  if (data.serviceFees.trim() && serviceFees >= 0) {
+  if (data.serviceFees?.trim() && serviceFees >= 0) {
     items.push({
       id: 'svc-consultation',
       name: data.visitType?.trim() || 'Consultation',
@@ -129,43 +217,46 @@ function buildServiceLineItems(data: InvoiceServiceStepValues): InvoiceLineItem[
 
 export function GenerateInvoicePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const billingId = searchParams.get('billingId');
   const { showToast } = useToast();
-  const [activeBill, setActiveBill] = useState<InvoiceBillType>('service');
+  const [invoiceTypeId, setInvoiceTypeId] = useState<InvoiceTypeId>('consultation');
   const [serviceData, setServiceData] = useState<InvoiceServiceStepValues | null>(
     null,
   );
   const [medicineItems, setMedicineItems] = useState<InvoiceLineItem[]>([]);
   const [therapyItems, setTherapyItems] = useState<TherapyInvoiceLineItem[]>([]);
-  const [summaries, setSummaries] = useState<Record<InvoiceBillType, BillSummaryState>>({
-    service: { ...DEFAULT_SUMMARY },
-    medicine: { ...DEFAULT_SUMMARY },
-    therapy: { ...DEFAULT_SUMMARY },
-  });
-  const [paymentBill, setPaymentBill] = useState<InvoiceBillType | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentModeId>('upi');
   const [paymentSuccessOpen, setPaymentSuccessOpen] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [paymentSuccessDetails, setPaymentSuccessDetails] =
     useState<PaymentSuccessDetails | null>(null);
   const [invoicePreviewOpen, setInvoicePreviewOpen] = useState(false);
-  const [createdBillIds, setCreatedBillIds] = useState<
-    Partial<Record<InvoiceBillType, string>>
-  >({});
-  const [createdBillNumbers, setCreatedBillNumbers] = useState<
-    Partial<Record<InvoiceBillType, string>>
-  >({});
+  const [createdInvoiceId, setCreatedInvoiceId] = useState<string | null>(null);
+  const [createdInvoiceNumber, setCreatedInvoiceNumber] = useState<string | null>(
+    null,
+  );
   const [patientContext, setPatientContext] = useState<InvoicePatientContext | null>(
     null,
   );
 
+  const invoiceType = getInvoiceType(invoiceTypeId);
+  const { includeConsultation, includeMedicine, includeTherapy } = invoiceType;
+  const availableInvoiceTypes = billingId
+    ? INVOICE_TYPE_OPTIONS.filter((option) => option.includeConsultation)
+    : INVOICE_TYPE_OPTIONS;
+
   const { data: lookup } = useAsyncData(
     async () => {
-      const [patients, medicines, therapists, therapies] = await Promise.all([
-        getAllPatients().catch(() => []),
-        getAllMedicines().catch(() => []),
-        getAllTherapists().catch(() => []),
-        getAllTherapies().catch(() => []),
-      ]);
+      const [patients, medicines, therapists, therapies, packageMasters] =
+        await Promise.all([
+          getAllPatients().catch(() => []),
+          getAllMedicines().catch(() => []),
+          getActiveTherapists().catch(() => []),
+          getAllTherapies().catch(() => []),
+          getActivePackageMasters().catch(() => []),
+        ]);
 
       return {
         patients: patients.map((p) => ({
@@ -191,6 +282,10 @@ export function GenerateInvoicePage() {
           label: t.name || t.therapyName || '—',
           price: t.price ?? 0,
         })),
+        packageMasters: packageMasters.map((pkg) => ({
+          value: pkg.id,
+          label: pkg.name,
+        })),
       };
     },
     {
@@ -206,6 +301,7 @@ export function GenerateInvoicePage() {
       medicines: [] as Array<{ value: string; label: string; price: number }>,
       therapists: [] as Array<{ value: string; label: string }>,
       therapies: [] as Array<{ value: string; label: string; price: number }>,
+      packageMasters: [] as Array<{ value: string; label: string }>,
     },
   );
 
@@ -218,6 +314,7 @@ export function GenerateInvoicePage() {
       invoiceDate: todayIsoDate(),
       visitType: 'Consultation',
       serviceFees: '',
+      packageMasterId: '',
       packageType: '',
       packageCharges: '',
     },
@@ -250,46 +347,46 @@ export function GenerateInvoicePage() {
   const watchedService = serviceForm.watch();
   const serviceLineItems = useMemo(
     () =>
-      serviceData
-        ? buildServiceLineItems(serviceData)
-        : buildServiceLineItems(watchedService as InvoiceServiceStepValues),
-    [serviceData, watchedService],
+      includeConsultation
+        ? serviceData
+          ? buildServiceLineItems(serviceData)
+          : buildServiceLineItems(watchedService as InvoiceServiceStepValues)
+        : [],
+    [includeConsultation, serviceData, watchedService],
   );
 
-  const lineItemsByBill: Record<InvoiceBillType, InvoiceLineItem[]> = {
-    service: serviceLineItems,
-    medicine: medicineItems,
-    therapy: therapyItems,
-  };
+  const selectedLineItems = useMemo(() => {
+    const items: InvoiceLineItem[] = [];
+    if (includeConsultation) items.push(...serviceLineItems);
+    if (includeMedicine) items.push(...medicineItems);
+    if (includeTherapy) items.push(...therapyItems);
+    return items;
+  }, [
+    includeConsultation,
+    includeMedicine,
+    includeTherapy,
+    serviceLineItems,
+    medicineItems,
+    therapyItems,
+  ]);
 
   const applyTax = summaryForm.watch('applyTax');
   const discount = Number(summaryForm.watch('discount') || 0);
   const cgstRate = Number(summaryForm.watch('cgst') || 3);
   const sgstRate = Number(summaryForm.watch('sgst') || 3);
+  const summaryValues = summaryForm.watch();
 
-  const activeTotals = useMemo(
+  const invoiceTotals = useMemo(
     () =>
       calculateInvoiceTotals(
-        lineItemsByBill[activeBill],
+        selectedLineItems,
         discount,
         applyTax,
         cgstRate,
         sgstRate,
       ),
-    [lineItemsByBill, activeBill, discount, applyTax, cgstRate, sgstRate],
+    [selectedLineItems, discount, applyTax, cgstRate, sgstRate],
   );
-
-  const paymentTotals = useMemo(() => {
-    if (!paymentBill) return activeTotals;
-    const s = summaries[paymentBill];
-    return calculateInvoiceTotals(
-      lineItemsByBill[paymentBill],
-      Number(s.discount || 0),
-      s.applyTax,
-      Number(s.cgst || 3),
-      Number(s.sgst || 3),
-    );
-  }, [paymentBill, summaries, lineItemsByBill, activeTotals]);
 
   const patientInfo = serviceData ?? (watchedService as InvoiceServiceStepValues);
 
@@ -309,6 +406,60 @@ export function GenerateInvoicePage() {
     serviceForm.setValue('fullName', selected.fullName);
     serviceForm.setValue('contactNumber', selected.mobileNumber);
   };
+
+  useEffect(() => {
+    if (!billingId) return;
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const billing = await getBillingById(billingId);
+        if (cancelled) return;
+
+        const displayId = (
+          billing.patientDisplayId ??
+          billing.formattedPatientId ??
+          billing.patientId
+        ).replace(/^#/, '');
+        const first = billing.services?.[0];
+        const visitType = first?.serviceType || billing.visitType || 'Consultation';
+        const contact = (billing.contactNumber ?? '').replace(/\D/g, '').slice(-10);
+
+        setPatientContext({
+          uuid: billing.patientId,
+          displayId,
+          patientCode: billing.patientCode ?? '',
+        });
+
+        serviceForm.reset({
+          patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
+          fullName: billing.patientName ?? '',
+          contactNumber: contact,
+          invoiceDate: todayIsoDate(),
+          visitType: toConsultationVisitLabel(visitType.toString()),
+          serviceFees: String(Math.round(first?.serviceFees ?? 0) || ''),
+          packageMasterId: first?.packageMasterId ?? '',
+          packageType: first?.packageType ?? '',
+          packageCharges: first?.packageCharges
+            ? String(Math.round(first.packageCharges))
+            : '',
+        });
+        setServiceData(serviceForm.getValues());
+      } catch (err) {
+        showToast({
+          title: 'Billing draft not found',
+          message:
+            err instanceof ApiError
+              ? err.message
+              : 'Could not load the pending billing draft.',
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [billingId, serviceForm, showToast]);
 
   const handleMedicineSelect = (medicineId: string) => {
     const selected = lookup.medicines.find((m) => m.value === medicineId);
@@ -332,23 +483,20 @@ export function GenerateInvoicePage() {
     therapyForm.setValue('assignedTherapistName', selected?.label ?? '');
   };
 
-  const syncSummaryToBill = (bill: InvoiceBillType) => {
-    const values = summaryForm.getValues();
-    setSummaries((prev) => ({ ...prev, [bill]: { ...values } }));
-  };
-
-  const loadSummaryForBill = (bill: InvoiceBillType) => {
-    summaryForm.reset(summaries[bill]);
-  };
-
-  const handleTabChange = (next: InvoiceBillType) => {
-    syncSummaryToBill(activeBill);
-    if (next === 'service') {
-      serviceForm.handleSubmit((data) => setServiceData(data))();
+  const handleInvoiceTypeChange = (nextId: InvoiceTypeId) => {
+    const next = getInvoiceType(nextId);
+    setInvoiceTypeId(nextId);
+    setPaymentOpen(false);
+    if (next.includeConsultation) {
+      const currentVisit = serviceForm.getValues('visitType');
+      if (!currentVisit || currentVisit === 'Therapy') {
+        serviceForm.setValue('visitType', 'Consultation');
+      }
+    } else if (next.includeTherapy) {
+      serviceForm.setValue('visitType', 'Therapy');
+    } else {
+      serviceForm.setValue('visitType', 'Consultation');
     }
-    setActiveBill(next);
-    loadSummaryForBill(next);
-    setPaymentBill(null);
   };
 
   const handleAddMedicine = medicineForm.handleSubmit((data) => {
@@ -396,76 +544,102 @@ export function GenerateInvoicePage() {
     });
   });
 
-  const removeLineItem = (bill: InvoiceBillType, id: string) => {
-    if (bill === 'medicine') {
-      setMedicineItems((prev) => prev.filter((item) => item.id !== id));
-    } else if (bill === 'therapy') {
-      setTherapyItems((prev) => prev.filter((item) => item.id !== id));
-    }
+  const removeLineItem = (id: string) => {
+    setMedicineItems((prev) => prev.filter((item) => item.id !== id));
+    setTherapyItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const openPaymentForBill = (bill: InvoiceBillType) => {
-    syncSummaryToBill(activeBill);
-    if (bill === 'service') {
-      serviceForm.handleSubmit((data) => {
-        setServiceData(data);
-        setPaymentBill(bill);
-      })();
-      return;
-    }
-    if (lineItemsByBill[bill].length === 0) {
+  const openPayment = async () => {
+    const patientValid = await serviceForm.trigger([...PATIENT_FIELDS]);
+    if (!patientValid) {
       showToast({
-        title: 'Empty bill',
-        message: `Add at least one item to the ${BILL_LABELS[bill].toLowerCase()} before payment.`,
-      });
-      return;
-    }
-    setPaymentBill(bill);
-  };
-
-  const handleCreateBill = async (bill: InvoiceBillType) => {
-    if (paymentSubmitting) return;
-    syncSummaryToBill(bill);
-
-    let currentService = serviceData;
-    if (!currentService) {
-      const valid = await serviceForm.trigger();
-      if (!valid) {
-        showToast({
-          title: 'Patient details required',
-          message: 'Complete the Service Type tab with patient information first.',
-        });
-        setActiveBill('service');
-        return;
-      }
-      currentService = serviceForm.getValues();
-      setServiceData(currentService);
-    }
-
-    const items = lineItemsByBill[bill];
-    if (items.length === 0) {
-      showToast({
-        title: 'Empty bill',
-        message: `Add items to the ${BILL_LABELS[bill].toLowerCase()} before generating.`,
+        title: 'Patient details required',
+        message: 'Complete patient information before continuing to payment.',
       });
       return;
     }
 
-    const summary = summaries[bill];
-    const totals = calculateInvoiceTotals(
-      items,
-      Number(summary.discount || 0),
-      summary.applyTax,
-      Number(summary.cgst || 3),
-      Number(summary.sgst || 3),
-    );
-
-    if (!patientContext?.uuid) {
+    if (!patientContext?.uuid && !billingId) {
       showToast({
         title: 'Patient required',
         message: 'Select a patient from the list before generating an invoice.',
       });
-      setActiveBill('service');
+      return;
+    }
+
+    if (includeConsultation) {
+      const consultationValid = await serviceForm.trigger([
+        'visitType',
+        'serviceFees',
+        'packageType',
+        'packageCharges',
+      ]);
+      const serviceFees = serviceForm.getValues('serviceFees')?.trim();
+      if (!consultationValid || !serviceFees) {
+        if (!serviceFees) {
+          serviceForm.setError('serviceFees', {
+            type: 'manual',
+            message: 'Service fees is required',
+          });
+        }
+        showToast({
+          title: 'Consultation details required',
+          message: 'Enter visit type and service fees for a consultation invoice.',
+        });
+        return;
+      }
+    }
+
+    if (includeMedicine && medicineItems.length === 0) {
+      showToast({
+        title: 'Medicine required',
+        message: 'Add at least one medicine before generating this invoice.',
+      });
+      return;
+    }
+
+    if (includeTherapy && therapyItems.length === 0) {
+      showToast({
+        title: 'Therapy required',
+        message: 'Add at least one therapy before generating this invoice.',
+      });
+      return;
+    }
+
+    setServiceData(serviceForm.getValues());
+    setPaymentOpen(true);
+  };
+
+  const handleCreateInvoice = async () => {
+    if (paymentSubmitting) return;
+
+    let currentService = serviceData ?? serviceForm.getValues();
+    const patientValid = await serviceForm.trigger([...PATIENT_FIELDS]);
+    if (!patientValid) {
+      showToast({
+        title: 'Patient details required',
+        message: 'Complete patient information before generating an invoice.',
+      });
+      setPaymentOpen(false);
+      return;
+    }
+    currentService = serviceForm.getValues();
+    setServiceData(currentService);
+
+    if (selectedLineItems.length === 0) {
+      showToast({
+        title: 'Empty invoice',
+        message: 'Add the selected billing items before generating an invoice.',
+      });
+      return;
+    }
+
+    if (!patientContext?.uuid && !billingId) {
+      showToast({
+        title: 'Patient required',
+        message: 'Select a patient from the list before generating an invoice.',
+      });
+      setPaymentOpen(false);
       return;
     }
 
@@ -473,57 +647,22 @@ export function GenerateInvoicePage() {
     try {
       const paymentMode =
         PAYMENT_MODES.find((m) => m.id === selectedPayment)?.title ?? 'UPI';
+      const summary = summaryForm.getValues();
+      const visitType: VisitTypeApi =
+        includeTherapy && !includeConsultation
+          ? 'THERAPY'
+          : toVisitTypeApi(currentService.visitType || 'Consultation');
 
-      const basePayload = {
-        patientId: patientContext.uuid,
-        patientDisplayId: patientContext.displayId.replace(/^#/, ''),
-        patientCode: patientContext.patientCode || undefined,
-        patientName: currentService.fullName,
-        contactNumber: currentService.contactNumber,
-        invoiceDate: currentService.invoiceDate,
-        discount: Number(summary.discount || 0),
-        taxEnabled: summary.applyTax,
-        cgstPercent: Number(summary.cgst || 3),
-        sgstPercent: Number(summary.sgst || 3),
-        amountPaid: totals.total,
-        paymentMethod: paymentMode.toUpperCase(),
-        paymentRemarks: `${BILL_LABELS[bill]} generated from UI`,
-      };
-
-      let result;
-      if (bill === 'service') {
-        result = await createInvoice({
-          ...basePayload,
-          visitType: toApiVisitType(currentService.visitType),
-          serviceFees: Number(currentService.serviceFees),
-          packageType: currentService.packageType || null,
-          packageCharges: Number(currentService.packageCharges || 0),
-          medicines: [],
-          therapies: [],
-        });
-      } else if (bill === 'medicine') {
-        result = await createInvoice({
-          ...basePayload,
-          visitType: 'CONSULTATION',
-          serviceFees: 0,
-          packageType: null,
-          packageCharges: 0,
-          medicines: medicineItems.map((item) => ({
+      const medicinesPayload = includeMedicine
+        ? medicineItems.map((item) => ({
             medicineId: item.medicineId ?? item.id,
             quantity: item.quantity,
             unitPrice: item.amount,
-          })),
-          therapies: [],
-        });
-      } else {
-        result = await createInvoice({
-          ...basePayload,
-          visitType: 'THERAPY',
-          serviceFees: 0,
-          packageType: null,
-          packageCharges: 0,
-          medicines: [],
-          therapies: therapyItems.map((item) => ({
+          }))
+        : [];
+
+      const therapiesPayload = includeTherapy
+        ? therapyItems.map((item) => ({
             itemName: item.name,
             quantity: item.quantity,
             unitPrice: item.amount,
@@ -533,24 +672,72 @@ export function GenerateInvoicePage() {
             scheduleTime: normalizeInvoiceTime(item.scheduleTime),
             sessionDuration: parseSessionMinutes(item.sessionDuration),
             sessionFrequency: parseSessionFrequency(item.sessionFrequency),
-          })),
+          }))
+        : [];
+
+      const basePayload: CreateInvoicePayload = {
+        patientId: patientContext?.uuid ?? '',
+        patientDisplayId: patientContext?.displayId.replace(/^#/, ''),
+        patientCode: patientContext?.patientCode || undefined,
+        patientName: currentService.fullName,
+        contactNumber: currentService.contactNumber,
+        invoiceDate: currentService.invoiceDate,
+        visitType,
+        serviceFees: includeConsultation
+          ? Number(currentService.serviceFees) || 0
+          : 0,
+        packageMasterId: includeConsultation
+          ? currentService.packageMasterId || null
+          : null,
+        packageType: includeConsultation
+          ? currentService.packageType || null
+          : null,
+        packageCharges: includeConsultation
+          ? Number(currentService.packageCharges || 0)
+          : 0,
+        discount: Number(summary.discount || 0),
+        taxEnabled: summary.applyTax,
+        cgstPercent: Number(summary.cgst || 3),
+        sgstPercent: Number(summary.sgst || 3),
+        amountPaid: 0,
+        paymentMethod: paymentMode.toUpperCase(),
+        paymentRemarks: billingId
+          ? 'Invoice generated from doctor billing draft'
+          : `${invoiceType.label} invoice generated from UI`,
+        medicines: medicinesPayload,
+        therapies: therapiesPayload,
+      };
+
+      const result = billingId
+        ? await generateInvoiceFromBilling(billingId, basePayload)
+        : await createInvoice(basePayload);
+
+      let settled = result;
+      try {
+        settled = await settleInvoicePayment(
+          result,
+          paymentMode.toUpperCase(),
+          basePayload.paymentRemarks ?? 'Payment collected at invoice generation',
+          selectedPayment === 'partial',
+        );
+      } catch {
+        showToast({
+          title: 'Invoice created',
+          message:
+            'The invoice was generated, but payment could not be recorded. You can collect it from Billing.',
         });
       }
 
-      setCreatedBillIds((prev) => ({
-        ...prev,
-        [bill]: result.id,
-      }));
-      setCreatedBillNumbers((prev) => ({
-        ...prev,
-        [bill]: result.invoiceId,
-      }));
-      setPaymentSuccessDetails(mapInvoiceToPaymentSuccess(result));
+      setCreatedInvoiceId(settled.id);
+      setCreatedInvoiceNumber(settled.invoiceId);
+      setPaymentSuccessDetails(mapInvoiceToPaymentSuccess(settled));
       setPaymentSuccessOpen(true);
-      setPaymentBill(null);
+      setPaymentOpen(false);
       showToast({
-        title: `${BILL_LABELS[bill]} created`,
-        message: `Separate ${BILL_LABELS[bill].toLowerCase()} has been generated successfully.`,
+        title: 'Invoice generated',
+        message: billingId
+          ? 'The billing draft has been completed and the invoice is ready.'
+          : `${invoiceType.label} invoice has been generated successfully.`,
       });
     } catch (err) {
       showToast({
@@ -567,24 +754,18 @@ export function GenerateInvoicePage() {
     }
   };
 
-  if (paymentBill) {
-    const bill = paymentBill;
-    const summary = summaries[bill];
-    const items = lineItemsByBill[bill];
-    const totals = paymentTotals;
-
+  if (paymentOpen) {
     return (
       <div className="space-y-5">
         <BillingBreadcrumbs />
         <Card className="p-5 sm:p-6">
           <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-brown">{BILL_LABELS[bill]}</h2>
+              <h2 className="text-lg font-bold text-brown">
+                {invoiceType.label} Invoice
+              </h2>
               <p className="mt-1 text-sm text-text-muted">
-                {createdBillNumbers[bill]
-                  ? `Bill ID: ${createdBillNumbers[bill]}`
-                  : 'Separate bill — not combined with other tabs'}
-              </p>
+                   </p>
             </div>
             <Badge variant="danger">Unpaid</Badge>
           </div>
@@ -592,15 +773,15 @@ export function GenerateInvoicePage() {
           <PatientInfoGrid patient={patientInfo} />
 
           <div className="mt-6">
-            <LineItemsTable items={items} />
+            <LineItemsTable items={selectedLineItems} />
           </div>
 
           <BillSummaryTotals
-            totals={totals}
-            discount={Number(summary.discount || 0)}
-            applyTax={summary.applyTax}
-            cgstRate={Number(summary.cgst || 3)}
-            sgstRate={Number(summary.sgst || 3)}
+            totals={invoiceTotals}
+            discount={Number(summaryValues.discount || 0)}
+            applyTax={summaryValues.applyTax}
+            cgstRate={Number(summaryValues.cgst || 3)}
+            sgstRate={Number(summaryValues.sgst || 3)}
           />
 
           <div className="mt-8 rounded-xl border border-gray-100 p-4">
@@ -622,7 +803,7 @@ export function GenerateInvoicePage() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold text-brown">
-                      {formatCurrency(totals.total)}
+                      {formatCurrency(invoiceTotals.total)}
                     </p>
                   </div>
                 </button>
@@ -631,17 +812,17 @@ export function GenerateInvoicePage() {
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <Button variant="outline" onClick={() => setPaymentBill(null)}>
+            <Button variant="outline" onClick={() => setPaymentOpen(false)}>
               Back
             </Button>
             <Button variant="outline" onClick={() => setInvoicePreviewOpen(true)}>
               Preview Invoice
             </Button>
             <Button
-              onClick={() => handleCreateBill(bill)}
+              onClick={() => void handleCreateInvoice()}
               disabled={paymentSubmitting}
             >
-              {paymentSubmitting ? 'Creating…' : `Generate ${BILL_LABELS[bill]}`}
+              {paymentSubmitting ? 'Creating…' : 'Generate Invoice'}
             </Button>
           </div>
         </Card>
@@ -659,7 +840,7 @@ export function GenerateInvoicePage() {
         <BillInvoiceModal
           open={invoicePreviewOpen}
           onClose={() => setInvoicePreviewOpen(false)}
-          invoiceId={createdBillIds[bill] ?? null}
+          invoiceId={createdInvoiceId}
         />
       </div>
     );
@@ -671,218 +852,174 @@ export function GenerateInvoicePage() {
 
       <Card className="p-5 sm:p-6">
         <div className="mb-6">
-          <h2 className="text-lg font-bold text-brown">Generate Invoice</h2>
-          <p className="text-sm text-text-muted">
-            Create a separate bill for each category — service, medicine, and therapy
-            are billed independently.
-          </p>
+          <h2 className="text-lg font-bold text-brown">
+            {billingId ? 'Start Invoice from Billing Draft' : 'Generate Invoice'}
+          </h2>
+         
         </div>
 
-        <UnderlineTabs
-          tabs={BILL_TABS}
-          activeTab={activeBill}
-          onChange={handleTabChange}
-        />
-
-        <div className="mt-8">
-          {activeBill === 'service' && (
-            <form className="space-y-6" noValidate>
-              <FormSection title="Patient & Service Details">
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <Select
-                    label="Select Patient"
-                    placeholder="Choose patient"
-                    options={lookup.patients.map((p) => ({
-                      value: p.value,
-                      label: p.label,
-                    }))}
-                    value={patientContext?.uuid ?? ''}
-                    onChange={(e) => handlePatientSelect(e.target.value)}
-                  />
-                  <Input
-                    label="Patient ID"
-                    error={serviceForm.formState.errors.patientId?.message}
-                    {...serviceForm.register('patientId')}
-                    readOnly
-                  />
-                  <Input
-                    label="Full Name"
-                    error={serviceForm.formState.errors.fullName?.message}
-                    {...serviceForm.register('fullName')}
-                  />
-                  <Input
-                    label="Contact Number"
-                    error={serviceForm.formState.errors.contactNumber?.message}
-                    {...serviceForm.register('contactNumber')}
-                  />
-                  <Input
-                    label="Invoice Date"
-                    type="date"
-                    error={serviceForm.formState.errors.invoiceDate?.message}
-                    {...serviceForm.register('invoiceDate')}
-                  />
-                </div>
-              </FormSection>
-
-              <FormSection title="Billing Details">
-                <div className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Select
-                      label="Service Type *"
-                      placeholder="Service Type"
-                      options={[...VISIT_TYPE_OPTIONS]}
-                      error={serviceForm.formState.errors.visitType?.message}
-                      {...serviceForm.register('visitType')}
-                    />
-                    <RupeeInput
-                      label="Service Fees *"
-                      placeholder="0"
-                      error={serviceForm.formState.errors.serviceFees?.message}
-                      {...serviceForm.register('serviceFees')}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <Select
-                      label="Package Type"
-                      placeholder="Package Type"
-                      options={[
-                        { value: '', label: 'None' },
-                        ...PACKAGE_TYPE_OPTIONS.map((option) => ({
-                          value: option,
-                          label: option,
-                        })),
-                      ]}
-                      error={serviceForm.formState.errors.packageType?.message}
-                      {...serviceForm.register('packageType')}
-                    />
-                    <RupeeInput
-                      label={
-                        serviceForm.watch('packageType')
-                          ? 'Package Charges *'
-                          : 'Package Charges'
-                      }
-                      placeholder="0"
-                      disabled={!serviceForm.watch('packageType')}
-                      error={serviceForm.formState.errors.packageCharges?.message}
-                      {...serviceForm.register('packageCharges')}
-                    />
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <RupeeInput
-                      label="Discount (if any)"
-                      placeholder="0"
-                      error={summaryForm.formState.errors.discount?.message}
-                      {...summaryForm.register('discount')}
-                    />
-                    <div className="space-y-3">
-                      <Controller
-                        name="applyTax"
-                        control={summaryForm.control}
-                        render={({ field }) => (
-                          <label className="flex items-center gap-2 text-sm font-medium text-brown">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-gray-300 text-gold focus:ring-gold"
-                              checked={Boolean(field.value)}
-                              onChange={(e) => field.onChange(e.target.checked)}
-                              onBlur={field.onBlur}
-                              name={field.name}
-                              ref={field.ref}
-                            />
-                            CGST & SGST
-                          </label>
-                        )}
-                      />
-                      <div className="grid grid-cols-2 gap-3">
-                        <Input
-                          label="CGST *"
-                          placeholder="3"
-                          disabled={!applyTax}
-                          error={summaryForm.formState.errors.cgst?.message}
-                          {...summaryForm.register('cgst')}
-                        />
-                        <Input
-                          label="SGST *"
-                          placeholder="3"
-                          disabled={!applyTax}
-                          error={summaryForm.formState.errors.sgst?.message}
-                          {...summaryForm.register('sgst')}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </FormSection>
-
-              <BillSummarySection
-                billLabel={BILL_LABELS.service}
-                billId={createdBillNumbers.service}
-                items={serviceLineItems}
-                summaryForm={summaryForm}
-                totals={activeTotals}
-                discount={discount}
-                applyTax={applyTax}
-                hideDiscountAndTax
-              />
-            </form>
-          )}
-
-          {activeBill === 'medicine' && (
-            <div className="space-y-6">
-              <PatientInfoBanner patient={patientInfo} />
-              <FormSection title="Add Medicine">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <Select
-                    label="Medicine Name"
-                    placeholder="Select medicine"
-                    options={lookup.medicines.map((m) => ({
-                      value: m.value,
-                      label: m.label,
-                    }))}
-                    value={medicineForm.watch('medicineId')}
-                    onChange={(e) => handleMedicineSelect(e.target.value)}
-                    error={medicineForm.formState.errors.medicineId?.message}
-                  />
-                  <Select
-                    label="Quantity"
-                    options={[...QUANTITY_OPTIONS]}
-                    error={medicineForm.formState.errors.quantity?.message}
-                    {...medicineForm.register('quantity')}
-                  />
-                  <Input
-                    label="Price (₹)"
-                    error={medicineForm.formState.errors.price?.message}
-                    {...medicineForm.register('price')}
-                  />
-                </div>
-                <Button
+        <FormSection title="Invoice Type">
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {availableInvoiceTypes.map((option) => {
+              const selected = option.id === invoiceTypeId;
+              return (
+                <button
+                  key={option.id}
                   type="button"
-                  variant="outline"
-                  className="mt-4"
-                  onClick={handleAddMedicine}
+                  onClick={() => handleInvoiceTypeChange(option.id)}
+                  className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+                    selected
+                      ? 'border-gold bg-gold/10 text-brown'
+                      : 'border-gray-100 text-text-muted hover:border-gold/40 hover:text-brown'
+                  }`}
                 >
-                  + Add Medicine
-                </Button>
-              </FormSection>
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </FormSection>
 
-              <BillSummarySection
-                billLabel={BILL_LABELS.medicine}
-                billId={createdBillNumbers.medicine}
-                items={medicineItems}
-                summaryForm={summaryForm}
-                totals={activeTotals}
-                discount={discount}
-                applyTax={applyTax}
-                onRemove={(id) => removeLineItem('medicine', id)}
+        <form className="mt-6 space-y-6" noValidate>
+          <FormSection title="Patient Details">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Select
+                label="Select Patient"
+                placeholder="Choose patient"
+                options={lookup.patients.map((p) => ({
+                  value: p.value,
+                  label: p.label,
+                }))}
+                value={patientContext?.uuid ?? ''}
+                onChange={(e) => handlePatientSelect(e.target.value)}
+                disabled={Boolean(billingId)}
+              />
+              <Input
+                label="Patient ID"
+                error={serviceForm.formState.errors.patientId?.message}
+                {...serviceForm.register('patientId')}
+                readOnly
+              />
+              <Input
+                label="Full Name"
+                error={serviceForm.formState.errors.fullName?.message}
+                {...serviceForm.register('fullName')}
+              />
+              <Input
+                label="Contact Number"
+                error={serviceForm.formState.errors.contactNumber?.message}
+                {...serviceForm.register('contactNumber')}
+              />
+              <Input
+                label="Invoice Date"
+                type="date"
+                error={serviceForm.formState.errors.invoiceDate?.message}
+                {...serviceForm.register('invoiceDate')}
               />
             </div>
+          </FormSection>
+
+          {includeConsultation && (
+            <FormSection title="Consultation">
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Select
+                    label="Visit Type *"
+                    placeholder="Visit type"
+                    options={[...CONSULTATION_VISIT_OPTIONS]}
+                    error={serviceForm.formState.errors.visitType?.message}
+                    {...serviceForm.register('visitType')}
+                  />
+                  <RupeeInput
+                    label="Service Fees *"
+                    placeholder="0"
+                    error={serviceForm.formState.errors.serviceFees?.message}
+                    {...serviceForm.register('serviceFees')}
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Select
+                    label="Package Name"
+                    placeholder="Select package"
+                    options={[
+                      { value: '', label: 'None' },
+                      ...lookup.packageMasters,
+                    ]}
+                    error={serviceForm.formState.errors.packageMasterId?.message}
+                    {...serviceForm.register('packageMasterId')}
+                  />
+                  <Select
+                    label="Package Type"
+                    placeholder="Package Type"
+                    options={[
+                      { value: '', label: 'None' },
+                      ...PACKAGE_TYPE_OPTIONS.map((option) => ({
+                        value: option,
+                        label: option,
+                      })),
+                    ]}
+                    error={serviceForm.formState.errors.packageType?.message}
+                    {...serviceForm.register('packageType')}
+                  />
+                  <RupeeInput
+                    label={
+                      serviceForm.watch('packageType')
+                        ? 'Package Charges *'
+                        : 'Package Charges'
+                    }
+                    placeholder="0"
+                    disabled={!serviceForm.watch('packageType')}
+                    error={serviceForm.formState.errors.packageCharges?.message}
+                    {...serviceForm.register('packageCharges')}
+                  />
+                </div>
+              </div>
+            </FormSection>
           )}
 
-          {activeBill === 'therapy' && (
-            <div className="space-y-6">
-              <PatientInfoBanner patient={patientInfo} />
+          {includeMedicine && (
+            <FormSection title="Medicine">
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Select
+                  label="Medicine Name"
+                  placeholder="Select medicine"
+                  options={lookup.medicines.map((m) => ({
+                    value: m.value,
+                    label: m.label,
+                  }))}
+                  value={medicineForm.watch('medicineId')}
+                  onChange={(e) => handleMedicineSelect(e.target.value)}
+                  error={medicineForm.formState.errors.medicineId?.message}
+                />
+                <Input
+                  label="Quantity"
+                  type="number"
+                  min={1}
+                  step={1}
+                  placeholder="e.g. 2"
+                  error={medicineForm.formState.errors.quantity?.message}
+                  {...medicineForm.register('quantity')}
+                />
+                <Input
+                  label="Price (₹)"
+                  error={medicineForm.formState.errors.price?.message}
+                  {...medicineForm.register('price')}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4"
+                onClick={handleAddMedicine}
+              >
+                + Add Medicine
+              </Button>
+            </FormSection>
+          )}
+
+          {includeTherapy && (
+            <>
               <FormSection title="Therapy Treatment">
                 <div className="grid gap-4 sm:grid-cols-3">
                   <Select
@@ -925,6 +1062,8 @@ export function GenerateInvoicePage() {
                   <Input
                     label="Schedule Time"
                     type="time"
+                    min="10:00"
+                    max="19:00"
                     error={therapyForm.formState.errors.scheduleTime?.message}
                     {...therapyForm.register('scheduleTime')}
                   />
@@ -948,81 +1087,35 @@ export function GenerateInvoicePage() {
                   + Add Therapy
                 </Button>
               </FormSection>
-
-              <BillSummarySection
-                billLabel={BILL_LABELS.therapy}
-                billId={createdBillNumbers.therapy}
-                items={therapyItems}
-                summaryForm={summaryForm}
-                totals={activeTotals}
-                discount={discount}
-                applyTax={applyTax}
-                onRemove={(id) => removeLineItem('therapy', id)}
-              />
-            </div>
+            </>
           )}
-        </div>
+
+          <BillSummarySection
+            billLabel={`${invoiceType.label} Invoice`}
+            billId={createdInvoiceNumber ?? undefined}
+            items={selectedLineItems}
+            summaryForm={summaryForm}
+            totals={invoiceTotals}
+            discount={discount}
+            applyTax={applyTax}
+            onRemove={removeLineItem}
+          />
+        </form>
 
         <div className="mt-8 flex flex-wrap justify-end gap-3">
-          {activeBill !== 'service' && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                const idx = BILL_ORDER.indexOf(activeBill);
-                if (idx > 0) handleTabChange(BILL_ORDER[idx - 1]);
-              }}
-            >
-              Back
-            </Button>
-          )}
-          {activeBill !== 'therapy' && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                syncSummaryToBill(activeBill);
-                if (activeBill === 'service') {
-                  serviceForm.handleSubmit((data) => {
-                    if (!patientContext?.uuid) {
-                      showToast({
-                        title: 'Patient required',
-                        message: 'Select a patient from the dropdown before continuing.',
-                      });
-                      return;
-                    }
-                    setServiceData(data);
-                    handleTabChange(BILL_ORDER[BILL_ORDER.indexOf(activeBill) + 1]);
-                  })();
-                } else {
-                  handleTabChange(BILL_ORDER[BILL_ORDER.indexOf(activeBill) + 1]);
-                }
-              }}
-            >
-              Next
-            </Button>
-          )}
-          <Button onClick={() => openPaymentForBill(activeBill)}>
-            Make Payment — {BILL_LABELS[activeBill]}
-          </Button>
+          <Button onClick={() => void openPayment()}>Continue to Payment</Button>
         </div>
       </Card>
 
-      <CreatedBillsOverview
-        createdBillNumbers={createdBillNumbers}
-        onGoToBill={handleTabChange}
+      <PaymentSuccessModal
+        open={paymentSuccessOpen}
+        onClose={() => {
+          setPaymentSuccessOpen(false);
+          setPaymentSuccessDetails(null);
+          navigate('/billing');
+        }}
+        payment={paymentSuccessDetails}
       />
-    </div>
-  );
-}
-
-function PatientInfoBanner({ patient }: { patient: InvoiceServiceStepValues }) {
-  return (
-    <div className="rounded-xl border border-gold/20 bg-gold/5 px-4 py-3 text-sm">
-      <p className="font-medium text-brown">
-        {patient.fullName}{' '}
-        <span className="font-normal text-text-muted">
-          · {patient.patientId} · {patient.contactNumber}
-        </span>
-      </p>
     </div>
   );
 }
@@ -1196,38 +1289,6 @@ function BillSummaryTotals({
   );
 }
 
-function CreatedBillsOverview({
-  createdBillNumbers,
-  onGoToBill,
-}: {
-  createdBillNumbers: Partial<Record<InvoiceBillType, string>>;
-  onGoToBill: (bill: InvoiceBillType) => void;
-}) {
-  const created = BILL_ORDER.filter((b) => createdBillNumbers[b]);
-  if (created.length === 0) return null;
-
-  return (
-    <Card className="p-4 sm:p-5">
-      <h3 className="mb-3 text-sm font-semibold text-brown">Bills generated this session</h3>
-      <div className="flex flex-wrap gap-2">
-        {created.map((bill) => (
-          <button
-            key={bill}
-            type="button"
-            onClick={() => onGoToBill(bill)}
-            className="rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 text-left text-sm hover:bg-gold/10"
-          >
-            <span className="font-medium text-brown">{BILL_LABELS[bill]}</span>
-            <span className="mt-0.5 block text-xs text-text-muted">
-              {createdBillNumbers[bill]}
-            </span>
-          </button>
-        ))}
-      </div>
-    </Card>
-  );
-}
-
 function FormSection({
   title,
   children,
@@ -1297,14 +1358,16 @@ function LineItemsTable({
               </td>
               {onRemove && (
                 <td className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={() => onRemove(item.id)}
-                    className="text-text-muted hover:text-danger"
-                    aria-label="Remove item"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
+                  {item.type === 'service' ? null : (
+                    <button
+                      type="button"
+                      onClick={() => onRemove(item.id)}
+                      className="text-text-muted hover:text-danger"
+                      aria-label="Remove item"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </td>
               )}
             </tr>

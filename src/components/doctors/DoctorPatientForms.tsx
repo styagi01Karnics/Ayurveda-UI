@@ -1,4 +1,4 @@
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState, type ReactNode } from 'react';
 import { FileText, Folder, X } from 'lucide-react';
@@ -35,7 +35,6 @@ import {
   doctorTreatmentTabSchema,
   FOLLOW_UP_OPTIONS,
   MEMBERSHIP_STATUS_OPTIONS,
-  PACKAGE_TYPE_OPTIONS,
   computeRemainingSessions,
   YES_NO_OPTIONS,
   type DoctorBillingTabValues,
@@ -91,10 +90,16 @@ interface TabFormProps<T> {
 export interface DoctorFormMasterOptions {
   consultationTypes: { value: string; label: string }[];
   treatmentPlans: { value: string; label: string }[];
-  packageMasters: { value: string; label: string }[];
+  packageMasters: { value: string; label: string; packagePrice?: number }[];
   therapists: { value: string; label: string }[];
   doctors: { value: string; label: string }[];
 }
+
+const BILLING_PACKAGE_TYPE_OPTIONS = [
+  { value: 'Monthly', label: 'Monthly', packagePrice: 2000 },
+  { value: 'Quarterly', label: 'Quarterly', packagePrice: 5000 },
+  { value: 'Yearly', label: 'Yearly', packagePrice: 10000 },
+] as const;
 
 export function DoctorPersonalForm({
   defaultValues,
@@ -511,17 +516,36 @@ export function DoctorBillingForm({
     control,
     register,
     watch,
+    setValue,
     formState: { errors },
   } = form;
 
   const { fields: serviceFields, append: appendService, remove: removeService } =
     useFieldArray({ control, name: 'billingServices' });
 
-  const applyTax = watch('applyTax');
-
   useEffect(() => {
     form.reset(defaultValues);
   }, [defaultValues, form]);
+
+  const handlePackageTypeSelect = (index: number, packageType: string) => {
+    setValue(`billingServices.${index}.packageType`, packageType, {
+      shouldValidate: true,
+    });
+    const selected = BILLING_PACKAGE_TYPE_OPTIONS.find(
+      (option) => option.value === packageType,
+    );
+    if (selected?.packagePrice != null) {
+      setValue(
+        `billingServices.${index}.packageCharges`,
+        String(Math.round(selected.packagePrice)),
+        { shouldValidate: true },
+      );
+    } else if (!packageType) {
+      setValue(`billingServices.${index}.packageCharges`, '', {
+        shouldValidate: true,
+      });
+    }
+  };
 
   return (
     <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -546,6 +570,10 @@ export function DoctorBillingForm({
       </FormSection>
 
       <FormSection title="Billing Details">
+        <p className="mb-4 text-xs text-text-muted">
+          Saved as a pending billing draft. Reception will add medicines, therapies,
+          discount, and GST when generating the invoice.
+        </p>
         <div className="space-y-6">
           {serviceFields.map((field, index) => (
             <div
@@ -570,17 +598,15 @@ export function DoctorBillingForm({
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Select
-                  label="Package Type"
-                  placeholder="Package Type"
+                  label="Package Type (optional)"
+                  placeholder="Select package type"
                   options={[
                     { value: '', label: 'None' },
-                    ...PACKAGE_TYPE_OPTIONS.map((option) => ({
-                      value: option,
-                      label: option,
-                    })),
+                    ...BILLING_PACKAGE_TYPE_OPTIONS,
                   ]}
                   error={errors.billingServices?.[index]?.packageType?.message}
-                  {...register(`billingServices.${index}.packageType`)}
+                  value={watch(`billingServices.${index}.packageType`) ?? ''}
+                  onChange={(e) => handlePackageTypeSelect(index, e.target.value)}
                 />
                 <RupeeInput
                   label={
@@ -589,7 +615,7 @@ export function DoctorBillingForm({
                       : 'Package Charges'
                   }
                   placeholder="0"
-                  disabled={!watch(`billingServices.${index}.packageType`)}
+                  readOnly
                   error={errors.billingServices?.[index]?.packageCharges?.message}
                   {...register(`billingServices.${index}.packageCharges`)}
                 />
@@ -610,51 +636,6 @@ export function DoctorBillingForm({
             </div>
           ))}
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <RupeeInput
-              label="Discount (if any)"
-              placeholder="0"
-              error={errors.billingServices?.[0]?.discount?.message}
-              {...register('billingServices.0.discount')}
-            />
-            <div className="space-y-3">
-              <Controller
-                name="applyTax"
-                control={control}
-                render={({ field }) => (
-                  <label className="flex items-center gap-2 text-sm font-medium text-brown">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-gray-300 text-gold focus:ring-gold"
-                      checked={Boolean(field.value)}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                    CGST & SGST
-                  </label>
-                )}
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  
-                  placeholder="3"
-                  disabled={!applyTax}
-                  error={errors.cgst?.message}
-                  {...register('cgst')}
-                />
-                <Input
-                 
-                  placeholder="3"
-                  disabled={!applyTax}
-                  error={errors.sgst?.message}
-                  {...register('sgst')}
-                />
-              </div>
-            </div>
-          </div>
-
           <div className="flex justify-end">
             <Button
               type="button"
@@ -665,7 +646,6 @@ export function DoctorBillingForm({
                   serviceFees: '',
                   packageType: '',
                   packageCharges: '',
-                  discount: '',
                 })
               }
             >

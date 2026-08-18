@@ -6,6 +6,7 @@ import {
   getTherapiesByCategory,
 } from '@/lib/api/appointments';
 import { getAllMedicines } from '@/lib/api/medicines';
+import type { PrescriptionDto } from '@/lib/api/prescriptions';
 import { CLINIC_BRANDING } from '@/lib/clinicBranding';
 import { assets } from '@/lib/assets';
 import type { DoctorPrescriptionValues } from '@/lib/validation/doctorPatient.schema';
@@ -17,6 +18,7 @@ interface PrescriptionPreviewModalProps {
   onConfirm: () => void;
   patient: PatientDetail;
   prescription: DoctorPrescriptionValues | null;
+  enriched?: PrescriptionDto | null;
   submitting?: boolean;
 }
 
@@ -33,12 +35,23 @@ function formatPreviewDate(value?: string): string {
   });
 }
 
+function consultationTypeLabel(
+  types?: { id: string; name: string }[] | string[],
+): string {
+  if (!types?.length) return 'Consultation';
+  return types
+    .map((type) => (typeof type === 'string' ? type : type.name))
+    .filter(Boolean)
+    .join(', ');
+}
+
 export function PrescriptionPreviewModal({
   open,
   onClose,
   onConfirm,
   patient,
   prescription,
+  enriched = null,
   submitting = false,
 }: PrescriptionPreviewModalProps) {
   const { data: medicines } = useAsyncData(
@@ -52,6 +65,16 @@ export function PrescriptionPreviewModal({
 
   const { data: therapyLabels } = useAsyncData(
     async () => {
+      if (enriched?.therapySuggestions?.length) {
+        return enriched.therapySuggestions.flatMap((row) => {
+          if (row.recommendedTherapies?.length) {
+            return row.recommendedTherapies
+              .map((therapy) => therapy.name)
+              .filter(Boolean) as string[];
+          }
+          return row.recommendedTherapyIds ?? [];
+        });
+      }
       if (!prescription?.therapies?.length) return [] as string[];
       const labels: string[] = [];
 
@@ -75,50 +98,93 @@ export function PrescriptionPreviewModal({
       return labels;
     },
     [] as string[],
-    [open, prescription],
+    [open, prescription, enriched],
   );
 
   const medicineLines = useMemo(() => {
+    if (enriched?.medicines?.length) {
+      return enriched.medicines.map((row, index) => ({
+        index: index + 1,
+        name: row.medicineName || 'Medicine',
+        instruction:
+          row.instruction ||
+          [row.dosage, row.frequency, row.duration, row.notes]
+            .filter(Boolean)
+            .join(' | '),
+      }));
+    }
     if (!prescription) return [];
-    return prescription.medicines.map((row, index) => {
-      const name = medicines.get(row.medicineId) ?? 'Medicine';
-      const instruction = [
-        row.dosage,
-        row.frequency,
-        row.duration,
-        row.notes,
-      ]
-        .filter(Boolean)
-        .join(' | ');
-      return { index: index + 1, name, instruction };
-    });
-  }, [medicines, prescription]);
+    return prescription.medicines
+      .filter((row) => row.medicineId)
+      .map((row, index) => {
+        const name = medicines.get(row.medicineId ?? '') ?? 'Medicine';
+        const instruction = [
+          row.dosage,
+          row.frequency,
+          row.duration,
+          row.notes,
+        ]
+          .filter(Boolean)
+          .join(' | ');
+        return { index: index + 1, name, instruction };
+      });
+  }, [medicines, prescription, enriched]);
 
-  if (!open || !prescription) return null;
+  if (!open || (!prescription && !enriched)) return null;
 
+  const printReady = Boolean(enriched);
   const info = patient.personalInfo;
+  const patientBlock = enriched?.patient;
+  const consultant = enriched?.consultant;
+  const treatment = enriched?.treatment;
   const doctorName =
-    info.assignedDoctor && info.assignedDoctor !== '—'
+    consultant?.name ||
+    (info.assignedDoctor && info.assignedDoctor !== '—'
       ? info.assignedDoctor
-      : CLINIC_BRANDING.doctorName;
+      : CLINIC_BRANDING.doctorName);
+  const doctorQualification =
+    consultant?.qualification || CLINIC_BRANDING.doctorCredentials;
+  const doctorPhone =
+    consultant?.contactNumber ||
+    consultant?.mobileNumber ||
+    CLINIC_BRANDING.doctorPhone;
   const diagnosis =
-    prescription.diagnosis?.trim() ||
+    enriched?.diagnosis?.trim() ||
+    prescription?.diagnosis?.trim() ||
     (info.serviceType !== '—' ? info.serviceType : 'As assessed during consultation');
+  const suggestions =
+    enriched?.nextFollowUp?.suggestions || prescription?.suggestions;
+  const patientName = patientBlock?.name || patientBlock?.fullName || patient.name;
+  const patientId =
+    patientBlock?.displayId ||
+    patientBlock?.patientDisplayId ||
+    patient.id;
+  const age = patientBlock?.age != null ? String(patientBlock.age) : info.age || '—';
+  const gender = patientBlock?.gender || info.gender || '—';
+  const weight = patientBlock?.weight || patient.medicalAssessment.weight;
+  const height = patientBlock?.height || patient.medicalAssessment.height;
+  const diet =
+    patientBlock?.dietType || patient.medicalAssessment.diet || '—';
+  const visitLabel =
+    treatment?.visitDisplay ||
+    consultationTypeLabel(treatment?.consultationTypes) ||
+    info.serviceType ||
+    'Consultation';
 
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto p-4 sm:p-8">
       <button
         type="button"
-        className="fixed inset-0 bg-black/45"
+        className="fixed inset-0 bg-black/45 print:hidden"
         onClick={onClose}
         aria-label="Close prescription preview"
       />
 
-      <div className="relative z-10 my-2 w-full max-w-4xl rounded-2xl bg-white shadow-2xl">
+      <div className="relative z-10 my-2 w-full max-w-4xl rounded-2xl bg-white shadow-2xl print:shadow-none">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 z-20 rounded-lg p-1.5 text-text-muted hover:bg-brown/5"
+          className="absolute right-4 top-4 z-20 rounded-lg p-1.5 text-text-muted hover:bg-brown/5 print:hidden"
           aria-label="Close"
         >
           <X className="h-5 w-5" />
@@ -142,48 +208,51 @@ export function PrescriptionPreviewModal({
               <p className="text-text-muted">{CLINIC_BRANDING.workingHours}</p>
               <p className="mt-1 inline-flex items-center gap-1 text-gold">
                 <Phone className="h-3.5 w-3.5" />
-                {CLINIC_BRANDING.doctorPhone}
+                {doctorPhone}
               </p>
             </div>
           </div>
 
-          <h2 className="mt-6 text-center font-serif text-2xl text-gold">
-            6 months treatment process
-          </h2>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div className="space-y-2 text-sm">
               <p>
                 <span className="text-text-muted">Patient ID: </span>
-                <span className="font-semibold text-gold">{patient.id}</span>
+                <span className="font-semibold text-gold">{patientId}</span>
               </p>
               <p>
                 <span className="text-text-muted">Name / Age / Gender: </span>
                 <span className="font-medium text-brown">
-                  {patient.name} | {info.age || '—'} | {info.gender || '—'}
+                  {patientName} | {age} | {gender}
                 </span>
               </p>
               <p>
                 <span className="text-text-muted">Weight / Height: </span>
                 <span className="font-medium text-brown">
-                  {patient.medicalAssessment.weight} / {patient.medicalAssessment.height}
+                  {weight} / {height}
                 </span>
               </p>
               <p>
                 <span className="text-text-muted">Diet Type: </span>
-                <span className="font-medium text-brown">
-                  {patient.medicalAssessment.diet || '—'}
-                </span>
+                <span className="font-medium text-brown">{diet}</span>
               </p>
             </div>
 
             <div className="rounded-xl border border-gold/20 bg-gold/5 p-4 text-sm">
-              <p className="font-semibold text-brown">{info.serviceType || 'Consultation'}</p>
+              <p className="font-semibold text-brown">{visitLabel}</p>
               <p className="mt-2 text-text-muted">
-                {formatPreviewDate(info.registrationDate || patient.appointmentDate)}
+                {formatPreviewDate(
+                  treatment?.consultationDateTime ||
+                    info.registrationDate ||
+                    patient.appointmentDate,
+                )}
               </p>
               <p className="mt-1 text-text-muted">
-                Next: {formatPreviewDate(patient.treatmentFollowUp.nextFollowUp)}
+                Next:{' '}
+                {formatPreviewDate(
+                  treatment?.nextAppointmentDateTime ||
+                    patient.treatmentFollowUp.nextFollowUp,
+                )}
               </p>
               <p className="mt-1 text-brown">
                 Visit No.: {patient.treatmentFollowUp.sessionsCompleted}/
@@ -193,8 +262,12 @@ export function PrescriptionPreviewModal({
 
             <div className="text-sm md:text-right">
               <p className="font-semibold text-brown">{doctorName}</p>
-              <p className="text-text-muted">{CLINIC_BRANDING.doctorCredentials}</p>
-              <p className="mt-1 text-gold">{CLINIC_BRANDING.doctorPhone}</p>
+              <p className="text-text-muted">
+                {consultant?.specialization
+                  ? `${doctorQualification}${consultant.specialization ? ` · ${consultant.specialization}` : ''}`
+                  : doctorQualification}
+              </p>
+              <p className="mt-1 text-gold">{doctorPhone}</p>
             </div>
           </div>
 
@@ -224,10 +297,17 @@ export function PrescriptionPreviewModal({
             </p>
           ) : null}
 
-          {prescription.suggestions ? (
+          {suggestions ? (
             <p className="mt-4 text-sm text-brown">
               <span className="font-semibold">Suggestions: </span>
-              {prescription.suggestions}
+              {suggestions}
+            </p>
+          ) : null}
+
+          {enriched?.notes ? (
+            <p className="mt-4 text-sm text-brown">
+              <span className="font-semibold">Notes: </span>
+              {enriched.notes}
             </p>
           ) : null}
 
@@ -240,13 +320,24 @@ export function PrescriptionPreviewModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>
-            Edit
-          </Button>
-          <Button onClick={onConfirm} disabled={submitting}>
-            {submitting ? 'Saving…' : 'Confirm Prescription'}
-          </Button>
+        <div className="flex justify-end gap-3 border-t border-gray-100 px-6 py-4 print:hidden">
+          {printReady ? (
+            <>
+              <Button variant="outline" onClick={onClose}>
+                Close
+              </Button>
+              <Button onClick={() => window.print()}>Print</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={onClose} disabled={submitting}>
+                Edit
+              </Button>
+              <Button onClick={onConfirm} disabled={submitting}>
+                {submitting ? 'Saving…' : 'Confirm Prescription'}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

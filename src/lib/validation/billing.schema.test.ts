@@ -35,6 +35,18 @@ describe('invoiceServiceStepSchema', () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it('accepts patient details without service fees for medicine or therapy invoices', () => {
+    const result = invoiceServiceStepSchema.safeParse({
+      patientId: '#PT458652',
+      fullName: 'Khushi Shroff',
+      contactNumber: '9205061339',
+      invoiceDate: '2026-10-15',
+      visitType: 'Consultation',
+      serviceFees: '',
+    });
+    expect(result.success).toBe(true);
+  });
 });
 
 describe('calculateInvoiceTotals', () => {
@@ -47,6 +59,21 @@ describe('calculateInvoiceTotals', () => {
       3,
     );
     expect(totals.subtotal).toBe(1600);
+    expect(totals.cgst).toBe(48);
+    expect(totals.sgst).toBe(48);
     expect(totals.total).toBe(1296);
+  });
+
+  it('keeps GST at two decimal places to match billing-service', () => {
+    const totals = calculateInvoiceTotals(
+      [{ amount: 1520, quantity: 1 }],
+      0,
+      true,
+      3,
+      3,
+    );
+    expect(totals.cgst).toBe(45.6);
+    expect(totals.sgst).toBe(45.6);
+    expect(totals.total).toBe(1611.2);
   });
 });

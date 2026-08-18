@@ -110,11 +110,13 @@ export async function resolveBillDoctorDetails(
             doctorName: formatDoctorName(
               summary.name || summary.doctorName || latest.doctorName || '',
             ),
-            doctorCredentials: summary.specialization
-              ? summary.specialization
-              : CLINIC_BRANDING.doctorCredentials,
+            doctorCredentials:
+              summary.qualification ||
+              summary.specialization ||
+              CLINIC_BRANDING.doctorCredentials,
             workingHours: CLINIC_BRANDING.workingHours,
-            doctorPhone: CLINIC_BRANDING.doctorPhone,
+            doctorPhone:
+              summary.mobileNumber || CLINIC_BRANDING.doctorPhone,
           };
         }
       }

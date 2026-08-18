@@ -393,19 +393,59 @@ export function BillingMembershipTab({
       <SectionBlock title="Billing Details">
         <InfoList
           items={[
-            { label: 'Service Type', value: b.serviceType },
-            { label: 'Service Fees', value: `₹${b.serviceFees}` },
-            ...(b.packageType && b.packageType !== '—'
-              ? [
-                  { label: 'Package Type', value: b.packageType },
+            ...(b.billingServices && b.billingServices.length > 0
+              ? b.billingServices.flatMap((service, index) => [
                   {
-                    label: 'Package Charges',
-                    value: `₹${b.packageCharges}`,
+                    label:
+                      b.billingServices!.length > 1
+                        ? `Service Type ${index + 1}`
+                        : 'Service Type',
+                    value: service.serviceType || '—',
+                  },
+                  {
+                    label: 'Service Fees',
+                    value: `₹${service.serviceFees}`,
+                  },
+                  ...(service.packageName || service.packageMasterId
+                    ? [
+                        {
+                          label: 'Package',
+                          value: service.packageName || service.packageType || '—',
+                        },
+                        {
+                          label: 'Package Charges',
+                          value: `₹${service.packageCharges ?? 0}`,
+                        },
+                      ]
+                    : []),
+                ])
+              : [
+                  { label: 'Service Type', value: b.serviceType },
+                  { label: 'Service Fees', value: `₹${b.serviceFees}` },
+                  ...(b.packageType && b.packageType !== '—'
+                    ? [
+                        { label: 'Package Type', value: b.packageType },
+                        {
+                          label: 'Package Charges',
+                          value: `₹${b.packageCharges}`,
+                        },
+                      ]
+                    : []),
+                ]),
+            ...(b.billingDraftStatus
+              ? [
+                  {
+                    label: 'Billing draft',
+                    value: b.billingDraftStatus === 'PENDING' ? 'Pending' : 'Completed',
                   },
                 ]
               : []),
-            { label: 'Discount', value: `₹${b.discount}` },
-            { label: 'CGST & SGST', value: b.taxRate },
+            ...(b.discount
+              ? [{ label: 'Discount', value: `₹${b.discount}` }]
+              : []),
+            ...(b.taxRate && b.taxRate !== '—' && b.taxRate !== '0%' && b.taxRate !== '0'
+              ? [{ label: 'CGST & SGST', value: b.taxRate }]
+              : []),
           ]}
         />
       </SectionBlock>

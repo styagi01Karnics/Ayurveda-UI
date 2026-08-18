@@ -11,14 +11,22 @@ export const invoiceServiceStepSchema = z.object({
   visitType: z.string().min(1, 'Visit type is required'),
   serviceFees: z
     .string()
-    .min(1, 'Service fees is required')
-    .regex(/^\d+$/, 'Enter a valid amount'),
+    .optional()
+    .refine((value) => !value || /^\d+$/.test(value), 'Enter a valid amount'),
+  packageMasterId: z.string().optional(),
   packageType: z.string().optional(),
   packageCharges: z
     .string()
     .optional()
     .refine((value) => !value || /^\d+$/.test(value), 'Enter a valid amount'),
 }).superRefine((data, ctx) => {
+  if (data.packageType?.trim() && !data.packageMasterId?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Package name is required when package type is selected',
+      path: ['packageMasterId'],
+    });
+  }
   if (data.packageType?.trim() && !data.packageCharges?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -30,7 +38,10 @@ export const invoiceServiceStepSchema = z.object({
 
 export const invoiceMedicineItemSchema = z.object({
   medicineId: z.string().min(1, 'Medicine is required'),
-  quantity: z.string().min(1, 'Quantity is required'),
+  quantity: z
+    .string()
+    .min(1, 'Quantity is required')
+    .regex(/^[1-9]\d*$/, 'Enter a valid quantity'),
   price: z
     .string()
     .min(1, 'Price is required')
@@ -46,7 +57,13 @@ export const invoiceTherapyItemSchema = z.object({
   assignedTherapistId: z.string().min(1, 'Assigned therapist is required'),
   assignedTherapistName: z.string().optional(),
   scheduleDate: z.string().min(1, 'Schedule date is required'),
-  scheduleTime: z.string().min(1, 'Schedule time is required'),
+  scheduleTime: z
+    .string()
+    .min(1, 'Schedule time is required')
+    .refine(
+      (value) => !value || (value >= '10:00' && value <= '19:00'),
+      'Schedule time must be between 10:00 AM and 7:00 PM',
+    ),
   sessionDuration: z.string().min(1, 'Session duration is required'),
   sessionFrequency: z.string().min(1, 'Session frequency is required'),
 });
@@ -80,11 +97,10 @@ export type InvoiceMedicineItemValues = z.infer<typeof invoiceMedicineItemSchema
 export type InvoiceTherapyItemValues = z.infer<typeof invoiceTherapyItemSchema>;
 export type InvoiceSummaryValues = z.infer<typeof invoiceSummarySchema>;
 
-export const VISIT_TYPE_OPTIONS = ['Consultation', 'Therapy'] as const;
+export const VISIT_TYPE_OPTIONS = ['Consultation', 'Follow-up', 'Therapy'] as const;
 export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;
 export const THERAPY_NAME_OPTIONS = ['Panchakarma', 'Abhyanga', 'Shirodhara'] as const;
 export const THERAPIST_OPTIONS = ['Meera Singh', 'Dr. Sheekha', 'Dr. Sharma'] as const;
-export const QUANTITY_OPTIONS = ['1', '2', '3', '4', '5'] as const;
 
 export function calculateInvoiceTotals(
   lineItems: { amount: number; quantity: number }[],
@@ -93,13 +109,16 @@ export function calculateInvoiceTotals(
   cgstRate: number,
   sgstRate: number,
 ) {
-  const subtotal = lineItems.reduce(
-    (sum, item) => sum + item.amount * item.quantity,
-    0,
+  const subtotal = roundMoney(
+    lineItems.reduce((sum, item) => sum + item.amount * item.quantity, 0),
   );
-  const cgst = applyTax ? Math.round(subtotal * (cgstRate / 100)) : 0;
-  const sgst = applyTax ? Math.round(subtotal * (sgstRate / 100)) : 0;
-  const tax = cgst + sgst;
-  const total = subtotal + tax - discount;
+  const cgst = applyTax ? roundMoney(subtotal * (cgstRate / 100)) : 0;
+  const sgst = applyTax ? roundMoney(subtotal * (sgstRate / 100)) : 0;
+  const tax = roundMoney(cgst + sgst);
+  const total = roundMoney(subtotal + tax - discount);
   return { subtotal, cgst, sgst, tax, total };
+}
+
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }

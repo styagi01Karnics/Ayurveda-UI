@@ -48,6 +48,18 @@ export function canStartConsultation(
   return minutesUntilAppointment(scheduledAt, now) <= earlyGraceMinutes;
 }
 
+export function isConsultationNotStartedError(error: unknown): boolean {
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+  return /not started|too early|within \d+\s*minutes|scheduled time|before the scheduled/i.test(
+    message,
+  );
+}
+
 export function formatAppointmentReminderTime(scheduledAt: Date): string {
   return scheduledAt.toLocaleTimeString(undefined, {
     hour: 'numeric',
