@@ -1,7 +1,49 @@
 import { z } from 'zod';
-import { patientStep1FullSchema } from './patient.schema';
+import { optionalBookingTimeSchema } from '@/lib/bookingConstraints';
 
-export const doctorPersonalTabSchema = patientStep1FullSchema;
+/** Doctor edit — core demographics required; contact & ID fields optional. */
+export const doctorPersonalTabSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  gender: z.string().min(1, 'Gender is required'),
+  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  age: z.string().min(1, 'Age is required').regex(/^\d+$/, 'Age must be a number'),
+  preferredLanguage: z.string().optional(),
+  consultationTypeIds: z
+    .array(z.string())
+    .min(1, 'Select at least one consultation type'),
+  registrationDate: z.string().min(1, 'Registration date is required'),
+  appointmentTime: optionalBookingTimeSchema,
+  assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
+  mobileNumber: z
+    .string()
+    .min(1, 'Mobile number is required')
+    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+  email: z
+    .string()
+    .optional()
+    .refine(
+      (value) =>
+        !value?.trim() || z.string().email().safeParse(value.trim()).success,
+      'Enter a valid email',
+    ),
+  state: z.string().optional(),
+  city: z.string().optional(),
+  permanentAddress: z.string().optional(),
+  emergencyName: z.string().optional(),
+  emergencyRelation: z.string().optional(),
+  emergencyPhone: z
+    .string()
+    .optional()
+    .refine(
+      (value) => !value?.trim() || /^[6-9]\d{9}$/.test(value.trim()),
+      'Enter a valid 10-digit phone number',
+    ),
+  patientId: z.string().optional(),
+  idProofType: z.string().optional(),
+  idNumber: z.string().optional(),
+  occupation: z.string().optional(),
+  insuranceDetails: z.string().optional(),
+});
 
 export const doctorMedicalTabSchema = z.object({
   doshaType: z.string().min(1, 'Dosha type is required'),

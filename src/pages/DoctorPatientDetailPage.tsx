@@ -362,20 +362,11 @@ export function DoctorPatientDetailPage() {
 
               <Card className="p-5 sm:p-6">
         <div className="space-y-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs text-text-muted">Patient ID</p>
-              <div className="mt-1 flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
-                <Badge variant="gold" className="rounded-md px-3 py-1">
-                  {patient.treatmentStatus}
-                </Badge>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-text-muted">Dosha</p>
-              <p className="text-xl font-bold text-gold">{patient.dosha}</p>
-            </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-2xl font-bold text-brown">{patient.name}</h2>
+            <Badge variant="gold" className="rounded-md px-3 py-1">
+              {patient.treatmentStatus}
+            </Badge>
           </div>
 
           {workflowStep === 1 && (

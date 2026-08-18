@@ -80,7 +80,7 @@ export type InvoiceMedicineItemValues = z.infer<typeof invoiceMedicineItemSchema
 export type InvoiceTherapyItemValues = z.infer<typeof invoiceTherapyItemSchema>;
 export type InvoiceSummaryValues = z.infer<typeof invoiceSummarySchema>;
 
-export const VISIT_TYPE_OPTIONS = ['Consultation', 'Therapy', 'Treatment'] as const;
+export const VISIT_TYPE_OPTIONS = ['Consultation', 'Therapy'] as const;
 export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;
 export const THERAPY_NAME_OPTIONS = ['Panchakarma', 'Abhyanga', 'Shirodhara'] as const;
 export const THERAPIST_OPTIONS = ['Meera Singh', 'Dr. Sheekha', 'Dr. Sharma'] as const;

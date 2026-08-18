@@ -406,27 +406,27 @@ export function applyPersonalFormToPatient(
 
       assignedDoctor: values.assignedDoctor,
 
-      email: values.email,
+      email: sanitizeFormField(values.email),
 
-      state: values.state,
+      state: sanitizeFormField(values.state),
 
-      city: values.city,
+      city: sanitizeFormField(values.city),
 
-      address: values.permanentAddress,
+      address: sanitizeFormField(values.permanentAddress),
 
-      emergencyName: values.emergencyName,
+      emergencyName: sanitizeFormField(values.emergencyName),
 
-      emergencyRelation: values.emergencyRelation,
+      emergencyRelation: sanitizeFormField(values.emergencyRelation),
 
-      emergencyPhone: values.emergencyPhone,
+      emergencyPhone: sanitizeFormField(values.emergencyPhone),
 
-      idProofType: values.idProofType,
+      idProofType: sanitizeFormField(values.idProofType),
 
-      idProofNumber: values.idNumber,
+      idProofNumber: sanitizeFormField(values.idNumber),
 
-      occupation: values.occupation,
+      occupation: sanitizeFormField(values.occupation),
 
-      insuranceDetails: values.insuranceDetails || 'N/A',
+      insuranceDetails: sanitizeFormField(values.insuranceDetails) || 'N/A',
 
     },
 
