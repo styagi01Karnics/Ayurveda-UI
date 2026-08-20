@@ -69,7 +69,10 @@ export function Modal({
           </button>
         </div>
 
-        <div className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-5">
+        <div
+          data-modal-scroll-container
+          className="max-h-[calc(100vh-12rem)] overflow-y-auto px-6 py-5"
+        >
           {children}
         </div>
 

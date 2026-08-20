@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import { FileText, Trash2, X } from 'lucide-react';
 import { DocumentUploadDropzone } from '@/components/ui/DocumentUploadDropzone';
 import { useForm } from 'react-hook-form';
@@ -160,6 +167,9 @@ export function CreatePatientModal({
     resolver: zodResolver(patientStep3Schema),
     defaultValues: {
       bodyConstitution: [],
+      pastMedicalConditions: [],
+      pastSurgeries: [],
+      currentMedications: [],
       allergies: [],
       ...formData,
     },
@@ -216,7 +226,13 @@ export function CreatePatientModal({
       therapyInstructions:
         'Patient should avoid cold food during therapy and maintain warm diet.',
     });
-    step3Form.reset({ bodyConstitution: [], allergies: [] });
+    step3Form.reset({
+      bodyConstitution: [],
+      pastMedicalConditions: [],
+      pastSurgeries: [],
+      currentMedications: [],
+      allergies: [],
+    });
   };
 
   const handleClose = () => {
@@ -777,13 +793,44 @@ export function CreatePatientModal({
 
           <FormSection title="Medical History">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Select label="Past Medical Conditions" placeholder="Select" options={historyOptions.pastConditions} {...step3Form.register('pastMedicalConditions')} />
-              <Select label="Past Surgeries" placeholder="Select" options={historyOptions.pastSurgeries} {...step3Form.register('pastSurgeries')} />
-              <Select label="Current Medications" placeholder="Select" options={historyOptions.currentMedications} {...step3Form.register('currentMedications')} />
+              <TagInput
+                label="Past Medical Conditions"
+                value={step3Form.watch('pastMedicalConditions') ?? []}
+                onChange={(tags) =>
+                  step3Form.setValue('pastMedicalConditions', tags, {
+                    shouldValidate: true,
+                  })
+                }
+                options={historyOptions.pastConditions}
+              />
+              <TagInput
+                label="Past Surgeries"
+                value={step3Form.watch('pastSurgeries') ?? []}
+                onChange={(tags) =>
+                  step3Form.setValue('pastSurgeries', tags, {
+                    shouldValidate: true,
+                  })
+                }
+                options={historyOptions.pastSurgeries}
+              />
+              <TagInput
+                label="Current Medications"
+                value={step3Form.watch('currentMedications') ?? []}
+                onChange={(tags) =>
+                  step3Form.setValue('currentMedications', tags, {
+                    shouldValidate: true,
+                  })
+                }
+                options={historyOptions.currentMedications}
+              />
               <TagInput
                 label="Allergies"
                 value={step3Form.watch('allergies') ?? []}
-                onChange={(tags) => step3Form.setValue('allergies', tags)}
+                onChange={(tags) =>
+                  step3Form.setValue('allergies', tags, {
+                    shouldValidate: true,
+                  })
+                }
                 options={historyOptions.allergies}
               />
               <Textarea label="Family History" className="sm:col-span-2" rows={2} {...step3Form.register('familyHistory')} />
@@ -841,23 +888,24 @@ function UploadReportsSection({
   activeTab: DocumentTabId;
   onTabChange: (tab: DocumentTabId) => void;
   documents: typeof EMPTY_DOCUMENTS;
-  onDocumentsChange: (docs: typeof EMPTY_DOCUMENTS) => void;
+  onDocumentsChange: Dispatch<SetStateAction<typeof EMPTY_DOCUMENTS>>;
 }) {
   const activeFiles = documents[activeTab];
 
   const addFiles = (files: FileList | null) => {
     if (!files?.length) return;
-    onDocumentsChange({
-      ...documents,
-      [activeTab]: [...documents[activeTab], ...Array.from(files)],
-    });
+    const selectedFiles = Array.from(files);
+    onDocumentsChange((current) => ({
+      ...current,
+      [activeTab]: [...current[activeTab], ...selectedFiles],
+    }));
   };
 
   const removeFile = (index: number) => {
-    onDocumentsChange({
-      ...documents,
-      [activeTab]: documents[activeTab].filter((_, i) => i !== index),
-    });
+    onDocumentsChange((current) => ({
+      ...current,
+      [activeTab]: current[activeTab].filter((_, i) => i !== index),
+    }));
   };
 
   const formatSize = (bytes: number) => {
@@ -867,7 +915,7 @@ function UploadReportsSection({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 [overflow-anchor:none]">
       <div className="flex flex-wrap gap-4 border-b border-gray-100 pb-2 text-xs font-semibold uppercase tracking-wide">
         {DOCUMENT_TABS.map((tab) => (
           <button
@@ -884,7 +932,11 @@ function UploadReportsSection({
         ))}
       </div>
       <DocumentUploadDropzone
-        title={`Tap to upload ${DOCUMENT_TABS.find((t) => t.id === activeTab)?.label}`}
+        title={
+          activeFiles.length > 0
+            ? `Selected: ${activeFiles.map((file) => file.name).join(', ')}`
+            : `Tap to upload ${DOCUMENT_TABS.find((t) => t.id === activeTab)?.label}`
+        }
         onFilesSelected={(files) => addFiles(files)}
       />
       {activeFiles.length > 0 && (

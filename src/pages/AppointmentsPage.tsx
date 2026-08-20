@@ -30,6 +30,7 @@ import {
   cancelAppointment,
   getAllTherapies,
   getAllTreatmentCategories,
+  getAppointmentPatients,
   getAppointmentsByStatus,
   getBookingDoshas,
   rescheduleAppointment,
@@ -47,7 +48,6 @@ import {
   normalizeSlotTimeForApi,
   toApiConsultationTypeIds,
 } from '@/lib/api/mappers';
-import { getAllPatients } from '@/lib/api/patients';
 import { getAllTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
@@ -109,7 +109,7 @@ export function AppointmentsPage() {
         getBookingDoshas().catch(() => []),
         getActiveConsultationTypes().catch(() => []),
         getAppointmentsByStatus('ALL').catch(() => []),
-        getAllPatients().catch(() => []),
+        getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
         getAllFollowUps().catch(() => []),
       ]);
 
@@ -142,8 +142,8 @@ export function AppointmentsPage() {
         label: type.name,
       })),
       patients: patients.map((p) => ({
-        value: p.id,
-        label: p.fullName,
+        value: p.patientId,
+        label: p.patientFullName,
       })),
     };
 

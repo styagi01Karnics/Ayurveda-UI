@@ -32,12 +32,12 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 
 import { ApiError } from '@/lib/api/client';
 
+import { getAppointmentPatients } from '@/lib/api/appointments';
+
 import { createTreatment, getAllTreatments } from '@/lib/api/treatments';
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
 
 import { mapTreatmentDtoToRecord } from '@/lib/api/mappers';
-
-import { getAllPatients } from '@/lib/api/patients';
 
 import { getActiveTherapists } from '@/lib/api/therapists';
 
@@ -70,7 +70,7 @@ export function TreatmentsPage() {
   const { data, loading, error, reload } = useAsyncData(async () => {
 
     const [patients, therapists, treatments, treatmentPlans] = await Promise.all([
-      getAllPatients().catch(() => []),
+      getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
       getActiveTherapists().catch(() => []),
       getAllTreatments().catch(() => []),
       getActiveTreatmentPlanMasters().catch(() => []),
@@ -78,7 +78,7 @@ export function TreatmentsPage() {
 
 
 
-    const patientsById = new Map(patients.map((p) => [p.id, p]));
+    const patientsById = new Map(patients.map((p) => [p.patientId, p]));
 
 
 
@@ -88,7 +88,7 @@ export function TreatmentsPage() {
 
         dto,
 
-        patientsById.get(dto.patientId)?.fullName,
+        patientsById.get(dto.patientId)?.patientFullName,
 
       ),
 
@@ -104,9 +104,9 @@ export function TreatmentsPage() {
 
         patients: patients.map((p) => ({
 
-          value: p.id,
+          value: p.patientId,
 
-          label: p.fullName,
+          label: p.patientFullName,
 
         })),
 

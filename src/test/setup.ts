@@ -96,6 +96,31 @@ vi.mock('@/lib/api/therapists', () => ({
         active: true,
       })),
   ),
+  isTherapistActive: (therapist: { active?: boolean; status?: string }) =>
+    therapist.active !== false &&
+    (therapist.status ?? 'ACTIVE').toUpperCase() === 'ACTIVE',
+  mapTherapistSelectOptions: (
+    therapists: Array<{
+      id: string;
+      name?: string;
+      therapistName?: string;
+      active?: boolean;
+      status?: string;
+    }>,
+  ) =>
+    therapists
+      .filter(
+        (therapist) =>
+          therapist.active !== false &&
+          (therapist.status ?? 'ACTIVE').toUpperCase() === 'ACTIVE',
+      )
+      .map((therapist) => ({
+        value: therapist.id,
+        label: therapist.name || therapist.therapistName || '—',
+      })),
+  filterTherapistsByTherapyIds: (
+    therapists: unknown[],
+  ) => therapists,
   getTherapistById: vi.fn(),
   createTherapist: vi.fn(async (payload: { name?: string; therapistName?: string }) => ({
     id: `therapist-${Date.now()}`,

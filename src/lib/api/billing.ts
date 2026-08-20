@@ -246,6 +246,7 @@ export interface BillingDto {
   status: BillingDraftStatus | string;
   invoiceId?: string | null;
   invoiceNumber?: string | null;
+  totalAmount?: number;
   services?: BillingServiceItemDto[];
   createdAt?: string;
   updatedAt?: string;

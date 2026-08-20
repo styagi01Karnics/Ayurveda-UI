@@ -8,8 +8,12 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { SALES_FILTER_OPTIONS } from '@/data/mock/sales';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { getAppointmentStats } from '@/lib/api/appointments';
 import { getSales } from '@/lib/api/billing';
-import { mapSalesDtoToRecord } from '@/lib/api/mappers';
+import {
+  mapAppointmentStatsToDoctorStats,
+  mapSalesDtoToRecord,
+} from '@/lib/api/mappers';
 import type { SalesInvoiceRecord, SalesStats } from '@/types';
 
 const EMPTY_STATS: SalesStats = {
@@ -44,14 +48,21 @@ export function SalesPage() {
 
   const { data, loading, error, reload } = useAsyncData(
     async () => {
-      const salesResponse = await getSales({
-        serviceType: serviceTypeFilter || undefined,
-        dateCreated: dateFilter || undefined,
-      });
+      const [salesResponse, appointmentStats] = await Promise.all([
+        getSales({
+          serviceType: serviceTypeFilter || undefined,
+          dateCreated: dateFilter || undefined,
+        }),
+        getAppointmentStats().catch(() => null),
+      ]);
 
       const invoices = salesResponse.sales.map(mapSalesDtoToRecord);
+      const doctorStats = mapAppointmentStatsToDoctorStats(appointmentStats);
       const stats: SalesStats = {
         ...EMPTY_STATS,
+        totalPatients: doctorStats.totalPatients,
+        patientsCompleted: doctorStats.completedPatients,
+        patientsOngoing: doctorStats.ongoingPatients,
         revenueThisMonth: salesResponse.revenueThisMonth,
         revenuePeriod: formatRevenuePeriod(
           salesResponse.revenueFrom,

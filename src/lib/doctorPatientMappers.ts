@@ -46,6 +46,13 @@ export function sanitizeFormField(value: string | null | undefined): string {
 
 }
 
+function splitMedicalTags(value: string | null | undefined): string[] {
+  const sanitized = sanitizeFormField(value);
+  return sanitized
+    ? sanitized.split(',').map((item) => item.trim()).filter(Boolean)
+    : [];
+}
+
 
 
 function parseAge(age: string | null | undefined): string {
@@ -244,13 +251,13 @@ export function mapPatientToMedicalForm(
 
     presentConditions: sanitizeFormField(m.presentConditions),
 
-    pastConditions: sanitizeFormField(m.pastConditions),
+    pastConditions: splitMedicalTags(m.pastConditions),
 
-    pastSurgeries: sanitizeFormField(m.pastSurgeries),
+    pastSurgeries: splitMedicalTags(m.pastSurgeries),
 
-    currentMedications: sanitizeFormField(m.currentMedication),
+    currentMedications: splitMedicalTags(m.currentMedication),
 
-    allergies: sanitizeFormField(m.allergies) ? [sanitizeFormField(m.allergies)] : [],
+    allergies: splitMedicalTags(m.allergies),
 
     familyHistory: sanitizeFormField(m.familyHistory),
 
@@ -503,11 +510,11 @@ export function applyMedicalFormToPatient(
 
       presentConditions: values.presentConditions ?? '',
 
-      pastConditions: values.pastConditions ?? '',
+      pastConditions: values.pastConditions?.join(', ') ?? '',
 
-      pastSurgeries: values.pastSurgeries ?? '',
+      pastSurgeries: values.pastSurgeries?.join(', ') ?? '',
 
-      currentMedication: values.currentMedications ?? '',
+      currentMedication: values.currentMedications?.join(', ') ?? '',
 
       allergies: values.allergies?.join(', ') ?? '',
 

@@ -15,7 +15,8 @@ import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { PAYMENT_MODES } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { getAllTherapies } from '@/lib/api/appointments';
+import { BOOKING_TIME_OPTIONS } from '@/lib/bookingConstraints';
+import { getAllTherapies, getAppointmentPatients } from '@/lib/api/appointments';
 import {
   addInvoicePayment,
   createInvoice,
@@ -30,7 +31,6 @@ import {
 import { ApiError } from '@/lib/api/client';
 import { getAllMedicines } from '@/lib/api/medicines';
 import { getActivePackageMasters } from '@/lib/api/packageMasters';
-import { getAllPatients } from '@/lib/api/patients';
 import { getActiveTherapists } from '@/lib/api/therapists';
 import {
   calculateInvoiceTotals,
@@ -113,7 +113,7 @@ const INVOICE_TYPE_OPTIONS: InvoiceTypeOption[] = [
   },
 ];
 
-const CONSULTATION_VISIT_OPTIONS = ['Consultation', 'Follow-up', 'Package'] as const;
+const CONSULTATION_VISIT_OPTIONS = ['Consultation', 'Therapy', 'Follow-up'] as const;
 
 const DEFAULT_SUMMARY: BillSummaryState = {
   discount: '0',
@@ -251,7 +251,7 @@ export function GenerateInvoicePage() {
     async () => {
       const [patients, medicines, therapists, therapies, packageMasters] =
         await Promise.all([
-          getAllPatients().catch(() => []),
+          getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
           getAllMedicines().catch(() => []),
           getActiveTherapists().catch(() => []),
           getAllTherapies().catch(() => []),
@@ -260,13 +260,13 @@ export function GenerateInvoicePage() {
 
       return {
         patients: patients.map((p) => ({
-          value: p.id,
-          label: `${p.patientDisplayId ?? p.patientCode ?? p.id} — ${p.fullName}`,
-          uuid: p.id,
-          displayId: (p.patientDisplayId ?? p.patientCode ?? p.id).replace(/^#/, ''),
+          value: p.patientId,
+          label: `${p.patientDisplayId ?? p.patientCode ?? p.patientId} — ${p.patientFullName}`,
+          uuid: p.patientId,
+          displayId: (p.patientDisplayId ?? p.patientCode ?? p.patientId).replace(/^#/, ''),
           patientCode: p.patientCode ?? '',
-          fullName: p.fullName,
-          mobileNumber: p.mobileNumber,
+          fullName: p.patientFullName,
+          mobileNumber: p.patientMobileNumber ?? '',
         })),
         medicines: medicines.map((m) => ({
           value: m.id,
@@ -1059,11 +1059,10 @@ export function GenerateInvoicePage() {
                     error={therapyForm.formState.errors.scheduleDate?.message}
                     {...therapyForm.register('scheduleDate')}
                   />
-                  <Input
+                  <Select
                     label="Schedule Time"
-                    type="time"
-                    min="10:00"
-                    max="19:00"
+                    placeholder="Select time"
+                    options={BOOKING_TIME_OPTIONS}
                     error={therapyForm.formState.errors.scheduleTime?.message}
                     {...therapyForm.register('scheduleTime')}
                   />

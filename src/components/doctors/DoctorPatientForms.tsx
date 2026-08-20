@@ -232,20 +232,31 @@ export function DoctorMedicalForm({
       <FormSection title="Medical History">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Present Medical Conditions" {...form.register('presentConditions')} />
-          <Select
+          <TagInput
             label="Past Medical Conditions"
+            value={form.watch('pastConditions') ?? []}
+            onChange={(tags) =>
+              form.setValue('pastConditions', tags, { shouldValidate: true })
+            }
             options={historyOptions.pastConditions}
-            {...form.register('pastConditions')}
           />
-          <Select
+          <TagInput
             label="Past Surgeries"
+            value={form.watch('pastSurgeries') ?? []}
+            onChange={(tags) =>
+              form.setValue('pastSurgeries', tags, { shouldValidate: true })
+            }
             options={historyOptions.pastSurgeries}
-            {...form.register('pastSurgeries')}
           />
-          <Select
+          <TagInput
             label="Current Medications"
+            value={form.watch('currentMedications') ?? []}
+            onChange={(tags) =>
+              form.setValue('currentMedications', tags, {
+                shouldValidate: true,
+              })
+            }
             options={historyOptions.currentMedications}
-            {...form.register('currentMedications')}
           />
           <TagInput
             label="Allergies"

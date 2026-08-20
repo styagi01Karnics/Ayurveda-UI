@@ -10,6 +10,7 @@ import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { assets } from '@/lib/assets';
 import { BILLING_FILTER_OPTIONS } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
@@ -19,6 +20,8 @@ import {
   mapInvoiceToBillingRecord,
 } from '@/lib/api/mappers';
 import type { BillingRecord } from '@/types';
+
+type BillingTab = 'invoices' | 'pending';
 
 function toApiInvoiceStatus(status: string): InvoiceStatus | undefined {
   if (!status) return undefined;
@@ -31,32 +34,24 @@ function toApiInvoiceStatus(status: string): InvoiceStatus | undefined {
 
 export function BillingPage() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<BillingTab>('invoices');
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [billInvoiceId, setBillInvoiceId] = useState<string | null>(null);
 
   const { data: records, loading, error, reload } = useAsyncData(
     async () => {
-      if (statusFilter.toLowerCase() === 'pending') {
+      if (activeTab === 'pending') {
         const drafts = await getBillings({ status: 'PENDING' });
         return drafts.map(mapBillingDraftToRecord);
       }
 
       const invoiceStatus = toApiInvoiceStatus(statusFilter);
-      const [invoices, pendingDrafts] = await Promise.all([
-        getInvoices({ status: invoiceStatus }),
-        statusFilter
-          ? Promise.resolve([])
-          : getBillings({ status: 'PENDING' }).catch(() => []),
-      ]);
-
-      return [
-        ...pendingDrafts.map(mapBillingDraftToRecord),
-        ...invoices.map(mapInvoiceToBillingRecord),
-      ];
+      const invoices = await getInvoices({ status: invoiceStatus });
+      return invoices.map(mapInvoiceToBillingRecord);
     },
     [] as BillingRecord[],
-    [statusFilter],
+    [activeTab, statusFilter],
   );
 
   const headerAction = useMemo(
@@ -80,10 +75,11 @@ export function BillingPage() {
         !patientIdQuery ||
         item.patientId.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
         item.secondaryPatientId.toLowerCase().includes(patientIdQuery.toLowerCase());
-      const matchesStatus = !statusFilter || item.status === statusFilter;
+      const matchesStatus =
+        activeTab === 'pending' || !statusFilter || item.status === statusFilter;
       return matchesId && matchesStatus;
     });
-  }, [records, patientIdQuery, statusFilter]);
+  }, [records, patientIdQuery, statusFilter, activeTab]);
 
   const handleDownload = (record: BillingRecord) => {
     if (record.kind === 'billing-draft') return;
@@ -97,6 +93,20 @@ export function BillingPage() {
   return (
     <PageShell>
       <ListPanel
+        tabs={
+          <UnderlineTabs
+            tabs={[
+              { id: 'invoices' as const, label: 'Invoices' },
+              { id: 'pending' as const, label: 'Pending' },
+            ]}
+            activeTab={activeTab}
+            onChange={(tab) => {
+              setActiveTab(tab);
+              setStatusFilter('');
+            }}
+            className="border-none"
+          />
+        }
         filters={
           <>
             <FilterControl>
@@ -106,14 +116,18 @@ export function BillingPage() {
                 onChange={(e) => setPatientIdQuery(e.target.value)}
               />
             </FilterControl>
-            <FilterControl>
-              <Select
-                placeholder="Status"
-                options={[...BILLING_FILTER_OPTIONS.status]}
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              />
-            </FilterControl>
+            {activeTab === 'invoices' ? (
+              <FilterControl>
+                <Select
+                  placeholder="Status"
+                  options={BILLING_FILTER_OPTIONS.status.filter(
+                    (status) => status !== 'Pending',
+                  )}
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                />
+              </FilterControl>
+            ) : null}
           </>
         }
       >
