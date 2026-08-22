@@ -2,10 +2,10 @@ import type { AppointmentRecord } from '@/types';
 import type { CalendarEvent } from '@/types';
 
 const VISIT_COLORS: Record<string, string> = {
-  Consultation: 'bg-amber-200 border-amber-400',
-  Therapy: 'bg-sky-200 border-sky-400',
-  'Follow-Up': 'bg-purple-200 border-purple-400',
-  Treatment: 'bg-emerald-200 border-emerald-400',
+  Consultation: 'bg-blue-100 border-blue-400 text-blue-900',
+  Therapy: 'bg-emerald-100 border-emerald-400 text-emerald-900',
+  'Follow-Up': 'bg-purple-100 border-purple-400 text-purple-900',
+  Treatment: 'bg-rose-100 border-rose-400 text-rose-900',
 };
 
 export interface CalendarWeekDay {
@@ -205,7 +205,7 @@ export function mapAppointmentToCalendarEvent(
     timeLabel: formatEventTime(scheduledAt),
     durationHours: 1,
     color:
-      VISIT_COLORS[record.visitType] ?? 'bg-amber-100 border-amber-300',
+      VISIT_COLORS[record.visitType] ?? 'bg-slate-100 border-slate-400 text-slate-900',
   };
 }
 

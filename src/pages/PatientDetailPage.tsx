@@ -20,6 +20,7 @@ import {
 import { getInvoices } from '@/lib/api/billing';
 import { getPackagesByPatientId } from '@/lib/api/packages';
 import { getAllDoctors } from '@/lib/api/doctors';
+import { getDocumentsByPatientId } from '@/lib/api/documents';
 import {
   mapInvoicesToPatientBilling,
   mapMedicalAssessmentDtoToUi,
@@ -29,6 +30,10 @@ import {
 } from '@/lib/api/mappers';
 import { getPatientById } from '@/lib/api/patients';
 import { getTreatmentsByPatientId } from '@/lib/api/treatments';
+import {
+  DOCUMENT_SECTIONS,
+  formatDocumentFileSize,
+} from '@/lib/documentUpload';
 import type { PatientDetailTab } from '@/types/patientDetail';
 
 export function PatientDetailPage() {
@@ -51,6 +56,7 @@ export function PatientDetailPage() {
         medicalAssessment,
         invoices,
         packages,
+        documents,
       ] = await Promise.all([
         getPatientById(patientId),
         getAllDoctors().catch(() => []),
@@ -59,6 +65,7 @@ export function PatientDetailPage() {
         getMedicalAssessmentByPatientId(patientId).catch(() => null),
         getInvoices({ patientId }).catch(() => []),
         getPackagesByPatientId(patientId).catch(() => []),
+        getDocumentsByPatientId(patientId).catch(() => []),
       ]);
 
       const latestAppointment = appointments[0];
@@ -80,6 +87,15 @@ export function PatientDetailPage() {
         medicalAssessment,
         apiPatient.gender,
       );
+      medicalUi.reports = documents.map((document) => ({
+        name: document.fileName,
+        size: formatDocumentFileSize(document.fileSize ?? 0),
+        time:
+          DOCUMENT_SECTIONS.find(
+            (section) => section.type === document.documentType,
+          )?.label ?? document.documentType.replace(/_/g, ' '),
+        type: 'file' as const,
+      }));
       const { billing, invoice } = mapInvoicesToPatientBilling(invoices);
       const doshaName =
         medicalAssessment?.ayurvedicAssessment?.dosha?.name ?? undefined;

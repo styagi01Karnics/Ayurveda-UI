@@ -224,7 +224,7 @@ export function AppointmentsCalendar({
                       setHoverPosition(null);
                     }}
                     className={cn(
-                      'pointer-events-auto absolute z-10 m-0.5 overflow-hidden rounded border px-1.5 py-1 text-left text-[10px] font-medium leading-tight text-brown transition-opacity hover:opacity-90',
+                      'pointer-events-auto absolute z-10 m-0.5 overflow-hidden rounded border px-1.5 py-1 text-left text-[10px] font-medium leading-tight transition-opacity hover:opacity-90',
                       event.color,
                       hoveredEventId === event.id && 'ring-2 ring-gold/60',
                     )}
