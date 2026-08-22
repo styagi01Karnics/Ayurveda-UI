@@ -137,7 +137,15 @@ export function DoctorPersonalForm({
             options={masterOptions?.consultationTypes ?? []}
             error={form.formState.errors.consultationTypeIds?.message}
           />
-          <Input label="Registration Date" type="date" error={form.formState.errors.registrationDate?.message} {...form.register('registrationDate')} />
+          <Input
+            label="Registration Date"
+            type="date"
+            readOnly
+            tabIndex={-1}
+            className="cursor-not-allowed bg-gray-50"
+            error={form.formState.errors.registrationDate?.message}
+            {...form.register('registrationDate')}
+          />
           <Select
             label="Assigned Doctor"
             placeholder="Select doctor"

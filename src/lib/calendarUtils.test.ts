@@ -73,6 +73,27 @@ describe('calendarUtils', () => {
     expect(events[0]?.startMinute).toBe(30);
   });
 
+  it('uses the booked slot instead of the registration timestamp', () => {
+    const parsed = parseAppointmentDateTime({
+      ...baseRecord,
+      registrationDate: '2026-10-15T09:00:00',
+      slotTime: '14:30:00',
+    });
+    expect(parsed?.getHours()).toBe(14);
+    expect(parsed?.getMinutes()).toBe(30);
+  });
+
+  it('defaults missing appointment times to clinic opening time', () => {
+    const parsed = parseAppointmentDateTime({
+      ...baseRecord,
+      appointmentDate: '—',
+      registrationDate: '2026-10-15',
+      dateCreated: '2026-10-15',
+      slotTime: '',
+    });
+    expect(parsed?.getHours()).toBe(10);
+  });
+
   it('excludes appointments outside the visible week', () => {
     const weekStart = getWeekStart(new Date('2026-11-01T12:00:00'));
     const events = mapAppointmentsToCalendarEvents([baseRecord], weekStart);

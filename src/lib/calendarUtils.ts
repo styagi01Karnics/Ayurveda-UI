@@ -82,7 +82,7 @@ export function getLocalTimezoneLabel(): string {
 }
 
 function normalizeTimeForIso(time: string): string {
-  if (!time) return '09:00:00';
+  if (!time) return '10:00:00';
   if (/^\d{2}:\d{2}:\d{2}$/.test(time)) return time;
   if (/^\d{2}:\d{2}$/.test(time)) return `${time}:00`;
   const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
@@ -94,19 +94,19 @@ function normalizeTimeForIso(time: string): string {
     if (meridiem === 'AM' && hours === 12) hours = 0;
     return `${String(hours).padStart(2, '0')}:${minutes}:00`;
   }
-  return '09:00:00';
+  return '10:00:00';
 }
 
 function parseIsoDateTime(datePart: string, timePart?: string): Date | null {
   if (!datePart) return null;
 
-  if (datePart.includes('T')) {
+  if (datePart.includes('T') && !timePart) {
     const parsed = new Date(datePart);
     if (!Number.isNaN(parsed.getTime())) return parsed;
   }
 
   const isoDate = datePart.slice(0, 10);
-  const time = normalizeTimeForIso(timePart ?? '09:00');
+  const time = normalizeTimeForIso(timePart ?? '10:00');
   const parsed = new Date(`${isoDate}T${time}`);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
@@ -137,6 +137,13 @@ function parseDisplayAppointmentDate(value: string): Date | null {
 
 /** Resolve the scheduled instant for a list/calendar appointment row. */
 export function parseAppointmentDateTime(record: AppointmentRecord): Date | null {
+  if (record.slotTime) {
+    const scheduledWithSlot =
+      parseIsoDateTime(record.registrationDate ?? '', record.slotTime) ??
+      parseIsoDateTime(record.dateCreated ?? '', record.slotTime);
+    if (scheduledWithSlot) return scheduledWithSlot;
+  }
+
   const isoCandidates = [
     record.registrationDate,
     record.dateCreated,
@@ -151,9 +158,9 @@ export function parseAppointmentDateTime(record: AppointmentRecord): Date | null
   }
 
   const candidates: Array<Date | null> = [
+    parseDisplayAppointmentDate(record.appointmentDate),
     parseIsoDateTime(record.registrationDate ?? '', record.slotTime),
     parseIsoDateTime(record.dateCreated ?? '', record.slotTime),
-    parseDisplayAppointmentDate(record.appointmentDate),
   ];
 
   for (const candidate of candidates) {

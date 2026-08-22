@@ -102,12 +102,12 @@ function StatusText({
   return (
     <span
       className={cn(
-        'font-medium',
+        'inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
         status === 'Scheduled'
-          ? 'text-gold'
+          ? 'bg-gold/10 text-gold'
           : status === 'In Consultation'
-            ? 'text-info'
-            : 'text-success',
+            ? 'bg-info/10 text-info'
+            : 'bg-success/15 text-success',
       )}
     >
       {status}

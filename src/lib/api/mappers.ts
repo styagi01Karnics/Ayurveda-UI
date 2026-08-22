@@ -24,8 +24,6 @@ import { CLINIC_BRANDING, formatBillDate } from '@/lib/clinicBranding';
 import { parseScheduleDateTime } from '@/lib/appointmentAlerts';
 import { normalizeBookingTimeForSelect } from '@/lib/bookingConstraints';
 import {
-  getCalendarDoctorAvatar,
-  getCalendarPatientAvatar,
   resolveCalendarEventTitle,
 } from '@/lib/calendarEventAvatars';
 import {
@@ -1175,6 +1173,11 @@ export function mapBillingDraftToRecord(
 ): import('@/types').BillingRecord {
   const displayId =
     billing.patientDisplayId ?? billing.formattedPatientId ?? billing.patientId;
+  const secondaryPatientId =
+    billing.patientCode &&
+    billing.patientCode.replace(/^#/, '') !== displayId.replace(/^#/, '')
+      ? billing.patientCode
+      : '';
   const serviceTotal = (billing.services ?? []).reduce(
     (sum, item) =>
       sum + (item.serviceFees ?? 0) + (item.packageCharges ?? 0),
@@ -1186,7 +1189,7 @@ export function mapBillingDraftToRecord(
     id: billing.id || `billing-${index}`,
     invoiceId: billing.invoiceNumber || billing.invoiceId || '—',
     patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
-    secondaryPatientId: billing.patientCode ?? billing.patientId,
+    secondaryPatientId,
     patientUuid: billing.patientId,
     invoiceDate: formatInvoiceDate(billing.billingDate ?? ''),
     totalAmount: billing.totalAmount ?? serviceTotal,
@@ -1237,11 +1240,16 @@ export function mapInvoiceToBillingRecord(
   index = 0,
 ): import('@/types').BillingRecord {
   const displayId = invoice.patientDisplayId ?? invoice.patientId;
+  const secondaryPatientId =
+    invoice.patientCode &&
+    invoice.patientCode.replace(/^#/, '') !== displayId.replace(/^#/, '')
+      ? invoice.patientCode
+      : '';
   return {
     id: invoice.id || invoice.invoiceId || `bill-${index}`,
     invoiceId: invoice.invoiceId,
     patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
-    secondaryPatientId: invoice.patientCode ?? invoice.patientId,
+    secondaryPatientId,
     patientUuid: invoice.patientId,
     invoiceDate: formatInvoiceDate(invoice.invoiceDate),
     totalAmount: invoice.totalAmount ?? 0,
@@ -1471,11 +1479,9 @@ export function mapAppointmentRecordToCalendarDetail(
     appointmentDate: record.appointmentDate,
     doctorName,
     doctorRole: 'Ayurvedic Physician',
-    doctorAvatar: getCalendarDoctorAvatar(),
     patientName: record.patient,
     patientAge: '—',
     patientGender: '—',
-    patientAvatar: getCalendarPatientAvatar(),
     visitType: record.visitType,
     dosha: '—',
     condition: '—',

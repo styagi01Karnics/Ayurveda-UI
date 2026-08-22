@@ -151,7 +151,7 @@ export function MyProfilePage() {
                   {...register('registrationNumber')}
                 />
               </div>
-              <FileUpload label="Your Logo" onChange={() => undefined} />
+              <FileUpload label="Your Logo" editOnly onChange={() => undefined} />
             </div>
           </Card>
 
@@ -192,7 +192,7 @@ export function MyProfilePage() {
                   {...register('availability')}
                 />
               </div>
-              <FileUpload label="Your Photo" onChange={() => undefined} />
+              <FileUpload label="Your Photo" editOnly onChange={() => undefined} />
             </div>
           </Card>
 

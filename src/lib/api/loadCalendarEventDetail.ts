@@ -7,8 +7,6 @@ import {
   mapAppointmentRecordToCalendarDetail,
 } from '@/lib/api/mappers';
 import {
-  getCalendarDoctorAvatar,
-  getCalendarPatientAvatar,
   resolveCalendarEventTitle,
 } from '@/lib/calendarEventAvatars';
 import { getPatientById } from '@/lib/api/patients';
@@ -128,11 +126,9 @@ export async function loadCalendarEventDetail(
       appointmentDate: record.appointmentDate,
       doctorName: /^dr\.?\s/i.test(doctorName) ? doctorName : `Dr. ${doctorName}`,
       doctorRole,
-      doctorAvatar: getCalendarDoctorAvatar(),
       patientName: patient?.fullName ?? record.patient,
       patientAge: patient?.age != null ? `${patient.age}yrs` : '—',
       patientGender: gender,
-      patientAvatar: getCalendarPatientAvatar(patient?.gender),
       visitType: record.visitType,
       dosha: doshaName?.trim() || '—',
       condition,

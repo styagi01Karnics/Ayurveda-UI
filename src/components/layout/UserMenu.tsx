@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, KeyRound, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { assets } from '@/lib/assets';
 import { getStoredUser } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -35,12 +34,8 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gold/20">
-            <img
-              src={assets.avatar}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15 text-gold">
+            <User className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="hidden min-w-0 text-left sm:block">
             <p className="truncate text-sm font-semibold text-brown">

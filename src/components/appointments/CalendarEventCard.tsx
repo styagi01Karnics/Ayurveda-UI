@@ -1,9 +1,5 @@
-import { Calendar } from 'lucide-react';
+import { Calendar, Stethoscope, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
-import {
-  getCalendarDoctorAvatar,
-  getCalendarPatientAvatar,
-} from '@/lib/calendarEventAvatars';
 import { cn } from '@/lib/utils';
 import type { CalendarEventDetail } from '@/types';
 
@@ -13,11 +9,6 @@ interface CalendarEventCardProps {
 }
 
 export function CalendarEventCard({ event, className }: CalendarEventCardProps) {
-  const doctorAvatar = event.doctorAvatar ?? getCalendarDoctorAvatar();
-  const patientAvatar =
-    event.patientAvatar ??
-    getCalendarPatientAvatar(event.patientGender);
-
   return (
     <div className={cn('overflow-hidden bg-white', className)}>
       <div className="bg-cream px-6 pb-10 pt-5">
@@ -33,24 +24,16 @@ export function CalendarEventCard({ event, className }: CalendarEventCardProps) 
 
       <div className="relative px-6 pb-5">
         <div className="-mt-8 flex flex-col items-center text-center">
-          <div className="h-16 w-16 overflow-hidden rounded-full border-4 border-white bg-white shadow-sm">
-            <img
-              src={doctorAvatar}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-gold/15 text-gold shadow-sm">
+            <Stethoscope className="h-7 w-7" aria-hidden="true" />
           </div>
           <p className="mt-3 text-sm font-bold text-brown">{event.doctorName}</p>
           <p className="mt-0.5 text-xs text-text-muted">{event.doctorRole}</p>
         </div>
 
         <div className="mt-5 flex items-start gap-3 border-t border-gray-100 pt-5">
-          <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-gray-100 bg-white">
-            <img
-              src={patientAvatar}
-              alt=""
-              className="h-full w-full object-cover"
-            />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/20 bg-gold/10 text-gold">
+            <UserRound className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold leading-snug text-brown">

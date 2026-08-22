@@ -1,4 +1,5 @@
 import { Card } from '@/components/ui/Card';
+import { cn } from '@/lib/utils';
 import type { DoctorStats } from '@/types';
 
 interface DoctorScheduleStatCardsProps {
@@ -51,7 +52,12 @@ export function DoctorScheduleStatCards({ stats }: DoctorScheduleStatCardsProps)
             {card.pills.map((pill) => (
               <span
                 key={pill.label}
-                className="rounded-full bg-gold/15 px-2.5 py-0.5 text-xs font-medium text-gold"
+                className={cn(
+                  'rounded-full px-2.5 py-0.5 text-xs font-medium',
+                  pill.label.endsWith('Completed')
+                    ? 'bg-success/15 text-success'
+                    : 'bg-gold/15 text-gold',
+                )}
               >
                 {pill.label}
               </span>
