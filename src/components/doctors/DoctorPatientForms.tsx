@@ -598,12 +598,21 @@ export function DoctorBillingForm({
               className={cn(index > 0 && 'border-t border-gray-100 pt-6')}
             >
               <div className="grid gap-4 sm:grid-cols-2">
-                <Select
+                <TagInput
                   label="Service Type *"
                   placeholder="Service Type"
                   options={[...VISIT_TYPE_OPTIONS]}
+                  value={(watch(`billingServices.${index}.serviceType`) ?? '')
+                    .split(' + ')
+                    .filter(Boolean)}
+                  onChange={(serviceTypes) =>
+                    setValue(
+                      `billingServices.${index}.serviceType`,
+                      serviceTypes.join(' + '),
+                      { shouldValidate: true },
+                    )
+                  }
                   error={errors.billingServices?.[index]?.serviceType?.message}
-                  {...register(`billingServices.${index}.serviceType`)}
                 />
                 <RupeeInput
                   label="Service Fees *"

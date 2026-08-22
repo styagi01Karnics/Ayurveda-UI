@@ -1,5 +1,7 @@
 import {
   getAppointmentsByPatientId,
+  getAllTherapies,
+  getAppointmentTherapiesByPatientId,
   getMedicalAssessmentByPatientId,
 } from '@/lib/api/appointments';
 import { getInvoices, getBillingsByPatient } from '@/lib/api/billing';
@@ -23,20 +25,26 @@ import {
 } from '@/lib/documentUpload';
 import type { PatientDetail } from '@/types';
 
-function getAppointmentServiceType(
+function getAppointmentServiceTypes(
   appointment: Awaited<ReturnType<typeof getAppointmentsByPatientId>>[number] | undefined,
-): string {
-  if (!appointment) return 'Consultation';
-  const firstType = appointment.consultationTypes?.[0];
-  const rawType =
-    (typeof firstType === 'string' ? firstType : firstType?.name) ??
-    appointment.visitType ??
-    'Consultation';
-  const normalized = rawType.toString().trim().toUpperCase().replace(/[\s-]+/g, '_');
-
-  if (normalized.includes('FOLLOW')) return 'Follow-up';
-  if (normalized.includes('THERAPY')) return 'Therapy';
-  return 'Consultation';
+): string[] {
+  if (!appointment) return ['Consultation'];
+  const rawTypes = appointment.consultationTypes?.length
+    ? appointment.consultationTypes.map((type) =>
+        typeof type === 'string' ? type : type.name,
+      )
+    : [appointment.visitType ?? 'Consultation'];
+  const serviceTypes = rawTypes.map((rawType) => {
+    const normalized = rawType
+      .toString()
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]+/g, '_');
+    if (normalized.includes('FOLLOW')) return 'Follow-up';
+    if (normalized.includes('THERAPY')) return 'Therapy';
+    return 'Consultation';
+  });
+  return [...new Set(serviceTypes)];
 }
 
 export async function loadPatientDetail(
@@ -52,6 +60,8 @@ export async function loadPatientDetail(
     packages,
     billings,
     documents,
+    appointmentTherapies,
+    therapyCatalogue,
   ] = await Promise.all([
     getPatientById(patientId),
     getAllDoctors().catch(() => []),
@@ -62,6 +72,8 @@ export async function loadPatientDetail(
     getPackagesByPatientId(patientId).catch(() => []),
     getBillingsByPatient(patientId).catch(() => []),
     getDocumentsByPatientId(patientId).catch(() => []),
+    getAppointmentTherapiesByPatientId(patientId).catch(() => []),
+    getAllTherapies().catch(() => []),
   ]);
 
   const latestAppointment = appointments[0];
@@ -83,13 +95,31 @@ export async function loadPatientDetail(
     latestAppointment?.assignedDoctor?.doctorName ??
     matchedDoctor?.name ??
     matchedDoctor?.doctorName;
-  const appointmentServiceType = getAppointmentServiceType(latestAppointment);
-  const appointmentServiceFees =
-    appointmentServiceType === 'Follow-up'
-      ? matchedDoctor?.followUpFees
-      : appointmentServiceType === 'Consultation'
-        ? matchedDoctor?.consultationFees
-        : undefined;
+  const appointmentServiceTypes = getAppointmentServiceTypes(latestAppointment);
+  const latestTherapy = appointmentTherapies[0];
+  const selectedTherapyIds = new Set([
+    ...(latestTherapy?.therapyIds ?? []),
+    ...(latestTherapy?.therapyId ? [latestTherapy.therapyId] : []),
+    ...(latestTherapy?.therapies ?? [])
+      .map((therapy) => therapy.id)
+      .filter((id): id is string => Boolean(id)),
+  ]);
+  const therapyFees = therapyCatalogue
+    .filter((therapy) => selectedTherapyIds.has(therapy.id))
+    .reduce((total, therapy) => total + (therapy.price ?? 0), 0);
+  const appointmentServiceFees = appointmentServiceTypes.reduce(
+    (total, serviceType) => {
+      if (serviceType === 'Consultation') {
+        return total + (matchedDoctor?.consultationFees ?? 0);
+      }
+      if (serviceType === 'Follow-up') {
+        return total + (matchedDoctor?.followUpFees ?? 0);
+      }
+      return total + therapyFees;
+    },
+    0,
+  );
+  const appointmentServiceType = appointmentServiceTypes.join(' + ');
 
   const treatment = treatments[0];
   const packageBilling = packages[0]
@@ -133,9 +163,12 @@ export async function loadPatientDetail(
     appointmentDate: registrationDate || undefined,
     medicalAssessment: medicalUi,
     personalInfo: {
+      serviceType: appointmentServiceType,
       registrationDate: registrationDate.slice(0, 10),
       assignedDoctor: doctorName ?? '',
-      therapyDuration: '',
+      therapyDuration: latestTherapy?.sessionDuration
+        ? `${latestTherapy.sessionDuration} mins`
+        : '',
     },
     treatmentFollowUp: {
       treatmentPlanId: treatment?.treatmentPlanId,
@@ -152,7 +185,7 @@ export async function loadPatientDetail(
       reminder: '',
       appointmentHistory: appointments.slice(0, 5).map((appt) => ({
         visitType:
-          getAppointmentServiceType(appt) === 'Therapy'
+          getAppointmentServiceTypes(appt).includes('Therapy')
             ? 'Therapy'
             : 'Consultation',
         date:
@@ -167,12 +200,21 @@ export async function loadPatientDetail(
       ...billing,
       ...packageBilling,
       ...billingDraft,
-      serviceType:
-        billingDraft.serviceType ||
-        (latestAppointment ? appointmentServiceType : billing.serviceType),
-      serviceFees: pendingBilling
-        ? (billingDraft.serviceFees ?? 0)
-        : (appointmentServiceFees ?? billing.serviceFees),
+      serviceType: latestAppointment
+        ? appointmentServiceType
+        : billingDraft.serviceType || billing.serviceType,
+      serviceFees: latestAppointment
+        ? appointmentServiceFees
+        : (billingDraft.serviceFees ?? billing.serviceFees),
+      billingServices: latestAppointment
+        ? [
+            {
+              ...(billingDraft.billingServices?.[0] ?? {}),
+              serviceType: appointmentServiceType,
+              serviceFees: appointmentServiceFees,
+            },
+          ]
+        : billingDraft.billingServices,
     },
     invoice: {
       ...invoice,

@@ -79,6 +79,21 @@ export function PatientDetailPage() {
           : undefined);
 
       const treatment = treatments[0];
+      const appointmentServiceTypes = [
+        ...new Set(
+          (latestAppointment?.consultationTypes?.length
+            ? latestAppointment.consultationTypes
+            : [latestAppointment?.visitType ?? 'Consultation']
+          ).map((type) => {
+            const name = typeof type === 'string' ? type : type.name;
+            const normalized = name.toUpperCase().replace(/[\s-]+/g, '_');
+            if (normalized.includes('FOLLOW')) return 'Follow-up';
+            if (normalized.includes('THERAPY')) return 'Therapy';
+            return 'Consultation';
+          }),
+        ),
+      ];
+      const appointmentServiceType = appointmentServiceTypes.join(' + ');
       const packageBilling = packages[0]
         ? mapPatientPackageToBillingMembership(packages[0])
         : {};
@@ -108,10 +123,7 @@ export function PatientDetailPage() {
         doctor: doctorName ?? '—',
         dosha: pickDosha(doshaName),
         visitType: latestAppointment
-          ? (latestAppointment.consultationTypes?.[0] ?? 'Consultation')
-              .toString()
-              .toLowerCase()
-              .includes('therapy')
+          ? appointmentServiceTypes.includes('Therapy')
             ? 'Therapy'
             : 'Consultation'
           : 'Consultation',
@@ -121,7 +133,7 @@ export function PatientDetailPage() {
           gender: '',
           age: '',
           dob: '',
-          serviceType: 'Consultation',
+          serviceType: appointmentServiceType,
           registrationDate: '',
           assignedDoctor: doctorName ?? '—',
           therapyDuration: '—',

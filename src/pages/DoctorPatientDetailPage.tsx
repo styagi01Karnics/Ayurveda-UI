@@ -499,6 +499,13 @@ export function DoctorPatientDetailPage() {
     setPrescriptionPreviewOpen(true);
   };
 
+  const handlePrintExistingPrescription = () => {
+    if (!existingPrescription || !prescriptionInitialValues) return;
+    setPrescriptionDraft(prescriptionInitialValues);
+    setSavedPrescription(existingPrescription);
+    setPrescriptionPreviewOpen(true);
+  };
+
   const handlePrescriptionConfirm = async () => {
     if (!patient || !prescriptionDraft) return;
     const assignedDoctorId = patient.assignedDoctorId?.trim();
@@ -592,7 +599,9 @@ export function DoctorPatientDetailPage() {
 
   const nextLabel =
     workflowStep === 2
-      ? 'Generate Prescription'
+      ? existingPrescription
+        ? 'Save'
+        : 'Generate Prescription'
       : activeTab === 'billing' && !isEditing
         ? 'Next'
         : activeTab === 'billing' && isEditing
@@ -695,6 +704,7 @@ export function DoctorPatientDetailPage() {
                 </p>
               ) : (
                 <CreatePrescriptionForm
+                  key={existingPrescription?.id ?? 'new-prescription'}
                   formId="doctor-prescription-form"
                   patient={patient}
                   onSubmit={handlePrescriptionSubmit}
@@ -707,9 +717,20 @@ export function DoctorPatientDetailPage() {
 
           <div className="flex justify-end pt-4">
             {workflowStep === 2 && (
-              <Button variant="outline" className="mr-3" onClick={() => setWorkflowStep(1)}>
-                Back
-              </Button>
+              <>
+                <Button variant="outline" className="mr-3" onClick={() => setWorkflowStep(1)}>
+                  Back
+                </Button>
+                {existingPrescription ? (
+                  <Button
+                    variant="outline"
+                    className="mr-3"
+                    onClick={handlePrintExistingPrescription}
+                  >
+                    Print
+                  </Button>
+                ) : null}
+              </>
             )}
             <Button onClick={handleNext}>{nextLabel}</Button>
           </div>
@@ -724,7 +745,7 @@ export function DoctorPatientDetailPage() {
           open={prescriptionPreviewOpen}
           onClose={() => {
             setPrescriptionPreviewOpen(false);
-            if (savedPrescription) {
+            if (savedPrescription && !editPrescription) {
               navigate('/doctors');
             }
           }}
@@ -733,6 +754,9 @@ export function DoctorPatientDetailPage() {
           prescription={prescriptionDraft}
           enriched={savedPrescription}
           submitting={prescriptionSubmitting}
+          confirmLabel={
+            existingPrescription ? 'Save Prescription' : 'Confirm Prescription'
+          }
         />
       ) : null}
 

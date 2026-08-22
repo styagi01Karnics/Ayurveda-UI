@@ -196,6 +196,50 @@ function TherapyRowFields({
   );
 }
 
+function TherapySummaryRow({
+  categoryId,
+  therapyIds,
+  categoryOptions,
+  onRemove,
+}: {
+  categoryId: string;
+  therapyIds: string[];
+  categoryOptions: { value: string; label: string }[];
+  onRemove: () => void;
+}) {
+  const { data: therapies } = useAsyncData(
+    () => getTherapiesByCategory(categoryId).catch(() => []),
+    [] as TherapyDto[],
+    [categoryId],
+  );
+  const names = therapyIds.map(
+    (therapyId) =>
+      therapies.find((therapy) => therapy.id === therapyId)?.name ??
+      therapies.find((therapy) => therapy.id === therapyId)?.therapyName ??
+      therapyId,
+  );
+
+  return (
+    <tr className="border-b border-gray-100">
+      <td className="px-4 py-3 font-medium text-brown">
+        {categoryOptions.find((option) => option.value === categoryId)?.label ??
+          categoryId}
+      </td>
+      <td className="px-4 py-3 text-brown">{names.join(', ')}</td>
+      <td className="w-14 px-4 py-3 text-right">
+        <button
+          type="button"
+          onClick={onRemove}
+          className="rounded p-1 text-text-muted hover:bg-danger/10 hover:text-danger"
+          aria-label="Remove therapy"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </td>
+    </tr>
+  );
+}
+
 export function CreatePrescriptionForm({
   formId,
   patient,
@@ -250,8 +294,25 @@ export function CreatePrescriptionForm({
 
   useEffect(() => {
     if (!initialValues) return;
-    reset(initialValues);
-    setShowTherapy(initialValues.therapies.length > 0);
+    const medicines = initialValues.medicines.filter((row) => row.medicineId);
+    const therapies = initialValues.therapies.filter(
+      (row) => row.categoryId && (row.therapyIds?.length ?? 0) > 0,
+    );
+    reset({
+      ...initialValues,
+      medicines: [
+        ...medicines,
+        {
+          medicineId: '',
+          dosage: '',
+          frequency: '',
+          duration: '',
+          notes: '',
+        },
+      ],
+      therapies: [...therapies, { categoryId: '', therapyIds: [] }],
+    });
+    setShowTherapy(therapies.length > 0);
     setShowFollowUp(
       Boolean(
         initialValues.setupRequired ||
@@ -321,6 +382,10 @@ export function CreatePrescriptionForm({
     () => [...PRESCRIPTION_SCHEDULING_OPTIONS],
     [],
   );
+  const medicineValues = watch('medicines') ?? [];
+  const therapyValues = watch('therapies') ?? [];
+  const medicineEditorIndex = Math.max(0, medicineFields.length - 1);
+  const therapyEditorIndex = Math.max(0, therapyFields.length - 1);
 
   return (
     <form
@@ -329,8 +394,53 @@ export function CreatePrescriptionForm({
       className="space-y-5"
     >
       <PrescriptionSection title="Prescribe Medicine">
+        {medicineValues.slice(0, -1).some((row) => row.medicineId) ? (
+          <div className="mb-5 overflow-x-auto rounded-xl border border-gray-100">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr>
+                  <th className="px-4 py-3">Medicine</th>
+                  <th className="px-4 py-3">Dosage</th>
+                  <th className="px-4 py-3">Frequency</th>
+                  <th className="px-4 py-3">Duration</th>
+                  <th className="px-4 py-3">Notes</th>
+                  <th className="w-14 px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {medicineValues.slice(0, -1).map((row, index) =>
+                  row.medicineId ? (
+                    <tr key={`${row.medicineId}-${index}`} className="border-b border-gray-100">
+                      <td className="px-4 py-3 font-medium text-brown">
+                        {medicineOptions.find(
+                          (option) => option.value === row.medicineId,
+                        )?.label ?? row.medicineId}
+                      </td>
+                      <td className="px-4 py-3">{row.dosage}</td>
+                      <td className="px-4 py-3">{row.frequency}</td>
+                      <td className="px-4 py-3">{row.duration}</td>
+                      <td className="px-4 py-3">{row.notes || '—'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={() => removeMedicine(index)}
+                          className="rounded p-1 text-text-muted hover:bg-danger/10 hover:text-danger"
+                          aria-label="Remove medicine"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ) : null,
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+
         <div className="space-y-4">
-          {medicineFields.map((field, index) => (
+          {medicineFields.map((field, index) =>
+            index === medicineEditorIndex ? (
             <div
               key={field.id}
               className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr_auto]"
@@ -370,36 +480,28 @@ export function CreatePrescriptionForm({
                 error={errors.medicines?.[index]?.notes?.message}
                 {...register(`medicines.${index}.notes`)}
               />
-              {medicineFields.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => removeMedicine(index)}
-                  className="mt-6 rounded p-2 text-text-muted hover:bg-brown/5 hover:text-danger lg:mt-7"
-                  aria-label="Remove medicine row"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : (
-                <div className="hidden lg:block" />
-              )}
+              <div className="hidden lg:block" />
             </div>
-          ))}
+            ) : null,
+          )}
         </div>
         <div className="mt-4 flex justify-end">
           <Button
             type="button"
             variant="outline"
-            onClick={() =>
+            onClick={() => {
+              if (!medicineValues[medicineEditorIndex]?.medicineId) return;
               appendMedicine({
                 medicineId: '',
                 dosage: '',
                 frequency: '',
                 duration: '',
                 notes: '',
-              })
-            }
+              });
+            }}
+            disabled={!medicineValues[medicineEditorIndex]?.medicineId}
           >
-            Add More Medicine
+            + Add Medicine
           </Button>
         </div>
         {errors.medicines?.message ? (
@@ -415,35 +517,74 @@ export function CreatePrescriptionForm({
             setValue('therapies', [], { shouldValidate: true });
           }}
         >
+          {therapyValues
+            .slice(0, -1)
+            .some(
+              (row) => row.categoryId && (row.therapyIds?.length ?? 0) > 0,
+            ) ? (
+            <div className="mb-5 overflow-x-auto rounded-xl border border-gray-100">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3">Therapy Category</th>
+                    <th className="px-4 py-3">Recommended Therapy</th>
+                    <th className="w-14 px-4 py-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {therapyValues.slice(0, -1).map((row, index) =>
+                    row.categoryId && row.therapyIds?.length ? (
+                      <TherapySummaryRow
+                        key={`${row.categoryId}-${index}`}
+                        categoryId={row.categoryId}
+                        therapyIds={row.therapyIds}
+                        categoryOptions={categoryOptions}
+                        onRemove={() => removeTherapy(index)}
+                      />
+                    ) : null,
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
           <div className="space-y-4">
-            {therapyFields.map((field, index) => (
-              <TherapyRowFields
-                key={field.id}
-                index={index}
-                categoryOptions={
-                  categoriesLoading
-                    ? [{ value: '', label: 'Loading categories…' }]
-                    : categoryOptions
-                }
-                canRemove={therapyFields.length > 1}
-                onRemove={() => removeTherapy(index)}
-                register={register}
-                watch={watch}
-                setValue={setValue}
-                errors={errors}
-              />
-            ))}
+            {therapyFields.map((field, index) =>
+              index === therapyEditorIndex ? (
+                <TherapyRowFields
+                  key={field.id}
+                  index={index}
+                  categoryOptions={
+                    categoriesLoading
+                      ? [{ value: '', label: 'Loading categories…' }]
+                      : categoryOptions
+                  }
+                  canRemove={false}
+                  onRemove={() => undefined}
+                  register={register}
+                  watch={watch}
+                  setValue={setValue}
+                  errors={errors}
+                />
+              ) : null,
+            )}
           </div>
           <div className="mt-4 flex justify-end">
             <Button
               type="button"
               variant="outline"
-              onClick={() =>
-                appendTherapy({ categoryId: '', therapyIds: [] })
+              onClick={() => {
+                const editor = therapyValues[therapyEditorIndex];
+                if (!editor?.categoryId || !editor.therapyIds?.length) return;
+                appendTherapy({ categoryId: '', therapyIds: [] });
+              }}
+              disabled={
+                categoriesLoading ||
+                !therapyValues[therapyEditorIndex]?.categoryId ||
+                !therapyValues[therapyEditorIndex]?.therapyIds?.length
               }
-              disabled={categoriesLoading}
             >
-              Add More Therapy
+              + Add Therapy
             </Button>
           </div>
         </PrescriptionSection>

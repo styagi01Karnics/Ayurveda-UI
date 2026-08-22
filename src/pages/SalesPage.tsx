@@ -68,7 +68,9 @@ export function SalesPage() {
           salesResponse.revenueFrom,
           salesResponse.revenueTo,
         ),
-        appointmentsThisMonth: invoices.length,
+        appointmentsThisMonth: doctorStats.totalPatients,
+        appointmentsCompleted: doctorStats.completedPatients,
+        appointmentsOngoing: doctorStats.ongoingPatients,
       };
 
       return { invoices, stats };

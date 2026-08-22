@@ -8,6 +8,7 @@ import {
 import { getAllMedicines } from '@/lib/api/medicines';
 import type { PrescriptionDto } from '@/lib/api/prescriptions';
 import { CLINIC_BRANDING } from '@/lib/clinicBranding';
+import { assets } from '@/lib/assets';
 import type { DoctorPrescriptionValues } from '@/lib/validation/doctorPatient.schema';
 import type { PatientDetail } from '@/types';
 
@@ -19,6 +20,7 @@ interface PrescriptionPreviewModalProps {
   prescription: DoctorPrescriptionValues | null;
   enriched?: PrescriptionDto | null;
   submitting?: boolean;
+  confirmLabel?: string;
 }
 
 function formatPreviewDate(value?: string): string {
@@ -52,6 +54,7 @@ export function PrescriptionPreviewModal({
   prescription,
   enriched = null,
   submitting = false,
+  confirmLabel = 'Confirm Prescription',
 }: PrescriptionPreviewModalProps) {
   const { data: medicines } = useAsyncData(
     async () => {
@@ -177,6 +180,11 @@ export function PrescriptionPreviewModal({
   const nextAppointment =
     treatment?.nextAppointmentDateTime ||
     patient.treatmentFollowUp.nextFollowUp;
+  const treatmentProcessTitle =
+    patient.treatmentFollowUp.treatmentName &&
+    patient.treatmentFollowUp.treatmentName !== '—'
+      ? `${patient.treatmentFollowUp.treatmentName} treatment process`
+      : 'Treatment process';
 
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/45 p-4 sm:p-8">
@@ -206,7 +214,7 @@ export function PrescriptionPreviewModal({
         aria-label="Close prescription preview"
       />
 
-      <div className="relative z-10 my-2 w-full max-w-[794px]">
+      <div className="relative z-10 my-2 w-full max-w-[850px]">
         <button
           type="button"
           onClick={onClose}
@@ -218,76 +226,121 @@ export function PrescriptionPreviewModal({
 
         <article
           id="prescription-print-sheet"
-          className="flex min-h-[1050px] w-full flex-col overflow-hidden rounded-sm bg-white px-7 py-8 text-[11px] leading-relaxed text-[#4b4038] shadow-2xl sm:px-10 sm:py-10"
+          className="flex min-h-[1050px] w-full flex-col overflow-hidden rounded-sm bg-white px-7 py-8 text-[13px] leading-[1.65] text-[#382a23] shadow-2xl sm:px-10 sm:py-10"
         >
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.15fr_1fr_1fr]">
-            <section className="rounded-md border border-[#eadfce] p-3">
-              <p>
-                <span className="text-[#8b8179]">Name / Age / Gender:</span>
+          <header className="flex items-start justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <img
+                src={assets.brandLogo}
+                alt={CLINIC_BRANDING.name}
+                className="h-14 w-14 object-contain"
+              />
+              <p className="text-xl font-bold leading-tight text-[#38271f]">
+                GANESHA
                 <br />
-                <strong>{patientName}</strong> | {age}yrs | {gender}
+                AYURVEDA
               </p>
-              <p className="mt-2">
-                <span className="text-[#8b8179]">Weight / Height:</span>
-                <br />
-                <strong>{weight}</strong> / {height}
-              </p>
-              <p className="mt-2">
-                <span className="text-[#8b8179]">Diet Type:</span>
-                <br />
-                <strong>{diet}</strong>
-              </p>
-            </section>
-
-            <section className="rounded-md border border-[#d9bd83] bg-[#fffdf8] p-3">
-              <p className="flex items-center gap-1.5 font-semibold text-[#9a6c18]">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {visitLabel}
-              </p>
-              <p className="mt-2">
-                <span className="text-[#8b8179]">Date:</span>{' '}
-                <strong>{formatPreviewDate(consultationDate)}</strong>
-              </p>
+            </div>
+            <div className="pr-7 text-left">
+              <p className="text-lg font-bold text-[#38271f]">{doctorName}</p>
               <p className="mt-1">
-                <span className="text-[#8b8179]">Next:</span>{' '}
-                <strong>{formatPreviewDate(nextAppointment)}</strong>
-              </p>
-              <p className="mt-1">
-                <span className="text-[#8b8179]">Visit No.:</span>{' '}
-                <strong>
-                  {patient.treatmentFollowUp.sessionsCompleted}/
-                  {patient.treatmentFollowUp.totalSessions || '—'}
-                </strong>
-              </p>
-            </section>
-
-            <section className="rounded-md border border-[#eadfce] p-3">
-              <p className="font-semibold">{doctorName}</p>
-              <p className="mt-1 text-[#8b8179]">
+                {doctorQualification}
                 {consultant?.specialization
-                  ? `${doctorQualification} · ${consultant.specialization}`
-                  : doctorQualification}
+                  ? ` · ${consultant.specialization}`
+                  : ''}
+              </p>
+              <p className="mt-1">
+                <span className="text-[#c18813]">
+                  {CLINIC_BRANDING.workingHours.split('|')[0]}
+                </span>
+                {' | '}
+                {CLINIC_BRANDING.workingHours.split('|')[1]}
+              </p>
+              <p className="mt-1 flex items-center gap-1.5">
+                <Phone className="h-3 w-3 text-[#8b8179]" />
+                {doctorPhone}
+              </p>
+            </div>
+          </header>
+
+          <h2 className="mt-5 border-b-2 border-dashed border-[#cbb792] pb-4 text-center text-base font-bold text-[#b97700]">
+            {treatmentProcessTitle}
+          </h2>
+
+          <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-[1fr_1.05fr_.95fr]">
+            <section>
+              <p className="mb-2 font-semibold text-[#6f625a]">Patient Details</p>
+              <p>
+                Patient ID:{' '}
+                <strong className="text-[#c18813]">{patientId}</strong>
+              </p>
+              <p className="mt-2 text-[#8b8179]">Name / Age / Gender:</p>
+              <p className="font-semibold">
+                {patientName} | {age}yrs | {gender}
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[#8b8179]">Weight / Height:</p>
+                  <p className="font-semibold">
+                    {weight} / {height}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#8b8179]">Diet Type:</p>
+                  <p className="font-semibold text-[#31813c]">{diet}</p>
+                </div>
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-2 font-semibold text-[#6f625a]">Treatment Details</p>
+              <div className="rounded-md border-2 border-[#c99432] bg-[#fff8e9] p-3">
+                <p className="font-semibold text-[#bd7d00]">{visitLabel}</p>
+                <p className="mt-2 flex items-start gap-1.5">
+                  <CalendarDays className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#8b8179]" />
+                  <strong>{formatPreviewDate(consultationDate)}</strong>
+                </p>
+                <p className="mt-1">
+                  Next: <strong>{formatPreviewDate(nextAppointment)}</strong>
+                </p>
+                <p className="mt-1">
+                  Visit No.:{' '}
+                  <strong>
+                    {patient.treatmentFollowUp.sessionsCompleted}/
+                    {patient.treatmentFollowUp.totalSessions || '—'}
+                  </strong>
+                </p>
+              </div>
+            </section>
+
+            <section>
+              <p className="mb-2 font-semibold text-[#6f625a]">Consultant:</p>
+              <p className="font-semibold">{doctorName}</p>
+              <p className="mt-2">
+                {doctorQualification}
+                {consultant?.specialization
+                  ? ` · ${consultant.specialization}`
+                  : ''}
               </p>
               <p className="mt-2 flex items-center gap-1.5 font-semibold">
-                <Phone className="h-3.5 w-3.5 text-[#b48225]" />
+                <Phone className="h-3.5 w-3.5 text-[#8b8179]" />
                 {doctorPhone}
               </p>
             </section>
           </div>
 
-          <div className="mt-5 border-b border-[#eee7dc] pb-4">
+          <div className="mt-5 rounded-md border border-[#ded1bd] bg-[#f9f5ed] px-4 py-3">
             <p>
-              <span className="font-semibold">Patient ID:</span>{' '}
-              <span className="text-[#b48225]">{patientId}</span>
+              <span className="text-[#8b8179]">Diagnosis :</span>{' '}
+              <strong>{diagnosis}</strong>
             </p>
-            <p className="mt-2">
-              <span className="font-semibold">Diagnosis:</span> {diagnosis}
+            <p className="mt-3 border border-[#e5dccd] bg-white px-3 py-2 text-[#756a63]">
+              ＋&nbsp; Add tests (if any)
             </p>
-            <p className="mt-3 text-[#a47a35]">＋ Add tests (if any)</p>
           </div>
 
-          <section className="mt-5">
-            <h3 className="font-serif text-base font-semibold italic text-[#5a4433]">
+          <section className="mt-4">
+            <h3 className="font-serif text-xl font-bold italic text-[#493226]">
               Rx
             </h3>
             <div className="mt-3 space-y-4">
@@ -297,7 +350,7 @@ export function PrescriptionPreviewModal({
                     <p className="font-semibold">
                       {line.index}. {line.name}
                     </p>
-                    <p className="mt-0.5 text-[10px] text-[#8b8179]">
+                    <p className="mt-1 text-xs font-medium text-[#6f625a]">
                       {line.instruction || 'As directed by the doctor'}
                     </p>
                   </div>
@@ -310,7 +363,7 @@ export function PrescriptionPreviewModal({
 
           <div className="mt-auto pt-10">
             {therapyLabels.length > 0 ? (
-              <p className="rounded-sm bg-[#fcfaf5] px-3 py-3">
+              <p className="rounded-md border border-[#e3d5bd] bg-[#f9f5ed] px-4 py-3">
                 <span className="font-semibold">Recommended Therapies:</span>{' '}
                 {therapyLabels.join(', ')}
               </p>
@@ -328,7 +381,7 @@ export function PrescriptionPreviewModal({
               </p>
             ) : null}
 
-            <footer className="mt-8 border-t border-[#eadfce] pt-4 text-center text-[8px] text-[#a87924]">
+            <footer className="mt-8 border-t-2 border-[#c99432] pt-4 text-center text-[10px] font-medium leading-relaxed text-[#926716]">
               <p>
                 For All Service Appointments · Call/WhatsApp: {doctorPhone} ·{' '}
                 {CLINIC_BRANDING.specialties}
@@ -356,7 +409,7 @@ export function PrescriptionPreviewModal({
                 Edit
               </Button>
               <Button onClick={onConfirm} disabled={submitting}>
-                {submitting ? 'Saving…' : 'Confirm Prescription'}
+                {submitting ? 'Saving…' : confirmLabel}
               </Button>
             </>
           )}
