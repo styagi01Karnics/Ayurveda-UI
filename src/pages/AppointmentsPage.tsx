@@ -39,7 +39,11 @@ import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
 import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
-import { createFollowUp, getAllFollowUps } from '@/lib/api/followUps';
+import {
+  cancelFollowUp,
+  createFollowUp,
+  getAllFollowUps,
+} from '@/lib/api/followUps';
 import { loadCalendarEventDetail } from '@/lib/api/loadCalendarEventDetail';
 import {
   mapAppointmentRecordToCalendarDetail,
@@ -76,6 +80,8 @@ export function AppointmentsPage() {
   const [dateFilter, setDateFilter] = useState('');
   const [createPatientOpen, setCreatePatientOpen] = useState(false);
   const [followUpOpen, setFollowUpOpen] = useState(false);
+  const [followUpRescheduleTarget, setFollowUpRescheduleTarget] =
+    useState<FollowUpRecord | null>(null);
   const [cancelTarget, setCancelTarget] = useState<AppointmentRecord | null>(
     null,
   );
@@ -90,6 +96,7 @@ export function AppointmentsPage() {
   const [cancelling, setCancelling] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const [schedulingFollowUp, setSchedulingFollowUp] = useState(false);
+  const [reschedulingFollowUp, setReschedulingFollowUp] = useState(false);
   const [localAppointments, setLocalAppointments] = useState<
     AppointmentRecord[]
   >([]);
@@ -174,6 +181,25 @@ export function AppointmentsPage() {
   }, [data.records, localAppointments]);
 
   const followUps = data.followUpRecords;
+  const followUpRescheduleDefaults = useMemo(
+    () =>
+      followUpRescheduleTarget
+        ? {
+            patientId: followUpRescheduleTarget.patientId ?? '',
+            assignedDoctorId:
+              followUpRescheduleTarget.assignedDoctorId ?? '',
+            visitTypeId: followUpRescheduleTarget.visitTypeId ?? '',
+            schedulingOption:
+              followUpRescheduleTarget.schedulingOption ?? '7_DAYS',
+            scheduleDate: followUpRescheduleTarget.dateCreated,
+            scheduleTime: followUpRescheduleTarget.scheduleTime ?? '10:00',
+            smsReminderEnabled:
+              followUpRescheduleTarget.smsReminderEnabled ?? false,
+            sourceBookingId: followUpRescheduleTarget.sourceBookingId,
+          }
+        : undefined,
+    [followUpRescheduleTarget],
+  );
 
   const headerAction = useMemo(
     () =>
@@ -413,6 +439,46 @@ export function AppointmentsPage() {
     }
   };
 
+  const handleRescheduleFollowUp = async (formData: FollowUpFormValues) => {
+    if (!followUpRescheduleTarget) return;
+    setReschedulingFollowUp(true);
+    try {
+      const time =
+        formData.scheduleTime.length === 5
+          ? `${formData.scheduleTime}:00`
+          : formData.scheduleTime;
+      await createFollowUp({
+        patientId: formData.patientId,
+        assignedDoctorId: formData.assignedDoctorId,
+        visitTypeId: formData.visitTypeId,
+        appointmentDate: `${formData.scheduleDate}T${time}`,
+        schedulingOption: formData.schedulingOption,
+        smsReminderEnabled: formData.smsReminderEnabled ?? false,
+        sourceBookingId: formData.sourceBookingId,
+        status: 'UPCOMING',
+      });
+      await cancelFollowUp(followUpRescheduleTarget.id);
+      showToast({
+        title: 'Follow-up Rescheduled',
+        message: 'The follow-up date and time have been updated.',
+      });
+      setFollowUpRescheduleTarget(null);
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Reschedule failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not reschedule follow-up.',
+      });
+    } finally {
+      setReschedulingFollowUp(false);
+    }
+  };
+
   const handleEventClick = async (eventId: string) => {
     const record = filteredAppointments.find((item) => item.id === eventId);
     if (!record) return;
@@ -557,7 +623,11 @@ export function AppointmentsPage() {
               empty={!loading && !error && filteredFollowUps.length === 0}
               emptyMessage="No follow-ups found."
             >
-              <FollowUpsTable embedded items={filteredFollowUps} />
+              <FollowUpsTable
+                embedded
+                items={filteredFollowUps}
+                onReschedule={setFollowUpRescheduleTarget}
+              />
             </AsyncStatus>
           )}
         </ListPanel>
@@ -604,6 +674,24 @@ export function AppointmentsPage() {
           ),
         }}
         submitting={schedulingFollowUp}
+      />
+
+      <ScheduleFollowUpModal
+        open={Boolean(followUpRescheduleTarget)}
+        onClose={() => setFollowUpRescheduleTarget(null)}
+        onSubmit={handleRescheduleFollowUp}
+        lookupOptions={{
+          patients: data.lookupOptions.patients ?? [],
+          doctors: data.lookupOptions.doctors,
+          visitTypes: data.lookupOptions.consultationTypes.map((type) =>
+            typeof type === 'string'
+              ? { value: type, label: type }
+              : { value: type.value, label: type.label },
+          ),
+        }}
+        initialValues={followUpRescheduleDefaults}
+        mode="reschedule"
+        submitting={reschedulingFollowUp}
       />
 
       <CancelAppointmentModal

@@ -15,7 +15,6 @@ export function SalesTable({ records, embedded }: SalesTableProps) {
           <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
             <th className="px-5 py-3 font-medium">Invoice ID</th>
             <th className="px-5 py-3 font-medium">Invoice Date</th>
-            <th className="px-5 py-3 font-medium">Treatment Category</th>
             <th className="px-5 py-3 font-medium">Service Type</th>
             <th className="px-5 py-3 font-medium">Total Amount</th>
           </tr>
@@ -23,7 +22,7 @@ export function SalesTable({ records, embedded }: SalesTableProps) {
         <tbody>
           {records.length === 0 ? (
             <tr>
-              <td colSpan={5} className="px-5 py-12 text-center text-text-muted">
+              <td colSpan={4} className="px-5 py-12 text-center text-text-muted">
                 No sales records found matching your filters.
               </td>
             </tr>
@@ -38,9 +37,6 @@ export function SalesTable({ records, embedded }: SalesTableProps) {
                 </td>
                 <td className="px-5 py-4 text-text-muted">
                   {record.invoiceDate}
-                </td>
-                <td className="px-5 py-4 text-brown">
-                  {record.treatmentCategory}
                 </td>
                 <td className="px-5 py-4 font-medium text-gold">
                   {record.serviceType}

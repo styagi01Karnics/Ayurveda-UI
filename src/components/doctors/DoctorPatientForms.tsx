@@ -23,7 +23,6 @@ import {
   DOSHA_OPTIONS,
   GENDER_OPTIONS,
   ID_PROOF_TYPES,
-  LANGUAGE_OPTIONS,
   OCCUPATION_OPTIONS,
   RELATION_OPTIONS,
 } from '@/lib/validation/patient.schema';
@@ -127,7 +126,6 @@ export function DoctorPersonalForm({
           <Select label="Gender" options={[...GENDER_OPTIONS]} error={form.formState.errors.gender?.message} {...form.register('gender')} />
           <Input label="Date of Birth" type="date" error={form.formState.errors.dateOfBirth?.message} {...form.register('dateOfBirth')} />
           <Input label="Age" error={form.formState.errors.age?.message} {...form.register('age')} />
-          <Select label="Preferred Language" options={[...LANGUAGE_OPTIONS]} error={form.formState.errors.preferredLanguage?.message} {...form.register('preferredLanguage')} />
           <TagInput
             label="Consultation Type"
             value={form.watch('consultationTypeIds') ?? []}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pencil, Plus } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { DoctorPatientBreadcrumbs } from '@/components/doctors/DoctorPatientBreadcrumbs';
@@ -27,6 +27,7 @@ import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import { getActivePackageMasters } from '@/lib/api/packageMasters';
 import { getActiveTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
+import { completeAppointment } from '@/lib/api/appointments';
 import { createPackage } from '@/lib/api/packages';
 import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
 import {
@@ -37,6 +38,7 @@ import { getAllMedicines } from '@/lib/api/medicines';
 import {
   createPrescription,
   getPrescriptionById,
+  getPrescriptionsByPatient,
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
@@ -83,6 +85,38 @@ function toPatientPackageStatus(
 
 const TAB_ORDER: PatientDetailTab[] = ['personal', 'medical', 'treatment', 'billing'];
 
+function mapPrescriptionToForm(
+  prescription: PrescriptionDto,
+): DoctorPrescriptionValues {
+  return {
+    diagnosis: prescription.diagnosis ?? '',
+    notes: prescription.notes ?? '',
+    medicines: (prescription.medicines ?? []).map((row) => ({
+      medicineId: row.medicineId ?? '',
+      dosage: row.dosage ?? '',
+      frequency: row.frequency ?? '',
+      duration: row.duration ?? '',
+      notes: row.notes ?? '',
+    })),
+    therapies: (prescription.therapySuggestions ?? []).map((row) => ({
+      categoryId: row.therapyCategoryId ?? '',
+      therapyIds:
+        row.recommendedTherapyIds ??
+        row.recommendedTherapies
+          ?.map((therapy) => therapy.therapyId ?? therapy.id)
+          .filter((id): id is string => Boolean(id)) ??
+        [],
+    })),
+    setupRequired: prescription.nextFollowUp
+      ? prescription.nextFollowUp.setUpRequired
+        ? 'Yes'
+        : 'No'
+      : '',
+    followUpScheduling: prescription.nextFollowUp?.schedulingOption ?? '',
+    suggestions: prescription.nextFollowUp?.suggestions ?? '',
+  };
+}
+
 function scrollWorkflowToTop() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
   document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -94,12 +128,18 @@ function getFormId(tab: PatientDetailTab): string {
 
 export function DoctorPatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const bookingIdFromQuery = searchParams.get('bookingId') ?? '';
+  const editPrescription = searchParams.get('editPrescription') === 'true';
   const [prescriptionPreviewOpen, setPrescriptionPreviewOpen] = useState(false);
   const [prescriptionDraft, setPrescriptionDraft] =
     useState<DoctorPrescriptionValues | null>(null);
   const [savedPrescription, setSavedPrescription] =
     useState<PrescriptionDto | null>(null);
+  const [existingPrescription, setExistingPrescription] =
+    useState<PrescriptionDto | null>(null);
+  const [prescriptionLoading, setPrescriptionLoading] = useState(false);
   const [prescriptionSubmitting, setPrescriptionSubmitting] = useState(false);
   const { showToast } = useToast();
 
@@ -183,6 +223,72 @@ export function DoctorPatientDetailPage() {
       setPatient(loadedPatient);
     }
   }, [loadedPatient]);
+
+  useEffect(() => {
+    if (!editPrescription || !patient) return;
+    let active = true;
+    setWorkflowStep(2);
+    setPrescriptionLoading(true);
+    void getPrescriptionsByPatient(patient.detailId)
+      .then((prescriptions) => {
+        if (!active) return;
+        const matchingPrescriptions = prescriptions
+          .filter(
+            (item) =>
+              !bookingIdFromQuery ||
+              item.appointmentBookingId === bookingIdFromQuery,
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.updatedAt ?? b.createdAt ?? 0).getTime() -
+              new Date(a.updatedAt ?? a.createdAt ?? 0).getTime(),
+          );
+        const prescription = matchingPrescriptions[0] ?? prescriptions[0];
+        setExistingPrescription(prescription ?? null);
+        if (!prescription) {
+          showToast({
+            title: 'Prescription not found',
+            message: 'No prescription was found for this completed appointment.',
+          });
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        showToast({
+          title: 'Could not load prescription',
+          message: resolveErrorMessage(err, UI_MESSAGES.error.loadFailed),
+        });
+      })
+      .finally(() => {
+        if (active) setPrescriptionLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    bookingIdFromQuery,
+    editPrescription,
+    patient,
+    showToast,
+  ]);
+
+  const prescriptionInitialValues = useMemo(
+    () =>
+      existingPrescription
+        ? mapPrescriptionToForm(existingPrescription)
+        : undefined,
+    [existingPrescription],
+  );
+  const prescriptionMedicineOptions = useMemo(
+    () =>
+      (existingPrescription?.medicines ?? [])
+        .filter((medicine) => medicine.medicineId)
+        .map((medicine) => ({
+          value: medicine.medicineId as string,
+          label: medicine.medicineName || 'Medicine',
+        })),
+    [existingPrescription],
+  );
 
   const personalDefaults = useMemo(
     () => (patient ? mapPatientToPersonalForm(patient) : undefined),
@@ -396,7 +502,8 @@ export function DoctorPatientDetailPage() {
   const handlePrescriptionConfirm = async () => {
     if (!patient || !prescriptionDraft) return;
     const assignedDoctorId = patient.assignedDoctorId?.trim();
-    if (!patient.bookingId || !assignedDoctorId) {
+    const appointmentBookingId = bookingIdFromQuery || patient.bookingId;
+    if (!appointmentBookingId || !assignedDoctorId) {
       showToast({
         title: 'Missing appointment details',
         message:
@@ -432,7 +539,7 @@ export function DoctorPatientDetailPage() {
 
       const created = await createPrescription({
         patientId: patient.detailId,
-        appointmentBookingId: patient.bookingId,
+        appointmentBookingId,
         assignedDoctorId,
         medicines: medicines.length ? medicines : undefined,
         therapySuggestions: therapySuggestions.length
@@ -449,11 +556,26 @@ export function DoctorPatientDetailPage() {
         diagnosis: prescriptionDraft.diagnosis,
         notes: prescriptionDraft.notes,
       });
+      let completionError: unknown = null;
+      if (!editPrescription) {
+        try {
+          await completeAppointment(appointmentBookingId);
+        } catch (err) {
+          completionError = err;
+        }
+      }
       const enriched = await getPrescriptionById(created.id).catch(() => created);
       setSavedPrescription(enriched);
       showToast({
-        title: 'Prescription Created',
-        message: 'Prescription has been saved successfully.',
+        title: completionError
+          ? 'Prescription created'
+          : 'Prescription Created',
+        message: completionError
+          ? `Prescription was saved, but the appointment could not be completed. ${resolveErrorMessage(
+              completionError,
+              'Please complete it from the Doctor tab.',
+            )}`
+          : 'Prescription has been saved and the appointment is completed.',
       });
     } catch (err) {
       showToast({
@@ -567,11 +689,19 @@ export function DoctorPatientDetailPage() {
             )}
 
             {workflowStep === 2 && (
-              <CreatePrescriptionForm
-                formId="doctor-prescription-form"
-                patient={patient}
-                onSubmit={handlePrescriptionSubmit}
-              />
+              prescriptionLoading ? (
+                <p className="py-10 text-center text-sm text-text-muted">
+                  Loading prescription…
+                </p>
+              ) : (
+                <CreatePrescriptionForm
+                  formId="doctor-prescription-form"
+                  patient={patient}
+                  onSubmit={handlePrescriptionSubmit}
+                  initialValues={prescriptionInitialValues}
+                  initialMedicineOptions={prescriptionMedicineOptions}
+                />
+              )
             )}
           </div>
 

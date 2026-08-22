@@ -245,6 +245,13 @@ export interface FollowUpRecord {
   appointmentDate: string;
   dateCreated: string;
   status: 'Upcoming' | 'Missed' | 'Completed' | 'Cancelled';
+  patientId?: string;
+  assignedDoctorId?: string;
+  visitTypeId?: string;
+  schedulingOption?: string;
+  scheduleTime?: string;
+  sourceBookingId?: string;
+  smsReminderEnabled?: boolean;
 }
 
 export interface CalendarEvent {

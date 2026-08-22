@@ -12,7 +12,8 @@ export type DocumentTypeApi =
 
 export interface DocumentDto {
   id: string;
-  bookingId: string;
+  patientId?: string;
+  bookingId?: string;
   documentType: DocumentTypeApi;
   fileName: string;
   fileType: string;

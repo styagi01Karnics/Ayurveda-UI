@@ -99,8 +99,15 @@ export function DoctorsPage() {
     const item = schedule.find((row) => row.id === bookingId);
     if (!item) return;
 
+    const patientPath = `/doctors/patient/${item.patientDetailId}?bookingId=${encodeURIComponent(bookingId)}`;
+
+    if (item.status === 'Completed') {
+      navigate(`${patientPath}&editPrescription=true`);
+      return;
+    }
+
     if (item.status === 'In Consultation') {
-      navigate(`/doctors/patient/${item.patientDetailId}`);
+      navigate(patientPath);
       return;
     }
 
@@ -114,7 +121,7 @@ export function DoctorsPage() {
             : row,
         ),
       );
-      navigate(`/doctors/patient/${item.patientDetailId}`);
+      navigate(patientPath);
     } catch (err) {
       if (isConsultationNotStartedError(err)) {
         setNotStartedTarget(item);

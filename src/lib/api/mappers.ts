@@ -610,6 +610,15 @@ export function mapFollowUpDtoToRecord(dto: FollowUpDto): FollowUpRecord {
     appointmentDate: formatIsoDateTime(dto.appointmentDate),
     dateCreated: dto.appointmentDate?.slice(0, 10) ?? '',
     status: mapFollowUpStatus(dto.status),
+    patientId: dto.patientId,
+    assignedDoctorId: dto.assignedDoctorId,
+    visitTypeId: dto.visitTypeId,
+    schedulingOption: dto.schedulingOption,
+    scheduleTime: dto.appointmentDate?.includes('T')
+      ? dto.appointmentDate.slice(11, 16)
+      : '10:00',
+    sourceBookingId: dto.sourceBookingId,
+    smsReminderEnabled: dto.smsReminderEnabled,
   };
 }
 

@@ -74,6 +74,15 @@ export function DoctorScheduleTable({
                     >
                       Continue
                     </Button>
+                  ) : item.status === 'Completed' ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="px-4 py-1.5 text-xs"
+                      onClick={() => onStart(item.id)}
+                    >
+                      Edit
+                    </Button>
                   ) : (
                     <span className="text-text-muted">—</span>
                   )}

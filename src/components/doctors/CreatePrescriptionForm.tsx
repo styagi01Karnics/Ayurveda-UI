@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X } from 'lucide-react';
@@ -12,6 +12,7 @@ import {
   getAllTreatmentCategories,
   getTherapiesByCategory,
 } from '@/lib/api/appointments';
+import type { TherapyDto } from '@/lib/api/types';
 import { getAllMedicines } from '@/lib/api/medicines';
 import {
   PRESCRIPTION_DOSAGE_OPTIONS,
@@ -84,21 +85,40 @@ function TherapyRowFields({
   >['formState']['errors'];
 }) {
   const categoryId = watch(`therapies.${index}.categoryId`);
-  const { data: therapyOptions, loading } = useAsyncData(
+  const previousCategoryId = useRef(categoryId);
+  const { data: therapies, loading } = useAsyncData(
     async () => {
       if (!categoryId) return [];
-      const therapies = await getTherapiesByCategory(categoryId).catch(() => []);
-      return therapies.map((therapy) => ({
-        value: therapy.id,
-        label: therapy.name || therapy.therapyName || therapy.id,
-      }));
+      return getTherapiesByCategory(categoryId).catch(() => []);
     },
-    [] as { value: string; label: string }[],
+    [] as TherapyDto[],
     [categoryId],
+  );
+  const therapyOptions = therapies.map((therapy) => ({
+    value: therapy.id,
+    label: [
+      therapy.name || therapy.therapyName || therapy.id,
+      therapy.therapyCode,
+      therapy.durationMinutes ? `${therapy.durationMinutes} mins` : '',
+      therapy.price != null
+        ? `₹${therapy.price.toLocaleString('en-IN')}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' · '),
+  }));
+  const selectedTherapies = therapies.filter((therapy) =>
+    (watch(`therapies.${index}.therapyIds`) ?? []).includes(therapy.id),
   );
 
   useEffect(() => {
-    setValue(`therapies.${index}.therapyIds`, [], { shouldValidate: true });
+    if (
+      previousCategoryId.current &&
+      previousCategoryId.current !== categoryId
+    ) {
+      setValue(`therapies.${index}.therapyIds`, [], { shouldValidate: true });
+    }
+    previousCategoryId.current = categoryId;
   }, [categoryId, index, setValue]);
 
   const rowErrors = errors.therapies?.[index];
@@ -112,26 +132,54 @@ function TherapyRowFields({
         error={rowErrors?.categoryId?.message}
         {...register(`therapies.${index}.categoryId`)}
       />
-      <TagInput
-        label="Recommended Therapy"
-        placeholder={
-          !categoryId
-            ? 'Select category first'
-            : loading
-              ? 'Loading therapies…'
-              : therapyOptions.length
-                ? 'Select therapies'
-                : 'No therapies available'
-        }
-        value={watch(`therapies.${index}.therapyIds`) ?? []}
-        onChange={(tags) =>
-          setValue(`therapies.${index}.therapyIds`, tags, {
-            shouldValidate: true,
-          })
-        }
-        options={therapyOptions}
-        error={rowErrors?.therapyIds?.message}
-      />
+      <div>
+        <TagInput
+          label="Recommended Therapy"
+          placeholder={
+            !categoryId
+              ? 'Select category first'
+              : loading
+                ? 'Loading therapies…'
+                : therapyOptions.length
+                  ? 'Select therapies'
+                  : 'No active therapies available'
+          }
+          value={watch(`therapies.${index}.therapyIds`) ?? []}
+          onChange={(tags) =>
+            setValue(`therapies.${index}.therapyIds`, tags, {
+              shouldValidate: true,
+            })
+          }
+          options={therapyOptions}
+          error={rowErrors?.therapyIds?.message}
+        />
+        {selectedTherapies.length > 0 ? (
+          <div className="mt-2 space-y-2">
+            {selectedTherapies.map((therapy) => (
+              <div
+                key={therapy.id}
+                className="rounded-lg border border-gold/20 bg-gold/5 px-3 py-2 text-xs"
+              >
+                <p className="font-semibold text-brown">
+                  {therapy.name || therapy.therapyName}
+                  {therapy.therapyCode ? ` · ${therapy.therapyCode}` : ''}
+                </p>
+                {therapy.description ? (
+                  <p className="mt-1 text-text-muted">{therapy.description}</p>
+                ) : null}
+                <p className="mt-1 text-gold">
+                  {therapy.durationMinutes
+                    ? `${therapy.durationMinutes} minutes`
+                    : 'Duration not specified'}
+                  {therapy.price != null
+                    ? ` · ₹${therapy.price.toLocaleString('en-IN')}`
+                    : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
       {canRemove ? (
         <button
           type="button"
@@ -152,10 +200,14 @@ export function CreatePrescriptionForm({
   formId,
   patient,
   onSubmit,
+  initialValues,
+  initialMedicineOptions = [],
 }: {
   formId: string;
   patient: PatientDetail;
   onSubmit: (values: DoctorPrescriptionValues) => void;
+  initialValues?: DoctorPrescriptionValues;
+  initialMedicineOptions?: { value: string; label: string }[];
 }) {
   const [showTherapy, setShowTherapy] = useState(true);
   const [showFollowUp, setShowFollowUp] = useState(true);
@@ -168,7 +220,7 @@ export function CreatePrescriptionForm({
 
   const form = useForm<DoctorPrescriptionValues>({
     resolver: zodResolver(doctorPrescriptionSchema),
-    defaultValues: {
+    defaultValues: initialValues ?? {
       diagnosis: defaultDiagnosis,
       medicines: [
         {
@@ -191,9 +243,23 @@ export function CreatePrescriptionForm({
     register,
     watch,
     setValue,
+    reset,
     handleSubmit,
     formState: { errors },
   } = form;
+
+  useEffect(() => {
+    if (!initialValues) return;
+    reset(initialValues);
+    setShowTherapy(initialValues.therapies.length > 0);
+    setShowFollowUp(
+      Boolean(
+        initialValues.setupRequired ||
+          initialValues.followUpScheduling ||
+          initialValues.suggestions,
+      ),
+    );
+  }, [initialValues, reset]);
 
   const submitPrescription = handleSubmit((values: DoctorPrescriptionValues) => {
     const cleaned: DoctorPrescriptionValues = {
@@ -222,7 +288,7 @@ export function CreatePrescriptionForm({
     remove: removeTherapy,
   } = useFieldArray({ control, name: 'therapies' });
 
-  const { data: medicineOptions, loading: medicinesLoading } = useAsyncData(
+  const { data: catalogueMedicineOptions, loading: medicinesLoading } = useAsyncData(
     async () => {
       const medicines = await getAllMedicines().catch(() => []);
       return medicines.map((medicine) => ({
@@ -232,6 +298,13 @@ export function CreatePrescriptionForm({
     },
     [] as { value: string; label: string }[],
   );
+  const medicineOptions = useMemo(() => {
+    const merged = new Map(
+      initialMedicineOptions.map((option) => [option.value, option]),
+    );
+    catalogueMedicineOptions.forEach((option) => merged.set(option.value, option));
+    return [...merged.values()];
+  }, [catalogueMedicineOptions, initialMedicineOptions]);
 
   const { data: categoryOptions, loading: categoriesLoading } = useAsyncData(
     async () => {

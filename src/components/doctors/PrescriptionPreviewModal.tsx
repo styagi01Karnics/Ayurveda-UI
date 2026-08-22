@@ -68,7 +68,7 @@ export function PrescriptionPreviewModal({
         return enriched.therapySuggestions.flatMap((row) => {
           if (row.recommendedTherapies?.length) {
             return row.recommendedTherapies
-              .map((therapy) => therapy.name)
+              .map((therapy) => therapy.therapyName ?? therapy.name)
               .filter(Boolean) as string[];
           }
           return row.recommendedTherapyIds ?? [];

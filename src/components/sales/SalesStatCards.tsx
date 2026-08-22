@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/Card';
-import { formatCurrency, formatNumber } from '@/lib/utils';
+import { cn, formatCurrency, formatNumber } from '@/lib/utils';
 import type { SalesStats } from '@/types';
 
 interface SalesStatCardsProps {
@@ -49,7 +49,12 @@ export function SalesStatCards({ stats }: SalesStatCardsProps) {
               {card.pills.map((pill) => (
                 <span
                   key={pill}
-                  className="rounded-full bg-[#faf4e5] px-2.5 py-1 text-xs font-medium text-text-muted"
+                  className={cn(
+                    'rounded-full px-2.5 py-1 text-xs font-medium',
+                    pill.endsWith('Completed')
+                      ? 'bg-success/15 text-success'
+                      : 'bg-[#faf4e5] text-text-muted',
+                  )}
                 >
                   {pill}
                 </span>

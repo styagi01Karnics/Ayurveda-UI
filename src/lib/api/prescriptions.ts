@@ -52,7 +52,12 @@ export interface PrescriptionTherapySuggestionDto {
   therapyCategoryId?: string;
   therapyCategoryName?: string;
   recommendedTherapyIds?: string[];
-  recommendedTherapies?: { id: string; name?: string }[];
+  recommendedTherapies?: {
+    id?: string;
+    name?: string;
+    therapyId?: string;
+    therapyName?: string;
+  }[];
 }
 
 export interface PrescriptionNextFollowUpDto {
@@ -104,6 +109,7 @@ export interface PrescriptionDto {
   treatment?: PrescriptionTreatmentDto;
   consultant?: PrescriptionConsultantDto;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export function createPrescription(payload: CreatePrescriptionPayload) {

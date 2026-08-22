@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
@@ -26,6 +27,8 @@ interface ScheduleFollowUpModalProps {
   onSubmit: (data: FollowUpFormValues) => void | Promise<void>;
   lookupOptions: FollowUpLookupOptions;
   submitting?: boolean;
+  initialValues?: Partial<FollowUpFormValues>;
+  mode?: 'schedule' | 'reschedule';
 }
 
 export function ScheduleFollowUpModal({
@@ -34,6 +37,8 @@ export function ScheduleFollowUpModal({
   onSubmit,
   lookupOptions,
   submitting = false,
+  initialValues,
+  mode = 'schedule',
 }: ScheduleFollowUpModalProps) {
   const {
     register,
@@ -53,6 +58,20 @@ export function ScheduleFollowUpModal({
     },
   });
 
+  useEffect(() => {
+    if (!open) return;
+    reset({
+      patientId: initialValues?.patientId ?? '',
+      assignedDoctorId: initialValues?.assignedDoctorId ?? '',
+      visitTypeId: initialValues?.visitTypeId ?? '',
+      schedulingOption: initialValues?.schedulingOption ?? '7_DAYS',
+      scheduleDate: initialValues?.scheduleDate ?? '',
+      scheduleTime: initialValues?.scheduleTime ?? '',
+      smsReminderEnabled: initialValues?.smsReminderEnabled ?? false,
+      sourceBookingId: initialValues?.sourceBookingId,
+    });
+  }, [initialValues, open, reset]);
+
   const handleClose = () => {
     reset();
     onClose();
@@ -69,15 +88,25 @@ export function ScheduleFollowUpModal({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Schedule Follow Up"
-      subtitle="Schedule a follow-up visit for a patient"
+      title={mode === 'reschedule' ? 'Reschedule Follow Up' : 'Schedule Follow Up'}
+      subtitle={
+        mode === 'reschedule'
+          ? 'Choose a new date and time for this follow-up'
+          : 'Schedule a follow-up visit for a patient'
+      }
       size="lg"
       footer={
         <Button
           onClick={handleSubmit(onFormSubmit)}
           disabled={busy}
         >
-          {busy ? 'Scheduling…' : 'Confirm'}
+          {busy
+            ? mode === 'reschedule'
+              ? 'Rescheduling…'
+              : 'Scheduling…'
+            : mode === 'reschedule'
+              ? 'Reschedule'
+              : 'Confirm'}
         </Button>
       }
     >

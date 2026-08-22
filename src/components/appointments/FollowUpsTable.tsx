@@ -1,13 +1,19 @@
 import { DataTableShell } from '@/components/ui/DataTableShell';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { FollowUpRecord } from '@/types';
 
 interface FollowUpsTableProps {
   items: FollowUpRecord[];
+  onReschedule: (item: FollowUpRecord) => void;
   embedded?: boolean;
 }
 
-export function FollowUpsTable({ items, embedded }: FollowUpsTableProps) {
+export function FollowUpsTable({
+  items,
+  onReschedule,
+  embedded,
+}: FollowUpsTableProps) {
   return (
     <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
@@ -19,6 +25,7 @@ export function FollowUpsTable({ items, embedded }: FollowUpsTableProps) {
               <th className="px-5 py-3 font-medium">Visit Type</th>
               <th className="px-5 py-3 font-medium">Appointment Date</th>
               <th className="px-5 py-3 font-medium">Status</th>
+              <th className="px-5 py-3 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -38,6 +45,17 @@ export function FollowUpsTable({ items, embedded }: FollowUpsTableProps) {
                 </td>
                 <td className="px-5 py-4">
                   <FollowUpStatus status={item.status} />
+                </td>
+                <td className="px-5 py-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="px-3 py-1.5 text-xs"
+                    onClick={() => onReschedule(item)}
+                    disabled={item.status === 'Cancelled'}
+                  >
+                    Reschedule
+                  </Button>
                 </td>
               </tr>
             ))}
