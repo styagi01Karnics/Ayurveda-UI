@@ -54,6 +54,7 @@ import {
 } from '@/lib/api/mappers';
 import { getAllTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
+import { mapFollowUpToCalendarAppointment } from '@/lib/calendarUtils';
 import { cn } from '@/lib/utils';
 import type {
   CreatePatientValues,
@@ -479,7 +480,20 @@ export function AppointmentsPage() {
     }
   };
 
+  const calendarAppointments = useMemo(() => {
+    if (activeTab === 'followUps') {
+      return filteredFollowUps.map(mapFollowUpToCalendarAppointment);
+    }
+    return filteredAppointments;
+  }, [activeTab, filteredAppointments, filteredFollowUps]);
+
   const handleEventClick = async (eventId: string) => {
+    if (activeTab === 'followUps') {
+      const followUp = filteredFollowUps.find((item) => item.id === eventId);
+      if (followUp) setFollowUpRescheduleTarget(followUp);
+      return;
+    }
+
     const record = filteredAppointments.find((item) => item.id === eventId);
     if (!record) return;
 
@@ -641,11 +655,15 @@ export function AppointmentsPage() {
             loading={loading}
             error={error}
             onRetry={reload}
-            empty={!loading && !error && filteredAppointments.length === 0}
-            emptyMessage="No appointments found for calendar."
+            empty={!loading && !error && calendarAppointments.length === 0}
+            emptyMessage={
+              activeTab === 'followUps'
+                ? 'No follow-ups found for calendar.'
+                : 'No appointments found for calendar.'
+            }
           >
             <AppointmentsCalendar
-              appointments={filteredAppointments}
+              appointments={calendarAppointments}
               onEventClick={handleEventClick}
             />
           </AsyncStatus>

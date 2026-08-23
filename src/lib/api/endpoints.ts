@@ -117,6 +117,8 @@ export const apiEndpoints = {
         `/api/v1/appointment-therapies/${patientId}`,
       getTherapistToday: (therapistId: string) =>
         `/api/v1/appointment-therapies/therapist/${therapistId}/today`,
+      updateStatus: (appointmentTherapyId: string) =>
+        `/api/v1/appointment-therapies/${appointmentTherapyId}/status`,
       create: '/api/v1/appointment-therapies',
     },
     schedule: {
@@ -179,6 +181,8 @@ export const apiEndpoints = {
     prescriptions: {
       base: '/api/v1/prescriptions',
       getById: (prescriptionId: string) =>
+        `/api/v1/prescriptions/${prescriptionId}`,
+      update: (prescriptionId: string) =>
         `/api/v1/prescriptions/${prescriptionId}`,
       getByPatientId: (patientId: string) =>
         `/api/v1/prescriptions/patient/${patientId}`,

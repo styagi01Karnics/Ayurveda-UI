@@ -1,5 +1,4 @@
-import type { AppointmentRecord } from '@/types';
-import type { CalendarEvent } from '@/types';
+import type { AppointmentRecord, CalendarEvent, FollowUpRecord } from '@/types';
 
 const VISIT_COLORS: Record<string, string> = {
   Consultation: 'bg-blue-100 border-blue-400 text-blue-900',
@@ -216,6 +215,37 @@ export function mapAppointmentsToCalendarEvents(
   return records
     .map((record) => mapAppointmentToCalendarEvent(record, weekStart))
     .filter((event): event is CalendarEvent => event !== null);
+}
+
+/** Maps a follow-up list row into the appointment shape used by the calendar. */
+export function mapFollowUpToCalendarAppointment(
+  followUp: FollowUpRecord,
+): AppointmentRecord {
+  const status =
+    followUp.status === 'Upcoming'
+      ? 'Scheduled'
+      : followUp.status === 'Completed'
+        ? 'Completed'
+        : 'Cancelled';
+
+  return {
+    id: followUp.id,
+    uhid: followUp.uhid,
+    patient: followUp.patient,
+    doctor: followUp.doctor,
+    visitType: followUp.visitType || 'Follow-Up',
+    appointmentDate: followUp.appointmentDate,
+    dateCreated: followUp.dateCreated,
+    status,
+    patientId: followUp.patientId,
+    assignedDoctorId: followUp.assignedDoctorId,
+    registrationDate: followUp.dateCreated,
+    slotTime: followUp.scheduleTime
+      ? followUp.scheduleTime.length === 5
+        ? `${followUp.scheduleTime}:00`
+        : followUp.scheduleTime
+      : undefined,
+  };
 }
 
 export function getCalendarHourRange(events: CalendarEvent[]): number[] {

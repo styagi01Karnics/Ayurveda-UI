@@ -259,6 +259,19 @@ export function createAppointmentTherapy(
   );
 }
 
+export function updateAppointmentTherapyStatus(
+  appointmentTherapyId: string,
+  therapyStatus: 'SCHEDULED' | 'ONGOING' | 'COMPLETED',
+) {
+  return apiRequest<AppointmentTherapyDto>(
+    url(ep.appointmentTherapies.updateStatus(appointmentTherapyId)),
+    {
+      method: 'PUT',
+      body: { therapyStatus },
+    },
+  );
+}
+
 // ── Doshas ───────────────────────────────────────────────────────────────────
 
 export function getAllDoshas() {

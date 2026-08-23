@@ -152,7 +152,52 @@ function toConsultationVisitLabel(value: string): string {
   const upper = value.toUpperCase().replace(/[\s-]+/g, '_');
   if (upper.includes('FOLLOW')) return 'Follow-up';
   if (upper.includes('PACKAGE')) return 'Package';
+  if (upper.includes('THERAPY') && !upper.includes('CONSULT')) return 'Therapy';
   return 'Consultation';
+}
+
+/** Infer invoice type chips from billing draft `services[].serviceType` (e.g. "Therapy + Consultation"). */
+function resolveInvoiceTypeFromBillingServices(
+  services: Array<{ serviceType?: string | null }> | undefined,
+  fallbackVisitType?: string | null,
+): InvoiceTypeId {
+  const tokens = new Set<string>();
+
+  const consume = (raw: string) => {
+    for (const part of raw.split(/\s*\+\s*/)) {
+      const upper = part.trim().toUpperCase().replace(/[\s-]+/g, '_');
+      if (!upper) continue;
+      if (upper.includes('MEDICINE')) tokens.add('medicine');
+      else if (upper.includes('THERAPY') || upper.includes('TREATMENT')) {
+        tokens.add('therapy');
+      } else if (
+        upper.includes('CONSULT') ||
+        upper.includes('FOLLOW') ||
+        upper.includes('PACKAGE')
+      ) {
+        tokens.add('consultation');
+      }
+    }
+  };
+
+  for (const service of services ?? []) {
+    if (service.serviceType) consume(service.serviceType);
+  }
+  if (fallbackVisitType) consume(fallbackVisitType);
+
+  const hasConsultation = tokens.has('consultation');
+  const hasMedicine = tokens.has('medicine');
+  const hasTherapy = tokens.has('therapy');
+
+  if (hasConsultation && hasMedicine && hasTherapy) {
+    return 'consultation-medicine-therapy';
+  }
+  if (hasConsultation && hasMedicine) return 'consultation-medicine';
+  if (hasConsultation && hasTherapy) return 'consultation-therapy';
+  if (hasMedicine && hasTherapy) return 'consultation-medicine-therapy';
+  if (hasTherapy) return 'therapy';
+  if (hasMedicine) return 'medicine';
+  return 'consultation';
 }
 
 async function settleInvoicePayment(
@@ -243,9 +288,7 @@ export function GenerateInvoicePage() {
 
   const invoiceType = getInvoiceType(invoiceTypeId);
   const { includeConsultation, includeMedicine, includeTherapy } = invoiceType;
-  const availableInvoiceTypes = billingId
-    ? INVOICE_TYPE_OPTIONS.filter((option) => option.includeConsultation)
-    : INVOICE_TYPE_OPTIONS;
+  const availableInvoiceTypes = INVOICE_TYPE_OPTIONS;
 
   const { data: lookup } = useAsyncData(
     async () => {
@@ -422,8 +465,17 @@ export function GenerateInvoicePage() {
           billing.patientId
         ).replace(/^#/, '');
         const first = billing.services?.[0];
-        const visitType = first?.serviceType || billing.visitType || 'Consultation';
+        const serviceTypeLabel =
+          first?.serviceType || billing.visitType || 'Consultation';
+        const resolvedType = resolveInvoiceTypeFromBillingServices(
+          billing.services,
+          billing.visitType,
+        );
+        const resolvedOption = getInvoiceType(resolvedType);
         const contact = (billing.contactNumber ?? '').replace(/\D/g, '').slice(-10);
+
+        setInvoiceTypeId(resolvedType);
+        setPaymentOpen(false);
 
         setPatientContext({
           uuid: billing.patientId,
@@ -431,12 +483,21 @@ export function GenerateInvoicePage() {
           patientCode: billing.patientCode ?? '',
         });
 
+        const visitType = resolvedOption.includeConsultation
+          ? toConsultationVisitLabel(serviceTypeLabel.toString())
+          : resolvedOption.includeTherapy
+            ? 'Therapy'
+            : 'Consultation';
+
         serviceForm.reset({
           patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
           fullName: billing.patientName ?? '',
           contactNumber: contact,
           invoiceDate: todayIsoDate(),
-          visitType: toConsultationVisitLabel(visitType.toString()),
+          visitType:
+            visitType === 'Therapy' && resolvedOption.includeConsultation
+              ? 'Consultation'
+              : visitType,
           serviceFees: String(Math.round(first?.serviceFees ?? 0) || ''),
           packageMasterId: first?.packageMasterId ?? '',
           packageType: first?.packageType ?? '',

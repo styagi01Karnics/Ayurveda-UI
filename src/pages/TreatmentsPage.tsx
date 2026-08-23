@@ -32,7 +32,10 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 
 import { ApiError } from '@/lib/api/client';
 
-import { getAppointmentPatients } from '@/lib/api/appointments';
+import {
+  getAppointmentPatients,
+  updateAppointmentTherapyStatus,
+} from '@/lib/api/appointments';
 
 import { createTreatment, getAllTreatments } from '@/lib/api/treatments';
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
@@ -44,6 +47,7 @@ import { getActiveTherapists } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
 
 import type { BookTreatmentFormValues } from '@/lib/validation/patient.schema';
+import type { TreatmentRecord } from '@/types';
 
 
 
@@ -64,6 +68,10 @@ export function TreatmentsPage() {
   const [bookOpen, setBookOpen] = useState(false);
 
   const [booking, setBooking] = useState(false);
+  const [completingId, setCompletingId] = useState<string | null>(null);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
 
 
@@ -132,7 +140,16 @@ export function TreatmentsPage() {
 
 
 
-  const treatments = data?.records ?? [];
+  const treatments = (data?.records ?? []).map((record) =>
+    completedIds.has(record.id)
+      ? {
+          ...record,
+          status: 'Completed' as const,
+          completedSessions: record.totalSessions,
+          remainingSessions: 0,
+        }
+      : record,
+  );
 
   const lookupOptions = data?.lookupOptions ?? { patients: [], therapists: [], treatmentPlans: [] };
   const planFilterOptions = data?.planFilterOptions ?? [];
@@ -267,6 +284,35 @@ export function TreatmentsPage() {
 
   };
 
+  const handleCompleteTreatment = async (record: TreatmentRecord) => {
+    if (completingId) return;
+    setCompletingId(record.id);
+    try {
+      await updateAppointmentTherapyStatus(
+        record.appointmentTherapyId ?? record.id,
+        'COMPLETED',
+      );
+      showToast({
+        title: 'Therapy completed',
+        message: `${record.patient}'s therapy status is now completed.`,
+      });
+      setCompletedIds((current) => new Set(current).add(record.id));
+      await reload();
+    } catch (err) {
+      showToast({
+        title: 'Status update failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Could not complete the therapy.',
+      });
+    } finally {
+      setCompletingId(null);
+    }
+  };
+
 
 
   return (
@@ -364,6 +410,8 @@ export function TreatmentsPage() {
             embedded
 
             records={filteredTreatments}
+            onComplete={handleCompleteTreatment}
+            completingId={completingId}
 
             onRowClick={(record) =>
 

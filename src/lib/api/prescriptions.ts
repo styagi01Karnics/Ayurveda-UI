@@ -119,6 +119,16 @@ export function createPrescription(payload: CreatePrescriptionPayload) {
   });
 }
 
+export function updatePrescription(
+  prescriptionId: string,
+  payload: CreatePrescriptionPayload,
+) {
+  return apiRequest<PrescriptionDto>(url(ep.update(prescriptionId)), {
+    method: 'PUT',
+    body: payload,
+  });
+}
+
 export function getPrescriptionById(prescriptionId: string) {
   return apiRequest<PrescriptionDto>(url(ep.getById(prescriptionId)));
 }

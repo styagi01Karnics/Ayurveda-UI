@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X } from 'lucide-react';
+import { Pencil, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -200,11 +200,13 @@ function TherapySummaryRow({
   categoryId,
   therapyIds,
   categoryOptions,
+  onEdit,
   onRemove,
 }: {
   categoryId: string;
   therapyIds: string[];
   categoryOptions: { value: string; label: string }[];
+  onEdit: () => void;
   onRemove: () => void;
 }) {
   const { data: therapies } = useAsyncData(
@@ -226,15 +228,25 @@ function TherapySummaryRow({
           categoryId}
       </td>
       <td className="px-4 py-3 text-brown">{names.join(', ')}</td>
-      <td className="w-14 px-4 py-3 text-right">
-        <button
-          type="button"
-          onClick={onRemove}
-          className="rounded p-1 text-text-muted hover:bg-danger/10 hover:text-danger"
-          aria-label="Remove therapy"
-        >
-          <X className="h-4 w-4" />
-        </button>
+      <td className="w-20 px-4 py-3">
+        <div className="flex justify-end gap-1">
+          <button
+            type="button"
+            onClick={onEdit}
+            className="rounded p-1 text-gold hover:bg-gold/10"
+            aria-label="Edit therapy"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="rounded p-1 text-text-muted hover:bg-danger/10 hover:text-danger"
+            aria-label="Remove therapy"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -341,12 +353,14 @@ export function CreatePrescriptionForm({
     fields: medicineFields,
     append: appendMedicine,
     remove: removeMedicine,
+    replace: replaceMedicines,
   } = useFieldArray({ control, name: 'medicines' });
 
   const {
     fields: therapyFields,
     append: appendTherapy,
     remove: removeTherapy,
+    replace: replaceTherapies,
   } = useFieldArray({ control, name: 'therapies' });
 
   const { data: catalogueMedicineOptions, loading: medicinesLoading } = useAsyncData(
@@ -386,6 +400,26 @@ export function CreatePrescriptionForm({
   const therapyValues = watch('therapies') ?? [];
   const medicineEditorIndex = Math.max(0, medicineFields.length - 1);
   const therapyEditorIndex = Math.max(0, therapyFields.length - 1);
+  const editMedicine = (index: number) => {
+    const selected = medicineValues[index];
+    if (!selected) return;
+    replaceMedicines([
+      ...medicineValues
+        .slice(0, -1)
+        .filter((_, rowIndex) => rowIndex !== index),
+      selected,
+    ]);
+  };
+  const editTherapy = (index: number) => {
+    const selected = therapyValues[index];
+    if (!selected) return;
+    replaceTherapies([
+      ...therapyValues
+        .slice(0, -1)
+        .filter((_, rowIndex) => rowIndex !== index),
+      selected,
+    ]);
+  };
 
   return (
     <form
@@ -420,15 +454,25 @@ export function CreatePrescriptionForm({
                       <td className="px-4 py-3">{row.frequency}</td>
                       <td className="px-4 py-3">{row.duration}</td>
                       <td className="px-4 py-3">{row.notes || '—'}</td>
-                      <td className="px-4 py-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => removeMedicine(index)}
-                          className="rounded p-1 text-text-muted hover:bg-danger/10 hover:text-danger"
-                          aria-label="Remove medicine"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => editMedicine(index)}
+                            className="rounded p-1 text-gold hover:bg-gold/10"
+                            aria-label="Edit medicine"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeMedicine(index)}
+                            className="rounded p-1 text-text-muted hover:bg-danger/10 hover:text-danger"
+                            aria-label="Remove medicine"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ) : null,
@@ -539,6 +583,7 @@ export function CreatePrescriptionForm({
                         categoryId={row.categoryId}
                         therapyIds={row.therapyIds}
                         categoryOptions={categoryOptions}
+                        onEdit={() => editTherapy(index)}
                         onRemove={() => removeTherapy(index)}
                       />
                     ) : null,

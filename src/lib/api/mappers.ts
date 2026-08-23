@@ -581,6 +581,7 @@ export function mapTreatmentDtoToRecord(
 ): TreatmentRecord {
   return {
     id: dto.id,
+    appointmentTherapyId: dto.appointmentTherapyId,
     patient: patientName ?? '—',
     patientDetailId: dto.patientId,
     treatmentPlanName: dto.treatmentPlanName ?? dto.treatmentPlanId,

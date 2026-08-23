@@ -39,6 +39,7 @@ import {
   createPrescription,
   getPrescriptionById,
   getPrescriptionsByPatient,
+  updatePrescription,
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
@@ -544,7 +545,7 @@ export function DoctorPatientDetailPage() {
           recommendedTherapyIds: row.therapyIds ?? [],
         }));
 
-      const created = await createPrescription({
+      const prescriptionPayload = {
         patientId: patient.detailId,
         appointmentBookingId,
         assignedDoctorId,
@@ -562,27 +563,35 @@ export function DoctorPatientDetailPage() {
         },
         diagnosis: prescriptionDraft.diagnosis,
         notes: prescriptionDraft.notes,
-      });
+      };
+      const saved = existingPrescription
+        ? await updatePrescription(existingPrescription.id, prescriptionPayload)
+        : await createPrescription(prescriptionPayload);
       let completionError: unknown = null;
-      if (!editPrescription) {
+      if (!existingPrescription) {
         try {
           await completeAppointment(appointmentBookingId);
         } catch (err) {
           completionError = err;
         }
       }
-      const enriched = await getPrescriptionById(created.id).catch(() => created);
+      const enriched = await getPrescriptionById(saved.id).catch(() => saved);
+      setExistingPrescription(enriched);
       setSavedPrescription(enriched);
       showToast({
         title: completionError
           ? 'Prescription created'
-          : 'Prescription Created',
+          : existingPrescription
+            ? 'Prescription Updated'
+            : 'Prescription Created',
         message: completionError
           ? `Prescription was saved, but the appointment could not be completed. ${resolveErrorMessage(
               completionError,
               'Please complete it from the Doctor tab.',
             )}`
-          : 'Prescription has been saved and the appointment is completed.',
+          : existingPrescription
+            ? 'Prescription changes have been saved successfully.'
+            : 'Prescription has been saved and the appointment is completed.',
       });
     } catch (err) {
       showToast({

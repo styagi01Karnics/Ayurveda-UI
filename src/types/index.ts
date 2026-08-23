@@ -286,6 +286,7 @@ export interface CalendarEventDetail {
 
 export interface TreatmentRecord {
   id: string;
+  appointmentTherapyId?: string;
   patient: string;
   patientDetailId: string;
   treatmentPlanName: string;

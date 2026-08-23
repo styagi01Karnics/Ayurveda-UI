@@ -580,6 +580,7 @@ export type TreatmentStatusApi = 'SCHEDULED' | 'ONGOING' | 'COMPLETED';
 
 export interface TreatmentDto {
   id: string;
+  appointmentTherapyId?: string;
   patientId: string;
   treatmentPlanId: string;
   treatmentPlanName?: string;
