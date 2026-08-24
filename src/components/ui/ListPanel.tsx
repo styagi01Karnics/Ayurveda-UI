@@ -30,7 +30,7 @@ export function ListPanel({
   return (
     <Card className={cn('overflow-hidden p-0', className)}>
       {hasHeader && (
-        <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex flex-col gap-1 p-4 sm:p-5">
           {(tabs || toolbar) && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               {tabs}

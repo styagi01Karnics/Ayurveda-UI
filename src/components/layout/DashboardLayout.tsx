@@ -98,7 +98,7 @@ export function DashboardLayout() {
               onLogout={() => setLogoutOpen(true)}
             />
 
-            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 lg:p-6">
+            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-4">
               <Outlet />
             </main>
           </div>
