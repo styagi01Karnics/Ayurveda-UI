@@ -470,6 +470,8 @@ export interface ClinicDoctorRecord {
   id: string;
   name: string;
   specialization: string;
+  qualification: string;
+  mobileNumber: string;
   status: ClinicStatus;
   consultationFees: number;
   followUpFees: number;

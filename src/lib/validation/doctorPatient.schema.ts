@@ -147,6 +147,7 @@ export const doctorBillingTabSchema = z.object({
       z.object({
         serviceType: z.string().min(1, 'Service type is required'),
         serviceFees: z.string().min(1, 'Service fees is required'),
+        packageMasterId: z.string().optional(),
         packageType: z.string().optional(),
         packageCharges: z.string().optional(),
       }),
@@ -181,14 +182,12 @@ export const doctorBillingTabSchema = z.object({
   }
 
   data.billingServices.forEach((row, index) => {
-    if (row.packageType?.trim() && !data.packageMasterId?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Select a package name before choosing a package type',
-        path: ['packageMasterId'],
-      });
-    }
-    if (row.packageType?.trim() && !row.packageCharges?.trim()) {
+    // packageMasterId alone is enough — backend can fill name/price from mst_package
+    if (
+      row.packageType?.trim() &&
+      !row.packageMasterId?.trim() &&
+      !row.packageCharges?.trim()
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'Package charges is required when a package is selected',

@@ -83,6 +83,8 @@ export interface PrescriptionTreatmentDto {
   consultationTypes?: { id: string; name: string }[] | string[];
   consultationDateTime?: string;
   nextAppointmentDateTime?: string;
+  visitNumber?: number | null;
+  totalVisits?: number | null;
   visitDisplay?: string;
 }
 

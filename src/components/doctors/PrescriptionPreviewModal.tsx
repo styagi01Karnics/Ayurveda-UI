@@ -23,7 +23,7 @@ interface PrescriptionPreviewModalProps {
   confirmLabel?: string;
 }
 
-function formatPreviewDate(value?: string): string {
+function formatPreviewDate(value?: string | null): string {
   if (!value || value === '—') return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -41,9 +41,130 @@ function consultationTypeLabel(
 ): string {
   if (!types?.length) return 'Consultation';
   return types
-    .map((type) => (typeof type === 'string' ? type : type.name))
+    .map((type) =>
+      typeof type === 'string'
+        ? type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+        : type.name,
+    )
     .filter(Boolean)
     .join(', ');
+}
+
+function formatMeasure(
+  value: string | number | null | undefined,
+  unit: string,
+): string {
+  if (value == null || value === '' || value === '—') return '—';
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isNaN(numeric) && numeric <= 0) return '—';
+  if (typeof value === 'number') return `${value} ${unit}`;
+  const trimmed = String(value).trim();
+  if (!trimmed) return '—';
+  return /[a-zA-Z]/.test(trimmed) ? trimmed : `${trimmed} ${unit}`;
+}
+
+function collectTherapyNames(enriched?: PrescriptionDto | null): string[] {
+  if (!enriched?.therapySuggestions?.length) return [];
+  const names: string[] = [];
+  for (const row of enriched.therapySuggestions) {
+    for (const therapy of row.recommendedTherapies ?? []) {
+      const label = (therapy.therapyName || therapy.name || '').trim();
+      if (label) names.push(label);
+    }
+  }
+  return [...new Set(names)];
+}
+
+function looksLikeUuidOrId(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      trimmed,
+    )
+  ) {
+    return true;
+  }
+  // Partial UUID fragments sometimes land in name fields
+  return /^[0-9a-f-]{12,}$/i.test(trimmed) && trimmed.includes('-');
+}
+
+function looksLikeSessionRatio(value: string): boolean {
+  return /^\d+\s*\/\s*[\d—-]+$/.test(value.trim());
+}
+
+/** Adds N days from values like `7_DAYS`, `14_DAYS`, `30_DAYS`. */
+export function addDaysFromSchedulingOption(
+  baseDate: string | Date | null | undefined,
+  schedulingOption?: string | null,
+): Date | null {
+  if (!baseDate || !schedulingOption) return null;
+  const match = schedulingOption.trim().match(/^(\d+)_DAYS$/i);
+  if (!match) return null;
+  const base =
+    baseDate instanceof Date ? new Date(baseDate) : new Date(baseDate);
+  if (Number.isNaN(base.getTime())) return null;
+  base.setDate(base.getDate() + Number(match[1]));
+  return base;
+}
+
+function resolveTreatmentProcessTitle(patient: PatientDetail): string {
+  const billing = patient.billing;
+  const servicePackage = billing.billingServices?.find(
+    (row) =>
+      (row.packageName &&
+        row.packageName !== '—' &&
+        !looksLikeUuidOrId(row.packageName)) ||
+      (row.packageType &&
+        row.packageType !== '—' &&
+        !looksLikeUuidOrId(row.packageType)) ||
+      row.packageMasterId,
+  );
+  const packageLabel = [
+    billing.packageName,
+    servicePackage?.packageName,
+    servicePackage?.packageType,
+    billing.packageType,
+  ]
+    .map((value) => (value && value !== '—' ? value.trim() : ''))
+    .find((value) => value && !looksLikeUuidOrId(value));
+
+  if (packageLabel) return packageLabel;
+
+  const treatmentName = patient.treatmentFollowUp.treatmentName?.trim();
+  if (treatmentName && treatmentName !== '—' && !looksLikeUuidOrId(treatmentName)) {
+    return `${treatmentName} treatment process`;
+  }
+
+  return 'Treatment process';
+}
+
+function resolveVisitLabel(
+  treatment: PrescriptionDto['treatment'] | undefined,
+  fallbackServiceType?: string,
+): string {
+  const visitDisplay = treatment?.visitDisplay?.trim();
+  if (
+    visitDisplay &&
+    visitDisplay !== '—' &&
+    !looksLikeSessionRatio(visitDisplay) &&
+    !looksLikeUuidOrId(visitDisplay)
+  ) {
+    return visitDisplay;
+  }
+
+  const fromTypes = consultationTypeLabel(treatment?.consultationTypes);
+  if (fromTypes) return fromTypes;
+
+  if (
+    fallbackServiceType &&
+    fallbackServiceType !== '—' &&
+    !looksLikeSessionRatio(fallbackServiceType)
+  ) {
+    return fallbackServiceType;
+  }
+
+  return 'Consultation';
 }
 
 export function PrescriptionPreviewModal({
@@ -65,19 +186,16 @@ export function PrescriptionPreviewModal({
     [open],
   );
 
-  const { data: therapyLabels } = useAsyncData(
+  const enrichedTherapyLabels = useMemo(
+    () => collectTherapyNames(enriched),
+    [enriched],
+  );
+
+  const { data: draftTherapyLabels } = useAsyncData(
     async () => {
-      if (enriched?.therapySuggestions?.length) {
-        return enriched.therapySuggestions.flatMap((row) => {
-          if (row.recommendedTherapies?.length) {
-            return row.recommendedTherapies
-              .map((therapy) => therapy.therapyName ?? therapy.name)
-              .filter(Boolean) as string[];
-          }
-          return row.recommendedTherapyIds ?? [];
-        });
+      if (enrichedTherapyLabels.length || !prescription?.therapies?.length) {
+        return [] as string[];
       }
-      if (!prescription?.therapies?.length) return [] as string[];
       const labels: string[] = [];
 
       for (const row of prescription.therapies) {
@@ -97,11 +215,16 @@ export function PrescriptionPreviewModal({
         }
       }
 
-      return labels;
+      return [...new Set(labels)];
     },
     [] as string[],
-    [open, prescription, enriched],
+    [open, prescription, enrichedTherapyLabels.length],
   );
+
+  const therapyLabels =
+    enrichedTherapyLabels.length > 0
+      ? enrichedTherapyLabels
+      : draftTherapyLabels;
 
   const medicineLines = useMemo(() => {
     if (enriched?.medicines?.length) {
@@ -144,8 +267,12 @@ export function PrescriptionPreviewModal({
     (info.assignedDoctor && info.assignedDoctor !== '—'
       ? info.assignedDoctor
       : CLINIC_BRANDING.doctorName);
-  const doctorQualification =
-    consultant?.qualification || CLINIC_BRANDING.doctorCredentials;
+  const doctorQualification = [
+    consultant?.qualification,
+    consultant?.specialization,
+  ]
+    .filter((part) => Boolean(part && String(part).trim()))
+    .join(' · ');
   const doctorPhone =
     consultant?.contactNumber ||
     consultant?.mobileNumber ||
@@ -153,38 +280,63 @@ export function PrescriptionPreviewModal({
   const diagnosis =
     enriched?.diagnosis?.trim() ||
     prescription?.diagnosis?.trim() ||
-    (info.serviceType !== '—' ? info.serviceType : 'As assessed during consultation');
+    '—';
   const suggestions =
     enriched?.nextFollowUp?.suggestions || prescription?.suggestions;
-  const patientName = patientBlock?.name || patientBlock?.fullName || patient.name;
+  const patientName =
+    patientBlock?.name || patientBlock?.fullName || patient.name;
   const patientId =
     patientBlock?.displayId ||
     patientBlock?.patientDisplayId ||
     patient.id;
-  const age = patientBlock?.age != null ? String(patientBlock.age) : info.age || '—';
+  const age =
+    patientBlock?.age != null ? String(patientBlock.age) : info.age || '—';
   const gender = patientBlock?.gender || info.gender || '—';
-  const weight = patientBlock?.weight || patient.medicalAssessment.weight;
-  const height = patientBlock?.height || patient.medicalAssessment.height;
+  const weightLabel = formatMeasure(
+    patientBlock?.weight ?? patient.medicalAssessment.weight,
+    'kg',
+  );
+  const heightLabel = formatMeasure(
+    patientBlock?.height ?? patient.medicalAssessment.height,
+    'cm',
+  );
   const diet =
-    patientBlock?.dietType || patient.medicalAssessment.diet || '—';
-  const visitLabel =
-    treatment?.visitDisplay ||
-    consultationTypeLabel(treatment?.consultationTypes) ||
-    info.serviceType ||
-    'Consultation';
+    (patientBlock?.dietType && String(patientBlock.dietType).trim()) ||
+    (patient.medicalAssessment.diet &&
+    patient.medicalAssessment.diet !== '—'
+      ? patient.medicalAssessment.diet
+      : '—');
+  const visitLabel = resolveVisitLabel(treatment, info.serviceType);
 
   const consultationDate =
     treatment?.consultationDateTime ||
     info.registrationDate ||
     patient.appointmentDate;
-  const nextAppointment =
-    treatment?.nextAppointmentDateTime ||
-    patient.treatmentFollowUp.nextFollowUp;
-  const treatmentProcessTitle =
-    patient.treatmentFollowUp.treatmentName &&
-    patient.treatmentFollowUp.treatmentName !== '—'
-      ? `${patient.treatmentFollowUp.treatmentName} treatment process`
-      : 'Treatment process';
+
+  const followUpSetupRequired =
+    enriched?.nextFollowUp?.setUpRequired === true ||
+    prescription?.setupRequired === 'Yes';
+  const followUpScheduling =
+    enriched?.nextFollowUp?.schedulingOption ||
+    prescription?.followUpScheduling ||
+    '';
+  const computedNextFollowUp = followUpSetupRequired
+    ? addDaysFromSchedulingOption(consultationDate, followUpScheduling)
+    : null;
+
+  const nextAppointment = followUpSetupRequired
+    ? computedNextFollowUp?.toISOString() ||
+      treatment?.nextAppointmentDateTime ||
+      null
+    : treatment?.nextAppointmentDateTime ||
+      patient.treatmentFollowUp.nextFollowUp;
+  const treatmentProcessTitle = resolveTreatmentProcessTitle(patient);
+  const visitNoLabel =
+    treatment?.visitNumber != null || treatment?.totalVisits != null
+      ? `${treatment.visitNumber ?? 0}/${treatment.totalVisits ?? '—'}`
+      : `${patient.treatmentFollowUp.sessionsCompleted || 0}/${
+          patient.treatmentFollowUp.totalSessions || '—'
+        }`;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-black/45 p-4 sm:p-8">
@@ -243,12 +395,9 @@ export function PrescriptionPreviewModal({
             </div>
             <div className="pr-7 text-left">
               <p className="text-lg font-bold text-[#38271f]">{doctorName}</p>
-              <p className="mt-1">
-                {doctorQualification}
-                {consultant?.specialization
-                  ? ` · ${consultant.specialization}`
-                  : ''}
-              </p>
+              {doctorQualification ? (
+                <p className="mt-1">{doctorQualification}</p>
+              ) : null}
               <p className="mt-1">
                 <span className="text-[#c18813]">
                   {CLINIC_BRANDING.workingHours.split('|')[0]}
@@ -282,12 +431,12 @@ export function PrescriptionPreviewModal({
                 <div>
                   <p className="text-[#8b8179]">Weight / Height:</p>
                   <p className="font-semibold">
-                    {weight} / {height}
+                    {weightLabel} / {heightLabel}
                   </p>
                 </div>
                 <div>
                   <p className="text-[#8b8179]">Diet Type:</p>
-                  <p className="font-semibold text-[#31813c]">{diet}</p>
+                  <p className="font-semibold text-[#31813c]">{diet || '—'}</p>
                 </div>
               </div>
             </section>
@@ -304,11 +453,7 @@ export function PrescriptionPreviewModal({
                   Next: <strong>{formatPreviewDate(nextAppointment)}</strong>
                 </p>
                 <p className="mt-1">
-                  Visit No.:{' '}
-                  <strong>
-                    {patient.treatmentFollowUp.sessionsCompleted}/
-                    {patient.treatmentFollowUp.totalSessions || '—'}
-                  </strong>
+                  Visit No.: <strong>{visitNoLabel}</strong>
                 </p>
               </div>
             </section>
@@ -316,12 +461,9 @@ export function PrescriptionPreviewModal({
             <section>
               <p className="mb-2 font-semibold text-[#6f625a]">Consultant:</p>
               <p className="font-semibold">{doctorName}</p>
-              <p className="mt-2">
-                {doctorQualification}
-                {consultant?.specialization
-                  ? ` · ${consultant.specialization}`
-                  : ''}
-              </p>
+              {doctorQualification ? (
+                <p className="mt-2">{doctorQualification}</p>
+              ) : null}
               <p className="mt-2 flex items-center gap-1.5 font-semibold">
                 <Phone className="h-3.5 w-3.5 text-[#8b8179]" />
                 {doctorPhone}

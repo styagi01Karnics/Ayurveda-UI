@@ -284,6 +284,8 @@ export function ClinicSettingsTab() {
               await createDoctor({
                 name: values.name,
                 specialization: values.specialization,
+                qualification: values.qualification?.trim() || undefined,
+                mobileNumber: values.mobileNumber?.trim() || undefined,
                 status: toApiStatus(values.status),
                 consultationFees: Number(values.consultationFees),
                 followUpFees: Number(values.followUpFees),
@@ -585,6 +587,8 @@ function DoctorsSection({
     defaultValues: {
       name: '',
       specialization: '',
+      qualification: '',
+      mobileNumber: '',
       status: 'Active',
       consultationFees: '',
       followUpFees: '',
@@ -601,6 +605,8 @@ function DoctorsSection({
     reset({
       name: '',
       specialization: '',
+      qualification: '',
+      mobileNumber: '',
       status: 'Active',
       consultationFees: '',
       followUpFees: '',
@@ -622,6 +628,8 @@ function DoctorsSection({
               <th className="px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Specialization</th>
+              <th className="px-4 py-3 font-medium">Qualification</th>
+              <th className="px-4 py-3 font-medium">Mobile</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Consultation Fees</th>
               <th className="px-4 py-3 font-medium">Follow Up Fees</th>
@@ -637,6 +645,12 @@ function DoctorsSection({
               </td>
               <td className="px-4 py-3">
                 <Input placeholder="Specialization" error={errors.specialization?.message} {...register('specialization')} />
+              </td>
+              <td className="px-4 py-3">
+                <Input placeholder="Qualification" error={errors.qualification?.message} {...register('qualification')} />
+              </td>
+              <td className="px-4 py-3">
+                <Input placeholder="Mobile" error={errors.mobileNumber?.message} {...register('mobileNumber')} />
               </td>
               <td className="px-4 py-3">
                 <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
@@ -684,6 +698,8 @@ function DoctorsSection({
                 <td className="px-4 py-4 text-brown">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-brown">{doctor.name}</td>
                 <td className="px-4 py-4 text-brown">{doctor.specialization}</td>
+                <td className="px-4 py-4 text-brown">{doctor.qualification || '—'}</td>
+                <td className="px-4 py-4 text-brown">{doctor.mobileNumber || '—'}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={doctor.status}

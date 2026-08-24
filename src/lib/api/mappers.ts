@@ -26,10 +26,6 @@ import { normalizeBookingTimeForSelect } from '@/lib/bookingConstraints';
 import {
   resolveCalendarEventTitle,
 } from '@/lib/calendarEventAvatars';
-import {
-  getMedicalHistoryDefaults,
-  isEmptyMedicalValue,
-} from '@/data/mock/medicalHistoryDefaults';
 import type {
   AppointmentRecord,
   BillInvoiceView,
@@ -656,7 +652,7 @@ function displayOrDash(value: string | number | null | undefined, suffix = ''): 
 /** Maps GET /api/v1/medical-assessment/{patientId} → UI medical assessment tab. */
 export function mapMedicalAssessmentDtoToUi(
   assessment: MedicalAssessmentDto | null | undefined,
-  gender?: string | null,
+  _gender?: string | null,
 ): import('@/types').PatientMedicalAssessment {
   const ayur = assessment?.ayurvedicAssessment;
   const phys = assessment?.physicalExamination;
@@ -665,7 +661,6 @@ export function mapMedicalAssessmentDtoToUi(
   const systemic = assessment?.systemicExamination;
   const plan = assessment?.treatmentPlan;
   const docs = assessment?.documents ?? [];
-  const historyDefaults = getMedicalHistoryDefaults(gender);
 
   const pastConditions = displayOrDash(hist?.pastMedicalConditions);
   const pastSurgeries = displayOrDash(hist?.pastSurgeries);
@@ -693,18 +688,10 @@ export function mapMedicalAssessmentDtoToUi(
     micturition: displayOrDash(phys?.micturition),
     lymphNodes: displayOrDash(phys?.lymphNodes),
     presentConditions: '—',
-    pastConditions: isEmptyMedicalValue(pastConditions)
-      ? historyDefaults.pastConditions
-      : pastConditions,
-    pastSurgeries: isEmptyMedicalValue(pastSurgeries)
-      ? historyDefaults.pastSurgeries
-      : pastSurgeries,
-    currentMedication: isEmptyMedicalValue(currentMedication)
-      ? historyDefaults.currentMedication
-      : currentMedication,
-    allergies: isEmptyMedicalValue(allergies)
-      ? historyDefaults.allergies
-      : allergies,
+    pastConditions,
+    pastSurgeries,
+    currentMedication,
+    allergies,
     familyHistory: displayOrDash(hist?.familyHistory),
     diet: displayOrDash(life?.dietType),
     sleep: displayOrDash(life?.sleepPattern),
@@ -899,6 +886,8 @@ export function mapDoctorToClinicRecord(doctor: DoctorDto): ClinicDoctorRecord {
     id: doctor.id,
     name: doctor.name || doctor.doctorName || '—',
     specialization: doctor.specialization || '—',
+    qualification: doctor.qualification || '',
+    mobileNumber: doctor.mobileNumber || '',
     status: doctor.status === 'ACTIVE' || doctor.active ? 'Active' : 'Inactive',
     consultationFees: doctor.consultationFees ?? 0,
     followUpFees: doctor.followUpFees ?? 0,
@@ -1224,6 +1213,7 @@ export function mapBillingDraftToPatientBilling(
     serviceFees: first?.serviceFees ?? 0,
     packageType: first?.packageName ?? first?.packageType ?? '',
     packageCharges: first?.packageCharges ?? 0,
+    packageMasterId: first?.packageMasterId ?? undefined,
     billingServices: (billing.services ?? []).map((item) => ({
       serviceType: item.serviceType ?? '',
       serviceFees: item.serviceFees ?? 0,

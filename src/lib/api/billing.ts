@@ -213,6 +213,9 @@ export function createInvoice(payload: CreateInvoicePayload) {
 export interface BillingServiceItemPayload {
   serviceType: string;
   serviceFees: number;
+  packageMasterId?: string | null;
+  packageType?: string | null;
+  packageCharges?: number | null;
 }
 
 export interface CreateBillingPayload {

@@ -12,6 +12,8 @@ export const initialClinicDoctors: ClinicDoctorRecord[] = [
     id: 'doc-1',
     name: 'Dr. Shweta Arya',
     specialization: 'BAMS (Ayurvedic Physician)',
+    qualification: 'BAMS',
+    mobileNumber: '9876543210',
     status: 'Active',
     consultationFees: 500,
     followUpFees: 500,

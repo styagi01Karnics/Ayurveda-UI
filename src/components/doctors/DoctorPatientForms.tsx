@@ -94,12 +94,6 @@ export interface DoctorFormMasterOptions {
   doctors: { value: string; label: string }[];
 }
 
-const BILLING_PACKAGE_TYPE_OPTIONS = [
-  { value: 'Monthly', label: 'Monthly', packagePrice: 2000 },
-  { value: 'Quarterly', label: 'Quarterly', packagePrice: 5000 },
-  { value: 'Yearly', label: 'Yearly', packagePrice: 10000 },
-] as const;
-
 export function DoctorPersonalForm({
   defaultValues,
   onSubmit,
@@ -544,12 +538,17 @@ export function DoctorBillingForm({
     form.reset(defaultValues);
   }, [defaultValues, form]);
 
-  const handlePackageTypeSelect = (index: number, packageType: string) => {
-    setValue(`billingServices.${index}.packageType`, packageType, {
+  const handleServicePackageSelect = (index: number, packageMasterId: string) => {
+    const selected = (masterOptions?.packageMasters ?? []).find(
+      (option) => option.value === packageMasterId,
+    );
+    setValue(`billingServices.${index}.packageMasterId`, packageMasterId, {
       shouldValidate: true,
     });
-    const selected = BILLING_PACKAGE_TYPE_OPTIONS.find(
-      (option) => option.value === packageType,
+    setValue(
+      `billingServices.${index}.packageType`,
+      selected?.label ?? '',
+      { shouldValidate: true },
     );
     if (selected?.packagePrice != null) {
       setValue(
@@ -557,7 +556,7 @@ export function DoctorBillingForm({
         String(Math.round(selected.packagePrice)),
         { shouldValidate: true },
       );
-    } else if (!packageType) {
+    } else if (!packageMasterId) {
       setValue(`billingServices.${index}.packageCharges`, '', {
         shouldValidate: true,
       });
@@ -624,19 +623,21 @@ export function DoctorBillingForm({
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Select
-                  label="Package Type (optional)"
-                  placeholder="Select package type"
+                  label="Package (optional)"
+                  placeholder="Select package master"
                   options={[
                     { value: '', label: 'None' },
-                    ...BILLING_PACKAGE_TYPE_OPTIONS,
+                    ...(masterOptions?.packageMasters ?? []),
                   ]}
-                  error={errors.billingServices?.[index]?.packageType?.message}
-                  value={watch(`billingServices.${index}.packageType`) ?? ''}
-                  onChange={(e) => handlePackageTypeSelect(index, e.target.value)}
+                  error={errors.billingServices?.[index]?.packageMasterId?.message}
+                  value={watch(`billingServices.${index}.packageMasterId`) ?? ''}
+                  onChange={(e) =>
+                    handleServicePackageSelect(index, e.target.value)
+                  }
                 />
                 <RupeeInput
                   label={
-                    watch(`billingServices.${index}.packageType`)
+                    watch(`billingServices.${index}.packageMasterId`)
                       ? 'Package Charges *'
                       : 'Package Charges'
                   }
@@ -670,6 +671,7 @@ export function DoctorBillingForm({
                 appendService({
                   serviceType: '',
                   serviceFees: '',
+                  packageMasterId: '',
                   packageType: '',
                   packageCharges: '',
                 })

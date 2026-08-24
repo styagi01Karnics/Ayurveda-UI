@@ -358,10 +358,26 @@ export function DoctorPatientDetailPage() {
               patientName: patient.name,
               contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
               billingDate: new Date().toISOString().slice(0, 10),
-              services: billingValues.billingServices.map((row) => ({
-                serviceType: row.serviceType,
-                serviceFees: Number(row.serviceFees) || 0,
-              })),
+              services: billingValues.billingServices.map((row) => {
+                const packageMasterId =
+                  row.packageMasterId?.trim() ||
+                  (row.packageType?.trim()
+                    ? billingValues.packageMasterId?.trim()
+                    : '') ||
+                  null;
+                const packageType = row.packageType?.trim() || null;
+                const packageCharges = row.packageCharges?.trim()
+                  ? Number(row.packageCharges)
+                  : null;
+
+                return {
+                  serviceType: row.serviceType,
+                  serviceFees: Number(row.serviceFees) || 0,
+                  packageMasterId,
+                  packageType,
+                  packageCharges,
+                };
+              }),
             });
             updated = {
               ...updated,

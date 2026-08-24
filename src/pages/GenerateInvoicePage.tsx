@@ -500,7 +500,7 @@ export function GenerateInvoicePage() {
               : visitType,
           serviceFees: String(Math.round(first?.serviceFees ?? 0) || ''),
           packageMasterId: first?.packageMasterId ?? '',
-          packageType: first?.packageType ?? '',
+          packageType: first?.packageType ?? first?.packageName ?? '',
           packageCharges: first?.packageCharges
             ? String(Math.round(first.packageCharges))
             : '',

@@ -342,6 +342,7 @@ export function mapPatientToBillingForm(
     ? b.billingServices.map((row) => ({
         serviceType: sanitizeFormField(row.serviceType),
         serviceFees: sanitizeFormField(String(row.serviceFees ?? '')),
+        packageMasterId: sanitizeFormField(row.packageMasterId ?? ''),
         packageType: sanitizeFormField(row.packageType ?? ''),
         packageCharges: sanitizeFormField(String(row.packageCharges ?? '')),
       }))
@@ -349,6 +350,7 @@ export function mapPatientToBillingForm(
         {
           serviceType: sanitizeFormField(b.serviceType),
           serviceFees: sanitizeFormField(String(b.serviceFees)),
+          packageMasterId: sanitizeFormField(b.packageMasterId ?? ''),
           packageType: sanitizeFormField(b.packageType ?? ''),
           packageCharges: sanitizeFormField(String(b.packageCharges)),
         },
@@ -653,7 +655,7 @@ export function applyBillingFormToPatient(
         ? Number(values.billingServices[0].serviceFees)
         : patient.billing.serviceFees,
 
-      packageType: patient.billing.packageType,
+      packageType: values.billingServices[0]?.packageType ?? patient.billing.packageType,
 
       packageCharges: values.billingServices[0]?.packageCharges
         ? Number(values.billingServices[0].packageCharges)
@@ -662,6 +664,7 @@ export function applyBillingFormToPatient(
       billingServices: values.billingServices.map((row) => ({
         serviceType: row.serviceType,
         serviceFees: Number(row.serviceFees) || 0,
+        packageMasterId: row.packageMasterId || undefined,
         packageType: row.packageType,
         packageCharges: row.packageCharges ? Number(row.packageCharges) : 0,
       })),

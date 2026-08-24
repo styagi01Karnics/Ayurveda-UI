@@ -36,6 +36,14 @@ export const clinicDoctorSchema = z
   .object({
     name: z.string().min(1, 'Name is required'),
     specialization: z.string().min(1, 'Specialization is required'),
+    qualification: z.string().optional(),
+    mobileNumber: z
+      .string()
+      .optional()
+      .refine(
+        (value) => !value || /^\d{10}$/.test(value),
+        'Enter a valid 10-digit mobile number',
+      ),
     status: z.enum(CLINIC_STATUS_OPTIONS),
     consultationFees: z
       .string()
