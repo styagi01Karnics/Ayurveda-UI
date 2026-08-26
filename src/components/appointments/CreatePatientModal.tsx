@@ -970,8 +970,8 @@ function UploadReportsSection({
       )}
       {!activeFiles.length && (
         <p className="text-xs text-text-muted">
-          No files for this category. Booking will use JSON medical assessment only
-          (3 APIs). Add files here to use the with-documents endpoint (4th API).
+          No files for this category. Documents are uploaded with
+          /api/v1/documents/upload after medical assessment is saved.
         </p>
       )}
     </div>

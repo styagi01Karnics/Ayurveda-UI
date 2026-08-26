@@ -319,7 +319,7 @@ export function mapPatientToTreatmentForm(
 
     setupRequired: 'Yes',
 
-    followUpScheduling: 'Monthly',
+    followUpScheduling: '7_DAYS',
 
     assignedDoctor: sanitizeFormField(patient.assignedDoctorId || t.followUpDoctor),
 
@@ -570,6 +570,10 @@ export function applyTreatmentFormToPatient(
 
       ...patient.treatmentFollowUp,
 
+      id: patient.treatmentFollowUp.id,
+
+      treatmentPlanId: values.treatmentPlanId,
+
       treatmentName: values.treatmentPlanId,
 
       startDate: values.startDate,
@@ -591,6 +595,9 @@ export function applyTreatmentFormToPatient(
       assignedTherapistId: values.assignedTherapistId,
 
       assignedTherapist: therapistName,
+
+      nextFollowUp:
+        values.setupRequired === 'Yes' ? values.followUpScheduling || '' : '',
 
       followUpDoctor: doctorName,
 

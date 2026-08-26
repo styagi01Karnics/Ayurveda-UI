@@ -2,13 +2,11 @@ import { useMemo } from 'react';
 import { CalendarDays, Phone, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import {
-  getTherapiesByCategory,
-} from '@/lib/api/appointments';
 import { getAllMedicines } from '@/lib/api/medicines';
 import type { PrescriptionDto } from '@/lib/api/prescriptions';
 import { CLINIC_BRANDING } from '@/lib/clinicBranding';
 import { assets } from '@/lib/assets';
+import { addDaysFromSchedulingOption } from '@/lib/followUpSchedule';
 import type { DoctorPrescriptionValues } from '@/lib/validation/doctorPatient.schema';
 import type { PatientDetail } from '@/types';
 
@@ -91,21 +89,6 @@ function looksLikeUuidOrId(value: string): boolean {
 
 function looksLikeSessionRatio(value: string): boolean {
   return /^\d+\s*\/\s*[\d—-]+$/.test(value.trim());
-}
-
-/** Adds N days from values like `7_DAYS`, `14_DAYS`, `30_DAYS`. */
-export function addDaysFromSchedulingOption(
-  baseDate: string | Date | null | undefined,
-  schedulingOption?: string | null,
-): Date | null {
-  if (!baseDate || !schedulingOption) return null;
-  const match = schedulingOption.trim().match(/^(\d+)_DAYS$/i);
-  if (!match) return null;
-  const base =
-    baseDate instanceof Date ? new Date(baseDate) : new Date(baseDate);
-  if (Number.isNaN(base.getTime())) return null;
-  base.setDate(base.getDate() + Number(match[1]));
-  return base;
 }
 
 function resolveTreatmentProcessTitle(patient: PatientDetail): string {
@@ -191,40 +174,7 @@ export function PrescriptionPreviewModal({
     [enriched],
   );
 
-  const { data: draftTherapyLabels } = useAsyncData(
-    async () => {
-      if (enrichedTherapyLabels.length || !prescription?.therapies?.length) {
-        return [] as string[];
-      }
-      const labels: string[] = [];
-
-      for (const row of prescription.therapies) {
-        if (!row.categoryId || !row.therapyIds?.length) continue;
-        const therapies = await getTherapiesByCategory(row.categoryId).catch(
-          () => [],
-        );
-        const byId = new Map(
-          therapies.map((therapy) => [
-            therapy.id,
-            therapy.name || therapy.therapyName || therapy.id,
-          ]),
-        );
-        for (const therapyId of row.therapyIds ?? []) {
-          const label = byId.get(therapyId);
-          if (label) labels.push(label);
-        }
-      }
-
-      return [...new Set(labels)];
-    },
-    [] as string[],
-    [open, prescription, enrichedTherapyLabels.length],
-  );
-
-  const therapyLabels =
-    enrichedTherapyLabels.length > 0
-      ? enrichedTherapyLabels
-      : draftTherapyLabels;
+  const therapyLabels = enrichedTherapyLabels;
 
   const medicineLines = useMemo(() => {
     if (enriched?.medicines?.length) {
@@ -281,8 +231,7 @@ export function PrescriptionPreviewModal({
     enriched?.diagnosis?.trim() ||
     prescription?.diagnosis?.trim() ||
     '—';
-  const suggestions =
-    enriched?.nextFollowUp?.suggestions || prescription?.suggestions;
+  const suggestions = enriched?.nextFollowUp?.suggestions;
   const patientName =
     patientBlock?.name || patientBlock?.fullName || patient.name;
   const patientId =
@@ -313,13 +262,8 @@ export function PrescriptionPreviewModal({
     info.registrationDate ||
     patient.appointmentDate;
 
-  const followUpSetupRequired =
-    enriched?.nextFollowUp?.setUpRequired === true ||
-    prescription?.setupRequired === 'Yes';
-  const followUpScheduling =
-    enriched?.nextFollowUp?.schedulingOption ||
-    prescription?.followUpScheduling ||
-    '';
+  const followUpSetupRequired = enriched?.nextFollowUp?.setUpRequired === true;
+  const followUpScheduling = enriched?.nextFollowUp?.schedulingOption || '';
   const computedNextFollowUp = followUpSetupRequired
     ? addDaysFromSchedulingOption(consultationDate, followUpScheduling)
     : null;

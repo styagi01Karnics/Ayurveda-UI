@@ -479,13 +479,21 @@ export function DoctorTreatmentForm({
       <FormSection title="Next Follow Up">
         <div className="grid gap-4 sm:grid-cols-3">
           <Select label="Set Up Required" options={[...YES_NO_OPTIONS]} error={form.formState.errors.setupRequired?.message} {...form.register('setupRequired')} />
-          <Select label="Follow-up Scheduling Options" options={[...FOLLOW_UP_OPTIONS]} error={form.formState.errors.followUpScheduling?.message} {...form.register('followUpScheduling')} />
+          <Select
+            label="Follow-up Scheduling Options"
+            placeholder="Select schedule"
+            options={[...FOLLOW_UP_OPTIONS]}
+            error={form.formState.errors.followUpScheduling?.message}
+            {...form.register('followUpScheduling')}
+            disabled={form.watch('setupRequired') !== 'Yes'}
+          />
           <Select
             label="Assigned Doctor"
             placeholder="Select doctor"
             options={masterOptions?.doctors ?? []}
             error={form.formState.errors.assignedDoctor?.message}
             {...form.register('assignedDoctor')}
+            disabled={form.watch('setupRequired') !== 'Yes'}
           />
         </div>
       </FormSection>

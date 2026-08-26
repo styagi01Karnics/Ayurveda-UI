@@ -29,6 +29,7 @@ import { getActiveTherapists, mapTherapistSelectOptions } from '@/lib/api/therap
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
 import { completeAppointment } from '@/lib/api/appointments';
 import { createPackage } from '@/lib/api/packages';
+import { createFollowUp } from '@/lib/api/followUps';
 import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
 import {
   createBilling,
@@ -42,6 +43,11 @@ import {
   updatePrescription,
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
+import {
+  createTreatment,
+  updateTreatment,
+} from '@/lib/api/treatments';
+import { toFollowUpAppointmentDateIso } from '@/lib/followUpSchedule';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import {
   applyBillingFormToPatient,
@@ -99,23 +105,19 @@ function mapPrescriptionToForm(
       duration: row.duration ?? '',
       notes: row.notes ?? '',
     })),
-    therapies: (prescription.therapySuggestions ?? []).map((row) => ({
-      categoryId: row.therapyCategoryId ?? '',
-      therapyIds:
-        row.recommendedTherapyIds ??
-        row.recommendedTherapies
-          ?.map((therapy) => therapy.therapyId ?? therapy.id)
-          .filter((id): id is string => Boolean(id)) ??
-        [],
-    })),
-    setupRequired: prescription.nextFollowUp
-      ? prescription.nextFollowUp.setUpRequired
-        ? 'Yes'
-        : 'No'
-      : '',
-    followUpScheduling: prescription.nextFollowUp?.schedulingOption ?? '',
-    suggestions: prescription.nextFollowUp?.suggestions ?? '',
   };
+}
+
+function resolveFollowUpVisitTypeId(
+  patient: PatientDetail,
+  consultationTypes: { value: string; label: string }[],
+): string {
+  const followUpType = consultationTypes.find((type) =>
+    /follow/i.test(type.label),
+  );
+  if (followUpType?.value) return followUpType.value;
+  if (patient.consultationTypeIds?.[0]) return patient.consultationTypeIds[0];
+  return consultationTypes[0]?.value ?? '';
 }
 
 function scrollWorkflowToTop() {
@@ -329,14 +331,85 @@ export function DoctorPatientDetailPage() {
         case 'medical':
           updated = applyMedicalFormToPatient(patient, values as DoctorMedicalTabValues);
           break;
-        case 'treatment':
-          updated =           applyTreatmentFormToPatient(
+        case 'treatment': {
+          const treatmentValues = values as DoctorTreatmentTabValues;
+          updated = applyTreatmentFormToPatient(
             patient,
-            values as DoctorTreatmentTabValues,
+            treatmentValues,
             masterOptions.therapists,
             masterOptions.doctors,
           );
+          try {
+            const treatmentPayload = {
+              treatmentPlanId: treatmentValues.treatmentPlanId,
+              startDate: treatmentValues.startDate,
+              endDate: treatmentValues.endDate,
+              totalSessions: Number(treatmentValues.totalSessions) || 0,
+              completedSessions: Number(treatmentValues.completedSessions) || 0,
+              assignedTherapistId: treatmentValues.assignedTherapistId,
+            };
+
+            const savedTreatment = patient.treatmentFollowUp.id
+              ? await updateTreatment(
+                  patient.treatmentFollowUp.id,
+                  treatmentPayload,
+                )
+              : await createTreatment({
+                  patientId: patient.detailId,
+                  ...treatmentPayload,
+                  treatmentStatus: 'SCHEDULED',
+                });
+
+            updated = {
+              ...updated,
+              treatmentFollowUp: {
+                ...updated.treatmentFollowUp,
+                id: savedTreatment.id,
+                treatmentPlanId: savedTreatment.treatmentPlanId,
+                treatmentName:
+                  savedTreatment.treatmentPlanName ||
+                  updated.treatmentFollowUp.treatmentName,
+                remainingSessions: savedTreatment.remainingSessions,
+              },
+            };
+
+            if (treatmentValues.setupRequired === 'Yes') {
+              const visitTypeId = resolveFollowUpVisitTypeId(
+                patient,
+                masterOptions.consultationTypes,
+              );
+              if (!visitTypeId) {
+                throw new Error(
+                  'A visit type is required to schedule the follow-up.',
+                );
+              }
+              const baseDate =
+                patient.personalInfo.registrationDate ||
+                patient.appointmentDate ||
+                treatmentValues.startDate;
+              await createFollowUp({
+                patientId: patient.detailId,
+                assignedDoctorId: treatmentValues.assignedDoctor || '',
+                sourceBookingId: patient.bookingId || undefined,
+                visitTypeId,
+                appointmentDate: toFollowUpAppointmentDateIso(
+                  baseDate,
+                  treatmentValues.followUpScheduling,
+                ),
+                schedulingOption: treatmentValues.followUpScheduling || '7_DAYS',
+                smsReminderEnabled: treatmentValues.autoSmsReminder,
+                status: 'UPCOMING',
+              });
+            }
+          } catch (err) {
+            showToast({
+              title: 'Treatment save failed',
+              message: resolveErrorMessage(err, UI_MESSAGES.error.saveFailed),
+            });
+            return false;
+          }
           break;
+        }
         case 'billing': {
           const billingValues = values as DoctorBillingTabValues;
           updated = applyBillingFormToPatient(patient, billingValues);
@@ -408,7 +481,7 @@ export function DoctorPatientDetailPage() {
       });
       return true;
     },
-    [activeTab, patient, showToast, masterOptions.therapists, masterOptions.doctors],
+    [activeTab, patient, showToast, masterOptions],
   );
 
   const handleTabChange = (tab: PatientDetailTab) => {
@@ -552,31 +625,12 @@ export function DoctorPatientDetailPage() {
           duration: row.duration ?? '',
           notes: row.notes,
         }));
-      const therapySuggestions = (prescriptionDraft.therapies ?? [])
-        .filter(
-          (row) => Boolean(row.categoryId) && (row.therapyIds?.length ?? 0) > 0,
-        )
-        .map((row) => ({
-          therapyCategoryId: row.categoryId as string,
-          recommendedTherapyIds: row.therapyIds ?? [],
-        }));
 
       const prescriptionPayload = {
         patientId: patient.detailId,
         appointmentBookingId,
         assignedDoctorId,
         medicines: medicines.length ? medicines : undefined,
-        therapySuggestions: therapySuggestions.length
-          ? therapySuggestions
-          : undefined,
-        nextFollowUp: {
-          setUpRequired: prescriptionDraft.setupRequired === 'Yes',
-          schedulingOption:
-            prescriptionDraft.setupRequired === 'Yes'
-              ? prescriptionDraft.followUpScheduling
-              : undefined,
-          suggestions: prescriptionDraft.suggestions,
-        },
         diagnosis: prescriptionDraft.diagnosis,
         notes: prescriptionDraft.notes,
       };

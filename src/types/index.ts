@@ -89,6 +89,7 @@ export interface PatientMedicalAssessment {
 }
 
 export interface PatientTreatmentFollowUp {
+  id?: string;
   treatmentPlanId?: string;
   assignedTherapistId?: string;
   treatmentName: string;

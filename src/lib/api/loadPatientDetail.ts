@@ -171,6 +171,7 @@ export async function loadPatientDetail(
         : '',
     },
     treatmentFollowUp: {
+      id: treatment?.id,
       treatmentPlanId: treatment?.treatmentPlanId,
       treatmentName: treatment?.treatmentPlanName ?? '',
       startDate: treatment?.startDate ?? '',

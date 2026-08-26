@@ -117,8 +117,8 @@ export const doctorTreatmentTabSchema = z
     remainingSessions: z.string().optional(),
     assignedTherapistId: z.string().min(1, 'Assigned therapist is required'),
     setupRequired: z.string().min(1, 'Setup required is required'),
-    followUpScheduling: z.string().min(1, 'Follow-up scheduling is required'),
-    assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
+    followUpScheduling: z.string().optional(),
+    assignedDoctor: z.string().optional(),
     autoSmsReminder: z.boolean(),
   })
   .superRefine((data, ctx) => {
@@ -130,6 +130,22 @@ export const doctorTreatmentTabSchema = z
         message: 'Completed sessions cannot exceed total sessions',
         path: ['completedSessions'],
       });
+    }
+    if (data.setupRequired === 'Yes') {
+      if (!data.followUpScheduling?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Follow-up scheduling is required',
+          path: ['followUpScheduling'],
+        });
+      }
+      if (!data.assignedDoctor?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Assigned doctor is required',
+          path: ['assignedDoctor'],
+        });
+      }
     }
   });
 
@@ -224,26 +240,14 @@ export const doctorPrescriptionSchema = z
         notes: z.string().optional(),
       }),
     ),
-    therapies: z.array(
-      z.object({
-        categoryId: z.string().optional(),
-        therapyIds: z.array(z.string()).optional(),
-      }),
-    ),
-    setupRequired: z.string().optional(),
-    followUpScheduling: z.string().optional(),
-    suggestions: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     const medicines = data.medicines.filter((row) => row.medicineId?.trim());
-    const therapies = data.therapies.filter(
-      (row) => Boolean(row.categoryId?.trim()) && (row.therapyIds?.length ?? 0) > 0,
-    );
 
-    if (medicines.length === 0 && therapies.length === 0) {
+    if (medicines.length === 0) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Add at least one medicine or one therapy suggestion',
+        message: 'Add at least one medicine',
         path: ['medicines'],
       });
     }
@@ -272,14 +276,6 @@ export const doctorPrescriptionSchema = z
         });
       }
     });
-
-    if (data.setupRequired === 'Yes' && !data.followUpScheduling?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Follow-up scheduling is required',
-        path: ['followUpScheduling'],
-      });
-    }
   });
 
 export type DoctorPersonalTabValues = z.infer<typeof doctorPersonalTabSchema>;
@@ -293,7 +289,11 @@ export const PAYMENT_MODE_OPTIONS = ['Cash', 'Debit Card', 'UPI', 'Credit Card']
 export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;
 export const MEMBERSHIP_STATUS_OPTIONS = ['Completed', 'Active', 'Pending'] as const;
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
-export const FOLLOW_UP_OPTIONS = ['Weekly', 'Bi-weekly', 'Monthly'] as const;
+export const FOLLOW_UP_OPTIONS = [
+  { value: '7_DAYS', label: '7 days' },
+  { value: '14_DAYS', label: '14 days' },
+  { value: '30_DAYS', label: '30 days' },
+] as const;
 export const PRESCRIPTION_SCHEDULING_OPTIONS = [
   { value: '7_DAYS', label: '7 days' },
   { value: '14_DAYS', label: '14 days' },

@@ -2,9 +2,12 @@ import {
   createAppointment,
   createAppointmentTherapy,
   createMedicalAssessment,
-  createMedicalAssessmentWithDocuments,
 } from '@/lib/api/appointments';
 import { ApiError } from '@/lib/api/client';
+import {
+  uploadDocument,
+  type DocumentTypeApi,
+} from '@/lib/api/documents';
 import type {
   AppointmentDto,
   AppointmentTherapyDto,
@@ -166,7 +169,7 @@ export async function submitBookingStep2(
   return therapy;
 }
 
-/** Step 3 — POST /api/v1/medical-assessment (or with-documents) */
+/** Step 3 — POST /api/v1/medical-assessment, then upload files via /api/v1/documents/upload */
 export async function submitBookingStep3(
   data: CreatePatientValues,
   session: BookingSession,
@@ -175,22 +178,60 @@ export async function submitBookingStep3(
 
   const assessmentPayload: CreateMedicalAssessmentPayload =
     toMedicalAssessmentPayload(data, session.patientId);
-  const documents = data.uploadedDocuments;
-  const withDocuments = hasMedicalAssessmentDocuments(documents);
 
-  return runBookingStep(
-    withDocuments
-      ? 'POST /api/v1/medical-assessment/with-documents failed'
-      : 'POST /api/v1/medical-assessment failed',
-    () =>
-      withDocuments
-        ? createMedicalAssessmentWithDocuments(assessmentPayload, {
-            pastMedicalReports: documents!.pastMedicalReports,
-            prescriptions: documents!.prescriptions,
-            labReports: documents!.labReports,
-          })
-        : createMedicalAssessment(assessmentPayload),
+  const assessment = await runBookingStep(
+    'POST /api/v1/medical-assessment failed',
+    () => createMedicalAssessment(assessmentPayload),
   );
+
+  const documents = data.uploadedDocuments;
+  if (hasMedicalAssessmentDocuments(documents)) {
+    await uploadBookingDocuments(session, documents!);
+  }
+
+  return assessment;
+}
+
+async function uploadBookingDocuments(
+  session: BookingSession,
+  documents: NonNullable<CreatePatientValues['uploadedDocuments']>,
+): Promise<void> {
+  const bookingId =
+    session.appointment.bookingId ||
+    session.appointment.id;
+  if (!bookingId) {
+    throw new Error(
+      'Cannot upload documents: booking id missing from appointment response.',
+    );
+  }
+
+  const uploads: Array<{ type: DocumentTypeApi; file: File }> = [
+    ...(documents.pastMedicalReports ?? []).map((file) => ({
+      type: 'PAST_MEDICAL_REPORT' as const,
+      file,
+    })),
+    ...(documents.prescriptions ?? []).map((file) => ({
+      type: 'PRESCRIPTION' as const,
+      file,
+    })),
+    ...(documents.labReports ?? []).map((file) => ({
+      type: 'LAB_REPORT' as const,
+      file,
+    })),
+  ];
+
+  for (const item of uploads) {
+    await runBookingStep(
+      `POST /api/v1/documents/upload (${item.type}) failed`,
+      () =>
+        uploadDocument(
+          session.patientId,
+          bookingId,
+          item.type,
+          item.file,
+        ),
+    );
+  }
 }
 
 /** Runs all steps sequentially (used when not stepping through the modal). */
