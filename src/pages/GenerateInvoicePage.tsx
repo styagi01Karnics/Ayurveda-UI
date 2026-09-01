@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { PatientSearchSelect } from '@/components/ui/PatientSearchSelect';
 import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { PAYMENT_MODES } from '@/data/mock/billing';
@@ -31,7 +32,9 @@ import {
 import { ApiError } from '@/lib/api/client';
 import { getAllMedicines } from '@/lib/api/medicines';
 import { getActivePackageMasters } from '@/lib/api/packageMasters';
+import { getPrescriptionsByPatient } from '@/lib/api/prescriptions';
 import { getActiveTherapists } from '@/lib/api/therapists';
+import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantity';
 import {
   calculateInvoiceTotals,
   invoiceMedicineItemSchema,
@@ -160,6 +163,7 @@ function toConsultationVisitLabel(value: string): string {
 function resolveInvoiceTypeFromBillingServices(
   services: Array<{ serviceType?: string | null }> | undefined,
   fallbackVisitType?: string | null,
+  hasMedicines = false,
 ): InvoiceTypeId {
   const tokens = new Set<string>();
 
@@ -184,6 +188,7 @@ function resolveInvoiceTypeFromBillingServices(
     if (service.serviceType) consume(service.serviceType);
   }
   if (fallbackVisitType) consume(fallbackVisitType);
+  if (hasMedicines) tokens.add('medicine');
 
   const hasConsultation = tokens.has('consultation');
   const hasMedicine = tokens.has('medicine');
@@ -467,9 +472,11 @@ export function GenerateInvoicePage() {
         const first = billing.services?.[0];
         const serviceTypeLabel =
           first?.serviceType || billing.visitType || 'Consultation';
+        const draftMedicines = billing.medicines ?? [];
         const resolvedType = resolveInvoiceTypeFromBillingServices(
           billing.services,
           billing.visitType,
+          draftMedicines.length > 0,
         );
         const resolvedOption = getInvoiceType(resolvedType);
         const contact = (billing.contactNumber ?? '').replace(/\D/g, '').slice(-10);
@@ -506,6 +513,72 @@ export function GenerateInvoicePage() {
             : '',
         });
         setServiceData(serviceForm.getValues());
+
+        let medicineLines =
+          draftMedicines.length > 0
+            ? draftMedicines.map((row, index) => ({
+                id: row.medicineId ?? `billing-med-${index}`,
+                medicineId: row.medicineId,
+                name: row.medicineName || 'Medicine',
+                quantity: Math.max(1, Number(row.quantity) || 1),
+                amount: Number(row.unitPrice) || 0,
+                type: 'medicine' as const,
+              }))
+            : [];
+
+        // POST /billings is services-only (backend ignores medicines).
+        // Prefill from the patient's latest prescription for generate-invoice.
+        if (medicineLines.length === 0) {
+          const [prescriptions, catalogue] = await Promise.all([
+            getPrescriptionsByPatient(billing.patientId).catch(() => []),
+            getAllMedicines().catch(() => []),
+          ]);
+          if (cancelled) return;
+
+          const catalogueById = new Map(
+            catalogue.map((item) => [item.id, item]),
+          );
+          const latestWithMeds = [...prescriptions]
+            .sort((a, b) => {
+              const aTime = a.createdAt ? Date.parse(a.createdAt) : 0;
+              const bTime = b.createdAt ? Date.parse(b.createdAt) : 0;
+              return bTime - aTime;
+            })
+            .find((rx) => (rx.medicines?.length ?? 0) > 0);
+
+          medicineLines = (latestWithMeds?.medicines ?? [])
+            .filter((row) => row.medicineId)
+            .map((row, index) => {
+              const catalogueRow = catalogueById.get(row.medicineId as string);
+              return {
+                id: row.medicineId ?? `rx-med-${index}`,
+                medicineId: row.medicineId,
+                name:
+                  row.medicineName ||
+                  catalogueRow?.medicineName ||
+                  'Medicine',
+                quantity: calculatePrescriptionMedicineQuantity({
+                  dosage: row.dosage,
+                  frequency: row.frequency,
+                  duration: row.duration,
+                }),
+                amount: Number(
+                  catalogueRow?.sellingPrice ?? catalogueRow?.price ?? 0,
+                ),
+                type: 'medicine' as const,
+              };
+            });
+        }
+
+        if (medicineLines.length > 0) {
+          setMedicineItems(medicineLines);
+          const typeWithMeds = resolveInvoiceTypeFromBillingServices(
+            billing.services,
+            billing.visitType,
+            true,
+          );
+          setInvoiceTypeId(typeWithMeds);
+        }
       } catch (err) {
         showToast({
           title: 'Billing draft not found',
@@ -944,15 +1017,17 @@ export function GenerateInvoicePage() {
         <form className="mt-6 space-y-6" noValidate>
           <FormSection title="Patient Details">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Select
+              <PatientSearchSelect
                 label="Select Patient"
-                placeholder="Choose patient"
+                placeholder="Search by patient ID or name (min 4 characters)"
                 options={lookup.patients.map((p) => ({
                   value: p.value,
                   label: p.label,
+                  patientId: p.displayId || p.patientCode || p.value,
+                  name: p.fullName,
                 }))}
                 value={patientContext?.uuid ?? ''}
-                onChange={(e) => handlePatientSelect(e.target.value)}
+                onChange={handlePatientSelect}
                 disabled={Boolean(billingId)}
               />
               <Input

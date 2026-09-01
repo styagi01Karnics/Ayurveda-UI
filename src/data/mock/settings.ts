@@ -91,7 +91,7 @@ export const initialSettingsRoles: SettingsRoleRecord[] = [
       'Billing',
       'Settings',
     ],
-    userCount: 5,
+    userCount: 1,
   },
   {
     id: 'role-2',
@@ -105,7 +105,7 @@ export const initialSettingsRoles: SettingsRoleRecord[] = [
       'Medicines',
       'Billing',
     ],
-    userCount: 3,
+    userCount: 1,
   },
   {
     id: 'role-3',
@@ -119,7 +119,7 @@ export const initialSettingsRoles: SettingsRoleRecord[] = [
       'Appointments',
       'Treatments',
     ],
-    userCount: 8,
+    userCount: 0,
   },
 ];
 

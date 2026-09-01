@@ -198,9 +198,10 @@ export function createAppointment(payload: CreateAppointmentPayload) {
   });
 }
 
-export function cancelAppointment(bookingId: string) {
+export function cancelAppointment(bookingId: string, reason: string) {
   return apiRequest<AppointmentDto>(url(ep.bookings.cancel(bookingId)), {
     method: 'PUT',
+    body: { reason },
   });
 }
 

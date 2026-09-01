@@ -595,8 +595,8 @@ export function DoctorBillingForm({
 
       <FormSection title="Billing Details">
         <p className="mb-4 text-xs text-text-muted">
-          Saved as a pending billing draft. Reception will add medicines, therapies,
-          discount, and GST when generating the invoice.
+          Billing details are saved with the patient. The pending billing draft is
+          created for reception after the prescription is generated.
         </p>
         <div className="space-y-6">
           {serviceFields.map((field, index) => (

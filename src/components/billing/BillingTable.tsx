@@ -23,7 +23,6 @@ export function BillingTable({
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-5 py-3 font-medium">Invoice ID</th>
               <th className="px-5 py-3 font-medium">Patient ID</th>
               <th className="px-5 py-3 font-medium">Invoice Date</th>
               <th className="px-5 py-3 font-medium">Total Amount</th>
@@ -36,7 +35,7 @@ export function BillingTable({
           <tbody>
             {records.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-5 py-12 text-center text-text-muted">
+                <td colSpan={7} className="px-5 py-12 text-center text-text-muted">
                   No billing records found matching your filters.
                 </td>
               </tr>
@@ -45,9 +44,6 @@ export function BillingTable({
                 const isDraft = record.kind === 'billing-draft' || record.status === 'Pending';
                 return (
                 <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-5 py-4 font-medium text-brown">
-                    {record.invoiceId}
-                  </td>
                   <td className="px-5 py-4">
                     <p className="font-medium text-brown">{record.patientId}</p>
                     {record.secondaryPatientId ? (

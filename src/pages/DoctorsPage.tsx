@@ -141,11 +141,11 @@ export function DoctorsPage() {
     }
   };
 
-  const handleCancelConfirm = async () => {
+  const handleCancelConfirm = async (reason: string) => {
     if (!cancelTarget || cancelling) return;
     setCancelling(true);
     try {
-      await cancelAppointment(cancelTarget.id);
+      await cancelAppointment(cancelTarget.id, reason);
       setLocalSchedule((prev) => prev.filter((row) => row.id !== cancelTarget.id));
       showToast({
         title: 'Appointment cancelled',

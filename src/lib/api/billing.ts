@@ -218,12 +218,33 @@ export interface BillingServiceItemPayload {
   packageCharges?: number | null;
 }
 
+/** Prescription medicines attached to a pending billing draft. */
+export interface BillingMedicineItemPayload {
+  medicineId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface BillingTherapyItemPayload {
+  itemName: string;
+  quantity: number;
+  unitPrice: number;
+  assignedTherapistId?: string;
+  assignedTherapistName?: string;
+  scheduleDate?: string;
+  scheduleTime?: string;
+  sessionDuration?: number;
+  sessionFrequency?: number;
+}
+
 export interface CreateBillingPayload {
   patientId: string;
   patientName: string;
   contactNumber: string;
   billingDate: string;
   services: BillingServiceItemPayload[];
+  medicines?: BillingMedicineItemPayload[];
+  therapies?: BillingTherapyItemPayload[];
 }
 
 export interface BillingServiceItemDto {
@@ -234,6 +255,18 @@ export interface BillingServiceItemDto {
   packageName?: string | null;
   packageType?: string | null;
   packageCharges?: number;
+}
+
+export interface BillingMedicineItemDto {
+  id?: string;
+  medicineId?: string;
+  medicineName?: string;
+  quantity?: number;
+  unitPrice?: number;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  notes?: string;
 }
 
 export interface BillingDto {
@@ -251,6 +284,7 @@ export interface BillingDto {
   invoiceNumber?: string | null;
   totalAmount?: number;
   services?: BillingServiceItemDto[];
+  medicines?: BillingMedicineItemDto[];
   createdAt?: string;
   updatedAt?: string;
 }

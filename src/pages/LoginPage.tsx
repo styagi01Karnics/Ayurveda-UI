@@ -8,10 +8,15 @@ import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import {
   DUMMY_LOGIN_CREDENTIALS,
   mockLogin,
 } from '@/lib/auth';
+import {
+  CLINIC_LOCATIONS,
+  setStoredClinicLocation,
+} from '@/lib/clinicLocations';
 import {
   loginSchema,
   type LoginFormValues,
@@ -30,6 +35,7 @@ export function LoginPage() {
     defaultValues: {
       emailOrUsername: DUMMY_LOGIN_CREDENTIALS.emailOrUsername,
       password: DUMMY_LOGIN_CREDENTIALS.password,
+      locationId: CLINIC_LOCATIONS[0].value,
     },
   });
 
@@ -43,6 +49,7 @@ export function LoginPage() {
       setSubmitError('Invalid credentials. Password must be at least 6 characters.');
       return;
     }
+    setStoredClinicLocation(values.locationId);
     navigate('/dashboard');
   };
 
@@ -73,6 +80,15 @@ export function LoginPage() {
             placeholder="Enter your username or email address"
             error={errors.emailOrUsername?.message}
             {...register('emailOrUsername')}
+          />
+
+          <Select
+            fieldVariant="auth"
+            label="Location"
+            placeholder="Select location"
+            options={[...CLINIC_LOCATIONS]}
+            error={errors.locationId?.message}
+            {...register('locationId')}
           />
 
           <div>

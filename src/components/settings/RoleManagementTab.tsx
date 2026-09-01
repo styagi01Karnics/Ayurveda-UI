@@ -109,7 +109,9 @@ export function RoleManagementTab({
 
           <div className="mt-5 flex items-center gap-1.5 text-xs text-text-muted">
             <Users className="h-4 w-4" />
-            <span>{role.userCount} users</span>
+            <span>
+              {role.userCount} {role.userCount === 1 ? 'user' : 'users'}
+            </span>
           </div>
         </Card>
       ))}

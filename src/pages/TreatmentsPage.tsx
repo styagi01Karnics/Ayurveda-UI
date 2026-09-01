@@ -111,11 +111,10 @@ export function TreatmentsPage() {
       lookupOptions: {
 
         patients: patients.map((p) => ({
-
           value: p.patientId,
-
-          label: p.patientFullName,
-
+          label: `${p.patientDisplayId ?? p.patientCode ?? p.patientId} — ${p.patientFullName}`,
+          patientId: p.patientDisplayId ?? p.patientCode ?? p.patientId,
+          name: p.patientFullName,
         })),
 
         therapists: therapists.map((t) => ({

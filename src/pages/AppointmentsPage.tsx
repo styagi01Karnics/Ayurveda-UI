@@ -151,7 +151,9 @@ export function AppointmentsPage() {
       })),
       patients: patients.map((p) => ({
         value: p.patientId,
-        label: p.patientFullName,
+        label: `${p.patientDisplayId ?? p.patientCode ?? p.patientId} — ${p.patientFullName}`,
+        patientId: p.patientDisplayId ?? p.patientCode ?? p.patientId,
+        name: p.patientFullName,
       })),
     };
 
@@ -261,11 +263,11 @@ export function AppointmentsPage() {
     if (item) setCancelTarget(item);
   };
 
-  const handleCancelConfirm = async () => {
+  const handleCancelConfirm = async (reason: string) => {
     if (!cancelTarget || cancelling) return;
     setCancelling(true);
     try {
-      await cancelAppointment(cancelTarget.id);
+      await cancelAppointment(cancelTarget.id, reason);
       setLocalAppointments((prev) =>
         prev.filter((item) => item.id !== cancelTarget.id),
       );

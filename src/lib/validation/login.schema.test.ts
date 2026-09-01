@@ -6,6 +6,7 @@ describe('loginSchema', () => {
     const result = loginSchema.safeParse({
       emailOrUsername: 'admin@ganesha.com',
       password: 'password123',
+      locationId: 'delhi-nanaksaar',
     });
     expect(result.success).toBe(true);
   });
@@ -14,6 +15,7 @@ describe('loginSchema', () => {
     const result = loginSchema.safeParse({
       emailOrUsername: 'adminuser',
       password: 'password123',
+      locationId: 'delhi-nanaksaar',
     });
     expect(result.success).toBe(true);
   });
@@ -22,6 +24,7 @@ describe('loginSchema', () => {
     const result = loginSchema.safeParse({
       emailOrUsername: 'not-an-email@',
       password: 'password123',
+      locationId: 'delhi-nanaksaar',
     });
     expect(result.success).toBe(false);
   });
@@ -30,6 +33,7 @@ describe('loginSchema', () => {
     const result = loginSchema.safeParse({
       emailOrUsername: 'admin@ganesha.com',
       password: '12345',
+      locationId: 'delhi-nanaksaar',
     });
     expect(result.success).toBe(false);
   });
@@ -38,6 +42,16 @@ describe('loginSchema', () => {
     const result = loginSchema.safeParse({
       emailOrUsername: '',
       password: '',
+      locationId: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('requires location', () => {
+    const result = loginSchema.safeParse({
+      emailOrUsername: 'admin@ganesha.com',
+      password: 'password123',
+      locationId: '',
     });
     expect(result.success).toBe(false);
   });

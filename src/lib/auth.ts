@@ -1,5 +1,6 @@
 import type { AuthUser } from '@/types';
 import type { AuthTokenResponse, UserResponse } from '@/lib/api/auth';
+import { clearStoredClinicLocation } from '@/lib/clinicLocations';
 
 const AUTH_KEY = 'ganesha_auth_user';
 const TOKEN_KEY = 'ganesha_auth_token';
@@ -58,6 +59,7 @@ export function clearStoredToken(): void {
 export function clearAuthSession(): void {
   clearStoredToken();
   clearStoredUser();
+  clearStoredClinicLocation();
 }
 
 export function formatAuthRole(role: string): string {

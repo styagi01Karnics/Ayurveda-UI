@@ -37,7 +37,23 @@ export function UserManagementTab({
     });
   }, [users, searchQuery, statusFilter]);
 
+  const isRoleAlreadyAssigned = (role: string, exceptUserId?: string) =>
+    users.some(
+      (user) =>
+        user.assignedRole === role &&
+        user.id !== exceptUserId &&
+        user.status === 'Active',
+    );
+
   const handleAddUser = (values: AddUserFormValues) => {
+    if (isRoleAlreadyAssigned(values.role)) {
+      showToast({
+        title: 'Role already assigned',
+        message: `Only one user can have the ${values.role} role. Choose a different role.`,
+      });
+      return;
+    }
+
     const record: SettingsUserRecord = {
       id: `user-${Date.now()}`,
       userId: values.userId.startsWith('#') ? values.userId : `#${values.userId}`,
@@ -56,6 +72,18 @@ export function UserManagementTab({
   };
 
   const handleRoleChangeRequest = (userId: string, newRole: string) => {
+    if (isRoleAlreadyAssigned(newRole, userId)) {
+      const holder = users.find(
+        (user) => user.assignedRole === newRole && user.id !== userId,
+      );
+      showToast({
+        title: 'Role already assigned',
+        message: holder
+          ? `Only one user can have the ${newRole} role. It is already assigned to ${holder.fullName}.`
+          : `Only one user can have the ${newRole} role.`,
+      });
+      return;
+    }
     setRoleChange({ userId, newRole });
   };
 

@@ -26,6 +26,7 @@ describe('LoginPage', () => {
     expect(
       screen.getByPlaceholderText('Enter your username or email address'),
     ).toBeInTheDocument();
+    expect(screen.getByText('Location')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
   });

@@ -48,6 +48,7 @@ import {
   updateTreatment,
 } from '@/lib/api/treatments';
 import { toFollowUpAppointmentDateIso } from '@/lib/followUpSchedule';
+import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantity';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import {
   applyBillingFormToPatient,
@@ -425,44 +426,9 @@ export function DoctorPatientDetailPage() {
                 discountApplied: Number(billingValues.discountApplied) || 0,
               });
             }
-
-            const draft = await createBilling({
-              patientId: patient.detailId,
-              patientName: patient.name,
-              contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
-              billingDate: new Date().toISOString().slice(0, 10),
-              services: billingValues.billingServices.map((row) => {
-                const packageMasterId =
-                  row.packageMasterId?.trim() ||
-                  (row.packageType?.trim()
-                    ? billingValues.packageMasterId?.trim()
-                    : '') ||
-                  null;
-                const packageType = row.packageType?.trim() || null;
-                const packageCharges = row.packageCharges?.trim()
-                  ? Number(row.packageCharges)
-                  : null;
-
-                return {
-                  serviceType: row.serviceType,
-                  serviceFees: Number(row.serviceFees) || 0,
-                  packageMasterId,
-                  packageType,
-                  packageCharges,
-                };
-              }),
-            });
-            updated = {
-              ...updated,
-              billing: {
-                ...updated.billing,
-                billingDraftId: draft.id,
-                billingDraftStatus: 'PENDING',
-              },
-            };
           } catch (err) {
             showToast({
-              title: 'Billing draft failed',
+              title: 'Package save failed',
               message: resolveErrorMessage(err, UI_MESSAGES.error.saveFailed),
             });
             return false;
@@ -476,7 +442,7 @@ export function DoctorPatientDetailPage() {
         title: 'Changes Saved',
         message:
           activeTab === 'billing'
-            ? 'Pending billing draft has been saved for reception.'
+            ? 'Billing details saved. Draft will be created after the prescription is generated.'
             : 'Patient details have been updated successfully.',
       });
       return true;
@@ -612,14 +578,12 @@ export function DoctorPatientDetailPage() {
     setPrescriptionSubmitting(true);
     try {
       const catalogue = await getAllMedicines().catch(() => []);
-      const medicineNames = new Map(
-        catalogue.map((item) => [item.id, item.medicineName]),
-      );
+      const medicineById = new Map(catalogue.map((item) => [item.id, item]));
       const medicines = (prescriptionDraft.medicines ?? [])
         .filter((row) => row.medicineId)
         .map((row) => ({
           medicineId: row.medicineId as string,
-          medicineName: medicineNames.get(row.medicineId as string),
+          medicineName: medicineById.get(row.medicineId as string)?.medicineName,
           dosage: row.dosage ?? '',
           frequency: row.frequency ?? '',
           duration: row.duration ?? '',
@@ -645,23 +609,105 @@ export function DoctorPatientDetailPage() {
           completionError = err;
         }
       }
+
+      let billingError: unknown = null;
+      let nextPatient = patient;
+      if (!existingPrescription && !patient.billing.billingDraftId) {
+        try {
+          const billingMedicines = medicines.map((row) => {
+            const catalogueRow = medicineById.get(row.medicineId);
+            return {
+              medicineId: row.medicineId,
+              quantity: calculatePrescriptionMedicineQuantity({
+                dosage: row.dosage,
+                frequency: row.frequency,
+                duration: row.duration,
+              }),
+              unitPrice: Number(
+                catalogueRow?.sellingPrice ?? catalogueRow?.price ?? 0,
+              ),
+            };
+          });
+
+          const services = (
+            patient.billing.billingServices?.length
+              ? patient.billing.billingServices
+              : [
+                  {
+                    serviceType: patient.billing.serviceType || 'Consultation',
+                    serviceFees: patient.billing.serviceFees || 0,
+                    packageMasterId: patient.billing.packageMasterId,
+                    packageType: patient.billing.packageType,
+                    packageCharges: patient.billing.packageCharges,
+                  },
+                ]
+          ).map((row, index) => {
+            let serviceType = row.serviceType || 'Consultation';
+            if (
+              index === 0 &&
+              billingMedicines.length > 0 &&
+              !/medicine/i.test(serviceType)
+            ) {
+              serviceType = `${serviceType} + Medicine`;
+            }
+            return {
+              serviceType,
+              serviceFees: Number(row.serviceFees) || 0,
+              packageMasterId: row.packageMasterId?.trim() || null,
+              packageType: row.packageType?.trim() || null,
+              packageCharges: row.packageCharges
+                ? Number(row.packageCharges)
+                : null,
+            };
+          });
+
+          const draft = await createBilling({
+            patientId: patient.detailId,
+            patientName: patient.name,
+            contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
+            billingDate: new Date().toISOString().slice(0, 10),
+            services,
+            medicines: billingMedicines,
+            therapies: [],
+          });
+          nextPatient = {
+            ...patient,
+            billing: {
+              ...patient.billing,
+              billingDraftId: draft.id,
+              billingDraftStatus: 'PENDING',
+            },
+          };
+          setPatient(nextPatient);
+        } catch (err) {
+          billingError = err;
+        }
+      }
+
       const enriched = await getPrescriptionById(saved.id).catch(() => saved);
       setExistingPrescription(enriched);
       setSavedPrescription(enriched);
       showToast({
         title: completionError
           ? 'Prescription created'
-          : existingPrescription
-            ? 'Prescription Updated'
-            : 'Prescription Created',
+          : billingError
+            ? 'Prescription created'
+            : existingPrescription
+              ? 'Prescription Updated'
+              : 'Prescription Created',
         message: completionError
           ? `Prescription was saved, but the appointment could not be completed. ${resolveErrorMessage(
               completionError,
               'Please complete it from the Doctor tab.',
             )}`
-          : existingPrescription
-            ? 'Prescription changes have been saved successfully.'
-            : 'Prescription has been saved and the appointment is completed.',
+          : billingError
+            ? `Prescription was saved, but the billing draft failed. ${resolveErrorMessage(
+                billingError,
+                UI_MESSAGES.error.saveFailed,
+              )}`
+            : existingPrescription
+              ? 'Prescription changes have been saved successfully.'
+              : 'Prescription has been saved, billing draft created, and the appointment is completed.',
       });
     } catch (err) {
       showToast({
