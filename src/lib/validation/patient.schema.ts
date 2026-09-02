@@ -249,9 +249,9 @@ export const followUpSchema = z.object({
 export type FollowUpFormValues = z.infer<typeof followUpSchema>;
 
 export const FOLLOW_UP_SCHEDULING_OPTIONS = [
-  { value: '7_DAYS', label: '7 Days' },
-  { value: '14_DAYS', label: '14 Days' },
-  { value: '30_DAYS', label: '30 Days' },
+  { value: 'AFTER_7_DAYS', label: '7 Days' },
+  { value: 'AFTER_14_DAYS', label: '14 Days' },
+  { value: 'AFTER_30_DAYS', label: '30 Days' },
   { value: 'CUSTOM', label: 'Custom date' },
 ] as const;
 

@@ -13,11 +13,32 @@ export const apiEndpoints = {
     validate: '/api/v1/auth/validate',
     registerUser: '/api/v1/auth/register-user',
     me: '/api/v1/auth/me',
+    changePassword: '/api/v1/auth/change-password',
     users: '/api/v1/auth/users',
+    usersPaged: '/api/v1/auth/users/paged',
+    userById: (userId: string) => `/api/v1/auth/users/${userId}`,
+    userStatus: (userId: string) => `/api/v1/auth/users/${userId}/status`,
     tenant: '/api/v1/auth/tenant',
   },
   tenants: {
     register: '/api/v1/tenants/register',
+  },
+  uiPages: '/api/v1/ui-pages',
+  roles: {
+    base: '/api/v1/roles',
+    byId: (roleId: string) => `/api/v1/roles/${roleId}`,
+  },
+  platform: {
+    bootstrapSuperAdmin: '/api/v1/platform/bootstrap-super-admin',
+    hospitals: '/api/v1/platform/hospitals',
+    hospitalById: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}`,
+    hospitalAdmins: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/admins`,
+    hospitalStatus: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/status`,
+    hospitalRetryProvision: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/retry-provision`,
   },
 
   /** Patient-service :8101 */
@@ -45,6 +66,7 @@ export const apiEndpoints = {
     base: '/api/v1/therapists',
     getAll: '/api/v1/therapists',
     getById: (therapistId: string) => `/api/v1/therapists/${therapistId}`,
+    update: (therapistId: string) => `/api/v1/therapists/${therapistId}`,
     updateStatus: (therapistId: string) =>
       `/api/v1/therapists/${therapistId}/status`,
     getByTherapies: '/api/v1/therapists/by-therapies',
@@ -195,6 +217,9 @@ export const apiEndpoints = {
     getById: (id: string) => `/api/v1/medicines/${id}`,
     deductStock: (id: string) => `/api/v1/medicines/${id}/stock/deduct`,
     restoreStock: (id: string) => `/api/v1/medicines/${id}/stock/restore`,
+    stockSummary: '/api/v1/medicines/stock/summary',
+    stockByCategory: (category: string) =>
+      `/api/v1/medicines/stock/category/${encodeURIComponent(category)}`,
     categories: '/api/v1/medicines/meta/categories',
     names: '/api/v1/medicines/meta/names',
     manufacturers: '/api/v1/medicines/meta/manufacturers',
@@ -219,6 +244,8 @@ export const apiEndpoints = {
       `/api/v1/billings/patient/${patientId}`,
     generateInvoiceFromBilling: (billingId: string) =>
       `/api/v1/billings/${billingId}/generate-invoice`,
+    patientBilling: (patientId: string) =>
+      `/api/v1/billing/patient/${patientId}`,
     invoices: '/api/v1/invoices',
     invoiceById: (invoiceId: string) => `/api/v1/invoices/${invoiceId}`,
     invoicesByPatient: (patientId: string) =>
@@ -241,6 +268,7 @@ export const apiEndpoints = {
   /** Notification-service :8110 */
   notifications: {
     base: '/api/v1/notifications',
+    email: '/api/v1/notifications/email',
     unreadCount: '/api/v1/notifications/unread-count',
     byId: (id: string) => `/api/v1/notifications/${id}`,
     markRead: (id: string) => `/api/v1/notifications/${id}/read`,
@@ -250,7 +278,7 @@ export const apiEndpoints = {
   /** Messaging (SMS / Email) — notification-service :8110 */
   messaging: {
     sms: '/api/v1/messages/sms',
-    email: '/api/v1/messages/email',
+    email: '/api/v1/notifications/email',
     history: '/api/v1/messages',
   },
 

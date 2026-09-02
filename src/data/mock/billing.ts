@@ -70,7 +70,7 @@ export const initialBillingRecords: BillingRecord[] = [
 ];
 
 export const BILLING_FILTER_OPTIONS = {
-  status: ['Pending', 'Unpaid', 'Ongoing', 'Completed'],
+  status: ['Pending', 'Unpaid', 'Partial', 'Ongoing', 'Completed'],
 } as const;
 
 export const PAYMENT_MODES = [

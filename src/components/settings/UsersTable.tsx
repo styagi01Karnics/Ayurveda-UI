@@ -1,6 +1,7 @@
 import { Settings2 } from 'lucide-react';
 import { DataTableShell } from '@/components/ui/DataTableShell';
 import { Select } from '@/components/ui/Select';
+import { formatAuthRole } from '@/lib/auth';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
 import { cn } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
@@ -52,7 +53,7 @@ export function UsersTable({ records, onRoleChange }: UsersTableProps) {
                   </td>
                   <td className="px-5 py-4">
                     <span className="rounded-full bg-cream px-3 py-1 text-xs font-medium text-gold">
-                      {record.assignedRole}
+                      {formatAuthRole(record.assignedRole)}
                     </span>
                   </td>
                   <td className="px-5 py-4">

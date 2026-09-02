@@ -1,9 +1,11 @@
 import type { AuthUser } from '@/types';
 import type { AuthTokenResponse, UserResponse } from '@/lib/api/auth';
 import { clearStoredClinicLocation } from '@/lib/clinicLocations';
+import { ALL_PAGE_CODES } from '@/lib/pagePermissions';
 
 const AUTH_KEY = 'ganesha_auth_user';
 const TOKEN_KEY = 'ganesha_auth_token';
+const TENANT_KEY = 'ganesha_auth_tenant';
 
 export const MOCK_AUTH_TOKEN = 'mock-dev-token';
 
@@ -11,14 +13,17 @@ export const MOCK_AUTH_TOKEN = 'mock-dev-token';
 export const DUMMY_LOGIN_CREDENTIALS = {
   emailOrUsername: 'admin@clinic.com',
   password: 'Secret@123',
+  tenantCode: 'GAN-DL',
 } as const;
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
-  TENANT_ADMIN: 'Tenant Admin',
+  ADMIN: 'Admin',
+  MANAGER: 'Manager',
+  RECEPTIONIST: 'Receptionist',
+  DIETICIAN: 'Dietician',
   DOCTOR: 'Doctor',
-  THERAPIST: 'Therapist',
-  STAFF: 'Staff',
+  CHEMIST: 'Chemist',
 };
 
 export function getStoredUser(): AuthUser | null {
@@ -35,6 +40,16 @@ export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function getStoredTenant(): unknown | null {
+  const raw = localStorage.getItem(TENANT_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
+}
+
 export function setStoredUser(user: AuthUser): void {
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
 }
@@ -43,9 +58,20 @@ export function setStoredToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
-export function setAuthSession(token: string, user: AuthUser): void {
+export function setStoredTenant(tenant: unknown): void {
+  localStorage.setItem(TENANT_KEY, JSON.stringify(tenant));
+}
+
+export function setAuthSession(
+  token: string,
+  user: AuthUser,
+  tenant?: unknown,
+): void {
   setStoredToken(token);
   setStoredUser(user);
+  if (tenant !== undefined) {
+    setStoredTenant(tenant);
+  }
 }
 
 export function clearStoredUser(): void {
@@ -56,9 +82,14 @@ export function clearStoredToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+export function clearStoredTenant(): void {
+  localStorage.removeItem(TENANT_KEY);
+}
+
 export function clearAuthSession(): void {
   clearStoredToken();
   clearStoredUser();
+  clearStoredTenant();
   clearStoredClinicLocation();
 }
 
@@ -66,25 +97,41 @@ export function formatAuthRole(role: string): string {
   return ROLE_LABELS[role] ?? role.replace(/_/g, ' ');
 }
 
+export function isSuperAdmin(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  const raw = (user.apiRole || user.role || '').toUpperCase().replace(/\s+/g, '_');
+  return raw === 'SUPER_ADMIN';
+}
+
 export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
   return {
     id: user.id,
     fullName: user.fullName,
     role: formatAuthRole(user.role),
+    apiRole: user.role,
     email: user.email,
     username: user.username,
     tenantId: user.tenantId,
     tenantCode: user.tenantCode,
+    schemaName: user.schemaName,
+    mobileNumber: user.mobileNumber,
+    tenantRoleId: user.tenantRoleId,
+    tenantRoleCode: user.tenantRoleCode,
+    tenantRoleName: user.tenantRoleName,
+    pageCodes: user.pageCodes ?? [],
+    status: user.status,
   };
 }
 
 export function mapAuthTokenToSession(response: AuthTokenResponse): {
   token: string;
   user: AuthUser;
+  tenant?: unknown;
 } {
   return {
     token: response.accessToken,
     user: mapUserResponseToAuthUser(response.user),
+    tenant: response.tenant ?? undefined,
   };
 }
 
@@ -102,11 +149,13 @@ export function createMockAuthSession(input: {
     user: {
       id: '00000000-0000-4000-8000-000000000001',
       fullName: input.fullName ?? 'Rahul Sharma',
-      role: 'Super Admin',
+      role: 'Admin',
       email,
       username: trimmed.includes('@') ? trimmed.split('@')[0] : trimmed,
       tenantId: '00000000-0000-4000-8000-000000000002',
-      tenantCode: 'GAN',
+      tenantCode: DUMMY_LOGIN_CREDENTIALS.tenantCode,
+      pageCodes: [...ALL_PAGE_CODES],
+      status: 'ACTIVE',
     },
   };
 }
@@ -135,4 +184,8 @@ export function mockSignup(data: {
 
 export function isMockAuthToken(token: string | null | undefined): boolean {
   return token === MOCK_AUTH_TOKEN;
+}
+
+export function getStoredPageCodes(): string[] {
+  return getStoredUser()?.pageCodes ?? [];
 }

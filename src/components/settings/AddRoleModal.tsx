@@ -6,8 +6,12 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import {
+  ALL_PAGE_CODES,
+  PAGE_CODE_LABELS,
+  type PageCode,
+} from '@/lib/pagePermissions';
+import {
   CLINIC_STATUS_OPTIONS,
-  PERMISSION_MODULES,
   roleSchema,
   type RoleFormValues,
 } from '@/lib/validation/settings.schema';
@@ -17,8 +21,10 @@ import { cn } from '@/lib/utils';
 interface AddRoleModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: RoleFormValues) => void;
+  onSubmit: (values: RoleFormValues) => void | Promise<void>;
   role?: SettingsRoleRecord | null;
+  permissionModules?: readonly PageCode[];
+  submitting?: boolean;
 }
 
 export function AddRoleModal({
@@ -26,6 +32,8 @@ export function AddRoleModal({
   onClose,
   onSubmit,
   role,
+  permissionModules = ALL_PAGE_CODES,
+  submitting = false,
 }: AddRoleModalProps) {
   const {
     register,
@@ -64,16 +72,16 @@ export function AddRoleModal({
     }
   }, [role, reset, open]);
 
-  const togglePermission = (permission: string) => {
+  const togglePermission = (pageCode: string) => {
     const current = selectedPermissions ?? [];
-    if (current.includes(permission)) {
+    if (current.includes(pageCode)) {
       setValue(
         'permissions',
-        current.filter((p) => p !== permission),
+        current.filter((p) => p !== pageCode),
         { shouldValidate: true },
       );
     } else {
-      setValue('permissions', [...current, permission], { shouldValidate: true });
+      setValue('permissions', [...current, pageCode], { shouldValidate: true });
     }
   };
 
@@ -89,8 +97,12 @@ export function AddRoleModal({
       title={role ? 'Edit Role' : 'Add New Role'}
       subtitle="Configure role permissions and access level"
       footer={
-        <Button onClick={handleSubmit(onSubmit)}>
-          {role ? 'Save Changes' : 'Confirm'}
+        <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
+          {submitting
+            ? 'Saving...'
+            : role
+              ? 'Save Changes'
+              : 'Confirm'}
         </Button>
       }
     >
@@ -118,13 +130,13 @@ export function AddRoleModal({
         <div>
           <p className="mb-2 text-xs font-medium text-text-muted">Permissions</p>
           <div className="flex flex-wrap gap-2">
-            {PERMISSION_MODULES.map((permission) => {
-              const isSelected = selectedPermissions?.includes(permission);
+            {permissionModules.map((pageCode) => {
+              const isSelected = selectedPermissions?.includes(pageCode);
               return (
                 <button
-                  key={permission}
+                  key={pageCode}
                   type="button"
-                  onClick={() => togglePermission(permission)}
+                  onClick={() => togglePermission(pageCode)}
                   className={cn(
                     'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
                     isSelected
@@ -132,7 +144,7 @@ export function AddRoleModal({
                       : 'bg-cream text-brown hover:bg-gold/10',
                   )}
                 >
-                  {permission}
+                  {PAGE_CODE_LABELS[pageCode]}
                 </button>
               );
             })}

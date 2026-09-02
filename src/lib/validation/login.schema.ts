@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const loginSchema = z.object({
+  tenantCode: z.string().optional(),
   emailOrUsername: z
     .string()
     .min(1, 'Username or email is required')

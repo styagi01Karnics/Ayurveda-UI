@@ -23,21 +23,18 @@ export interface DocumentDto {
 
 export function uploadDocument(
   patientId: string,
-  bookingId: string,
   documentType: DocumentTypeApi,
   file: File,
+  bookingId?: string,
 ) {
-  const params = new URLSearchParams({
-    patientId,
-    bookingId,
-    documentType,
-  });
   const formData = new FormData();
+  formData.append('patientId', patientId);
+  formData.append('documentType', documentType);
   formData.append('file', file);
-  return apiRequestFormData<DocumentDto>(
-    `${url(ep.upload)}?${params.toString()}`,
-    formData,
-  );
+  if (bookingId) {
+    formData.append('bookingId', bookingId);
+  }
+  return apiRequestFormData<DocumentDto>(url(ep.upload), formData);
 }
 
 export function getDocumentsByPatientId(patientId: string) {

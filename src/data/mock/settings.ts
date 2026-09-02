@@ -6,6 +6,7 @@ import type {
   SettingsUserRecord,
   SystemPreferences,
 } from '@/types';
+import { ALL_PAGE_CODES } from '@/lib/pagePermissions';
 
 export const initialClinicDoctors: ClinicDoctorRecord[] = [
   {
@@ -51,7 +52,7 @@ export const initialSettingsUsers: SettingsUserRecord[] = [
     phone: '+91 9876543210',
     email: 'rahul@ganeshaayurvedaa.com',
     status: 'Active',
-    assignedRole: 'Super Admin',
+    assignedRole: 'ADMIN',
   },
   {
     id: 'user-2',
@@ -60,7 +61,7 @@ export const initialSettingsUsers: SettingsUserRecord[] = [
     phone: '+91 9876543211',
     email: 'khushi@ganeshaayurvedaa.com',
     status: 'Active',
-    assignedRole: 'Admin',
+    assignedRole: 'MANAGER',
   },
   {
     id: 'user-3',
@@ -69,7 +70,7 @@ export const initialSettingsUsers: SettingsUserRecord[] = [
     phone: '+91 9876543212',
     email: 'meera@ganeshaayurvedaa.com',
     status: 'Inactive',
-    assignedRole: 'Therapist',
+    assignedRole: 'RECEPTIONIST',
   },
 ];
 
@@ -79,18 +80,7 @@ export const initialSettingsRoles: SettingsRoleRecord[] = [
     name: 'Super Admin',
     status: 'Active',
     accessLevel: 'Full Access',
-    permissions: [
-      'Dashboard',
-      'Patients',
-      'Doctors',
-      'Appointments',
-      'Treatments',
-      'Medicines',
-      'Sales',
-      'Activity Log',
-      'Billing',
-      'Settings',
-    ],
+    permissions: [...ALL_PAGE_CODES],
     userCount: 1,
   },
   {
@@ -99,11 +89,11 @@ export const initialSettingsRoles: SettingsRoleRecord[] = [
     status: 'Active',
     accessLevel: 'Limited Access',
     permissions: [
-      'Dashboard',
-      'Patients',
-      'Appointments',
-      'Medicines',
-      'Billing',
+      'DASHBOARD',
+      'PATIENTS',
+      'APPOINTMENTS',
+      'MEDICINES',
+      'BILLING',
     ],
     userCount: 1,
   },
@@ -113,11 +103,11 @@ export const initialSettingsRoles: SettingsRoleRecord[] = [
     status: 'Active',
     accessLevel: 'Clinical Access',
     permissions: [
-      'Dashboard',
-      'Patients',
-      'Doctors',
-      'Appointments',
-      'Treatments',
+      'DASHBOARD',
+      'PATIENTS',
+      'DOCTORS',
+      'APPOINTMENTS',
+      'TREATMENTS',
     ],
     userCount: 0,
   },

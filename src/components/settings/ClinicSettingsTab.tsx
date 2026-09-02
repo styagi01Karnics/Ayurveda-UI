@@ -11,19 +11,24 @@ import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemMod
 import { DoctorAvailabilityFields } from '@/components/settings/DoctorAvailabilityFields';
 import {
   ConsultationTypesSection,
+  DoshasSection,
   PackageMastersSection,
   TreatmentPlanMastersSection,
   mapConsultationTypeMasterToRecord,
+  mapDoshaToRecord,
   mapPackageMasterToRecord,
   mapTreatmentPlanMasterToRecord,
 } from '@/components/settings/MasterSettingsSections';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
+  createDosha,
   createTherapy,
   createTreatmentCategory,
   deleteTherapy,
+  getAllDoshas,
   getAllTherapies,
   getAllTreatmentCategories,
+  invalidateBookingDoshasCache,
   updateTherapyStatus,
 } from '@/lib/api/appointments';
 import { createConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
@@ -125,6 +130,7 @@ export function ClinicSettingsTab() {
       consultationTypes,
       treatmentPlans,
       packageMasters,
+      doshas,
     ] = await Promise.all([
       getAllDoctors(),
       getAllTherapists(),
@@ -133,6 +139,7 @@ export function ClinicSettingsTab() {
       getAllConsultationTypes().catch(() => []),
       getAllTreatmentPlanMasters().catch(() => []),
       getAllPackageMasters().catch(() => []),
+      getAllDoshas().catch(() => []),
     ]);
 
     const categoriesById = new Map(categories.map((c) => [c.id, c]));
@@ -154,6 +161,7 @@ export function ClinicSettingsTab() {
       consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
       treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
       packageMasters: packageMasters.map(mapPackageMasterToRecord),
+      doshas: doshas.map(mapDoshaToRecord),
     };
   }, {
     doctors: [] as ClinicDoctorRecord[],
@@ -164,6 +172,7 @@ export function ClinicSettingsTab() {
     consultationTypes: [],
     treatmentPlans: [],
     packageMasters: [],
+    doshas: [],
   });
 
   const { doctors, therapies, therapists } = data;
@@ -284,8 +293,6 @@ export function ClinicSettingsTab() {
               await createDoctor({
                 name: values.name,
                 specialization: values.specialization,
-                qualification: values.qualification?.trim() || undefined,
-                mobileNumber: values.mobileNumber?.trim() || undefined,
                 status: toApiStatus(values.status),
                 consultationFees: Number(values.consultationFees),
                 followUpFees: Number(values.followUpFees),
@@ -459,6 +466,34 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create package master.',
+              });
+            }
+          }}
+        />
+
+        <DoshasSection
+          records={data.doshas}
+          onAdd={async (values) => {
+            try {
+              await createDosha({
+                name: values.name.trim(),
+                elements: values.elements.trim(),
+                characteristics: values.characteristics.trim(),
+                status: 'ACTIVE',
+              });
+              invalidateBookingDoshasCache();
+              await reload();
+              showToast({
+                title: 'Dosha added',
+                message: `${values.name} has been added to Dosha Master.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add dosha',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create dosha.',
               });
             }
           }}

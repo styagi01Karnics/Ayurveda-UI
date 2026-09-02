@@ -6,10 +6,12 @@ const url = (path: string) => `${apiConfig.billing}${path}`;
 const ep = apiEndpoints.billing;
 const dash = apiEndpoints.dashboard;
 
-export type InvoiceStatus = 'UNPAID' | 'ONGOING' | 'COMPLETED';
+export type InvoiceStatus = 'UNPAID' | 'PARTIAL' | 'ONGOING' | 'COMPLETED';
 export type BillingDraftStatus = 'PENDING' | 'COMPLETED';
 export type BillingPeriod = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+/** Preferred visit type for invoices is `OPD` (consultation). Older aliases kept for reads. */
 export type VisitTypeApi =
+  | 'OPD'
   | 'CONSULTATION'
   | 'FOLLOW_UP'
   | 'THERAPY'
@@ -20,7 +22,8 @@ export function toVisitTypeApi(value: string): VisitTypeApi {
   if (upper.includes('THERAPY')) return 'THERAPY';
   if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
   if (upper.includes('PACKAGE')) return 'PACKAGE';
-  return 'CONSULTATION';
+  // Doc example: visitType "OPD" for consultation visits
+  return 'OPD';
 }
 
 export interface InvoiceMedicineItem {
@@ -38,7 +41,8 @@ export interface InvoiceTherapyItem {
   scheduleDate?: string;
   scheduleTime?: string;
   sessionDuration?: number;
-  sessionFrequency?: number;
+  /** Doc example: `"ONCE"` */
+  sessionFrequency?: string;
 }
 
 export interface CreateInvoicePayload {
@@ -52,7 +56,7 @@ export interface CreateInvoicePayload {
   serviceFees: number;
   packageMasterId?: string | null;
   packageType?: string | null;
-  packageCharges?: number;
+  packageCharges?: number | null;
   medicines?: InvoiceMedicineItem[];
   therapies?: InvoiceTherapyItem[];
   discount?: number;
@@ -85,7 +89,7 @@ export interface InvoiceItemDto {
   scheduleDate?: string | null;
   scheduleTime?: string | null;
   sessionDuration?: number | null;
-  sessionFrequency?: number | null;
+  sessionFrequency?: string | number | null;
 }
 
 export interface InvoiceDto {
@@ -101,7 +105,7 @@ export interface InvoiceDto {
   visitType?: VisitTypeApi | string;
   serviceFees?: number;
   packageType?: string | null;
-  packageCharges?: number;
+  packageCharges?: number | null;
   subtotal?: number;
   discount?: number;
   taxEnabled?: boolean;
@@ -218,33 +222,13 @@ export interface BillingServiceItemPayload {
   packageCharges?: number | null;
 }
 
-/** Prescription medicines attached to a pending billing draft. */
-export interface BillingMedicineItemPayload {
-  medicineId: string;
-  quantity: number;
-  unitPrice: number;
-}
-
-export interface BillingTherapyItemPayload {
-  itemName: string;
-  quantity: number;
-  unitPrice: number;
-  assignedTherapistId?: string;
-  assignedTherapistName?: string;
-  scheduleDate?: string;
-  scheduleTime?: string;
-  sessionDuration?: number;
-  sessionFrequency?: number;
-}
-
+/** Doctor-side pending billing — services only (medicines go on generate-invoice). */
 export interface CreateBillingPayload {
   patientId: string;
   patientName: string;
   contactNumber: string;
   billingDate: string;
   services: BillingServiceItemPayload[];
-  medicines?: BillingMedicineItemPayload[];
-  therapies?: BillingTherapyItemPayload[];
 }
 
 export interface BillingServiceItemDto {
@@ -254,7 +238,7 @@ export interface BillingServiceItemDto {
   packageMasterId?: string | null;
   packageName?: string | null;
   packageType?: string | null;
-  packageCharges?: number;
+  packageCharges?: number | null;
 }
 
 export interface BillingMedicineItemDto {
@@ -315,6 +299,34 @@ export function getBillingById(billingId: string) {
 
 export function getBillingsByPatient(patientId: string) {
   return apiRequestList<BillingDto>(url(ep.billingsByPatient(patientId)));
+}
+
+/** Aggregate patient billing: summary + invoices + packages. */
+export interface PatientBillingSummaryDto {
+  totalInvoices?: number;
+  totalAmount?: number;
+  paidAmount?: number;
+  leftAmount?: number;
+  pendingCount?: number;
+  collectedAmount?: number;
+}
+
+export interface PatientBillingAggregateDto {
+  summary?: PatientBillingSummaryDto;
+  invoices?: (InvoiceDto | InvoiceListItemDto)[];
+  packages?: import('./types').PatientPackageDto[];
+}
+
+export function getPatientBilling(
+  patientId: string,
+  status?: InvoiceStatus,
+) {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  const qs = params.toString();
+  return apiRequest<PatientBillingAggregateDto>(
+    url(`${ep.patientBilling(patientId)}${qs ? `?${qs}` : ''}`),
+  );
 }
 
 export function generateInvoiceFromBilling(

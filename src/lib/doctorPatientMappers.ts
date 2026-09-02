@@ -319,7 +319,7 @@ export function mapPatientToTreatmentForm(
 
     setupRequired: 'Yes',
 
-    followUpScheduling: '7_DAYS',
+    followUpScheduling: 'AFTER_7_DAYS',
 
     assignedDoctor: sanitizeFormField(patient.assignedDoctorId || t.followUpDoctor),
 

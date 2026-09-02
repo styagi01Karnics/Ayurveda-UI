@@ -322,7 +322,12 @@ export interface MedicineRecord {
   lowStockAlertEnabled?: boolean;
 }
 
-export type BillingStatus = 'Pending' | 'Unpaid' | 'Ongoing' | 'Completed';
+export type BillingStatus =
+  | 'Pending'
+  | 'Unpaid'
+  | 'Partial'
+  | 'Ongoing'
+  | 'Completed';
 
 export interface BillingRecord {
   /** Invoice UUID for GET /api/v1/invoices/{id}, or billing draft UUID. */
@@ -444,6 +449,16 @@ export interface AuthUser {
   username?: string;
   tenantId?: string;
   tenantCode?: string;
+  schemaName?: string;
+  mobileNumber?: string;
+  tenantRoleId?: string;
+  tenantRoleCode?: string;
+  tenantRoleName?: string;
+  /** Raw API UserRole enum, e.g. SUPER_ADMIN */
+  apiRole?: string;
+  /** UiPageSeeder codes controlling sidebar + routes. Empty = full access. */
+  pageCodes?: string[];
+  status?: string;
 }
 
 export interface SignupFormData {
@@ -512,6 +527,14 @@ export interface ClinicPackageMasterRecord {
   id: string;
   name: string;
   packagePrice: number;
+  status: ClinicStatus;
+}
+
+export interface ClinicDoshaRecord {
+  id: string;
+  name: string;
+  elements: string;
+  characteristics: string;
   status: ClinicStatus;
 }
 

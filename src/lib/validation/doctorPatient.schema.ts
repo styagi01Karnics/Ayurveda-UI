@@ -290,12 +290,12 @@ export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;
 export const MEMBERSHIP_STATUS_OPTIONS = ['Completed', 'Active', 'Pending'] as const;
 export const YES_NO_OPTIONS = ['Yes', 'No'] as const;
 export const FOLLOW_UP_OPTIONS = [
-  { value: '7_DAYS', label: '7 days' },
-  { value: '14_DAYS', label: '14 days' },
-  { value: '30_DAYS', label: '30 days' },
+  { value: 'AFTER_7_DAYS', label: '7 days' },
+  { value: 'AFTER_14_DAYS', label: '14 days' },
+  { value: 'AFTER_30_DAYS', label: '30 days' },
 ] as const;
 export const PRESCRIPTION_SCHEDULING_OPTIONS = [
-  { value: '7_DAYS', label: '7 days' },
-  { value: '14_DAYS', label: '14 days' },
-  { value: '30_DAYS', label: '30 days' },
+  { value: 'AFTER_7_DAYS', label: '7 days' },
+  { value: 'AFTER_14_DAYS', label: '14 days' },
+  { value: 'AFTER_30_DAYS', label: '30 days' },
 ] as const;

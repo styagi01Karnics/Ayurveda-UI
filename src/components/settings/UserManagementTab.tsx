@@ -6,6 +6,8 @@ import { UsersTable } from '@/components/settings/UsersTable';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { initialSettingsUsers, USER_FILTER_OPTIONS } from '@/data/mock/settings';
+import { registerUser } from '@/lib/api/auth';
+import { formatAuthRole } from '@/lib/auth';
 import type { AddUserFormValues } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
 
@@ -22,6 +24,7 @@ export function UserManagementTab({
   const [users, setUsers] = useState(initialSettingsUsers);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [roleChange, setRoleChange] = useState<{
     userId: string;
     newRole: string;
@@ -45,30 +48,61 @@ export function UserManagementTab({
         user.status === 'Active',
     );
 
-  const handleAddUser = (values: AddUserFormValues) => {
+  const handleAddUser = async (values: AddUserFormValues) => {
     if (isRoleAlreadyAssigned(values.role)) {
       showToast({
         title: 'Role already assigned',
-        message: `Only one user can have the ${values.role} role. Choose a different role.`,
+        message: `Only one user can have the ${formatAuthRole(values.role)} role. Choose a different role.`,
       });
       return;
     }
 
-    const record: SettingsUserRecord = {
-      id: `user-${Date.now()}`,
-      userId: values.userId.startsWith('#') ? values.userId : `#${values.userId}`,
-      fullName: values.fullName,
-      phone: values.contactNumber,
-      email: values.email,
-      status: 'Active',
-      assignedRole: values.role,
-    };
-    setUsers((prev) => [record, ...prev]);
-    showToast({
-      title: 'User Added',
-      message: `${record.fullName} has been added successfully.`,
-    });
-    onAddUserClose();
+    setSubmitting(true);
+    try {
+      const created = await registerUser({
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+        role: values.role,
+      });
+      const record: SettingsUserRecord = {
+        id: created.id,
+        userId: values.userId.startsWith('#')
+          ? values.userId
+          : `#${values.userId}`,
+        fullName: created.fullName,
+        phone: values.contactNumber,
+        email: created.email,
+        status: created.status === 'INACTIVE' ? 'Inactive' : 'Active',
+        assignedRole: created.role,
+      };
+      setUsers((prev) => [record, ...prev]);
+      showToast({
+        title: 'User Added',
+        message: `${record.fullName} has been added successfully.`,
+      });
+      onAddUserClose();
+    } catch {
+      const record: SettingsUserRecord = {
+        id: `user-${Date.now()}`,
+        userId: values.userId.startsWith('#')
+          ? values.userId
+          : `#${values.userId}`,
+        fullName: values.fullName,
+        phone: values.contactNumber,
+        email: values.email,
+        status: 'Active',
+        assignedRole: values.role,
+      };
+      setUsers((prev) => [record, ...prev]);
+      showToast({
+        title: 'User Added',
+        message: `${record.fullName} has been added successfully.`,
+      });
+      onAddUserClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRoleChangeRequest = (userId: string, newRole: string) => {
@@ -79,8 +113,8 @@ export function UserManagementTab({
       showToast({
         title: 'Role already assigned',
         message: holder
-          ? `Only one user can have the ${newRole} role. It is already assigned to ${holder.fullName}.`
-          : `Only one user can have the ${newRole} role.`,
+          ? `Only one user can have the ${formatAuthRole(newRole)} role. It is already assigned to ${holder.fullName}.`
+          : `Only one user can have the ${formatAuthRole(newRole)} role.`,
       });
       return;
     }
@@ -130,13 +164,18 @@ export function UserManagementTab({
         open={addUserOpen}
         onClose={onAddUserClose}
         onSubmit={handleAddUser}
+        submitting={submitting}
       />
 
       <RoleChangeModal
         open={Boolean(roleChange)}
         onClose={() => setRoleChange(null)}
         onConfirm={handleRoleChangeConfirm}
-        newRole={roleChange?.newRole}
+        newRole={
+          roleChange?.newRole
+            ? formatAuthRole(roleChange.newRole)
+            : undefined
+        }
       />
     </div>
   );

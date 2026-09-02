@@ -33,6 +33,12 @@ export interface CreateNotificationPayload {
   referenceType?: string;
 }
 
+export interface SendEmailPayload {
+  to: string;
+  subject: string;
+  body: string;
+}
+
 export interface NotificationsQuery {
   userId: string;
   unreadOnly?: boolean;
@@ -60,6 +66,13 @@ export function getNotificationById(id: string) {
 
 export function createNotification(payload: CreateNotificationPayload) {
   return apiRequest<NotificationDto>(url(ep.base), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export function sendEmail(payload: SendEmailPayload) {
+  return apiRequest<void>(url(ep.email), {
     method: 'POST',
     body: payload,
   });

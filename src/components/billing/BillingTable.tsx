@@ -100,11 +100,12 @@ function BillingStatus({ status }: { status: BillingRecord['status'] }) {
     <span
       className={cn(
         'font-medium',
-        status === 'Pending' || status === 'Unpaid'
+        status === 'Pending' ||
+          status === 'Unpaid' ||
+          status === 'Partial' ||
+          status === 'Ongoing'
           ? 'text-gold'
-          : status === 'Ongoing'
-            ? 'text-gold'
-            : 'text-success',
+          : 'text-success',
       )}
     >
       {status}

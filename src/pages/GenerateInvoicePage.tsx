@@ -232,9 +232,14 @@ function parseSessionMinutes(value: string): number {
   return match ? Number(match[0]) : 45;
 }
 
-function parseSessionFrequency(value: string): number {
-  const match = value.match(/\d+/);
-  return match ? Number(match[0]) : 1;
+/** Map form session frequency to API string (doc: `"ONCE"`). */
+function toSessionFrequencyApi(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '1') return 'ONCE';
+  if (/^\d+$/.test(trimmed)) {
+    return trimmed === '1' ? 'ONCE' : trimmed;
+  }
+  return trimmed.toUpperCase().replace(/[\s-]+/g, '_');
 }
 
 function buildServiceLineItems(data: InvoiceServiceStepValues): InvoiceLineItem[] {
@@ -383,7 +388,7 @@ export function GenerateInvoicePage() {
       scheduleDate: '',
       scheduleTime: '',
       sessionDuration: '45 mins',
-      sessionFrequency: '1',
+      sessionFrequency: 'ONCE',
     },
   });
 
@@ -674,7 +679,7 @@ export function GenerateInvoicePage() {
       scheduleDate: '',
       scheduleTime: '',
       sessionDuration: '45 mins',
-      sessionFrequency: '1',
+      sessionFrequency: 'ONCE',
     });
   });
 
@@ -805,9 +810,17 @@ export function GenerateInvoicePage() {
             scheduleDate: item.scheduleDate,
             scheduleTime: normalizeInvoiceTime(item.scheduleTime),
             sessionDuration: parseSessionMinutes(item.sessionDuration),
-            sessionFrequency: parseSessionFrequency(item.sessionFrequency),
+            sessionFrequency: toSessionFrequencyApi(
+              item.sessionFrequency || 'ONCE',
+            ),
           }))
         : [];
+
+      const packageChargesRaw = currentService.packageCharges?.trim();
+      const packageCharges =
+        includeConsultation && packageChargesRaw
+          ? Number(packageChargesRaw)
+          : null;
 
       const basePayload: CreateInvoicePayload = {
         patientId: patientContext?.uuid ?? '',
@@ -826,9 +839,7 @@ export function GenerateInvoicePage() {
         packageType: includeConsultation
           ? currentService.packageType || null
           : null,
-        packageCharges: includeConsultation
-          ? Number(currentService.packageCharges || 0)
-          : 0,
+        packageCharges,
         discount: Number(summary.discount || 0),
         taxEnabled: summary.applyTax,
         cgstPercent: Number(summary.cgst || 3),

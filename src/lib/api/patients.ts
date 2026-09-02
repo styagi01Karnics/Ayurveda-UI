@@ -26,6 +26,12 @@ export function deletePatient(patientId: string) {
   });
 }
 
+export interface PatientCountDto {
+  totalPatients: number;
+  activePatients: number;
+  inactivePatients: number;
+}
+
 export function getPatientCount() {
-  return apiRequest<number>(url(apiEndpoints.patients.getCount));
+  return apiRequest<PatientCountDto>(url(apiEndpoints.patients.getCount));
 }

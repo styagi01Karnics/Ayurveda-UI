@@ -1,27 +1,52 @@
 import { NavLink } from 'react-router-dom';
 import { Megaphone, MessageCircle, Stethoscope } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
+import { getStoredPageCodes } from '@/lib/auth';
+import { hasPageAccess, type PageCode } from '@/lib/pagePermissions';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
 
 const navItems: {
   to: string;
   label: string;
+  pageCode?: PageCode;
+  /** Extra items without a seeded pageCode — only when SETTINGS or full access. */
+  requiresSettings?: boolean;
   icon?: NavIconKey;
   lucide?: 'stethoscope' | 'megaphone' | 'message';
 }[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { to: '/patients', label: 'Patients', icon: 'patients' },
-  { to: '/doctors', label: 'Doctors', lucide: 'stethoscope' },
-  { to: '/appointments', label: 'Appointments', icon: 'appointments' },
-  { to: '/treatments', label: 'Treatments', icon: 'treatments' },
-  { to: '/medicines', label: 'Medicines', icon: 'medicines' },
-  { to: '/sales', label: 'Sales', icon: 'sales' },
-  { to: '/activity-logs', label: 'Activity Logs', icon: 'activityLogs' },
-  { to: '/billing', label: 'Billing', icon: 'billing' },
-  { to: '/banners', label: 'Banners', lucide: 'megaphone' },
-  { to: '/communications', label: 'SMS & Email', lucide: 'message' },
-  { to: '/settings', label: 'Settings', icon: 'settings' },
+  { to: '/dashboard', label: 'Dashboard', pageCode: 'DASHBOARD', icon: 'dashboard' },
+  { to: '/patients', label: 'Patients', pageCode: 'PATIENTS', icon: 'patients' },
+  { to: '/doctors', label: 'Doctors', pageCode: 'DOCTORS', lucide: 'stethoscope' },
+  {
+    to: '/appointments',
+    label: 'Appointments',
+    pageCode: 'APPOINTMENTS',
+    icon: 'appointments',
+  },
+  { to: '/treatments', label: 'Treatments', pageCode: 'TREATMENTS', icon: 'treatments' },
+  { to: '/medicines', label: 'Medicines', pageCode: 'MEDICINES', icon: 'medicines' },
+  { to: '/sales', label: 'Sales', pageCode: 'SALES', icon: 'sales' },
+  {
+    to: '/activity-logs',
+    label: 'Activity Logs',
+    pageCode: 'ACTIVITY_LOG',
+    icon: 'activityLogs',
+  },
+  { to: '/billing', label: 'Billing', pageCode: 'BILLING', icon: 'billing' },
+  {
+    to: '/banners',
+    label: 'Banners',
+    requiresSettings: true,
+    lucide: 'megaphone',
+  },
+  {
+    to: '/communications',
+    label: 'SMS & Email',
+    requiresSettings: true,
+    lucide: 'message',
+  },
+  { to: '/settings', label: 'Settings', pageCode: 'SETTINGS', icon: 'settings' },
 ];
 
 interface SidebarProps {
@@ -30,6 +55,15 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate, className }: SidebarProps) {
+  const pageCodes = getStoredPageCodes();
+  const visibleItems = navItems.filter((item) => {
+    if (item.pageCode) return hasPageAccess(pageCodes, item.pageCode);
+    if (item.requiresSettings) {
+      return hasPageAccess(pageCodes, 'SETTINGS');
+    }
+    return true;
+  });
+
   return (
     <aside
       className={cn(
@@ -53,7 +87,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
       </div>
 
       <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
-        {navItems.map(({ to, label, icon, lucide }) => (
+        {visibleItems.map(({ to, label, icon, lucide }) => (
           <NavLink
             key={to}
             to={to}

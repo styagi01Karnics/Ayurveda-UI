@@ -1163,6 +1163,7 @@ function mapInvoiceStatus(status: string): import('@/types').BillingStatus {
   if (upper === 'COMPLETED') return 'Completed';
   if (upper === 'PENDING') return 'Pending';
   if (upper === 'UNPAID') return 'Unpaid';
+  if (upper === 'PARTIAL') return 'Partial';
   return 'Ongoing';
 }
 
@@ -1310,20 +1311,24 @@ export function mapScheduleAppointment(
 }
 
 export function buildDashboardStats(input: {
-  patientCount?: number;
+  patientCount?: {
+    totalPatients: number;
+    activePatients: number;
+    inactivePatients: number;
+  } | null;
   appointmentStats?: import('@/lib/api/dashboard').AppointmentStatsDto | null;
   billingSummary?: import('@/lib/api/billing').BillingSummaryDto | null;
 }): import('@/types').DashboardStats {
   const appt = input.appointmentStats;
   const billing = input.billingSummary;
-  const totalPatients = input.patientCount ?? 0;
+  const counts = input.patientCount;
 
   return {
-    totalPatients,
+    totalPatients: counts?.totalPatients ?? 0,
     patientGrowth: 0,
     patientsToday: appt?.todayAppointmentCount ?? 0,
-    activePatients: Math.round(totalPatients * 0.2),
-    inactivePatients: Math.max(0, totalPatients - Math.round(totalPatients * 0.2)),
+    activePatients: counts?.activePatients ?? 0,
+    inactivePatients: counts?.inactivePatients ?? 0,
     totalAppointments: appt?.currentMonthAppointmentCount ?? 0,
     appointmentGrowth: 0,
     appointmentsToday: appt?.todayAppointmentCount ?? 0,

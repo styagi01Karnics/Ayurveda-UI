@@ -35,6 +35,25 @@ export function createTherapist(payload: CreateTherapistPayload) {
   });
 }
 
+export type UpdateTherapistPayload = {
+  name: string;
+  status: string;
+  assignedTherapyIds: string[];
+};
+
+export function updateTherapist(
+  therapistId: string,
+  payload: UpdateTherapistPayload,
+) {
+  return apiRequest<TherapistDto>(
+    url(apiEndpoints.therapists.update(therapistId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
+
 export function deleteTherapist(therapistId: string) {
   return apiRequest<void>(url(apiEndpoints.therapists.getById(therapistId)), {
     method: 'DELETE',

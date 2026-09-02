@@ -334,9 +334,9 @@ function ReportUploadSection({ patient }: { patient: PatientDetail }) {
       try {
         await uploadDocument(
           patient.detailId,
-          patient.bookingId,
           activeType,
           file,
+          patient.bookingId,
         );
         successCount += 1;
         setReports((prev) => [

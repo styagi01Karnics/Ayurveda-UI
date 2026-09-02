@@ -62,12 +62,12 @@ export function DashboardPage() {
         getTodaysSchedule().catch(() => null),
         getAppointmentStats().catch(() => null),
         getDashboardBillingSummary(billingPeriod).catch(() => null),
-        getPatientCount().catch(() => 0),
+        getPatientCount().catch(() => null),
         getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
       ]);
 
       const stats = buildDashboardStats({
-        patientCount: typeof patientCount === 'number' ? patientCount : 0,
+        patientCount,
         appointmentStats,
         billingSummary,
       });

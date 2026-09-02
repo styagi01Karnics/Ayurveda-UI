@@ -86,7 +86,7 @@ describe('followUpSchema', () => {
       patientId: '37944397',
       assignedDoctorId: 'doc-1',
       visitTypeId: 'ct-consultation',
-      schedulingOption: '7_DAYS',
+      schedulingOption: 'AFTER_7_DAYS',
       scheduleDate: '2026-10-20',
       scheduleTime: '10:30',
     });
@@ -98,7 +98,7 @@ describe('followUpSchema', () => {
       patientId: '37944397',
       assignedDoctorId: '',
       visitTypeId: 'ct-consultation',
-      schedulingOption: '7_DAYS',
+      schedulingOption: 'AFTER_7_DAYS',
       scheduleDate: '2026-10-20',
       scheduleTime: '10:30',
     });

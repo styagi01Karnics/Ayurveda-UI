@@ -82,13 +82,17 @@ export interface CreateDoctorPayload {
   consultationFees: number;
   followUpFees: number;
   availability: string;
-  // Legacy fields
+  // Legacy fields (not on create DTO — omit on POST)
   doctorName?: string;
+  department?: string;
+  consultationRoom?: string;
+}
+
+/** Fields accepted on doctor update if/when the service exposes PUT. */
+export interface UpdateDoctorPayload extends CreateDoctorPayload {
   mobileNumber?: string;
   email?: string;
   qualification?: string;
-  department?: string;
-  consultationRoom?: string;
 }
 
 export interface TherapistDto {

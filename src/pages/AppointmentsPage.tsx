@@ -193,7 +193,7 @@ export function AppointmentsPage() {
               followUpRescheduleTarget.assignedDoctorId ?? '',
             visitTypeId: followUpRescheduleTarget.visitTypeId ?? '',
             schedulingOption:
-              followUpRescheduleTarget.schedulingOption ?? '7_DAYS',
+              followUpRescheduleTarget.schedulingOption ?? 'AFTER_7_DAYS',
             scheduleDate: followUpRescheduleTarget.dateCreated,
             scheduleTime: followUpRescheduleTarget.scheduleTime ?? '10:00',
             smsReminderEnabled:

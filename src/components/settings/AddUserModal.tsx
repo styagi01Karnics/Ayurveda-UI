@@ -14,10 +14,16 @@ import {
 interface AddUserModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: AddUserFormValues) => void;
+  onSubmit: (values: AddUserFormValues) => void | Promise<void>;
+  submitting?: boolean;
 }
 
-export function AddUserModal({ open, onClose, onSubmit }: AddUserModalProps) {
+export function AddUserModal({
+  open,
+  onClose,
+  onSubmit,
+  submitting = false,
+}: AddUserModalProps) {
   const {
     register,
     handleSubmit,
@@ -61,7 +67,11 @@ export function AddUserModal({ open, onClose, onSubmit }: AddUserModalProps) {
       onClose={handleClose}
       title="Add User"
       subtitle="Please fill out the details to add user"
-      footer={<Button onClick={handleSubmit(onSubmit)}>Confirm</Button>}
+      footer={
+        <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
+          {submitting ? 'Saving...' : 'Confirm'}
+        </Button>
+      }
     >
       <form className="grid gap-4 sm:grid-cols-2" noValidate>
         <Input

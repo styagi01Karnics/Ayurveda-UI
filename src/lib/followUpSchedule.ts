@@ -1,10 +1,12 @@
-/** Adds N days from values like `7_DAYS`, `14_DAYS`, `30_DAYS`. */
+/**
+ * Adds N days from values like `7_DAYS`, `AFTER_7_DAYS`, `14_DAYS`, `AFTER_14_DAYS`.
+ */
 export function addDaysFromSchedulingOption(
   baseDate: string | Date | null | undefined,
   schedulingOption?: string | null,
 ): Date | null {
   if (!baseDate || !schedulingOption) return null;
-  const match = schedulingOption.trim().match(/^(\d+)_DAYS$/i);
+  const match = schedulingOption.trim().match(/^(?:AFTER_)?(\d+)_DAYS$/i);
   if (!match) return null;
   const base =
     baseDate instanceof Date ? new Date(baseDate) : new Date(baseDate);

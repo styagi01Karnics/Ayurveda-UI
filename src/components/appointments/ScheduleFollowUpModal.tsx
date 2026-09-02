@@ -55,7 +55,7 @@ export function ScheduleFollowUpModal({
       patientId: '',
       assignedDoctorId: '',
       visitTypeId: '',
-      schedulingOption: '7_DAYS',
+      schedulingOption: 'AFTER_7_DAYS',
       scheduleDate: '',
       scheduleTime: '',
       smsReminderEnabled: false,
@@ -68,7 +68,7 @@ export function ScheduleFollowUpModal({
       patientId: initialValues?.patientId ?? '',
       assignedDoctorId: initialValues?.assignedDoctorId ?? '',
       visitTypeId: initialValues?.visitTypeId ?? '',
-      schedulingOption: initialValues?.schedulingOption ?? '7_DAYS',
+      schedulingOption: initialValues?.schedulingOption ?? 'AFTER_7_DAYS',
       scheduleDate: initialValues?.scheduleDate ?? '',
       scheduleTime: initialValues?.scheduleTime ?? '',
       smsReminderEnabled: initialValues?.smsReminderEnabled ?? false,
@@ -123,16 +123,23 @@ export function ScheduleFollowUpModal({
               <PatientSearchSelect
                 label="Patient"
                 placeholder="Search by patient ID or name (min 4 characters)"
-                options={lookupOptions.patients.map((option) =>
-                  typeof option === 'string'
-                    ? { value: option, label: option }
-                    : {
-                        value: option.value,
-                        label: option.label,
-                        patientId: option.patientId ?? option.value,
-                        name: option.name ?? option.label,
-                      },
-                )}
+                options={lookupOptions.patients.map((option) => {
+                  if (typeof option === 'string') {
+                    return { value: option, label: option };
+                  }
+                  return {
+                    value: option.value,
+                    label: option.label,
+                    patientId:
+                      'patientId' in option && option.patientId
+                        ? option.patientId
+                        : option.value,
+                    name:
+                      'name' in option && option.name
+                        ? option.name
+                        : option.label,
+                  };
+                })}
                 value={field.value}
                 onChange={field.onChange}
                 error={errors.patientId?.message}

@@ -9,6 +9,7 @@ export * as appointmentsApi from './appointments';
 export * as medicinesApi from './medicines';
 export * as dashboardApi from './dashboard';
 export * as authApi from './auth';
+export * as rolesApi from './roles';
 export * as billingApi from './billing';
 export * as prescriptionsApi from './prescriptions';
 export * as activityLogsApi from './activityLogs';

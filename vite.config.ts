@@ -76,6 +76,9 @@ export default defineConfig(({ mode }) => {
         // Auth-service :8111
         '/api/v1/auth': serviceProxy(backendHost, 8111),
         '/api/v1/tenants': serviceProxy(backendHost, 8111),
+        '/api/v1/ui-pages': serviceProxy(backendHost, 8111),
+        '/api/v1/roles': serviceProxy(backendHost, 8111),
+        '/api/v1/platform': serviceProxy(backendHost, 8111),
 
         // File-upload-service :8105
         '/api/v1/documents': serviceProxy(backendHost, 8105),
@@ -90,8 +93,9 @@ export default defineConfig(({ mode }) => {
         '/api/v1/medicines': serviceProxy(backendHost, 8108),
         '/api/v1/dashboard/medicine-stock': serviceProxy(backendHost, 8108),
 
-        // Billing-service :8109
+        // Billing-service :8109 — keep `/billings` before `/billing` (prefix match)
         '/api/v1/billings': serviceProxy(backendHost, 8109),
+        '/api/v1/billing': serviceProxy(backendHost, 8109),
         '/api/v1/invoices': serviceProxy(backendHost, 8109),
         '/api/v1/sales': serviceProxy(backendHost, 8109),
         '/api/v1/dashboard/billing-summary': serviceProxy(backendHost, 8109),

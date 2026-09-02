@@ -1,7 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { ProtectedRoute, PublicRoute } from './ProtectedRoute';
+import { PlatformLayout } from '@/components/layout/PlatformLayout';
+import {
+  ProtectedRoute,
+  PublicRoute,
+  SuperAdminRoute,
+} from './ProtectedRoute';
 import { AppointmentsPage } from '@/pages/AppointmentsPage';
+import { BootstrapSuperAdminPage } from '@/pages/BootstrapSuperAdminPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DoctorPatientDetailPage } from '@/pages/DoctorPatientDetailPage';
 import { DoctorsPage } from '@/pages/DoctorsPage';
@@ -16,6 +22,7 @@ import { BillingPage } from '@/pages/BillingPage';
 import { GenerateInvoicePage } from '@/pages/GenerateInvoicePage';
 import { ActivityLogsPage } from '@/pages/ActivityLogsPage';
 import { MedicinesPage } from '@/pages/MedicinesPage';
+import { PlatformHospitalsPage } from '@/pages/PlatformHospitalsPage';
 import { SalesPage } from '@/pages/SalesPage';
 import { TreatmentPatientDetailPage } from '@/pages/TreatmentPatientDetailPage';
 import { TreatmentsPage } from '@/pages/TreatmentsPage';
@@ -28,20 +35,39 @@ export function AppRoutes() {
       <Routes>
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/platform/bootstrap"
+            element={<BootstrapSuperAdminPage />}
+          />
           <Route path="/signup" element={<SignupPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
+          <Route element={<SuperAdminRoute />}>
+            <Route element={<PlatformLayout />}>
+              <Route
+                path="/platform/hospitals"
+                element={<PlatformHospitalsPage />}
+              />
+            </Route>
+          </Route>
+
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/patients" element={<PatientsPage />} />
             <Route path="/patients/:patientId" element={<PatientDetailPage />} />
             <Route path="/doctors" element={<DoctorsPage />} />
-            <Route path="/doctors/patient/:patientId" element={<DoctorPatientDetailPage />} />
+            <Route
+              path="/doctors/patient/:patientId"
+              element={<DoctorPatientDetailPage />}
+            />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/profile" element={<MyProfilePage />} />
             <Route path="/treatments" element={<TreatmentsPage />} />
-            <Route path="/treatments/patient/:patientId" element={<TreatmentPatientDetailPage />} />
+            <Route
+              path="/treatments/patient/:patientId"
+              element={<TreatmentPatientDetailPage />}
+            />
             <Route path="/medicines" element={<MedicinesPage />} />
             <Route path="/sales" element={<SalesPage />} />
             <Route path="/activity-logs" element={<ActivityLogsPage />} />

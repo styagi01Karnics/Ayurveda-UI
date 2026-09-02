@@ -226,9 +226,9 @@ async function uploadBookingDocuments(
       () =>
         uploadDocument(
           session.patientId,
-          bookingId,
           item.type,
           item.file,
+          bookingId,
         ),
     );
   }

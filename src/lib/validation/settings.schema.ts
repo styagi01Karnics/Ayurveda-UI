@@ -1,14 +1,32 @@
 import { z } from 'zod';
+import {
+  ALL_PAGE_CODES,
+  PAGE_CODE_LABELS,
+  type PageCode,
+} from '@/lib/pagePermissions';
 
 export const CLINIC_STATUS_OPTIONS = ['Active', 'Inactive'] as const;
 
-export const USER_ROLE_OPTIONS = [
-  'Super Admin',
-  'Admin',
-  'Doctor',
-  'Receptionist',
-  'Therapist',
+/** API UserRole enums for register-user (excludes SUPER_ADMIN). */
+export const USER_ROLE_API_VALUES = [
+  'ADMIN',
+  'MANAGER',
+  'RECEPTIONIST',
+  'DIETICIAN',
+  'DOCTOR',
+  'CHEMIST',
 ] as const;
+
+export type UserRoleApiValue = (typeof USER_ROLE_API_VALUES)[number];
+
+export const USER_ROLE_OPTIONS: { value: UserRoleApiValue; label: string }[] = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'RECEPTIONIST', label: 'Receptionist' },
+  { value: 'DIETICIAN', label: 'Dietician' },
+  { value: 'DOCTOR', label: 'Doctor' },
+  { value: 'CHEMIST', label: 'Chemist' },
+];
 
 export const USER_STATUS_OPTIONS = ['Active', 'Inactive'] as const;
 
@@ -19,18 +37,10 @@ export const THERAPY_CATEGORY_OPTIONS = [
   'Detox',
 ] as const;
 
-export const PERMISSION_MODULES = [
-  'Dashboard',
-  'Patients',
-  'Doctors',
-  'Appointments',
-  'Treatments',
-  'Medicines',
-  'Sales',
-  'Activity Log',
-  'Billing',
-  'Settings',
-] as const;
+/** Page permission codes (DASHBOARD, PATIENTS, …) — not display labels. */
+export const PERMISSION_MODULES: readonly PageCode[] = ALL_PAGE_CODES;
+
+export { PAGE_CODE_LABELS };
 
 export const clinicDoctorSchema = z
   .object({
@@ -129,6 +139,14 @@ export const clinicPackageMasterSchema = z.object({
 export type ClinicPackageMasterFormValues = z.infer<
   typeof clinicPackageMasterSchema
 >;
+
+export const clinicDoshaSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  elements: z.string().min(1, 'Elements are required'),
+  characteristics: z.string().min(1, 'Characteristics are required'),
+});
+
+export type ClinicDoshaFormValues = z.infer<typeof clinicDoshaSchema>;
 
 export const addUserSchema = z
   .object({

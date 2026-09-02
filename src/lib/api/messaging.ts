@@ -46,10 +46,15 @@ export function sendSms(payload: SendSmsPayload) {
   });
 }
 
+/** Maps UI fields onto notification-service POST /notifications/email. */
 export function sendEmail(payload: SendEmailPayload) {
-  return apiRequest<MessageLogDto>(url(apiEndpoints.messaging.email), {
+  return apiRequest<void>(url(apiEndpoints.messaging.email), {
     method: 'POST',
-    body: payload,
+    body: {
+      to: payload.recipientEmail,
+      subject: payload.subject,
+      body: payload.body,
+    },
   });
 }
 

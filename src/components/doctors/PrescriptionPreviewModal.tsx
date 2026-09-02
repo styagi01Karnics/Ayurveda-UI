@@ -3,7 +3,10 @@ import { CalendarDays, Phone, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getAllMedicines } from '@/lib/api/medicines';
-import type { PrescriptionDto } from '@/lib/api/prescriptions';
+import type {
+  PrescriptionDto,
+  PrescriptionNextFollowUpDto,
+} from '@/lib/api/prescriptions';
 import { CLINIC_BRANDING } from '@/lib/clinicBranding';
 import { assets } from '@/lib/assets';
 import { addDaysFromSchedulingOption } from '@/lib/followUpSchedule';
@@ -19,6 +22,13 @@ interface PrescriptionPreviewModalProps {
   enriched?: PrescriptionDto | null;
   submitting?: boolean;
   confirmLabel?: string;
+}
+
+function firstNextFollowUp(
+  nextFollowUp?: PrescriptionDto['nextFollowUp'],
+): PrescriptionNextFollowUpDto | undefined {
+  if (!nextFollowUp) return undefined;
+  return Array.isArray(nextFollowUp) ? nextFollowUp[0] : nextFollowUp;
 }
 
 function formatPreviewDate(value?: string | null): string {
@@ -231,7 +241,8 @@ export function PrescriptionPreviewModal({
     enriched?.diagnosis?.trim() ||
     prescription?.diagnosis?.trim() ||
     '—';
-  const suggestions = enriched?.nextFollowUp?.suggestions;
+  const followUp = firstNextFollowUp(enriched?.nextFollowUp);
+  const suggestions = followUp?.suggestions;
   const patientName =
     patientBlock?.name || patientBlock?.fullName || patient.name;
   const patientId =
@@ -262,8 +273,8 @@ export function PrescriptionPreviewModal({
     info.registrationDate ||
     patient.appointmentDate;
 
-  const followUpSetupRequired = enriched?.nextFollowUp?.setUpRequired === true;
-  const followUpScheduling = enriched?.nextFollowUp?.schedulingOption || '';
+  const followUpSetupRequired = followUp?.setUpRequired === true;
+  const followUpScheduling = followUp?.schedulingOption || '';
   const computedNextFollowUp = followUpSetupRequired
     ? addDaysFromSchedulingOption(consultationDate, followUpScheduling)
     : null;

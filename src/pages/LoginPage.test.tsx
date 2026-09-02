@@ -51,7 +51,7 @@ describe('LoginPage', () => {
     expect(screen.getByText('Password is required')).toBeInTheDocument();
   });
 
-  it('logs in with dummy credentials without calling the API', async () => {
+  it('logs in with dummy credentials and navigates to dashboard', async () => {
     const user = userEvent.setup();
     mockNavigate.mockClear();
     render(
@@ -65,7 +65,7 @@ describe('LoginPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('links to signup page', () => {
+  it('links to legacy signup page', () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -76,5 +76,8 @@ describe('LoginPage', () => {
       'href',
       '/signup',
     );
+    expect(
+      screen.getByText(/New hospital accounts are created by an administrator/i),
+    ).toBeInTheDocument();
   });
 });

@@ -48,7 +48,6 @@ import {
   updateTreatment,
 } from '@/lib/api/treatments';
 import { toFollowUpAppointmentDateIso } from '@/lib/followUpSchedule';
-import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantity';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import {
   applyBillingFormToPatient,
@@ -397,7 +396,8 @@ export function DoctorPatientDetailPage() {
                   baseDate,
                   treatmentValues.followUpScheduling,
                 ),
-                schedulingOption: treatmentValues.followUpScheduling || '7_DAYS',
+                schedulingOption:
+                  treatmentValues.followUpScheduling || 'AFTER_7_DAYS',
                 smsReminderEnabled: treatmentValues.autoSmsReminder,
                 status: 'UPCOMING',
               });
@@ -614,20 +614,16 @@ export function DoctorPatientDetailPage() {
       let nextPatient = patient;
       if (!existingPrescription && !patient.billing.billingDraftId) {
         try {
-          const billingMedicines = medicines.map((row) => {
-            const catalogueRow = medicineById.get(row.medicineId);
-            return {
-              medicineId: row.medicineId,
-              quantity: calculatePrescriptionMedicineQuantity({
-                dosage: row.dosage,
-                frequency: row.frequency,
-                duration: row.duration,
-              }),
-              unitPrice: Number(
-                catalogueRow?.sellingPrice ?? catalogueRow?.price ?? 0,
-              ),
-            };
-          });
+          const toBillingServiceType = (raw: string | undefined) => {
+            const upper = (raw || 'CONSULTATION')
+              .toUpperCase()
+              .replace(/[\s+-]+/g, '_');
+            if (upper.includes('THERAPY')) return 'THERAPY';
+            if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
+            if (upper.includes('PACKAGE')) return 'PACKAGE';
+            // Doc: consultation (+ medicines) still uses CONSULTATION
+            return 'CONSULTATION';
+          };
 
           const services = (
             patient.billing.billingServices?.length
@@ -641,25 +637,15 @@ export function DoctorPatientDetailPage() {
                     packageCharges: patient.billing.packageCharges,
                   },
                 ]
-          ).map((row, index) => {
-            let serviceType = row.serviceType || 'Consultation';
-            if (
-              index === 0 &&
-              billingMedicines.length > 0 &&
-              !/medicine/i.test(serviceType)
-            ) {
-              serviceType = `${serviceType} + Medicine`;
-            }
-            return {
-              serviceType,
-              serviceFees: Number(row.serviceFees) || 0,
-              packageMasterId: row.packageMasterId?.trim() || null,
-              packageType: row.packageType?.trim() || null,
-              packageCharges: row.packageCharges
-                ? Number(row.packageCharges)
-                : null,
-            };
-          });
+          ).map((row) => ({
+            serviceType: toBillingServiceType(row.serviceType),
+            serviceFees: Number(row.serviceFees) || 0,
+            packageMasterId: row.packageMasterId?.trim() || null,
+            packageType: row.packageType?.trim() || null,
+            packageCharges: row.packageCharges
+              ? Number(row.packageCharges)
+              : null,
+          }));
 
           const draft = await createBilling({
             patientId: patient.detailId,
@@ -667,8 +653,6 @@ export function DoctorPatientDetailPage() {
             contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
             billingDate: new Date().toISOString().slice(0, 10),
             services,
-            medicines: billingMedicines,
-            therapies: [],
           });
           nextPatient = {
             ...patient,

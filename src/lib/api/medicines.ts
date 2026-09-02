@@ -20,7 +20,7 @@ export function getMedicineById(medicineId: string) {
 }
 
 export function createMedicine(payload: CreateMedicinePayload) {
-    return apiRequest<MedicineDto>(url(ep.base), {
+    return apiRequest<MedicineDto[]>(url(ep.base), {
         method: 'POST',
         body: payload,
     });
@@ -44,6 +44,14 @@ export function deleteMedicine(medicineId: string) {
     return apiRequest<void>(url(ep.getById(medicineId)), {
         method: 'DELETE',
     });
+}
+
+export function getStockSummary() {
+    return apiRequest<Record<string, number>>(url(ep.stockSummary));
+}
+
+export function getStockByCategory(category: string) {
+    return apiRequestList<MedicineDto>(url(ep.stockByCategory(category)));
 }
 
 export function deductMedicineStock(medicineId: string, quantity: number) {

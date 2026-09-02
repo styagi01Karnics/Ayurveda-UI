@@ -29,6 +29,7 @@ function toApiInvoiceStatus(status: string): InvoiceStatus | undefined {
   if (lower === 'completed') return 'COMPLETED';
   if (lower === 'ongoing') return 'ONGOING';
   if (lower === 'unpaid') return 'UNPAID';
+  if (lower === 'partial') return 'PARTIAL';
   return undefined;
 }
 

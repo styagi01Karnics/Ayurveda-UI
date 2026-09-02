@@ -118,9 +118,9 @@ export function UploadReportsModal({
       try {
         await uploadDocument(
           patient.detailId,
-          patient.bookingId,
           staged.documentType,
           staged.file,
+          patient.bookingId,
         );
         successCount += 1;
         setFiles((prev) =>
