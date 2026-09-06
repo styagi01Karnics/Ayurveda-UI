@@ -48,6 +48,8 @@ export interface LoginPayload {
   tenantCode?: string;
   usernameOrEmail: string;
   password: string;
+  /** Hospital city, e.g. "New Delhi". */
+  city?: string;
 }
 
 /** @deprecated Public signup removed — use platform hospital onboard. */

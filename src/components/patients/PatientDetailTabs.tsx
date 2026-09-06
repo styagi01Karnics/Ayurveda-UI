@@ -28,7 +28,7 @@ export function PatientDetailHeader({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-text-muted">Patient ID</p>
+          <p className="text-xs text-text-muted">Patient Code</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
             <Badge variant="gold" className="rounded-md px-3 py-1">
@@ -132,7 +132,7 @@ export function PersonalInfoTab({ patient }: { patient: PatientDetail }) {
       <SectionBlock title="Identification & Admin">
         <InfoGrid
           items={[
-            { label: 'Patient ID', value: patient.id },
+            { label: 'Patient Code', value: patient.id },
             { label: 'ID Proof type', value: info.idProofType },
             { label: 'ID No.', value: info.idProofNumber },
             { label: 'Occupation', value: info.occupation },

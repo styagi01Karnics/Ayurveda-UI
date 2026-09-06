@@ -9,9 +9,8 @@ const dash = apiEndpoints.dashboard;
 export type InvoiceStatus = 'UNPAID' | 'PARTIAL' | 'ONGOING' | 'COMPLETED';
 export type BillingDraftStatus = 'PENDING' | 'COMPLETED';
 export type BillingPeriod = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
-/** Preferred visit type for invoices is `OPD` (consultation). Older aliases kept for reads. */
+/** Invoice visitType accepted by billing API. `OPD` is rejected (400). */
 export type VisitTypeApi =
-  | 'OPD'
   | 'CONSULTATION'
   | 'FOLLOW_UP'
   | 'THERAPY'
@@ -22,8 +21,7 @@ export function toVisitTypeApi(value: string): VisitTypeApi {
   if (upper.includes('THERAPY')) return 'THERAPY';
   if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
   if (upper.includes('PACKAGE')) return 'PACKAGE';
-  // Doc example: visitType "OPD" for consultation visits
-  return 'OPD';
+  return 'CONSULTATION';
 }
 
 export interface InvoiceMedicineItem {
@@ -94,7 +92,9 @@ export interface InvoiceItemDto {
 
 export interface InvoiceDto {
   id: string;
+  /** Invoice UUID (path param). Prefer `invoiceNumber` for UI display. */
   invoiceId: string;
+  invoiceNumber?: string | null;
   patientId: string;
   patientDisplayId?: string;
   formattedPatientId?: string;
@@ -132,8 +132,12 @@ export interface InvoiceDto {
 export interface InvoiceListItemDto {
   /** Invoice UUID — use for GET/DELETE /api/v1/invoices/{id} */
   id: string;
-  /** Human-readable invoice number, e.g. INV-1002 */
+  /**
+   * May be UUID or legacy display code depending on API version.
+   * Prefer `invoiceNumber` (e.g. GAN-DL-INV-00018) for UI.
+   */
   invoiceId: string;
+  invoiceNumber?: string | null;
   patientId: string;
   patientDisplayId?: string;
   patientCode?: string;
@@ -153,6 +157,8 @@ export interface InvoicePaymentPayload {
 
 export interface SalesRecordDto {
   invoiceId: string;
+  /** Business invoice code when API provides it separately from UUID `invoiceId`. */
+  invoiceNumber?: string | null;
   invoiceDate: string;
   treatmentCategory?: string | null;
   serviceType: string;

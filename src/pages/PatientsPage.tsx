@@ -153,7 +153,7 @@ export function PatientsPage() {
           <>
             <FilterControl>
               <SearchField
-                placeholder="Patient ID"
+                placeholder="Patient Code"
                 value={patientIdQuery}
                 onChange={(e) => setPatientIdQuery(e.target.value)}
               />

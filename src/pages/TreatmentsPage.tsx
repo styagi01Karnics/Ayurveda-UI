@@ -46,6 +46,8 @@ import { getActiveTherapists } from '@/lib/api/therapists';
 
 import { assets } from '@/lib/assets';
 
+import { resolvePatientDisplayCode } from '@/lib/displayCodes';
+
 import type { BookTreatmentFormValues } from '@/lib/validation/patient.schema';
 import type { TreatmentRecord } from '@/types';
 
@@ -110,12 +112,15 @@ export function TreatmentsPage() {
 
       lookupOptions: {
 
-        patients: patients.map((p) => ({
-          value: p.patientId,
-          label: `${p.patientDisplayId ?? p.patientCode ?? p.patientId} — ${p.patientFullName}`,
-          patientId: p.patientDisplayId ?? p.patientCode ?? p.patientId,
-          name: p.patientFullName,
-        })),
+        patients: patients.map((p) => {
+          const code = resolvePatientDisplayCode(p).replace(/^#/, '');
+          return {
+            value: p.patientId,
+            label: `${code || '—'} — ${p.patientFullName}`,
+            patientId: code,
+            name: p.patientFullName,
+          };
+        }),
 
         therapists: therapists.map((t) => ({
           value: t.id,

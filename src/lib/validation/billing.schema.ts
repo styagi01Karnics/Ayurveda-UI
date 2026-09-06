@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const invoiceServiceStepSchema = z.object({
-  patientId: z.string().min(1, 'Patient ID is required'),
+  patientId: z.string().min(1, 'Patient Code is required'),
   fullName: z.string().min(1, 'Full name is required'),
   contactNumber: z
     .string()

@@ -13,7 +13,7 @@ export function SalesTable({ records, embedded }: SalesTableProps) {
       <table className="w-full table-fixed text-left text-sm">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-            <th className="px-5 py-3 font-medium">Invoice ID</th>
+            <th className="px-5 py-3 font-medium">Invoice No.</th>
             <th className="px-5 py-3 font-medium">Invoice Date</th>
             <th className="px-5 py-3 font-medium">Service Type</th>
             <th className="px-5 py-3 font-medium">Total Amount</th>

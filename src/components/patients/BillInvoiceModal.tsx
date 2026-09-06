@@ -124,7 +124,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               <div className="grid gap-5 md:grid-cols-3">
                 <div className="space-y-1 text-xs">
                   <p>
-                    <span className="text-text-muted">Patient ID : </span>
+                    <span className="text-text-muted">Patient Code : </span>
                     <span className="font-semibold text-brown">{bill.patientId}</span>
                   </p>
                   <p>

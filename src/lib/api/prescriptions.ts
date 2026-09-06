@@ -71,6 +71,7 @@ export interface PrescriptionPatientDto {
   id?: string;
   displayId?: string;
   patientDisplayId?: string;
+  patientCode?: string;
   name?: string;
   fullName?: string;
   age?: string | number;

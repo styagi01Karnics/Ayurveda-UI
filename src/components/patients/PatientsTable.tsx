@@ -27,7 +27,7 @@ export function PatientsTable({
       <table className="w-full table-fixed text-left text-sm">
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-            <th className="w-[11%] px-3 py-3 font-medium">Patient ID</th>
+            <th className="w-[11%] px-3 py-3 font-medium">Patient Code</th>
             <th className="w-[14%] px-3 py-3 font-medium">Patient</th>
             <th className="w-[12%] px-3 py-3 font-medium">Doctor</th>
             <th className="w-[11%] px-3 py-3 font-medium">Visit Type</th>
@@ -57,9 +57,11 @@ export function PatientsTable({
                     className="w-full text-left hover:text-gold"
                   >
                     <div className="truncate font-medium text-brown">{record.id}</div>
-                    <div className="truncate text-xs text-text-muted">
-                      {record.secondaryId}
-                    </div>
+                    {record.secondaryId ? (
+                      <div className="truncate text-xs text-text-muted">
+                        {record.secondaryId}
+                      </div>
+                    ) : null}
                   </button>
                 </td>
                 <td className="px-3 py-4">

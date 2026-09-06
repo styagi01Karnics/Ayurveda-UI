@@ -1005,7 +1005,7 @@ vi.mock('@/lib/api/billing', () => ({
     if (upper.includes('THERAPY')) return 'THERAPY';
     if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
     if (upper.includes('PACKAGE')) return 'PACKAGE';
-    return 'OPD';
+    return 'CONSULTATION';
   },
   getSales: vi.fn(async () => ({
     revenueThisMonth: 2756,

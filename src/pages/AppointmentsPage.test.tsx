@@ -30,7 +30,7 @@ describe('AppointmentsPage', () => {
     const user = userEvent.setup();
     renderAppointments();
     await screen.findAllByText('Khushi Shroff');
-    await user.type(screen.getByPlaceholderText('Patient ID'), 'PT458653');
+    await user.type(screen.getByPlaceholderText('Patient Code'), 'PT458653');
     expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
   });
 

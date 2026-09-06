@@ -627,6 +627,7 @@ export type FollowUpStatusApi =
 export interface FollowUpDto {
   id: string;
   patientId: string;
+  patientCode?: string | null;
   patientDisplayId?: string;
   patientName?: string;
   assignedDoctorId: string;

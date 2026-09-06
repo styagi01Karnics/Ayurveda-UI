@@ -41,7 +41,7 @@ describe('PatientsPage', () => {
     renderPatientsPage();
 
     await screen.findByText('Khushi Shroff');
-    await user.type(screen.getByPlaceholderText('Patient ID'), 'PT458653');
+    await user.type(screen.getByPlaceholderText('Patient Code'), 'PT458653');
     expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
     expect(screen.getByText('Amit Verma')).toBeInTheDocument();
   });

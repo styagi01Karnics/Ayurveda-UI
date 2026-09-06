@@ -42,7 +42,7 @@ export function PatientRecordsTable({
           </colgroup>
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
-              <th className="px-3 py-3 font-medium">Patient ID</th>
+              <th className="px-3 py-3 font-medium">Patient Code</th>
               <th className="px-3 py-3 font-medium">Patient</th>
               <th className="px-3 py-3 font-medium">Doctor</th>
               <th className="px-3 py-3 font-medium">Visit Type</th>

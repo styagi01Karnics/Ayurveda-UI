@@ -54,6 +54,7 @@ import {
 } from '@/lib/api/mappers';
 import { getAllTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
+import { resolvePatientDisplayCode } from '@/lib/displayCodes';
 import { mapFollowUpToCalendarAppointment } from '@/lib/calendarUtils';
 import { cn } from '@/lib/utils';
 import type {
@@ -149,12 +150,15 @@ export function AppointmentsPage() {
         value: type.id,
         label: type.name,
       })),
-      patients: patients.map((p) => ({
-        value: p.patientId,
-        label: `${p.patientDisplayId ?? p.patientCode ?? p.patientId} — ${p.patientFullName}`,
-        patientId: p.patientDisplayId ?? p.patientCode ?? p.patientId,
-        name: p.patientFullName,
-      })),
+      patients: patients.map((p) => {
+        const code = resolvePatientDisplayCode(p).replace(/^#/, '');
+        return {
+          value: p.patientId,
+          label: `${code || '—'} — ${p.patientFullName}`,
+          patientId: code,
+          name: p.patientFullName,
+        };
+      }),
     };
 
     const followUpRecords = followUpDtos.map(mapFollowUpDtoToRecord);
@@ -355,8 +359,15 @@ export function AppointmentsPage() {
         data.doctors.find((d) => d.id === formData.assignedDoctor)?.doctorName ||
         formData.assignedDoctor;
 
+      const matchedPatient = data.lookupOptions.patients?.find(
+        (p) => p.value === result.patientId || p.value === formData.patientId,
+      );
       const patientCode =
-        formData.patientId ?? result.patientId.slice(0, 8);
+        matchedPatient?.patientId ||
+        resolvePatientDisplayCode({
+          patientId: formData.patientId,
+        }).replace(/^#/, '') ||
+        '—';
 
       const appointmentDate =
         formData.scheduleDate && formData.scheduleTime
@@ -581,7 +592,7 @@ export function AppointmentsPage() {
             <>
               <FilterControl>
                 <SearchField
-                  placeholder="Patient ID"
+                  placeholder="Patient Code"
                   value={patientIdQuery}
                   onChange={(e) => setPatientIdQuery(e.target.value)}
                 />

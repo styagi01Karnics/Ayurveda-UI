@@ -246,9 +246,11 @@ export function PrescriptionPreviewModal({
   const patientName =
     patientBlock?.name || patientBlock?.fullName || patient.name;
   const patientId =
+    patientBlock?.patientCode ||
     patientBlock?.displayId ||
     patientBlock?.patientDisplayId ||
-    patient.id;
+    (patient.id && !/^[0-9a-f-]{36}$/i.test(patient.id) ? patient.id : null) ||
+    '—';
   const age =
     patientBlock?.age != null ? String(patientBlock.age) : info.age || '—';
   const gender = patientBlock?.gender || info.gender || '—';
@@ -375,7 +377,7 @@ export function PrescriptionPreviewModal({
             <section>
               <p className="mb-2 font-semibold text-[#6f625a]">Patient Details</p>
               <p>
-                Patient ID:{' '}
+                Patient Code:{' '}
                 <strong className="text-[#c18813]">{patientId}</strong>
               </p>
               <p className="mt-2 text-[#8b8179]">Name / Age / Gender:</p>

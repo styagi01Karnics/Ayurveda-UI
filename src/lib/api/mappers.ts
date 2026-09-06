@@ -26,6 +26,10 @@ import { normalizeBookingTimeForSelect } from '@/lib/bookingConstraints';
 import {
   resolveCalendarEventTitle,
 } from '@/lib/calendarEventAvatars';
+import {
+  resolveInvoiceDisplayCode,
+  resolvePatientDisplayCode,
+} from '@/lib/displayCodes';
 import type {
   AppointmentRecord,
   BillInvoiceView,
@@ -212,13 +216,10 @@ export function mapPatientToRecord(
   patient: PatientDto,
   extras?: Partial<PatientRecord>,
 ): PatientRecord {
-  const code =
-    patient.patientDisplayId ??
-    patient.patientCode ??
-    patient.id.slice(0, 8);
+  const code = resolvePatientDisplayCode(patient);
   return {
-    id: code.startsWith('#') ? code : `#${code}`,
-    secondaryId: patient.patientCode || patient.id,
+    id: code,
+    secondaryId: '',
     detailId: patient.id,
     bookingId: extras?.bookingId ?? '',
     assignedDoctorId: extras?.assignedDoctorId,
@@ -387,12 +388,12 @@ export function mapAppointmentToRecord(
     appointment.patient?.fullName ??
     '—';
 
-  const patientCode =
-    appointment.patient?.patientDisplayId ??
-    appointment.patient?.patientCode ??
-    (typeof appointment.patientId === 'string'
-      ? appointment.patientId.slice(0, 8)
-      : 'APT');
+  const patientCode = resolvePatientDisplayCode({
+    patientCode: appointment.patient?.patientCode,
+    patientDisplayId: appointment.patient?.patientDisplayId,
+    patientId: appointment.patientId,
+    id: appointment.patient?.id,
+  });
 
   const visitType = normalizeVisitType(
     appointment.consultationTypes ?? appointment.visitType,
@@ -414,7 +415,7 @@ export function mapAppointmentToRecord(
 
   return {
     id: String(appointment.id ?? appointment.bookingId ?? crypto.randomUUID()),
-    uhid: patientCode.startsWith('#') ? patientCode : `#${patientCode}`,
+    uhid: patientCode,
     patient,
     doctor,
     visitType,
@@ -452,10 +453,7 @@ export function mapPatientAppointmentListItemToPatientRecord(
   item: PatientAppointmentListItemDto,
   tab: 'active' | 'inactive' = 'active',
 ): PatientRecord {
-  const displayId =
-    item.patientDisplayId ??
-    item.patientCode ??
-    item.patientId.slice(0, 8);
+  const displayId = resolvePatientDisplayCode(item);
 
   const bookingStatus = (item.bookingStatus ?? '').toUpperCase();
   let status: PatientRecord['status'] = 'Pending';
@@ -465,8 +463,8 @@ export function mapPatientAppointmentListItemToPatientRecord(
     status = 'Pending';
 
   return {
-    id: displayId.startsWith('#') ? displayId : `#${displayId}`,
-    secondaryId: item.patientCode ?? item.patientId,
+    id: displayId,
+    secondaryId: '',
     detailId: item.patientId,
     bookingId: item.bookingId,
     name: item.patientFullName,
@@ -490,14 +488,11 @@ export function mapPatientAppointmentListItemToPatientRecord(
 export function mapPatientAppointmentListItemToRecord(
   item: PatientAppointmentListItemDto,
 ): AppointmentRecord {
-  const displayId =
-    item.patientDisplayId ??
-    item.patientCode ??
-    item.patientId.slice(0, 8);
+  const displayId = resolvePatientDisplayCode(item);
 
   return {
     id: String(item.bookingId),
-    uhid: displayId.startsWith('#') ? displayId : `#${displayId}`,
+    uhid: displayId,
     patient: item.patientFullName,
     doctor: item.doctorName ?? '—',
     visitType: normalizeVisitType(item.consultationTypes),
@@ -600,7 +595,11 @@ export function mapTreatmentDtoToRecord(
 export function mapFollowUpDtoToRecord(dto: FollowUpDto): FollowUpRecord {
   return {
     id: dto.id,
-    uhid: dto.patientDisplayId ?? '—',
+    uhid: resolvePatientDisplayCode({
+      patientCode: dto.patientCode,
+      patientDisplayId: dto.patientDisplayId,
+      patientId: dto.patientId,
+    }),
     patient: dto.patientName ?? '—',
     doctor: dto.doctorName ?? '—',
     visitType: mapFollowUpVisitType(dto),
@@ -757,7 +756,12 @@ export function mapInvoicesToPatientBilling(
       doctorCredentials: '—',
       workingHours: '—',
       doctorPhone: '—',
-      invoiceNo: latest?.invoiceId ?? '—',
+      invoiceNo: latest
+        ? resolveInvoiceDisplayCode({
+            invoiceNumber: latest.invoiceNumber,
+            invoiceId: latest.invoiceId,
+          })
+        : '—',
       invoiceDate: latest ? formatDisplayDate(latest.invoiceDate) : '—',
       paymentMode: '—',
       amountDue: outstanding,
@@ -834,14 +838,7 @@ export function mapInvoiceDtoToBillView(
   dto: InvoiceDto,
   doctor?: BillDoctorDetails,
 ): BillInvoiceView {
-  const displayPatientId =
-    dto.formattedPatientId ??
-    dto.patientDisplayId ??
-    dto.patientCode ??
-    dto.patientId;
-  const formattedPatientId = displayPatientId.startsWith('#')
-    ? displayPatientId
-    : `#${displayPatientId}`;
+  const formattedPatientId = resolvePatientDisplayCode(dto);
 
   const latestPayment = dto.payments?.[0];
   const doctorDetails = doctor ?? {
@@ -862,7 +859,10 @@ export function mapInvoiceDtoToBillView(
       doctorCredentials: doctorDetails.doctorCredentials,
       workingHours: doctorDetails.workingHours,
       doctorPhone: doctorDetails.doctorPhone,
-      invoiceNo: dto.invoiceId,
+      invoiceNo: resolveInvoiceDisplayCode({
+        invoiceNumber: dto.invoiceNumber,
+        invoiceId: dto.invoiceId,
+      }),
       invoiceDate: formatBillDate(dto.invoiceDate),
       paymentMode: latestPayment?.paymentMethod ?? 'UPI',
       amountDue: dto.leftAmount ?? Math.max(0, dto.totalAmount - dto.paidAmount),
@@ -1171,13 +1171,7 @@ export function mapBillingDraftToRecord(
   billing: import('@/lib/api/billing').BillingDto,
   index = 0,
 ): import('@/types').BillingRecord {
-  const displayId =
-    billing.patientDisplayId ?? billing.formattedPatientId ?? billing.patientId;
-  const secondaryPatientId =
-    billing.patientCode &&
-    billing.patientCode.replace(/^#/, '') !== displayId.replace(/^#/, '')
-      ? billing.patientCode
-      : '';
+  const displayId = resolvePatientDisplayCode(billing);
   const serviceTotal = (billing.services ?? []).reduce(
     (sum, item) =>
       sum + (item.serviceFees ?? 0) + (item.packageCharges ?? 0),
@@ -1187,9 +1181,12 @@ export function mapBillingDraftToRecord(
 
   return {
     id: billing.id || `billing-${index}`,
-    invoiceId: billing.invoiceNumber || billing.invoiceId || '—',
-    patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
-    secondaryPatientId,
+    invoiceId: resolveInvoiceDisplayCode({
+      invoiceNumber: billing.invoiceNumber,
+      invoiceId: billing.invoiceId,
+    }),
+    patientId: displayId,
+    secondaryPatientId: '',
     patientUuid: billing.patientId,
     invoiceDate: formatInvoiceDate(billing.billingDate ?? ''),
     totalAmount: billing.totalAmount ?? serviceTotal,
@@ -1240,17 +1237,15 @@ export function mapInvoiceToBillingRecord(
   invoice: import('@/lib/api/billing').InvoiceListItemDto,
   index = 0,
 ): import('@/types').BillingRecord {
-  const displayId = invoice.patientDisplayId ?? invoice.patientId;
-  const secondaryPatientId =
-    invoice.patientCode &&
-    invoice.patientCode.replace(/^#/, '') !== displayId.replace(/^#/, '')
-      ? invoice.patientCode
-      : '';
+  const displayId = resolvePatientDisplayCode(invoice);
   return {
-    id: invoice.id || invoice.invoiceId || `bill-${index}`,
-    invoiceId: invoice.invoiceId,
-    patientId: displayId.startsWith('#') ? displayId : `#${displayId}`,
-    secondaryPatientId,
+    id: invoice.id || `bill-${index}`,
+    invoiceId: resolveInvoiceDisplayCode({
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceId: invoice.invoiceId,
+    }),
+    patientId: displayId,
+    secondaryPatientId: '',
     patientUuid: invoice.patientId,
     invoiceDate: formatInvoiceDate(invoice.invoiceDate),
     totalAmount: invoice.totalAmount ?? 0,
@@ -1279,9 +1274,13 @@ export function mapSalesDtoToRecord(
   sale: import('@/lib/api/billing').SalesRecordDto,
   index = 0,
 ): import('@/types').SalesInvoiceRecord {
+  const displayInvoice = resolveInvoiceDisplayCode({
+    invoiceNumber: sale.invoiceNumber,
+    invoiceId: sale.invoiceId,
+  });
   return {
     id: sale.invoiceId || `sale-${index}`,
-    invoiceId: sale.invoiceId,
+    invoiceId: displayInvoice,
     invoiceDate: formatInvoiceDate(sale.invoiceDate),
     treatmentCategory: sale.treatmentCategory ?? '—',
     serviceType: sale.serviceType,

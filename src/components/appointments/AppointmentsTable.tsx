@@ -20,7 +20,7 @@ export function AppointmentsTable({
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
-              <th className="px-5 py-3 font-medium">UHID No.</th>
+              <th className="px-5 py-3 font-medium">Patient Code</th>
               <th className="px-5 py-3 font-medium">Patient</th>
               <th className="px-5 py-3 font-medium">Doctor</th>
               <th className="px-5 py-3 font-medium">Visit Type</th>

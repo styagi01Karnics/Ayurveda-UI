@@ -14,6 +14,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select, type SelectOption } from '@/components/ui/Select';
+import type { PatientSearchOption } from '@/components/ui/PatientSearchSelect';
 import { Textarea } from '@/components/ui/Textarea';
 import { Stepper } from '@/components/ui/Stepper';
 import { TagInput, type TagOption } from '@/components/ui/TagInput';
@@ -91,7 +92,7 @@ export interface BookingLookupOptions {
   therapies: TagOption[];
   doshas: SelectOption[];
   consultationTypes: TagOption[];
-  patients?: SelectOption[];
+  patients?: PatientSearchOption[];
 }
 
 interface CreatePatientModalProps {

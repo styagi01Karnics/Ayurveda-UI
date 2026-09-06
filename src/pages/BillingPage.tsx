@@ -19,6 +19,8 @@ import {
   mapBillingDraftToRecord,
   mapInvoiceToBillingRecord,
 } from '@/lib/api/mappers';
+import { getAllPatients } from '@/lib/api/patients';
+import { formatPatientCode } from '@/lib/displayCodes';
 import type { BillingRecord } from '@/types';
 
 type BillingTab = 'invoices' | 'pending';
@@ -42,14 +44,30 @@ export function BillingPage() {
 
   const { data: records, loading, error, reload } = useAsyncData(
     async () => {
+      const patients = await getAllPatients().catch(() => []);
+      const codeByPatientId = new Map(
+        patients.map((p) => [p.id, p.patientCode] as const),
+      );
+
+      const withPatientCode = (record: BillingRecord): BillingRecord => {
+        const code = record.patientUuid
+          ? codeByPatientId.get(record.patientUuid)
+          : undefined;
+        if (!code) return record;
+        return {
+          ...record,
+          patientId: formatPatientCode(code),
+        };
+      };
+
       if (activeTab === 'pending') {
         const drafts = await getBillings({ status: 'PENDING' });
-        return drafts.map(mapBillingDraftToRecord);
+        return drafts.map(mapBillingDraftToRecord).map(withPatientCode);
       }
 
       const invoiceStatus = toApiInvoiceStatus(statusFilter);
       const invoices = await getInvoices({ status: invoiceStatus });
-      return invoices.map(mapInvoiceToBillingRecord);
+      return invoices.map(mapInvoiceToBillingRecord).map(withPatientCode);
     },
     [] as BillingRecord[],
     [activeTab, statusFilter],
@@ -112,7 +130,7 @@ export function BillingPage() {
           <>
             <FilterControl>
               <SearchField
-                placeholder="Patient ID"
+                placeholder="Patient Code"
                 value={patientIdQuery}
                 onChange={(e) => setPatientIdQuery(e.target.value)}
               />

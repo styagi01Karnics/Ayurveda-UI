@@ -60,7 +60,7 @@ function matchesPatientQuery(option: PatientSearchOption, query: string): boolea
 
 export function PatientSearchSelect({
   label = 'Select Patient',
-  placeholder = 'Search by patient ID or name (min 4 characters)',
+  placeholder = 'Search by patient code or name (min 4 characters)',
   options,
   value,
   onChange,
@@ -113,7 +113,7 @@ export function PatientSearchSelect({
         <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
           {query.trim().length < minChars ? (
             <p className="px-3 py-2 text-xs text-text-muted">
-              Type at least {minChars} characters to search by patient ID or name
+              Type at least {minChars} characters to search by patient code or name
             </p>
           ) : matches.length === 0 ? (
             <p className="px-3 py-2 text-xs text-text-muted">No patients found</p>
