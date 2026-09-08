@@ -48,7 +48,6 @@ import {
   invoiceServiceStepSchema,
   invoiceSummarySchema,
   invoiceTherapyItemSchema,
-  PACKAGE_TYPE_OPTIONS,
   type InvoiceMedicineItemValues,
   type InvoiceServiceStepValues,
   type InvoiceSummaryValues,
@@ -264,13 +263,14 @@ function buildServiceLineItems(data: InvoiceServiceStepValues): InvoiceLineItem[
     });
   }
 
-  const packageType = data.packageType?.trim();
-  if (packageType) {
+  const packageMasterId = data.packageMasterId?.trim();
+  const packageCharges = Number(data.packageCharges) || 0;
+  if (packageMasterId && packageCharges >= 0 && data.packageCharges?.trim()) {
     items.push({
       id: 'svc-package',
-      name: packageType,
+      name: data.packageType?.trim() || 'Package',
       quantity: 1,
-      amount: Number(data.packageCharges) || 0,
+      amount: packageCharges,
       type: 'service',
     });
   }
@@ -420,6 +420,7 @@ export function GenerateInvoicePage() {
         packageMasters: packageMasters.map((pkg) => ({
           value: pkg.id,
           label: pkg.name,
+          price: pkg.packagePrice ?? 0,
         })),
       };
     },
@@ -436,7 +437,7 @@ export function GenerateInvoicePage() {
       medicines: [] as Array<{ value: string; label: string; price: number }>,
       therapists: [] as Array<{ value: string; label: string }>,
       therapies: [] as Array<{ value: string; label: string; price: number }>,
-      packageMasters: [] as Array<{ value: string; label: string }>,
+      packageMasters: [] as Array<{ value: string; label: string; price: number }>,
     },
   );
 
@@ -585,6 +586,18 @@ export function GenerateInvoicePage() {
         ? String(Math.round(first.packageCharges))
         : '',
     });
+    // Prefer master catalogue price when draft has a package but no charges.
+    if (first?.packageMasterId && !first.packageCharges) {
+      const master = lookup.packageMasters.find(
+        (p) => p.value === first.packageMasterId,
+      );
+      if (master) {
+        serviceForm.setValue('packageType', master.label);
+        if (master.price > 0) {
+          serviceForm.setValue('packageCharges', String(Math.round(master.price)));
+        }
+      }
+    }
     setServiceData(serviceForm.getValues());
 
     // POST /billings is services-only; prefill medicines from latest prescription.
@@ -781,6 +794,22 @@ export function GenerateInvoicePage() {
     }
   };
 
+  const handlePackageSelect = (packageMasterId: string) => {
+    serviceForm.setValue('packageMasterId', packageMasterId);
+    if (!packageMasterId) {
+      serviceForm.setValue('packageType', '');
+      serviceForm.setValue('packageCharges', '');
+      return;
+    }
+    const selected = lookup.packageMasters.find((p) => p.value === packageMasterId);
+    if (!selected) return;
+    serviceForm.setValue('packageType', selected.label);
+    serviceForm.setValue(
+      'packageCharges',
+      selected.price > 0 ? String(Math.round(selected.price)) : '',
+    );
+  };
+
   const handleTherapySelect = (therapyName: string) => {
     const selected = lookup.therapies.find((t) => t.value === therapyName);
     therapyForm.setValue('therapyName', therapyName);
@@ -883,7 +912,7 @@ export function GenerateInvoicePage() {
       const consultationValid = await serviceForm.trigger([
         'visitType',
         'serviceFees',
-        'packageType',
+        'packageMasterId',
         'packageCharges',
       ]);
       const serviceFees = serviceForm.getValues('serviceFees')?.trim();
@@ -1280,7 +1309,7 @@ export function GenerateInvoicePage() {
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <Select
                     label="Package Name"
                     placeholder="Select package"
@@ -1289,29 +1318,18 @@ export function GenerateInvoicePage() {
                       ...lookup.packageMasters,
                     ]}
                     error={serviceForm.formState.errors.packageMasterId?.message}
-                    {...serviceForm.register('packageMasterId')}
-                  />
-                  <Select
-                    label="Package Type"
-                    placeholder="Package Type"
-                    options={[
-                      { value: '', label: 'None' },
-                      ...PACKAGE_TYPE_OPTIONS.map((option) => ({
-                        value: option,
-                        label: option,
-                      })),
-                    ]}
-                    error={serviceForm.formState.errors.packageType?.message}
-                    {...serviceForm.register('packageType')}
+                    {...serviceForm.register('packageMasterId', {
+                      onChange: (e) => handlePackageSelect(e.target.value),
+                    })}
                   />
                   <RupeeInput
                     label={
-                      serviceForm.watch('packageType')
+                      serviceForm.watch('packageMasterId')
                         ? 'Package Charges *'
                         : 'Package Charges'
                     }
                     placeholder="0"
-                    disabled={!serviceForm.watch('packageType')}
+                    disabled={!serviceForm.watch('packageMasterId')}
                     error={serviceForm.formState.errors.packageCharges?.message}
                     {...serviceForm.register('packageCharges')}
                   />

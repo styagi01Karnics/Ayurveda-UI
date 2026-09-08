@@ -5,6 +5,16 @@ import { apiEndpoints } from './endpoints';
 const url = (path: string) => `${apiConfig.notification}${path}`;
 const ep = apiEndpoints.notifications;
 
+export type NotificationTypeApi =
+  | 'APPOINTMENT'
+  | 'BILLING'
+  | 'MEDICINE'
+  | 'THERAPY'
+  | 'SYSTEM'
+  | 'GENERAL';
+
+export type NotificationPriorityApi = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
+
 export interface NotificationDto {
   id: string;
   recipientUserId: string;
@@ -12,10 +22,10 @@ export interface NotificationDto {
   recipientRole?: string;
   title: string;
   message: string;
-  type: string;
-  priority: string;
-  referenceId?: string;
-  referenceType?: string;
+  type: NotificationTypeApi | string;
+  priority: NotificationPriorityApi | string;
+  referenceId?: string | null;
+  referenceType?: string | null;
   read: boolean;
   readAt?: string | null;
   createdAt: string;
@@ -27,8 +37,8 @@ export interface CreateNotificationPayload {
   recipientRole?: string;
   title: string;
   message: string;
-  type: string;
-  priority: string;
+  type: NotificationTypeApi | string;
+  priority: NotificationPriorityApi | string;
   referenceId?: string;
   referenceType?: string;
 }
@@ -42,7 +52,11 @@ export interface SendEmailPayload {
 export interface NotificationsQuery {
   userId: string;
   unreadOnly?: boolean;
-  type?: string;
+  type?: NotificationTypeApi | string;
+}
+
+export interface UnreadCountDto {
+  unreadCount: number;
 }
 
 export function getNotifications(query: NotificationsQuery) {
@@ -54,10 +68,12 @@ export function getNotifications(query: NotificationsQuery) {
   );
 }
 
-export function getUnreadNotificationCount(userId: string) {
-  return apiRequest<{ unreadCount: number }>(
+export async function getUnreadNotificationCount(userId: string): Promise<number> {
+  const data = await apiRequest<UnreadCountDto | number>(
     url(`${ep.unreadCount}?userId=${encodeURIComponent(userId)}`),
   );
+  if (typeof data === 'number') return data;
+  return Number(data?.unreadCount ?? 0);
 }
 
 export function getNotificationById(id: string) {

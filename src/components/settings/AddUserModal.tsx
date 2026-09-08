@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Select, type SelectOption } from '@/components/ui/Select';
 import {
   USER_ROLE_OPTIONS,
   addUserSchema,
@@ -16,6 +16,8 @@ interface AddUserModalProps {
   onClose: () => void;
   onSubmit: (values: AddUserFormValues) => void | Promise<void>;
   submitting?: boolean;
+  /** Tenant roles from GET /api/v1/roles — value is role UUID (`tenantRoleId`). */
+  tenantRoleOptions?: SelectOption[];
 }
 
 export function AddUserModal({
@@ -23,6 +25,7 @@ export function AddUserModal({
   onClose,
   onSubmit,
   submitting = false,
+  tenantRoleOptions = [],
 }: AddUserModalProps) {
   const {
     register,
@@ -32,7 +35,7 @@ export function AddUserModal({
   } = useForm<AddUserFormValues>({
     resolver: zodResolver(addUserSchema),
     defaultValues: {
-      userId: '',
+      tenantRoleId: '',
       fullName: '',
       contactNumber: '',
       email: '',
@@ -45,7 +48,7 @@ export function AddUserModal({
   useEffect(() => {
     if (open) {
       reset({
-        userId: '',
+        tenantRoleId: '',
         fullName: '',
         contactNumber: '',
         email: '',
@@ -74,11 +77,12 @@ export function AddUserModal({
       }
     >
       <form className="grid gap-4 sm:grid-cols-2" noValidate>
-        <Input
-          label="User ID"
-          placeholder="User ID"
-          error={errors.userId?.message}
-          {...register('userId')}
+        <Select
+          label="Tenant Role"
+          placeholder="Select tenant role"
+          options={tenantRoleOptions}
+          error={errors.tenantRoleId?.message}
+          {...register('tenantRoleId')}
         />
         <Input
           label="Full Name"

@@ -150,7 +150,7 @@ export type ClinicDoshaFormValues = z.infer<typeof clinicDoshaSchema>;
 
 export const addUserSchema = z
   .object({
-    userId: z.string().min(1, 'User ID is required'),
+    tenantRoleId: z.string().min(1, 'Tenant role is required'),
     fullName: z.string().min(1, 'Full name is required'),
     contactNumber: z
       .string()

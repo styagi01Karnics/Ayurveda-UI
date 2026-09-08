@@ -555,6 +555,7 @@ export interface SettingsUserRecord {
   email: string;
   status: UserStatus;
   assignedRole: string;
+  tenantRoleId?: string;
 }
 
 export interface SettingsRoleRecord {

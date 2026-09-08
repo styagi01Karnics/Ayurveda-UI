@@ -20,17 +20,10 @@ export const invoiceServiceStepSchema = z.object({
     .optional()
     .refine((value) => !value || /^\d+$/.test(value), 'Enter a valid amount'),
 }).superRefine((data, ctx) => {
-  if (data.packageType?.trim() && !data.packageMasterId?.trim()) {
+  if (data.packageMasterId?.trim() && !data.packageCharges?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Package name is required when package type is selected',
-      path: ['packageMasterId'],
-    });
-  }
-  if (data.packageType?.trim() && !data.packageCharges?.trim()) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Package charges is required when package type is selected',
+      message: 'Package charges is required when a package is selected',
       path: ['packageCharges'],
     });
   }

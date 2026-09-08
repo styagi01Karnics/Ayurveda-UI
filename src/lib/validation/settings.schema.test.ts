@@ -58,7 +58,7 @@ describe('settings.schema', () => {
 
   it('validates add user with matching passwords', () => {
     const result = addUserSchema.safeParse({
-      userId: 'GN001',
+      tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
       contactNumber: '9876543210',
       email: 'test@example.com',
@@ -71,7 +71,7 @@ describe('settings.schema', () => {
 
   it('rejects mismatched passwords', () => {
     const result = addUserSchema.safeParse({
-      userId: 'GN001',
+      tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
       contactNumber: '9876543210',
       email: 'test@example.com',

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ChartModal } from '@/components/dashboard/ChartModal';
+import { DashboardNotificationsCard } from '@/components/dashboard/DashboardNotificationsCard';
 import { MedicineStockCard } from '@/components/dashboard/MedicineStockCard';
 import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable';
 import { PatientsStatCard } from '@/components/dashboard/PatientsStatCard';
@@ -189,6 +190,12 @@ export function DashboardPage() {
               remaining={data.schedule?.remainingToday ?? 0}
               viewFullScheduleTo="/appointments"
             />
+          </div>
+
+          <div className="mt-4 grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="lg:col-span-1">
+              <DashboardNotificationsCard />
+            </div>
           </div>
         </AsyncStatus>
       </div>

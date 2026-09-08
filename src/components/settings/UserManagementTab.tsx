@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/app/ToastContext';
 import { AddUserModal } from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
@@ -7,6 +7,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { initialSettingsUsers, USER_FILTER_OPTIONS } from '@/data/mock/settings';
 import { registerUser } from '@/lib/api/auth';
+import { getRoles } from '@/lib/api/roles';
 import { formatAuthRole } from '@/lib/auth';
 import type { AddUserFormValues } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
@@ -25,16 +26,44 @@ export function UserManagementTab({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [tenantRoleOptions, setTenantRoleOptions] = useState<
+    Array<{ value: string; label: string }>
+  >([]);
   const [roleChange, setRoleChange] = useState<{
     userId: string;
     newRole: string;
   } | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const roles = await getRoles();
+        if (cancelled) return;
+        setTenantRoleOptions(
+          roles
+            .filter((role) => role.active !== false)
+            .map((role) => ({
+              value: role.id,
+              label: role.roleName,
+            })),
+        );
+      } catch {
+        if (!cancelled) setTenantRoleOptions([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
       const matchesSearch =
         !searchQuery ||
-        user.userId.toLowerCase().includes(searchQuery.toLowerCase());
+        user.userId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = !statusFilter || user.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -64,17 +93,17 @@ export function UserManagementTab({
         email: values.email,
         password: values.password,
         role: values.role,
+        tenantRoleId: values.tenantRoleId,
       });
       const record: SettingsUserRecord = {
         id: created.id,
-        userId: values.userId.startsWith('#')
-          ? values.userId
-          : `#${values.userId}`,
+        userId: created.email || values.email,
         fullName: created.fullName,
         phone: values.contactNumber,
         email: created.email,
         status: created.status === 'INACTIVE' ? 'Inactive' : 'Active',
         assignedRole: created.role,
+        tenantRoleId: created.tenantRoleId ?? values.tenantRoleId,
       };
       setUsers((prev) => [record, ...prev]);
       showToast({
@@ -85,14 +114,13 @@ export function UserManagementTab({
     } catch {
       const record: SettingsUserRecord = {
         id: `user-${Date.now()}`,
-        userId: values.userId.startsWith('#')
-          ? values.userId
-          : `#${values.userId}`,
+        userId: values.email,
         fullName: values.fullName,
         phone: values.contactNumber,
         email: values.email,
         status: 'Active',
         assignedRole: values.role,
+        tenantRoleId: values.tenantRoleId,
       };
       setUsers((prev) => [record, ...prev]);
       showToast({
@@ -142,7 +170,7 @@ export function UserManagementTab({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="relative sm:col-start-2 sm:grid sm:grid-cols-2 sm:gap-3">
           <SearchField
-            placeholder="User ID"
+            placeholder="Search user"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -165,6 +193,7 @@ export function UserManagementTab({
         onClose={onAddUserClose}
         onSubmit={handleAddUser}
         submitting={submitting}
+        tenantRoleOptions={tenantRoleOptions}
       />
 
       <RoleChangeModal
