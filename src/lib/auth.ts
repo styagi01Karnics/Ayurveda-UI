@@ -103,6 +103,13 @@ export function isSuperAdmin(user: AuthUser | null | undefined): boolean {
   return raw === 'SUPER_ADMIN';
 }
 
+/** Hospital ADMIN (or platform SUPER_ADMIN) — can edit clinic/tenant details. */
+export function isHospitalAdmin(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  const raw = (user.apiRole || user.role || '').toUpperCase().replace(/\s+/g, '_');
+  return raw === 'ADMIN' || raw === 'SUPER_ADMIN';
+}
+
 export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
   return {
     id: user.id,

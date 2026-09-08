@@ -9,6 +9,10 @@ interface FileUploadProps {
   error?: string;
   accept?: string;
   editOnly?: boolean;
+  /** Remote image URL from API (logoUrl / photoUrl). */
+  previewUrl?: string | null;
+  /** When true, hide edit actions and block file changes. */
+  disabled?: boolean;
 }
 
 export function FileUpload({
@@ -18,13 +22,18 @@ export function FileUpload({
   error,
   accept = 'image/svg+xml,image/png,image/jpeg,image/gif',
   editOnly = false,
+  previewUrl,
+  disabled = false,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const displayPreview = preview || previewUrl || null;
+
   const handleFile = useCallback(
     (file: File | undefined) => {
+      if (disabled) return;
       if (preview) URL.revokeObjectURL(preview);
       if (file) {
         setPreview(URL.createObjectURL(file));
@@ -34,7 +43,7 @@ export function FileUpload({
         onChange(undefined);
       }
     },
-    [onChange, preview],
+    [disabled, onChange, preview],
   );
 
   const onDrop = (event: React.DragEvent) => {
@@ -52,8 +61,8 @@ export function FileUpload({
 
       <div className="flex items-start gap-3">
         <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold/10">
-          {preview ? (
-            <img src={preview} alt="" className="h-full w-full object-cover" />
+          {displayPreview ? (
+            <img src={displayPreview} alt="" className="h-full w-full object-cover" />
           ) : label.toLowerCase().includes('logo') ? (
             <Building2 className="h-7 w-7 text-gold" />
           ) : (
@@ -61,22 +70,27 @@ export function FileUpload({
           )}
           <button
             type="button"
-            className="absolute -bottom-0.5 -right-0.5 rounded-full bg-gold p-1 text-white"
+            className="absolute -bottom-0.5 -right-0.5 rounded-full bg-gold p-1 text-white disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => inputRef.current?.click()}
             aria-label={`Edit ${label}`}
+            disabled={disabled}
           >
             <Pencil className="h-3 w-3" />
           </button>
         </div>
 
         {editOnly ? (
-          <button
-            type="button"
-            className="mt-4 text-left text-xs font-medium text-gold hover:underline"
-            onClick={() => inputRef.current?.click()}
-          >
-            Edit your {shortLabel}
-          </button>
+          disabled ? (
+            <p className="mt-4 text-xs text-text-muted">View only</p>
+          ) : (
+            <button
+              type="button"
+              className="mt-4 text-left text-xs font-medium text-gold hover:underline"
+              onClick={() => inputRef.current?.click()}
+            >
+              Edit your {shortLabel}
+            </button>
+          )
         ) : (
           <div className="flex flex-col gap-1 text-xs">
             <button
@@ -145,6 +159,7 @@ export function FileUpload({
         type="file"
         accept={accept}
         className="hidden"
+        disabled={disabled}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
 

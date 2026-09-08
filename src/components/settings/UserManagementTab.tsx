@@ -1,12 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/app/ToastContext';
 import { AddUserModal } from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
 import { UsersTable } from '@/components/settings/UsersTable';
+import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
-import { initialSettingsUsers, USER_FILTER_OPTIONS } from '@/data/mock/settings';
-import { registerUser } from '@/lib/api/auth';
+import { USER_FILTER_OPTIONS } from '@/data/mock/settings';
+import {
+  getUsers,
+  registerUser,
+  updateUser,
+  type UserResponse,
+} from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
 import { getRoles } from '@/lib/api/roles';
 import { formatAuthRole } from '@/lib/auth';
 import type { AddUserFormValues } from '@/lib/validation/settings.schema';
@@ -17,12 +24,30 @@ interface UserManagementTabProps {
   onAddUserClose: () => void;
 }
 
+function mapUserToRecord(user: UserResponse): SettingsUserRecord {
+  const statusUpper = String(user.status ?? '').toUpperCase();
+  return {
+    id: user.id,
+    userId: user.username || user.email || user.id,
+    fullName: user.fullName || '—',
+    phone: user.mobileNumber
+      ? user.mobileNumber.replace(/\D/g, '').slice(-10)
+      : '—',
+    email: user.email || '—',
+    status: statusUpper === 'INACTIVE' ? 'Inactive' : 'Active',
+    assignedRole: user.role,
+    tenantRoleId: user.tenantRoleId,
+  };
+}
+
 export function UserManagementTab({
   addUserOpen,
   onAddUserClose,
 }: UserManagementTabProps) {
   const { showToast } = useToast();
-  const [users, setUsers] = useState(initialSettingsUsers);
+  const [users, setUsers] = useState<SettingsUserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,6 +58,28 @@ export function UserManagementTab({
     userId: string;
     newRole: string;
   } | null>(null);
+
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const list = await getUsers();
+      setUsers(list.map(mapUserToRecord));
+    } catch (err) {
+      setUsers([]);
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : 'Could not load users for this hospital.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,39 +142,21 @@ export function UserManagementTab({
         role: values.role,
         tenantRoleId: values.tenantRoleId,
       });
-      const record: SettingsUserRecord = {
-        id: created.id,
-        userId: created.email || values.email,
-        fullName: created.fullName,
-        phone: values.contactNumber,
-        email: created.email,
-        status: created.status === 'INACTIVE' ? 'Inactive' : 'Active',
-        assignedRole: created.role,
-        tenantRoleId: created.tenantRoleId ?? values.tenantRoleId,
-      };
-      setUsers((prev) => [record, ...prev]);
+      setUsers((prev) => [mapUserToRecord(created), ...prev]);
       showToast({
         title: 'User Added',
-        message: `${record.fullName} has been added successfully.`,
+        message: `${created.fullName} has been added successfully.`,
       });
       onAddUserClose();
-    } catch {
-      const record: SettingsUserRecord = {
-        id: `user-${Date.now()}`,
-        userId: values.email,
-        fullName: values.fullName,
-        phone: values.contactNumber,
-        email: values.email,
-        status: 'Active',
-        assignedRole: values.role,
-        tenantRoleId: values.tenantRoleId,
-      };
-      setUsers((prev) => [record, ...prev]);
+      void loadUsers();
+    } catch (err) {
       showToast({
-        title: 'User Added',
-        message: `${record.fullName} has been added successfully.`,
+        title: 'Could not add user',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : 'Register user failed. Please try again.',
       });
-      onAddUserClose();
     } finally {
       setSubmitting(false);
     }
@@ -149,20 +178,31 @@ export function UserManagementTab({
     setRoleChange({ userId, newRole });
   };
 
-  const handleRoleChangeConfirm = () => {
+  const handleRoleChangeConfirm = async () => {
     if (!roleChange) return;
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === roleChange.userId
-          ? { ...user, assignedRole: roleChange.newRole }
-          : user,
-      ),
-    );
-    showToast({
-      title: 'Role Updated',
-      message: 'Assigned role has been changed successfully.',
-    });
-    setRoleChange(null);
+    try {
+      const updated = await updateUser(roleChange.userId, {
+        role: roleChange.newRole,
+      });
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === roleChange.userId ? mapUserToRecord(updated) : user,
+        ),
+      );
+      showToast({
+        title: 'Role Updated',
+        message: 'Assigned role has been changed successfully.',
+      });
+      setRoleChange(null);
+    } catch (err) {
+      showToast({
+        title: 'Role update failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : 'Could not update the user role.',
+      });
+    }
   };
 
   return (
@@ -183,10 +223,12 @@ export function UserManagementTab({
         </div>
       </div>
 
-      <UsersTable
-        records={filteredUsers}
-        onRoleChange={handleRoleChangeRequest}
-      />
+      <AsyncStatus loading={loading} error={error} onRetry={() => void loadUsers()}>
+        <UsersTable
+          records={filteredUsers}
+          onRoleChange={handleRoleChangeRequest}
+        />
+      </AsyncStatus>
 
       <AddUserModal
         open={addUserOpen}
@@ -199,7 +241,7 @@ export function UserManagementTab({
       <RoleChangeModal
         open={Boolean(roleChange)}
         onClose={() => setRoleChange(null)}
-        onConfirm={handleRoleChangeConfirm}
+        onConfirm={() => void handleRoleChangeConfirm()}
         newRole={
           roleChange?.newRole
             ? formatAuthRole(roleChange.newRole)
