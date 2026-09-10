@@ -47,10 +47,16 @@ export interface TodaysScheduleDto {
 }
 
 export interface AppointmentStatsDto {
-  currentMonthAppointmentCount: number;
-  completedCount: number;
-  ongoingCount: number;
-  todayAppointmentCount: number;
+  currentMonthAppointmentCount?: number;
+  completedCount?: number;
+  ongoingCount?: number;
+  todayAppointmentCount?: number;
+  totalAppointments?: number;
+  scheduledCount?: number;
+  cancelledCount?: number;
+  inConsultationCount?: number;
+  rescheduledCount?: number;
+  [key: string]: unknown;
 }
 
 export function getDashboardMedicineStock(lowStockLimit = 5) {

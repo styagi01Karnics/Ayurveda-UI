@@ -1328,9 +1328,15 @@ export function buildDashboardStats(input: {
     patientsToday: appt?.todayAppointmentCount ?? 0,
     activePatients: counts?.activePatients ?? 0,
     inactivePatients: counts?.inactivePatients ?? 0,
-    totalAppointments: appt?.currentMonthAppointmentCount ?? 0,
+    totalAppointments:
+      appt?.currentMonthAppointmentCount ?? appt?.totalAppointments ?? 0,
     appointmentGrowth: 0,
     appointmentsToday: appt?.todayAppointmentCount ?? 0,
+    appointmentsConfirmed: Number(appt?.completedCount ?? 0),
+    appointmentsCancelled: Number(appt?.cancelledCount ?? 0),
+    appointmentsFollowUp: Number(
+      appt?.scheduledCount ?? appt?.rescheduledCount ?? 0,
+    ),
     billingTotal: billing?.totalRevenue ?? 0,
     billsGenerated: billing?.totalBillsGenerated ?? 0,
     pendingPayments: billing?.pendingPayments ?? 0,

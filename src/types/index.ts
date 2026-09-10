@@ -424,6 +424,9 @@ export interface DashboardStats {
   totalAppointments: number;
   appointmentGrowth: number;
   appointmentsToday: number;
+  appointmentsConfirmed: number;
+  appointmentsCancelled: number;
+  appointmentsFollowUp: number;
   billingTotal: number;
   billsGenerated: number;
   pendingPayments: number;

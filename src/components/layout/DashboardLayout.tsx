@@ -73,7 +73,9 @@ export function DashboardLayout() {
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-cream-light">
-            <TopBanner onClaimOffer={() => setCouponOpen(true)} />
+            {pathname !== '/dashboard' && (
+              <TopBanner onClaimOffer={() => setCouponOpen(true)} />
+            )}
 
             <div className="flex shrink-0 items-center gap-3 border-b border-[#f0ebe3] px-4 py-3 lg:hidden">
               <button
@@ -98,7 +100,7 @@ export function DashboardLayout() {
               onLogout={() => setLogoutOpen(true)}
             />
 
-            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-4">
+            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-5">
               <Outlet />
             </main>
           </div>

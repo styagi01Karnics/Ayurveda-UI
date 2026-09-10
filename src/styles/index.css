@@ -147,16 +147,17 @@
   }
 
   .dashboard-card {
-    box-shadow: 0 4px 20px rgba(66, 44, 35, 0.05);
+    box-shadow: 0 4px 24px rgba(66, 44, 35, 0.06);
+    border-color: #f0ebe3;
   }
 
   .patient-inactive-bar {
     background: repeating-linear-gradient(
       90deg,
-      #dcd4c8 0,
-      #dcd4c8 5px,
-      transparent 5px,
-      transparent 9px
+      #d4cbbd 0,
+      #d4cbbd 4px,
+      transparent 4px,
+      transparent 8px
     );
   }
 

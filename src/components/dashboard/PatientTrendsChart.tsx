@@ -51,7 +51,7 @@ export function PatientTrendsChart({
         )}
       </div>
 
-      <div className={cn('chart-wrap w-full', compact ? 'h-[200px]' : 'h-64')}>
+      <div className={cn('chart-wrap w-full', compact ? 'h-[220px]' : 'h-64')}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart
             data={data}
@@ -121,7 +121,7 @@ export function PatientTrendsChart({
                       fontSize={10}
                       fontWeight={500}
                     >
-                      600: New Patients in Oct
+                      120+ New Patients in Oct
                     </text>
                   );
                 }}
@@ -148,7 +148,7 @@ export function PatientTrendsChart({
   }
 
   return (
-    <Card className="dashboard-card flex w-full min-w-0 flex-col overflow-hidden">
+    <Card className="dashboard-card flex h-full w-full min-w-0 flex-col overflow-hidden p-5">
       {body}
     </Card>
   );

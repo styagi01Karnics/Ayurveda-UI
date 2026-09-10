@@ -21,7 +21,7 @@ export function TodayScheduleCard({
   viewFullScheduleTo = '/appointments',
 }: TodayScheduleCardProps) {
   return (
-    <Card className="dashboard-card relative overflow-hidden border-[#e8dfd0] bg-[#fdf8ee] p-5">
+    <Card className="dashboard-card relative flex h-full flex-col overflow-hidden border-[#e8dfd0] bg-[#fdf8ee] p-5">
       <img
         src={assets.scheduleDecor}
         alt=""
@@ -39,17 +39,25 @@ export function TodayScheduleCard({
         <p className="mt-1 pl-6 text-xs font-medium text-gold">{dateLabel}</p>
       </div>
 
-      <div className="space-y-2.5">
+      <div className="relative space-y-2.5">
         <ScheduleSubCard title="Ongoing Appointment:">
-          <p className="text-sm font-semibold text-brown">{ongoing.patientName}</p>
-          <p className="text-xs text-text-muted">{ongoing.reason}</p>
+          <p className="text-sm font-semibold text-brown">
+            {ongoing.patientName || '—'}
+          </p>
+          {ongoing.reason ? (
+            <p className="text-xs text-text-muted">{ongoing.reason}</p>
+          ) : null}
         </ScheduleSubCard>
 
         <ScheduleSubCard title="Next Appointment:">
           <p className="text-sm font-semibold text-brown">
-            {next.patientName} - {next.time}
+            {next.patientName
+              ? `${next.patientName}${next.time ? ` - ${next.time}` : ''}`
+              : '—'}
           </p>
-          <p className="text-xs text-text-muted">{next.reason}</p>
+          {next.reason ? (
+            <p className="text-xs text-text-muted">{next.reason}</p>
+          ) : null}
         </ScheduleSubCard>
 
         <ScheduleSubCard title="Remaining Today:">
@@ -59,7 +67,7 @@ export function TodayScheduleCard({
 
       <Link
         to={viewFullScheduleTo}
-        className="mt-5 block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
+        className="relative mt-auto block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5 pt-2.5"
       >
         View Full Schedule
       </Link>
@@ -75,7 +83,7 @@ function ScheduleSubCard({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-xl bg-[#fffcf7] px-3.5 py-2.5">
+    <div className="rounded-xl bg-[#fffcf7] px-3.5 py-2.5 shadow-sm shadow-brown/5">
       <p className="text-xs text-text-muted">{title}</p>
       <div className="mt-1">{children}</div>
     </div>

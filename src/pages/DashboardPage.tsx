@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { ChartModal } from '@/components/dashboard/ChartModal';
-import { DashboardNotificationsCard } from '@/components/dashboard/DashboardNotificationsCard';
 import { MedicineStockCard } from '@/components/dashboard/MedicineStockCard';
 import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable';
 import { PatientsStatCard } from '@/components/dashboard/PatientsStatCard';
@@ -39,6 +38,9 @@ const EMPTY_STATS: DashboardStats = {
   totalAppointments: 0,
   appointmentGrowth: 0,
   appointmentsToday: 0,
+  appointmentsConfirmed: 0,
+  appointmentsCancelled: 0,
+  appointmentsFollowUp: 0,
   billingTotal: 0,
   billsGenerated: 0,
   pendingPayments: 0,
@@ -74,7 +76,7 @@ export function DashboardPage() {
       });
 
       const recentPatients = recentRows
-        .slice(0, 4)
+        .slice(0, 5)
         .map((row) => mapPatientAppointmentListItemToPatientRecord(row, 'active'));
 
       return {
@@ -102,13 +104,15 @@ export function DashboardPage() {
 
   const inStockPct = totalStatus
     ? Math.round(((breakdown?.inStock ?? 0) / totalStatus) * 100)
-    : 68;
+    : medStock?.totalStock
+      ? 100
+      : 0;
   const outOfStockPct = totalStatus
     ? Math.round(((breakdown?.outOfStock ?? 0) / totalStatus) * 100)
-    : 24;
+    : 0;
   const lowStockPct = totalStatus
     ? Math.round(((breakdown?.lowStock ?? 0) / totalStatus) * 100)
-    : 8;
+    : 0;
 
   const lowStockList =
     medStock?.lowStockItems?.map((item) => ({
@@ -141,66 +145,62 @@ export function DashboardPage() {
   const next = mapScheduleAppointment(data.schedule?.nextAppointment);
 
   return (
-    <PageShell className="w-full space-y-4">
-      <div className="w-full space-y-4">
-        <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-          <PatientsStatCard
-            stats={data.stats}
-            period={billingPeriod}
-            onPeriodChange={setBillingPeriod}
-          />
-          <StatCard
-            title="Total Appointments"
-            stats={data.stats}
-            type="appointments"
-            period={billingPeriod}
-            onPeriodChange={setBillingPeriod}
-          />
-          <StatCard
-            title="Billing"
-            stats={data.stats}
-            type="billing"
-            period={billingPeriod}
-            onPeriodChange={setBillingPeriod}
-          />
-        </div>
-
-        <AsyncStatus loading={loading} error={error} onRetry={reload}>
-          <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-            <PatientTrendsChart
-              data={patientTrendsData}
-              compact
-              onExpand={() => setChartOpen(true)}
-            />
-            <MedicineStockCard
-              totalStock={medStock?.totalStock ?? 0}
-              tablets={medStock?.tablets ?? 0}
-              syrups={medStock?.syrups ?? 0}
-              powder={medStock?.powder ?? 0}
-              lowStockItems={lowStockList}
-              inStockPct={inStockPct}
-              outOfStockPct={outOfStockPct}
-              lowStockPct={lowStockPct}
-              viewAllTo="/medicines"
-            />
-            <TodayScheduleCard
-              dateLabel={scheduleDateLabel}
-              ongoing={ongoing}
-              next={next}
-              remaining={data.schedule?.remainingToday ?? 0}
-              viewFullScheduleTo="/appointments"
-            />
-          </div>
-
-          <div className="mt-4 grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-1">
-              <DashboardNotificationsCard />
-            </div>
-          </div>
-        </AsyncStatus>
+    <PageShell className="w-full space-y-5 pb-6 pt-1 sm:space-y-6">
+      <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-5">
+        <PatientsStatCard
+          stats={data.stats}
+          period={billingPeriod}
+          onPeriodChange={setBillingPeriod}
+        />
+        <StatCard
+          title="Total Appointments"
+          stats={data.stats}
+          type="appointments"
+          period={billingPeriod}
+          onPeriodChange={setBillingPeriod}
+        />
+        <StatCard
+          title="Billing"
+          stats={data.stats}
+          type="billing"
+          period={billingPeriod}
+          onPeriodChange={setBillingPeriod}
+        />
       </div>
 
-      <PatientRecordsTable records={data.recentPatients} compact viewAllTo="/patients" />
+      <AsyncStatus loading={loading} error={error} onRetry={reload}>
+        <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-5">
+          <PatientTrendsChart
+            data={patientTrendsData}
+            compact
+            onExpand={() => setChartOpen(true)}
+          />
+          <MedicineStockCard
+            totalStock={medStock?.totalStock ?? 0}
+            tablets={medStock?.tablets ?? 0}
+            syrups={medStock?.syrups ?? 0}
+            powder={medStock?.powder ?? 0}
+            lowStockItems={lowStockList}
+            inStockPct={inStockPct}
+            outOfStockPct={outOfStockPct}
+            lowStockPct={lowStockPct}
+            viewAllTo="/medicines"
+          />
+          <TodayScheduleCard
+            dateLabel={scheduleDateLabel}
+            ongoing={ongoing}
+            next={next}
+            remaining={data.schedule?.remainingToday ?? 0}
+            viewFullScheduleTo="/appointments"
+          />
+        </div>
+      </AsyncStatus>
+
+      <PatientRecordsTable
+        records={data.recentPatients}
+        compact
+        viewAllTo="/patients"
+      />
 
       <ChartModal
         open={chartOpen}
