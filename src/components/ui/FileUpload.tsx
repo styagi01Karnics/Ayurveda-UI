@@ -9,6 +9,8 @@ interface FileUploadProps {
   error?: string;
   accept?: string;
   editOnly?: boolean;
+  /** Override the action link text (default: "Edit your {label}"). */
+  actionLabel?: string;
   /** Remote image URL from API (logoUrl / photoUrl). */
   previewUrl?: string | null;
   /** When true, hide edit actions and block file changes. */
@@ -22,6 +24,7 @@ export function FileUpload({
   error,
   accept = 'image/svg+xml,image/png,image/jpeg,image/gif',
   editOnly = false,
+  actionLabel,
   previewUrl,
   disabled = false,
 }: FileUploadProps) {
@@ -54,6 +57,7 @@ export function FileUpload({
   };
 
   const shortLabel = label.replace(/^Your /, '');
+  const linkLabel = actionLabel ?? `Edit your ${shortLabel}`;
 
   return (
     <div className="flex flex-col gap-3">
@@ -72,7 +76,7 @@ export function FileUpload({
             type="button"
             className="absolute -bottom-0.5 -right-0.5 rounded-full bg-gold p-1 text-white disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => inputRef.current?.click()}
-            aria-label={`Edit ${label}`}
+            aria-label={linkLabel}
             disabled={disabled}
           >
             <Pencil className="h-3 w-3" />
@@ -88,7 +92,7 @@ export function FileUpload({
               className="mt-4 text-left text-xs font-medium text-gold hover:underline"
               onClick={() => inputRef.current?.click()}
             >
-              Edit your {shortLabel}
+              {linkLabel}
             </button>
           )
         ) : (
@@ -98,7 +102,7 @@ export function FileUpload({
               className="text-left font-medium text-gold hover:underline"
               onClick={() => inputRef.current?.click()}
             >
-              Edit your {shortLabel}
+              {linkLabel}
             </button>
             <div className="flex items-center gap-2">
               <button

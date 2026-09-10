@@ -44,6 +44,10 @@ import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantit
 import type { MedicineDto } from '@/lib/api/types';
 import {
   calculateInvoiceTotals,
+  FIXED_CGST_PERCENT,
+  FIXED_CGST_PERCENT_STR,
+  FIXED_SGST_PERCENT,
+  FIXED_SGST_PERCENT_STR,
   invoiceMedicineItemSchema,
   invoiceServiceStepSchema,
   invoiceSummarySchema,
@@ -128,8 +132,8 @@ const CONSULTATION_VISIT_OPTIONS = ['Consultation', 'Therapy', 'Follow-up'] as c
 const DEFAULT_SUMMARY: BillSummaryState = {
   discount: '0',
   applyTax: true,
-  cgst: '3',
-  sgst: '3',
+  cgst: FIXED_CGST_PERCENT_STR,
+  sgst: FIXED_SGST_PERCENT_STR,
 };
 
 const PATIENT_FIELDS = [
@@ -508,8 +512,8 @@ export function GenerateInvoicePage() {
 
   const applyTax = summaryForm.watch('applyTax');
   const discount = Number(summaryForm.watch('discount') || 0);
-  const cgstRate = Number(summaryForm.watch('cgst') || 3);
-  const sgstRate = Number(summaryForm.watch('sgst') || 3);
+  const cgstRate = FIXED_CGST_PERCENT;
+  const sgstRate = FIXED_SGST_PERCENT;
   const summaryValues = summaryForm.watch();
 
   const invoiceTotals = useMemo(
@@ -1044,8 +1048,8 @@ export function GenerateInvoicePage() {
         packageCharges,
         discount: Number(summary.discount || 0),
         taxEnabled: summary.applyTax,
-        cgstPercent: Number(summary.cgst || 3),
-        sgstPercent: Number(summary.sgst || 3),
+        cgstPercent: FIXED_CGST_PERCENT,
+        sgstPercent: FIXED_SGST_PERCENT,
         amountPaid: 0,
         paymentMethod: paymentMode.toUpperCase(),
         paymentRemarks: activeBillingId
@@ -1127,8 +1131,8 @@ export function GenerateInvoicePage() {
             totals={invoiceTotals}
             discount={Number(summaryValues.discount || 0)}
             applyTax={summaryValues.applyTax}
-            cgstRate={Number(summaryValues.cgst || 3)}
-            sgstRate={Number(summaryValues.sgst || 3)}
+            cgstRate={FIXED_CGST_PERCENT}
+            sgstRate={FIXED_SGST_PERCENT}
           />
 
           <div className="mt-8 rounded-xl border border-gray-100 p-4">
@@ -1511,8 +1515,8 @@ function BillSummarySection({
   onRemove?: (id: string) => void;
   hideDiscountAndTax?: boolean;
 }) {
-  const cgstRate = Number(summaryForm.watch('cgst') || 3);
-  const sgstRate = Number(summaryForm.watch('sgst') || 3);
+  const cgstRate = FIXED_CGST_PERCENT;
+  const sgstRate = FIXED_SGST_PERCENT;
 
   return (
     <section className="rounded-xl border border-[#e8dfd0] bg-[#fdf8ee]/50 p-4 sm:p-5">
@@ -1579,16 +1583,16 @@ function BillSummarySection({
 
               <div className="grid grid-cols-2 gap-4">
                 <Input
-                  label="CGST"
-                  placeholder="3"
+                  label={`CGST (${FIXED_CGST_PERCENT}%)`}
+                  placeholder={FIXED_CGST_PERCENT_STR}
                   readOnly
                   tabIndex={-1}
                   className="cursor-not-allowed bg-gray-50 opacity-80"
                   {...summaryForm.register('cgst')}
                 />
                 <Input
-                  label="SGST"
-                  placeholder="3"
+                  label={`SGST (${FIXED_SGST_PERCENT}%)`}
+                  placeholder={FIXED_SGST_PERCENT_STR}
                   readOnly
                   tabIndex={-1}
                   className="cursor-not-allowed bg-gray-50 opacity-80"

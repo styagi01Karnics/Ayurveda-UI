@@ -19,7 +19,16 @@ export const onboardHospitalSchema = z
       .regex(/^\d{6}$/, 'PIN code must be 6 digits'),
     addressLine1: z.string().min(1, 'Address line 1 is required'),
     addressLine2: z.string().optional(),
-    logoUrl: z.string().optional(),
+    logoUrl: z
+      .string()
+      .optional()
+      .refine(
+        (value) =>
+          !value?.trim() ||
+          /^https?:\/\//i.test(value.trim()) ||
+          value.trim().startsWith('data:image/'),
+        'Enter a valid image URL',
+      ),
     fullName: z.string().min(1, 'Admin full name is required'),
     mobileNumber: z
       .string()
@@ -38,3 +47,13 @@ export const onboardHospitalSchema = z
   });
 
 export type OnboardHospitalFormValues = z.infer<typeof onboardHospitalSchema>;
+
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error('Could not read file'));
+    reader.readAsDataURL(file);
+  });
+}

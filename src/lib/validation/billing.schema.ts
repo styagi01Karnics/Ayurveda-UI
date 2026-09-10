@@ -90,6 +90,12 @@ export type InvoiceMedicineItemValues = z.infer<typeof invoiceMedicineItemSchema
 export type InvoiceTherapyItemValues = z.infer<typeof invoiceTherapyItemSchema>;
 export type InvoiceSummaryValues = z.infer<typeof invoiceSummarySchema>;
 
+/** Fixed GST rates for invoice generation (medicines / billing). Not editable in UI. */
+export const FIXED_CGST_PERCENT = 2.5;
+export const FIXED_SGST_PERCENT = 2.5;
+export const FIXED_CGST_PERCENT_STR = String(FIXED_CGST_PERCENT);
+export const FIXED_SGST_PERCENT_STR = String(FIXED_SGST_PERCENT);
+
 export const VISIT_TYPE_OPTIONS = ['Consultation', 'Follow-up', 'Therapy'] as const;
 export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;
 export const THERAPY_NAME_OPTIONS = ['Panchakarma', 'Abhyanga', 'Shirodhara'] as const;

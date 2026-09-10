@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/app/ToastContext';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { FileUpload } from '@/components/ui/FileUpload';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ApiError } from '@/lib/api/client';
@@ -19,6 +20,7 @@ import {
   INDIAN_STATES,
 } from '@/lib/validation/signup.schema';
 import {
+  fileToDataUrl,
   onboardHospitalSchema,
   PLATFORM_CLINIC_TYPES,
   type OnboardHospitalFormValues,
@@ -51,6 +53,8 @@ export function PlatformHospitalsPage() {
     adminEmail?: string;
   } | null>(null);
   const [showForm, setShowForm] = useState(true);
+  const [logoFile, setLogoFile] = useState<File | undefined>();
+  const [logoFileError, setLogoFileError] = useState<string | null>(null);
 
   const {
     register,
@@ -97,6 +101,11 @@ export function PlatformHospitalsPage() {
 
   const onSubmit = async (values: OnboardHospitalFormValues) => {
     try {
+      let logoUrl = values.logoUrl?.trim() || undefined;
+      if (logoFile) {
+        logoUrl = await fileToDataUrl(logoFile);
+      }
+
       const result = await createHospital({
         clinicName: values.clinicName.trim(),
         clinicType: values.clinicType,
@@ -105,7 +114,7 @@ export function PlatformHospitalsPage() {
         pinCode: values.pinCode.trim(),
         addressLine1: values.addressLine1.trim(),
         addressLine2: values.addressLine2?.trim() || undefined,
-        logoUrl: values.logoUrl?.trim() || undefined,
+        logoUrl,
         fullName: values.fullName.trim(),
         mobileNumber: values.mobileNumber.trim(),
         email: values.email.trim(),
@@ -124,6 +133,8 @@ export function PlatformHospitalsPage() {
         adminEmail: result.admin?.email ?? values.email.trim(),
       });
       reset(emptyForm);
+      setLogoFile(undefined);
+      setLogoFileError(null);
       setShowForm(false);
       await loadHospitals();
       showToast({
@@ -227,80 +238,117 @@ export function PlatformHospitalsPage() {
           <h2 className="mb-1 text-lg font-bold text-brown">
             Onboard hospital + admin
           </h2>
-          <p className="mb-5 text-sm text-text-muted">
-            Calls{' '}
-            <code className="text-xs">POST /api/v1/platform/hospitals</code>
-          </p>
+
 
           <form
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6"
+            className="space-y-8"
             noValidate
           >
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold text-brown">
+            <section>
+              <h3 className="mb-4 text-sm font-semibold text-brown">
                 Clinic information
               </h3>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Clinic name"
-                  placeholder="Ganesha Ayurveda"
-                  error={errors.clinicName?.message}
-                  {...register('clinicName')}
-                />
-                <Select
-                  label="Clinic type"
-                  options={[...PLATFORM_CLINIC_TYPES]}
-                  error={errors.clinicType?.message}
-                  {...register('clinicType')}
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_200px] lg:items-start">
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Clinic name"
+                      placeholder="Ganesha Ayurveda"
+                      error={errors.clinicName?.message}
+                      {...register('clinicName')}
+                    />
+                    <Select
+                      label="Clinic type"
+                      options={[...PLATFORM_CLINIC_TYPES]}
+                      error={errors.clinicType?.message}
+                      {...register('clinicType')}
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Select
+                      label="State"
+                      placeholder="Select state"
+                      options={[...INDIAN_STATES]}
+                      error={errors.state?.message}
+                      {...register('state')}
+                    />
+                    <Select
+                      label="City"
+                      placeholder="Select city"
+                      options={cityOptions}
+                      error={errors.city?.message}
+                      disabled={!selectedState}
+                      {...register('city')}
+                    />
+                    <Input
+                      label="PIN code"
+                      placeholder="110001"
+                      error={errors.pinCode?.message}
+                      {...register('pinCode')}
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Input
+                      label="Address line 1"
+                      placeholder="12 Main Road"
+                      error={errors.addressLine1?.message}
+                      {...register('addressLine1')}
+                    />
+                    <Input
+                      label="Address line 2"
+                      placeholder="Optional"
+                      {...register('addressLine2')}
+                    />
+                  </div>
+                  <Input
+                    label="Logo URL (optional)"
+                    placeholder="https://cdn.example.com/logo.png"
+                    error={errors.logoUrl?.message}
+                    {...register('logoUrl')}
+                  />
+                </div>
+
+                <FileUpload
+                  label="Clinic Logo"
+                  editOnly
+                  actionLabel="Upload clinic logo"
+                  value={logoFile}
+                  error={logoFileError ?? undefined}
+                  onChange={(file) => {
+                    setLogoFileError(null);
+                    if (
+                      file &&
+                      ![
+                        'image/svg+xml',
+                        'image/png',
+                        'image/jpeg',
+                        'image/gif',
+                        'image/webp',
+                      ].includes(file.type)
+                    ) {
+                      setLogoFileError(
+                        'Logo must be SVG, PNG, JPG, WEBP or GIF',
+                      );
+                      setLogoFile(undefined);
+                      return;
+                    }
+                    if (file && file.size > 5 * 1024 * 1024) {
+                      setLogoFileError('File must be under 5MB');
+                      setLogoFile(undefined);
+                      return;
+                    }
+                    setLogoFile(file);
+                    if (file) {
+                      setValue('logoUrl', '', { shouldValidate: true });
+                    }
+                  }}
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Select
-                  label="State"
-                  placeholder="Select state"
-                  options={[...INDIAN_STATES]}
-                  error={errors.state?.message}
-                  {...register('state')}
-                />
-                <Select
-                  label="City"
-                  placeholder="Select city"
-                  options={cityOptions}
-                  error={errors.city?.message}
-                  disabled={!selectedState}
-                  {...register('city')}
-                />
-                <Input
-                  label="PIN code"
-                  placeholder="110001"
-                  error={errors.pinCode?.message}
-                  {...register('pinCode')}
-                />
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input
-                  label="Address line 1"
-                  placeholder="12 Main Road"
-                  error={errors.addressLine1?.message}
-                  {...register('addressLine1')}
-                />
-                <Input
-                  label="Address line 2"
-                  placeholder="Optional"
-                  {...register('addressLine2')}
-                />
-              </div>
-              <Input
-                label="Logo URL (optional)"
-                placeholder="https://cdn.example.com/logo.png"
-                error={errors.logoUrl?.message}
-                {...register('logoUrl')}
-              />
             </section>
 
-            <section className="space-y-4">
-              <h3 className="text-sm font-semibold text-brown">
+            <section>
+              <h3 className="mb-4 text-sm font-semibold text-brown">
                 Hospital admin
               </h3>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -323,7 +371,7 @@ export function PlatformHospitalsPage() {
                   error={errors.email?.message}
                   {...register('email')}
                 />
-                <div />
+                <div className="hidden sm:block" aria-hidden />
                 <Input
                   label="Password"
                   type="password"
@@ -339,7 +387,7 @@ export function PlatformHospitalsPage() {
               </div>
             </section>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end border-t border-[#f0ebe3] pt-5">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Creating…' : 'Create hospital'}
               </Button>

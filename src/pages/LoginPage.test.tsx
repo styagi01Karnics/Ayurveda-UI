@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('LoginPage', () => {
-  it('renders login form fields', () => {
+  it('renders login tabs and hospital form fields by default', () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -23,6 +23,9 @@ describe('LoginPage', () => {
     );
 
     expect(screen.getByText('Welcome back!')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Super Admin' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
+    expect(screen.getByText('Hospital / tenant code')).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('Enter your username or email address'),
     ).toBeInTheDocument();
@@ -31,7 +34,25 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
   });
 
-  it('shows validation errors for empty submit', async () => {
+  it('hides tenant and location fields on Super Admin tab', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Super Admin' }));
+
+    expect(screen.queryByText('Hospital / tenant code')).not.toBeInTheDocument();
+    expect(screen.queryByText('Location')).not.toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter your username or email address'),
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+  });
+
+  it('shows validation errors for empty hospital submit', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -65,19 +86,18 @@ describe('LoginPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('links to legacy signup page', () => {
+  it('links to platform bootstrap for super admin setup', () => {
     render(
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: 'Sign Up' })).toHaveAttribute(
-      'href',
-      '/signup',
-    );
     expect(
-      screen.getByText(/New hospital accounts are created by an administrator/i),
+      screen.getByRole('link', { name: 'Create Super Admin' }),
+    ).toHaveAttribute('href', '/platform/bootstrap');
+    expect(
+      screen.getByText(/New hospital accounts are created by Super Admin/i),
     ).toBeInTheDocument();
   });
 });

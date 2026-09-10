@@ -152,9 +152,9 @@ export const addUserSchema = z
   .object({
     tenantRoleId: z.string().min(1, 'Tenant role is required'),
     fullName: z.string().min(1, 'Full name is required'),
-    contactNumber: z
+    mobileNumber: z
       .string()
-      .min(1, 'Contact number is required')
+      .min(1, 'Mobile number is required')
       .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
     email: z.string().min(1, 'Email is required').email('Enter a valid email'),
     password: z

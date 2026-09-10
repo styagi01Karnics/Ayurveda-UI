@@ -37,7 +37,7 @@ export function AddUserModal({
     defaultValues: {
       tenantRoleId: '',
       fullName: '',
-      contactNumber: '',
+      mobileNumber: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -50,7 +50,7 @@ export function AddUserModal({
       reset({
         tenantRoleId: '',
         fullName: '',
-        contactNumber: '',
+        mobileNumber: '',
         email: '',
         password: '',
         confirmPassword: '',
@@ -91,10 +91,10 @@ export function AddUserModal({
           {...register('fullName')}
         />
         <Input
-          label="Contact Number"
-          placeholder="Contact Number"
-          error={errors.contactNumber?.message}
-          {...register('contactNumber')}
+          label="Mobile Number"
+          placeholder="Mobile Number"
+          error={errors.mobileNumber?.message}
+          {...register('mobileNumber')}
         />
         <Input
           label="Email"

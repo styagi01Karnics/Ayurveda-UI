@@ -60,7 +60,7 @@ describe('settings.schema', () => {
     const result = addUserSchema.safeParse({
       tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
-      contactNumber: '9876543210',
+      mobileNumber: '9876543210',
       email: 'test@example.com',
       password: 'Password1',
       confirmPassword: 'Password1',
@@ -73,7 +73,7 @@ describe('settings.schema', () => {
     const result = addUserSchema.safeParse({
       tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
-      contactNumber: '9876543210',
+      mobileNumber: '9876543210',
       email: 'test@example.com',
       password: 'Password1',
       confirmPassword: 'Password2',

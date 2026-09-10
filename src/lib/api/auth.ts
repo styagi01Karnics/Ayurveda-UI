@@ -112,6 +112,7 @@ export interface RegisterUserPayload {
   role: string;
   tenantRoleId?: string;
   username?: string;
+  mobileNumber?: string;
 }
 
 export interface UpdateUserPayload {
@@ -120,6 +121,7 @@ export interface UpdateUserPayload {
   role?: string;
   tenantRoleId?: string;
   status?: string;
+  mobileNumber?: string;
 }
 
 export function login(payload: LoginPayload) {

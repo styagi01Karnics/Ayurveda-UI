@@ -135,13 +135,19 @@ export function UserManagementTab({
 
     setSubmitting(true);
     try {
-      const created = await registerUser({
+      let created = await registerUser({
         fullName: values.fullName,
         email: values.email,
         password: values.password,
         role: values.role,
         tenantRoleId: values.tenantRoleId,
+        mobileNumber: values.mobileNumber,
       });
+      if (!created.mobileNumber && values.mobileNumber) {
+        created = await updateUser(created.id, {
+          mobileNumber: values.mobileNumber,
+        });
+      }
       setUsers((prev) => [mapUserToRecord(created), ...prev]);
       showToast({
         title: 'User Added',

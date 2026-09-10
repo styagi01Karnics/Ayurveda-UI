@@ -1,7 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import { Megaphone, MessageCircle, Stethoscope } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
-import { getStoredPageCodes } from '@/lib/auth';
+import {
+  getClinicDisplayName,
+  getClinicLogoUrl,
+  getStoredPageCodes,
+} from '@/lib/auth';
 import { hasPageAccess, type PageCode } from '@/lib/pagePermissions';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
@@ -56,6 +60,8 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate, className }: SidebarProps) {
   const pageCodes = getStoredPageCodes();
+  const clinicName = getClinicDisplayName();
+  const clinicLogo = getClinicLogoUrl() || assets.brandLogo;
   const visibleItems = navItems.filter((item) => {
     if (item.pageCode) return hasPageAccess(pageCodes, item.pageCode);
     if (item.requiresSettings) {
@@ -74,12 +80,12 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
     >
       <div className="mb-10 flex flex-col items-center gap-2 px-1 text-center">
         <img
-          src={assets.brandLogo}
-          alt="Ganesha Ayurvedaa"
+          src={clinicLogo}
+          alt={clinicName}
           className="h-14 w-14 object-contain"
         />
-        <p className="font-serif text-[11px] font-semibold tracking-[0.12em] text-brown">
-          GANESHA AYURVEDAA
+        <p className="font-serif text-[11px] font-semibold tracking-[0.12em] text-brown uppercase">
+          {clinicName}
         </p>
         <p className="font-serif text-[11px] italic text-gold">
           A Journey of Healing

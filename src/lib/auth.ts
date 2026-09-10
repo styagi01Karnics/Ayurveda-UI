@@ -1,6 +1,7 @@
 import type { AuthUser } from '@/types';
-import type { AuthTokenResponse, UserResponse } from '@/lib/api/auth';
+import type { AuthTokenResponse, TenantResponse, UserResponse } from '@/lib/api/auth';
 import { clearStoredClinicLocation } from '@/lib/clinicLocations';
+import { CLINIC_BRANDING } from '@/lib/clinicBranding';
 import { ALL_PAGE_CODES } from '@/lib/pagePermissions';
 
 const AUTH_KEY = 'ganesha_auth_user';
@@ -40,14 +41,26 @@ export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-export function getStoredTenant(): unknown | null {
+export function getStoredTenant(): TenantResponse | null {
   const raw = localStorage.getItem(TENANT_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as unknown;
+    return JSON.parse(raw) as TenantResponse;
   } catch {
     return null;
   }
+}
+
+/** Clinic/hospital name from the logged-in tenant session. */
+export function getClinicDisplayName(): string {
+  const tenant = getStoredTenant();
+  const name = (tenant?.clinicName || tenant?.name || '').trim();
+  return name || CLINIC_BRANDING.name;
+}
+
+export function getClinicLogoUrl(): string | null {
+  const logo = getStoredTenant()?.logoUrl?.trim();
+  return logo || null;
 }
 
 export function setStoredUser(user: AuthUser): void {
@@ -133,7 +146,7 @@ export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
 export function mapAuthTokenToSession(response: AuthTokenResponse): {
   token: string;
   user: AuthUser;
-  tenant?: unknown;
+  tenant?: TenantResponse;
 } {
   return {
     token: response.accessToken,
@@ -171,7 +184,13 @@ export function createMockAuthSession(input: {
 export function mockLogin(emailOrUsername: string, password: string): AuthUser | null {
   if (password.length < 6) return null;
   const session = createMockAuthSession({ emailOrUsername });
-  setAuthSession(session.token, session.user);
+  setAuthSession(session.token, session.user, {
+    id: session.user.tenantId ?? '00000000-0000-4000-8000-000000000002',
+    tenantCode: DUMMY_LOGIN_CREDENTIALS.tenantCode,
+    name: CLINIC_BRANDING.name,
+    clinicName: CLINIC_BRANDING.name,
+    status: 'ACTIVE',
+  });
   return session.user;
 }
 
