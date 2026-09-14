@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('LoginPage', () => {
-  it('renders login tabs and hospital form fields by default', () => {
+  it('renders login tabs and hospital form fields by default', async () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -23,18 +23,19 @@ describe('LoginPage', () => {
     );
 
     expect(screen.getByText('Welcome back!')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Super Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument();
-    expect(screen.getByText('Hospital / tenant code')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('Enter your username or email address'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Location')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'System Admin' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Users' })).toBeInTheDocument();
+    expect(screen.getByText('Hospital')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('admin@gmail.com')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
   });
 
-  it('hides tenant and location fields on Super Admin tab', async () => {
+  it('hides hospital field on System Admin tab', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -42,12 +43,11 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Super Admin' }));
+    await user.click(screen.getByRole('button', { name: 'System Admin' }));
 
-    expect(screen.queryByText('Hospital / tenant code')).not.toBeInTheDocument();
-    expect(screen.queryByText('Location')).not.toBeInTheDocument();
+    expect(screen.queryByText('Hospital')).not.toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('Enter your username or email address'),
+      screen.getByPlaceholderText('superadmin@gmail.com'),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
   });
@@ -60,9 +60,7 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     );
 
-    const emailInput = screen.getByPlaceholderText(
-      'Enter your username or email address',
-    );
+    const emailInput = screen.getByPlaceholderText('admin@gmail.com');
     const passwordInput = screen.getByPlaceholderText('Password');
     await user.clear(emailInput);
     await user.clear(passwordInput);
@@ -80,6 +78,10 @@ describe('LoginPage', () => {
         <LoginPage />
       </MemoryRouter>,
     );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', { name: 'Login' }));
 

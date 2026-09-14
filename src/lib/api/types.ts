@@ -242,6 +242,8 @@ export interface PatientAppointmentListItemDto {
   patientCode?: string;
   patientFullName: string;
   patientMobileNumber?: string;
+  patientEmail?: string;
+  email?: string;
   assignedDoctorId?: string;
   doctorName?: string;
   consultationTypes?: ConsultationTypeRef[] | string[];

@@ -5,8 +5,10 @@ import type { CreatePatientPayload, PatientDto } from './types';
 
 const url = (path: string) => `${apiConfig.patient}${path}`;
 
-export function getAllPatients() {
-  return apiRequestList<PatientDto>(url(apiEndpoints.patients.getAll));
+export function getAllPatients(page = 0, size = 100) {
+  return apiRequestList<PatientDto>(
+    url(`${apiEndpoints.patients.getAll}?page=${page}&size=${size}`),
+  );
 }
 
 export function getPatientById(patientId: string) {
@@ -34,4 +36,18 @@ export interface PatientCountDto {
 
 export function getPatientCount() {
   return apiRequest<PatientCountDto>(url(apiEndpoints.patients.getCount));
+}
+
+export interface NewPatientsByMonthDto {
+  month?: string;
+  monthLabel?: string;
+  count?: number;
+  newPatients?: number;
+  [key: string]: unknown;
+}
+
+export function getNewPatientsByMonth() {
+  return apiRequestList<NewPatientsByMonthDto>(
+    url(apiEndpoints.patients.newPatientsByMonth),
+  );
 }

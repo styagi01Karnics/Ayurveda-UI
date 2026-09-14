@@ -4,23 +4,23 @@ const doshas = [
   {
     name: 'Vata',
     image: assets.dosha.vata,
-    position: 'top-[6%] left-1/2 -translate-x-1/2',
+    position: 'top-[4%] left-1/2 -translate-x-1/2',
   },
   {
     name: 'Pitta',
     image: assets.dosha.pitta,
-    position: 'bottom-[4%] right-[6%]',
+    position: 'bottom-[2%] right-[4%]',
   },
   {
     name: 'Kapha',
     image: assets.dosha.kapha,
-    position: 'bottom-[4%] left-[6%]',
+    position: 'bottom-[2%] left-[4%]',
   },
 ] as const;
 
 export function DoshaDiagram() {
   return (
-    <div className="relative mx-auto h-[min(380px,62vh)] w-full max-w-[480px]">
+    <div className="relative mx-auto h-[min(560px,78vh)] w-full max-w-[640px]">
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox="0 0 580 540"
@@ -71,7 +71,7 @@ export function DoshaDiagram() {
         />
       </svg>
 
-      <p className="absolute left-1/2 top-[53%] z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-[15px] italic text-brown/65">
+      <p className="absolute left-1/2 top-[53%] z-10 -translate-x-1/2 -translate-y-1/2 font-serif text-lg italic text-brown/65 sm:text-xl">
         Know your Dosha
       </p>
 
@@ -83,9 +83,9 @@ export function DoshaDiagram() {
           <img
             src={image}
             alt=""
-            className="h-[72px] w-[72px] object-contain sm:h-[80px] sm:w-[80px]"
+            className="h-[96px] w-[96px] object-contain sm:h-[112px] sm:w-[112px]"
           />
-          <span className="font-serif text-lg text-brown">{name}</span>
+          <span className="font-serif text-xl text-brown sm:text-2xl">{name}</span>
         </div>
       ))}
     </div>

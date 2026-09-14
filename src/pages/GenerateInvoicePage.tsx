@@ -40,6 +40,7 @@ import {
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
 import { getActiveTherapists } from '@/lib/api/therapists';
+import { createPaymentLink } from '@/lib/api/payments';
 import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantity';
 import type { MedicineDto } from '@/lib/api/types';
 import {
@@ -151,6 +152,7 @@ interface InvoicePatientContext {
   uuid: string;
   displayId: string;
   patientCode: string;
+  email?: string;
 }
 
 function todayIsoDate(): string {
@@ -232,10 +234,15 @@ async function settleInvoicePayment(
 
   await addInvoicePayment(invoice.id, {
     amountPaid,
-    paymentMethod,
+    amount: amountPaid,
+    paymentMethod: paymentMethod === 'PARTIAL PAYMENT' ? 'CASH' : paymentMethod,
     remarks,
   });
   return getInvoiceById(invoice.id);
+}
+
+function isOnlinePaymentMode(mode: PaymentModeId): boolean {
+  return mode === 'upi' || mode === 'card' || mode === 'wallet' || mode === 'emi';
 }
 
 function parseSessionMinutes(value: string): number {
@@ -405,6 +412,7 @@ export function GenerateInvoicePage() {
             patientCode: p.patientCode ?? code,
             fullName: p.patientFullName,
             mobileNumber: p.patientMobileNumber ?? '',
+            email: p.patientEmail ?? p.email ?? undefined,
           };
         }),
         medicines: medicines.map((m) => ({
@@ -566,6 +574,7 @@ export function GenerateInvoicePage() {
       uuid: billing.patientId,
       displayId,
       patientCode: billing.patientCode ?? patientDto?.patientCode ?? displayId,
+      email: patientDto?.email || undefined,
     });
 
     const visitType = resolvedOption.includeConsultation
@@ -632,6 +641,7 @@ export function GenerateInvoicePage() {
       patientCode: string;
       fullName: string;
       mobileNumber: string;
+      email?: string;
     },
   ) => {
     setPatientBillingLoading(true);
@@ -641,6 +651,7 @@ export function GenerateInvoicePage() {
           uuid: patientUuid,
           displayId: selected.displayId,
           patientCode: selected.patientCode,
+          email: selected.email,
         });
         serviceForm.setValue(
           'patientId',
@@ -726,6 +737,7 @@ export function GenerateInvoicePage() {
       patientCode: selected.patientCode,
       fullName: selected.fullName,
       mobileNumber: selected.mobileNumber,
+      email: selected.email,
     });
   };
 
@@ -756,6 +768,7 @@ export function GenerateInvoicePage() {
       patientCode: matched.patientCode,
       fullName: matched.fullName,
       mobileNumber: matched.mobileNumber,
+      email: matched.email,
     });
   };
 
@@ -1034,6 +1047,7 @@ export function GenerateInvoicePage() {
         patientCode: patientContext?.patientCode || undefined,
         patientName: currentService.fullName,
         contactNumber: currentService.contactNumber,
+        patientEmail: patientContext?.email || undefined,
         invoiceDate: currentService.invoiceDate,
         visitType,
         serviceFees: includeConsultation
@@ -1064,13 +1078,49 @@ export function GenerateInvoicePage() {
         : await createInvoice(basePayload);
 
       let settled = result;
+      let paymentLinkUrl: string | undefined;
       try {
-        settled = await settleInvoicePayment(
-          result,
-          paymentMode.toUpperCase(),
-          basePayload.paymentRemarks ?? 'Payment collected at invoice generation',
-          selectedPayment === 'partial',
-        );
+        if (isOnlinePaymentMode(selectedPayment)) {
+          const due =
+            result.leftAmount ??
+            Math.max(
+              0,
+              (result.totalAmount ?? 0) - (result.paidAmount ?? 0),
+            );
+          const email = patientContext?.email || undefined;
+          const phone = currentService.contactNumber?.replace(/\D/g, '') ?? '';
+          const firstName =
+            currentService.fullName.trim().split(/\s+/)[0] || 'Patient';
+
+          if (due > 0 && email && phone.length >= 10) {
+            const link = await createPaymentLink({
+              invoiceId: result.id,
+              amount: due,
+              firstName,
+              email,
+              phone: phone.slice(-10),
+              sendEmail: true,
+              upiQr: selectedPayment === 'upi',
+            });
+            paymentLinkUrl = link.payUrl;
+          } else {
+            settled = await settleInvoicePayment(
+              result,
+              'CASH',
+              basePayload.paymentRemarks ??
+                'Collected at desk (online link skipped — missing email/phone)',
+              false,
+            );
+          }
+        } else {
+          settled = await settleInvoicePayment(
+            result,
+            paymentMode.toUpperCase(),
+            basePayload.paymentRemarks ??
+              'Payment collected at invoice generation',
+            selectedPayment === 'partial',
+          );
+        }
       } catch {
         showToast({
           title: 'Invoice created',
@@ -1081,14 +1131,25 @@ export function GenerateInvoicePage() {
 
       setCreatedInvoiceId(settled.id);
       setCreatedInvoiceNumber(settled.invoiceId);
-      setPaymentSuccessDetails(mapInvoiceToPaymentSuccess(settled));
+      setPaymentSuccessDetails({
+        ...mapInvoiceToPaymentSuccess(settled),
+        ...(paymentLinkUrl
+          ? {
+              payUrl: paymentLinkUrl,
+              title: 'Payment link created',
+              paymentMethod: paymentMode,
+            }
+          : {}),
+      });
       setPaymentSuccessOpen(true);
       setPaymentOpen(false);
       showToast({
-        title: 'Invoice generated',
-        message: activeBillingId
-          ? 'The billing draft has been completed and the invoice is ready.'
-          : `${invoiceType.label} invoice has been generated successfully.`,
+        title: paymentLinkUrl ? 'Payment link ready' : 'Invoice generated',
+        message: paymentLinkUrl
+          ? 'Share the PayU link with the patient, or open it from the success dialog.'
+          : activeBillingId
+            ? 'The billing draft has been completed and the invoice is ready.'
+            : `${invoiceType.label} invoice has been generated successfully.`,
       });
     } catch (err) {
       showToast({

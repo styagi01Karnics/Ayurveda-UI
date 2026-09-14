@@ -842,6 +842,15 @@ vi.mock('@/lib/api/auth', () => ({
     address: 'Mumbai',
     status: 'ACTIVE',
   })),
+  getPublicTenants: vi.fn(async () => [
+    {
+      tenantCode: 'GAN-DL',
+      clinicName: 'Ganesha Ayurveda',
+      city: 'New Delhi',
+      state: 'Delhi',
+      status: 'ACTIVE',
+    },
+  ]),
   getMe: vi.fn(async () => ({
     id: 'user-1',
     tenantId: 'tenant-1',
@@ -862,7 +871,7 @@ vi.mock('@/lib/api/auth', () => ({
     status: 'ACTIVE',
   })),
   getUsers: vi.fn(async () => []),
-  forgotPassword: vi.fn(),
+  forgotPassword: vi.fn(async () => undefined),
   resetPassword: vi.fn(),
   changePassword: vi.fn(async () => undefined),
   validateToken: vi.fn(),
@@ -889,6 +898,12 @@ vi.mock('@/lib/api/roles', () => ({
   bootstrapSuperAdmin: vi.fn(),
   createHospital: vi.fn(),
   getHospitals: vi.fn(async () => []),
+  updateHospitalStatus: vi.fn(),
+  retryHospitalProvision: vi.fn(),
+  getHospitalMail: vi.fn(async () => ({})),
+  updateHospitalMail: vi.fn(async () => ({})),
+  getTenantPaymentGateway: vi.fn(async () => ({})),
+  updateTenantPaymentGateway: vi.fn(async () => ({})),
 }));
 
 vi.mock('@/lib/api/billing', () => ({

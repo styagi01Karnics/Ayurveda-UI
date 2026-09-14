@@ -159,3 +159,92 @@ export function retryHospitalProvision(hospitalId: string) {
     { method: 'POST' },
   );
 }
+
+export interface HospitalMailPayload {
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  fromEmail?: string;
+  fromName?: string;
+  [key: string]: unknown;
+}
+
+export function getHospitalMail(hospitalId: string) {
+  return apiRequest<HospitalMailPayload>(
+    url(ep.platform.hospitalMail(hospitalId)),
+  );
+}
+
+export function updateHospitalMail(
+  hospitalId: string,
+  payload: HospitalMailPayload,
+) {
+  return apiRequest<HospitalMailPayload>(
+    url(ep.platform.hospitalMail(hospitalId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
+
+export interface PaymentGatewayPayload {
+  merchantKey?: string;
+  merchantSalt?: string;
+  enabled?: boolean;
+  [key: string]: unknown;
+}
+
+export function getTenantPaymentGateway(tenantCode: string) {
+  return apiRequest<PaymentGatewayPayload>(
+    url(ep.platform.tenantPaymentGateway(tenantCode)),
+  );
+}
+
+export function updateTenantPaymentGateway(
+  tenantCode: string,
+  payload: PaymentGatewayPayload,
+) {
+  return apiRequest<PaymentGatewayPayload>(
+    url(ep.platform.tenantPaymentGateway(tenantCode)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
+
+export function updateHospital(
+  hospitalId: string,
+  payload: Partial<CreateHospitalPayload>,
+) {
+  return apiRequest<PlatformHospitalDto>(
+    url(ep.platform.hospitalById(hospitalId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
+
+export function getHospitalAdmins(hospitalId: string) {
+  return apiRequestList<UserResponse>(
+    url(ep.platform.hospitalAdmins(hospitalId)),
+  );
+}
+
+export function createHospitalAdmin(
+  hospitalId: string,
+  payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    mobileNumber?: string;
+  },
+) {
+  return apiRequest<UserResponse>(url(ep.platform.hospitalAdmins(hospitalId)), {
+    method: 'POST',
+    body: payload,
+  });
+}

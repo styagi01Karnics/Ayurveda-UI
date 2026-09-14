@@ -109,8 +109,8 @@ function StockAlertToggle({
   return (
     <section className="space-y-3 border-t border-gray-100 pt-5">
       <h3 className="text-sm font-semibold text-brown">Low Stock Alert</h3>
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-text-muted">
+      <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3.5">
+        <p className="text-sm text-brown">
           Notify when stock below {threshold || '20'} units
         </p>
         <button
@@ -120,14 +120,14 @@ function StockAlertToggle({
           aria-label="Low stock alert"
           onClick={() => onChange(!checked)}
           className={cn(
-            'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-            checked ? 'bg-brown' : 'bg-gray-300',
+            'relative h-6 w-11 shrink-0 rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40',
+            checked ? 'border-gold bg-gold' : 'border-gray-400 bg-white',
           )}
         >
           <span
             className={cn(
-              'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-              checked ? 'translate-x-[22px]' : 'translate-x-0.5',
+              'pointer-events-none absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-md ring-1 ring-black/20 transition-transform',
+              checked ? 'translate-x-5' : 'translate-x-0',
             )}
           />
         </button>

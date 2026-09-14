@@ -8,6 +8,7 @@ import {
   markNotificationRead,
   type NotificationDto,
 } from '@/lib/api/notifications';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { getStoredUser } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 
@@ -203,9 +204,7 @@ export function NotificationBell() {
                 Sign in again to load notifications.
               </p>
             ) : loading && items.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-text-muted">
-                Loading…
-              </p>
+              <LoadingState compact label="Loading…" />
             ) : error ? (
               <div className="space-y-2 px-4 py-8 text-center">
                 <p className="text-sm text-text-muted">{error}</p>

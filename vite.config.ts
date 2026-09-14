@@ -69,12 +69,15 @@ export default defineConfig(({ mode }) => {
         '/api/v1/lifestyle-information': serviceProxy(backendHost, 8103),
         '/api/v1/ayurvedic-assessments': serviceProxy(backendHost, 8103),
         '/api/v1/dashboard/todays-schedule': serviceProxy(backendHost, 8103),
+        '/api/v1/dashboard/patient-trends': serviceProxy(backendHost, 8103),
+        '/api/v1/dashboard/new-patients-by-month': serviceProxy(backendHost, 8101),
         '/api/v1/treatments': serviceProxy(backendHost, 8103),
         '/api/v1/follow-ups': serviceProxy(backendHost, 8103),
         '/api/v1/prescriptions': serviceProxy(backendHost, 8103),
 
         // Auth-service :8111
         '/api/v1/auth': serviceProxy(backendHost, 8111),
+        '/api/v1/public': serviceProxy(backendHost, 8111),
         '/api/v1/tenants': serviceProxy(backendHost, 8111),
         '/api/v1/ui-pages': serviceProxy(backendHost, 8111),
         '/api/v1/roles': serviceProxy(backendHost, 8111),
@@ -105,6 +108,9 @@ export default defineConfig(({ mode }) => {
         // Notification-service :8110
         '/api/v1/notifications': serviceProxy(backendHost, 8110),
         '/api/v1/messages': serviceProxy(backendHost, 8110),
+
+        // Payment-service :8112
+        '/api/v1/payments': serviceProxy(backendHost, 8112),
       },
     },
     test: {

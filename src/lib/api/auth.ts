@@ -228,3 +228,19 @@ export function deleteUser(userId: string) {
 export function getTenant() {
   return apiRequest<TenantResponse>(url(ep.tenant));
 }
+
+export interface PublicTenantDto {
+  tenantCode: string;
+  name?: string;
+  clinicName?: string;
+  state?: string;
+  city?: string;
+  status?: string;
+}
+
+/** Public — active hospitals for login picker. */
+export function getPublicTenants() {
+  return apiRequestList<PublicTenantDto>(
+    `${apiConfig.auth}${apiEndpoints.public.tenants}`,
+  );
+}

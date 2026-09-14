@@ -6,13 +6,20 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Input } from '@/components/ui/Input';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { Select } from '@/components/ui/Select';
 import { ApiError } from '@/lib/api/client';
 import {
   createHospital,
+  getHospitalMail,
   getHospitals,
+  getTenantPaymentGateway,
   retryHospitalProvision,
+  updateHospitalMail,
   updateHospitalStatus,
+  updateTenantPaymentGateway,
+  type HospitalMailPayload,
+  type PaymentGatewayPayload,
   type PlatformHospitalDto,
 } from '@/lib/api/roles';
 import {
@@ -55,6 +62,24 @@ export function PlatformHospitalsPage() {
   const [showForm, setShowForm] = useState(true);
   const [logoFile, setLogoFile] = useState<File | undefined>();
   const [logoFileError, setLogoFileError] = useState<string | null>(null);
+  const [configHospital, setConfigHospital] =
+    useState<PlatformHospitalDto | null>(null);
+  const [configTab, setConfigTab] = useState<'mail' | 'payu'>('mail');
+  const [configLoading, setConfigLoading] = useState(false);
+  const [configSaving, setConfigSaving] = useState(false);
+  const [mailForm, setMailForm] = useState<HospitalMailPayload>({
+    host: '',
+    port: 587,
+    username: '',
+    password: '',
+    fromEmail: '',
+    fromName: '',
+  });
+  const [payuForm, setPayuForm] = useState<PaymentGatewayPayload>({
+    merchantKey: '',
+    merchantSalt: '',
+    enabled: true,
+  });
 
   const {
     register,
@@ -187,6 +212,73 @@ export function PlatformHospitalsPage() {
             ? err.message
             : 'Could not retry provisioning.',
       });
+    }
+  };
+
+  const openHospitalConfig = async (hospital: PlatformHospitalDto) => {
+    setConfigHospital(hospital);
+    setConfigTab('mail');
+    setConfigLoading(true);
+    try {
+      const [mail, gateway] = await Promise.all([
+        getHospitalMail(hospital.id).catch(() => null),
+        hospital.tenantCode
+          ? getTenantPaymentGateway(hospital.tenantCode).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      if (mail) {
+        setMailForm({
+          host: String(mail.host ?? ''),
+          port: Number(mail.port ?? 587),
+          username: String(mail.username ?? ''),
+          password: '',
+          fromEmail: String(mail.fromEmail ?? ''),
+          fromName: String(mail.fromName ?? ''),
+        });
+      }
+      if (gateway) {
+        setPayuForm({
+          merchantKey: String(gateway.merchantKey ?? ''),
+          merchantSalt: '',
+          enabled: gateway.enabled !== false,
+        });
+      }
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const saveHospitalConfig = async () => {
+    if (!configHospital) return;
+    setConfigSaving(true);
+    try {
+      if (configTab === 'mail') {
+        await updateHospitalMail(configHospital.id, {
+          ...mailForm,
+          port: Number(mailForm.port) || 587,
+        });
+        showToast({
+          title: 'Mailbox saved',
+          message: 'Hospital SMTP settings were updated.',
+        });
+      } else if (configHospital.tenantCode) {
+        await updateTenantPaymentGateway(configHospital.tenantCode, payuForm);
+        showToast({
+          title: 'PayU saved',
+          message: 'Payment gateway keys were updated for this tenant.',
+        });
+      }
+      setConfigHospital(null);
+    } catch (err) {
+      showToast({
+        title: 'Save failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : 'Could not save hospital configuration.',
+      });
+    } finally {
+      setConfigSaving(false);
     }
   };
 
@@ -401,7 +493,7 @@ export function PlatformHospitalsPage() {
           <h2 className="text-lg font-bold text-brown">All hospitals</h2>
         </div>
         {loadingList ? (
-          <p className="px-5 py-8 text-sm text-text-muted">Loading…</p>
+          <LoadingState />
         ) : listError ? (
           <div className="px-5 py-8">
             <p className="text-sm text-danger">{listError}</p>
@@ -451,6 +543,14 @@ export function PlatformHospitalsPage() {
                       <td className="px-5 py-4 text-brown">{status}</td>
                       <td className="px-5 py-4">
                         <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="px-2.5 py-1 text-xs"
+                            onClick={() => void openHospitalConfig(hospital)}
+                          >
+                            Mail / PayU
+                          </Button>
                           {status === 'FAILED' ? (
                             <Button
                               type="button"
@@ -493,6 +593,181 @@ export function PlatformHospitalsPage() {
           </div>
         )}
       </Card>
+
+      {configHospital ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/40"
+            aria-label="Close configuration"
+            onClick={() => setConfigHospital(null)}
+          />
+          <Card className="relative z-10 w-full max-w-lg space-y-4 p-5 sm:p-6">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-brown">
+                  Hospital configuration
+                </h2>
+                <p className="mt-1 text-sm text-text-muted">
+                  {configHospital.clinicName ??
+                    configHospital.name ??
+                    'Hospital'}{' '}
+                  ({configHospital.tenantCode ?? '—'})
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="px-2.5 py-1 text-xs"
+                onClick={() => setConfigHospital(null)}
+              >
+                Close
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={configTab === 'mail' ? 'primary' : 'outline'}
+                className="px-3 py-1.5 text-xs"
+                onClick={() => setConfigTab('mail')}
+              >
+                SMTP mailbox
+              </Button>
+              <Button
+                type="button"
+                variant={configTab === 'payu' ? 'primary' : 'outline'}
+                className="px-3 py-1.5 text-xs"
+                onClick={() => setConfigTab('payu')}
+                disabled={!configHospital.tenantCode}
+              >
+                PayU gateway
+              </Button>
+            </div>
+
+            {configLoading ? (
+              <LoadingState />
+            ) : configTab === 'mail' ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input
+                  label="SMTP host"
+                  value={String(mailForm.host ?? '')}
+                  onChange={(e) =>
+                    setMailForm((prev) => ({ ...prev, host: e.target.value }))
+                  }
+                />
+                <Input
+                  label="Port"
+                  type="number"
+                  value={String(mailForm.port ?? 587)}
+                  onChange={(e) =>
+                    setMailForm((prev) => ({
+                      ...prev,
+                      port: Number(e.target.value) || 587,
+                    }))
+                  }
+                />
+                <Input
+                  label="Username"
+                  value={String(mailForm.username ?? '')}
+                  onChange={(e) =>
+                    setMailForm((prev) => ({
+                      ...prev,
+                      username: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="Password"
+                  type="password"
+                  value={String(mailForm.password ?? '')}
+                  onChange={(e) =>
+                    setMailForm((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="From email"
+                  type="email"
+                  value={String(mailForm.fromEmail ?? '')}
+                  onChange={(e) =>
+                    setMailForm((prev) => ({
+                      ...prev,
+                      fromEmail: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="From name"
+                  value={String(mailForm.fromName ?? '')}
+                  onChange={(e) =>
+                    setMailForm((prev) => ({
+                      ...prev,
+                      fromName: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                <Input
+                  label="Merchant key"
+                  value={String(payuForm.merchantKey ?? '')}
+                  onChange={(e) =>
+                    setPayuForm((prev) => ({
+                      ...prev,
+                      merchantKey: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="Merchant salt"
+                  type="password"
+                  value={String(payuForm.merchantSalt ?? '')}
+                  onChange={(e) =>
+                    setPayuForm((prev) => ({
+                      ...prev,
+                      merchantSalt: e.target.value,
+                    }))
+                  }
+                />
+                <label className="flex items-center gap-2 text-sm text-brown">
+                  <input
+                    type="checkbox"
+                    checked={payuForm.enabled !== false}
+                    onChange={(e) =>
+                      setPayuForm((prev) => ({
+                        ...prev,
+                        enabled: e.target.checked,
+                      }))
+                    }
+                  />
+                  Gateway enabled
+                </label>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfigHospital(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                disabled={configSaving || configLoading}
+                onClick={() => void saveHospitalConfig()}
+              >
+                {configSaving ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

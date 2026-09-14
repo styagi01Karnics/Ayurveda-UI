@@ -24,4 +24,5 @@ export const apiConfig = {
   activityLog: resolveBase(import.meta.env.VITE_ACTIVITY_LOG_API_URL),
   attendance: resolveBase(import.meta.env.VITE_ATTENDANCE_API_URL),
   fileUpload: resolveBase(import.meta.env.VITE_FILE_UPLOAD_API_URL),
+  payment: resolveBase(import.meta.env.VITE_PAYMENT_API_URL),
 } as const;

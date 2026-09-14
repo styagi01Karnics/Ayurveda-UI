@@ -2,6 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, KeyRound, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getStoredUser } from '@/lib/auth';
+import {
+  getClinicLocationShortLabel,
+  getStoredClinicLocation,
+} from '@/lib/clinicLocations';
 import { cn } from '@/lib/utils';
 
 interface UserMenuProps {
@@ -13,6 +17,9 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const user = getStoredUser();
+  const locationLabel = getClinicLocationShortLabel(getStoredClinicLocation());
+  const role = user?.role ?? 'Admin';
+  const name = user?.fullName ?? 'User';
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -30,22 +37,24 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex max-w-[200px] items-center gap-2 rounded-xl bg-white px-2 py-1.5 shadow-sm sm:max-w-none"
+          className="flex max-w-[280px] items-center gap-2 rounded-xl bg-white px-2 py-1.5 shadow-sm sm:max-w-[360px]"
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/15 text-gold">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold">
             <User className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="hidden min-w-0 text-left sm:block">
-            <p className="truncate text-sm font-semibold text-brown">
-              {user?.fullName ?? 'Rahul Sharma'}
+            <p className="truncate text-sm font-semibold text-brown">{name}</p>
+            <p className="truncate text-xs text-text-muted">
+              {role}
+              <span className="mx-1 text-text-muted/70">|</span>
+              {locationLabel}
             </p>
-            <p className="truncate text-xs text-text-muted">{user?.role ?? 'Super Admin'}</p>
           </div>
           <ChevronDown
             className={cn(
-              'hidden h-4 w-4 text-text-muted transition-transform sm:block',
+              'hidden h-4 w-4 shrink-0 text-text-muted transition-transform sm:block',
               open && 'rotate-180',
             )}
           />

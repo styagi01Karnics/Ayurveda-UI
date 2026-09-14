@@ -39,6 +39,13 @@ export const apiEndpoints = {
       `/api/v1/platform/hospitals/${hospitalId}/status`,
     hospitalRetryProvision: (hospitalId: string) =>
       `/api/v1/platform/hospitals/${hospitalId}/retry-provision`,
+    hospitalMail: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/mail`,
+    tenantPaymentGateway: (tenantCode: string) =>
+      `/api/v1/platform/tenants/${encodeURIComponent(tenantCode)}/payment-gateway`,
+  },
+  public: {
+    tenants: '/api/v1/public/tenants',
   },
 
   /** Patient-service :8101 */
@@ -49,6 +56,7 @@ export const apiEndpoints = {
     create: '/api/v1/patients/create-patient',
     delete: (patientId: string) => `/api/v1/patients/delete-patient/${patientId}`,
     getCount: '/api/v1/patients/get-patient-count',
+    newPatientsByMonth: '/api/v1/dashboard/new-patients-by-month',
   },
 
   /** Doctor-service :8102 */
@@ -145,6 +153,7 @@ export const apiEndpoints = {
     },
     schedule: {
       todaysSchedule: '/api/v1/dashboard/todays-schedule',
+      patientTrends: '/api/v1/dashboard/patient-trends',
     },
     systemicExaminations: {
       create: '/api/v1/systemic-examinations',
@@ -228,6 +237,8 @@ export const apiEndpoints = {
   dashboard: {
     medicineStock: '/api/v1/dashboard/medicine-stock',
     billingSummary: '/api/v1/dashboard/billing-summary',
+    newPatientsByMonth: '/api/v1/dashboard/new-patients-by-month',
+    patientTrends: '/api/v1/dashboard/patient-trends',
   },
 
   /** Billing-service :8109 */
@@ -252,6 +263,8 @@ export const apiEndpoints = {
       `/api/v1/invoices/patient/${patientId}`,
     invoicePayment: (invoiceId: string) =>
       `/api/v1/invoices/${invoiceId}/payments`,
+    invoiceRefund: (invoiceId: string) =>
+      `/api/v1/invoices/${invoiceId}/refunds`,
     sales: '/api/v1/sales',
     salesRevenueMonth: '/api/v1/sales/revenue/month',
     packages: {
@@ -304,5 +317,19 @@ export const apiEndpoints = {
     byPatientId: (patientId: string) => `/api/v1/documents/${patientId}`,
     download: (documentId: string) => `/api/v1/documents/${documentId}/download`,
     delete: (documentId: string) => `/api/v1/documents/${documentId}`,
+  },
+
+  /** Payment-service :8112 */
+  payments: {
+    base: '/api/v1/payments',
+    initiate: '/api/v1/payments/initiate',
+    byTxn: (txnId: string) => `/api/v1/payments/by-txn/${txnId}`,
+    byId: (paymentId: string) => `/api/v1/payments/${paymentId}`,
+    refund: (paymentId: string) => `/api/v1/payments/${paymentId}/refund`,
+    links: '/api/v1/payments/links',
+    linksByInvoice: (invoiceId: string) =>
+      `/api/v1/payments/links/invoice/${invoiceId}`,
+    linkById: (id: string) => `/api/v1/payments/links/${id}`,
+    linkEmail: (id: string) => `/api/v1/payments/links/${id}/email`,
   },
 } as const;

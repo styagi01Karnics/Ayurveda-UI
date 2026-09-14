@@ -78,4 +78,18 @@ export function getAppointmentStats() {
   );
 }
 
+export interface PatientTrendPointDto {
+  month?: string;
+  monthLabel?: string;
+  newPatients?: number;
+  followUps?: number;
+  [key: string]: unknown;
+}
+
+export function getPatientTrends() {
+  return apiRequestList<PatientTrendPointDto>(
+    appointmentUrl(apiEndpoints.dashboard.patientTrends),
+  );
+}
+
 export { getDashboardBillingSummary };

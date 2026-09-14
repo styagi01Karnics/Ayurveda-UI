@@ -1,6 +1,7 @@
 /** Centralized static asset paths — public PNGs + Figma-export SVGs from src/assets */
 
 import scheduleDecor from '@/assets/signup/tulsi.png';
+import appLogo from '@/assets/signup/logo.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
 import doctorReenaAvatar from '@/assets/appointments/doctor-reena.png';
@@ -29,6 +30,7 @@ export { navIconSet, type NavIconKey };
 
 export const assets = {
   brandLogo: '/assets/brand-logo.png',
+  appLogo,
   dosha: {
     vata: '/assets/vata.png',
     pitta: '/assets/pitta.png',

@@ -78,18 +78,20 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
       )}
       style={{ backgroundImage: `url(${assets.sidebarBg})` }}
     >
-      <div className="mb-10 flex flex-col items-center gap-2 px-1 text-center">
-        <img
-          src={clinicLogo}
-          alt={clinicName}
-          className="h-14 w-14 object-contain"
-        />
-        <p className="font-serif text-[11px] font-semibold tracking-[0.12em] text-brown uppercase">
-          {clinicName}
-        </p>
-        <p className="font-serif text-[11px] italic text-gold">
-          A Journey of Healing
-        </p>
+      <div className="relative z-[1] mb-6 shrink-0 px-1">
+        <div className="flex flex-col items-center gap-2 rounded-2xl bg-[#fffaf3]/90 px-3 py-3 text-center shadow-[0_1px_0_rgba(66,44,35,0.06)] backdrop-blur-[2px]">
+          <img
+            src={clinicLogo}
+            alt={clinicName}
+            className="h-14 w-14 object-contain"
+          />
+          <p className="w-full break-words font-serif text-[15px] font-bold leading-tight tracking-[0.04em] text-[#2a1810]">
+            {clinicName}
+          </p>
+          <p className="font-serif text-[13px] font-medium italic leading-snug text-[#a5750a]">
+            A Journey of Healing
+          </p>
+        </div>
       </div>
 
       <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto pr-1">

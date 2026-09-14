@@ -49,6 +49,7 @@ export interface CreateInvoicePayload {
   patientCode?: string;
   patientName: string;
   contactNumber: string;
+  patientEmail?: string;
   invoiceDate: string;
   visitType: VisitTypeApi;
   serviceFees: number;
@@ -151,6 +152,8 @@ export interface InvoiceListItemDto {
 
 export interface InvoicePaymentPayload {
   amountPaid: number;
+  /** API doc field alias — some services expect `amount`. */
+  amount?: number;
   paymentMethod: string;
   remarks?: string;
 }
@@ -350,6 +353,18 @@ export function addInvoicePayment(
   payload: InvoicePaymentPayload,
 ) {
   return apiRequest<InvoiceListItemDto>(url(ep.invoicePayment(invoiceId)), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export interface InvoiceRefundPayload {
+  amount: number;
+  remarks?: string;
+}
+
+export function refundInvoice(invoiceId: string, payload: InvoiceRefundPayload) {
+  return apiRequest<InvoiceDto>(url(ep.invoiceRefund(invoiceId)), {
     method: 'POST',
     body: payload,
   });

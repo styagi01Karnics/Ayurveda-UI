@@ -134,17 +134,90 @@ export async function apiRequestFormData<T>(
   return parsed as T;
 }
 
-/** Treat 404 envelopes as empty lists when listing resources. */
+/** Treat 404 envelopes as empty lists when listing resources.
+ * Supports both plain arrays and Spring-style pages (`data.content`).
+ */
 export async function apiRequestList<T>(
   url: string,
   options?: RequestOptions,
 ): Promise<T[]> {
   try {
-    const data = await apiRequest<T[] | null>(url, options);
-    return Array.isArray(data) ? data : [];
+    const data = await apiRequest<
+      T[] | { content?: T[]; sales?: T[] } | null
+    >(url, options);
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object') {
+      if (Array.isArray(data.content)) return data.content;
+      if (Array.isArray(data.sales)) return data.sales;
+    }
+    return [];
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return [];
+    }
+    throw error;
+  }
+}
+
+export interface PagedResult<T> {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+}
+
+/** Paginated list helper — unwraps `data.content` (or array fallback). */
+export async function apiRequestPage<T>(
+  url: string,
+  options?: RequestOptions,
+): Promise<PagedResult<T>> {
+  try {
+    const data = await apiRequest<
+      | T[]
+      | {
+          content?: T[];
+          sales?: T[];
+          page?: number;
+          size?: number;
+          totalElements?: number;
+          totalPages?: number;
+        }
+      | null
+    >(url, options);
+
+    if (Array.isArray(data)) {
+      return {
+        content: data,
+        page: 0,
+        size: data.length,
+        totalElements: data.length,
+        totalPages: 1,
+      };
+    }
+
+    const content = Array.isArray(data?.content)
+      ? data.content
+      : Array.isArray(data?.sales)
+        ? data.sales
+        : [];
+
+    return {
+      content,
+      page: Number(data?.page ?? 0),
+      size: Number(data?.size ?? content.length),
+      totalElements: Number(data?.totalElements ?? content.length),
+      totalPages: Number(data?.totalPages ?? 1),
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return {
+        content: [],
+        page: 0,
+        size: 0,
+        totalElements: 0,
+        totalPages: 0,
+      };
     }
     throw error;
   }

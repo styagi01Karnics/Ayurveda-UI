@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { UI_MESSAGES } from '@/lib/uiMessages';
 
 interface AsyncStatusProps {
@@ -23,8 +24,8 @@ export function AsyncStatus({
 }: AsyncStatusProps) {
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white px-4 py-10 text-center text-sm text-text-muted">
-        {UI_MESSAGES.loading}
+      <div className="rounded-xl border border-gray-100 bg-white">
+        <LoadingState label={UI_MESSAGES.loading} />
       </div>
     );
   }

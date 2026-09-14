@@ -6,13 +6,21 @@ import type { CreateMedicinePayload, MedicineDto } from './types';
 const url = (path: string) => `${apiConfig.medicine}${path}`;
 const ep = apiEndpoints.medicines;
 
-export function getAllMedicines(params?: { medicineName?: string; category?: string; stockStatus?: string }) {
-    const searchParams = new URLSearchParams();
-    if (params?.medicineName) searchParams.append('medicineName', params.medicineName);
-    if (params?.category) searchParams.append('category', params.category);
-    if (params?.stockStatus) searchParams.append('stockStatus', params.stockStatus);
-    const query = searchParams.toString();
-    return apiRequestList<MedicineDto>(`${url(ep.base)}${query ? `?${query}` : ''}`);
+export function getAllMedicines(params?: {
+  medicineName?: string;
+  category?: string;
+  stockStatus?: string;
+  page?: number;
+  size?: number;
+}) {
+  const searchParams = new URLSearchParams();
+  if (params?.medicineName) searchParams.append('medicineName', params.medicineName);
+  if (params?.category) searchParams.append('category', params.category);
+  if (params?.stockStatus) searchParams.append('stockStatus', params.stockStatus);
+  searchParams.append('page', String(params?.page ?? 0));
+  searchParams.append('size', String(params?.size ?? 100));
+  const query = searchParams.toString();
+  return apiRequestList<MedicineDto>(`${url(ep.base)}?${query}`);
 }
 
 export function getMedicineById(medicineId: string) {

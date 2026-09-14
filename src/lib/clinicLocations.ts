@@ -2,14 +2,17 @@ export const CLINIC_LOCATIONS = [
   {
     value: 'delhi-nanaksaar',
     label: 'New Delhi — Nanaksaar (M-38 Block Road G-III)',
+    shortLabel: 'New Delhi — Nanaksaar',
   },
   {
     value: 'delhi-south',
     label: 'New Delhi — South Extension',
+    shortLabel: 'New Delhi — South Extension',
   },
   {
     value: 'gurgaon',
     label: 'Gurugram — Sector 54',
+    shortLabel: 'Gurugram — Sector 54',
   },
 ] as const;
 
@@ -35,4 +38,13 @@ export function getClinicLocationLabel(locationId: string | null | undefined): s
     CLINIC_LOCATIONS.find((location) => location.value === locationId)?.label ??
     locationId
   );
+}
+
+export function getClinicLocationShortLabel(
+  locationId: string | null | undefined,
+): string {
+  if (!locationId) return '—';
+  const match = CLINIC_LOCATIONS.find((location) => location.value === locationId);
+  if (!match) return locationId;
+  return match.shortLabel;
 }

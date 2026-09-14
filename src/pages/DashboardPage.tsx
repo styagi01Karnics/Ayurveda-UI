@@ -19,6 +19,7 @@ import {
   getAppointmentStats,
   getDashboardBillingSummary,
   getDashboardMedicineStock,
+  getPatientTrends,
   getTodaysSchedule,
 } from '@/lib/api/dashboard';
 import { getPatientCount } from '@/lib/api/patients';
@@ -47,6 +48,22 @@ const EMPTY_STATS: DashboardStats = {
   collectedPayments: 0,
 };
 
+function normalizeTrendPoints(
+  rows: Array<{
+    month?: string;
+    monthLabel?: string;
+    newPatients?: number;
+    followUps?: number;
+    [key: string]: unknown;
+  }>,
+) {
+  return rows.map((row) => ({
+    month: String(row.monthLabel || row.month || ''),
+    newPatients: Number(row.newPatients ?? 0),
+    followUps: Number(row.followUps ?? 0),
+  }));
+}
+
 export function DashboardPage() {
   const [chartOpen, setChartOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
@@ -60,6 +77,7 @@ export function DashboardPage() {
         billingSummary,
         patientCount,
         recentRows,
+        trends,
       ] = await Promise.all([
         getDashboardMedicineStock().catch(() => null),
         getTodaysSchedule().catch(() => null),
@@ -67,6 +85,7 @@ export function DashboardPage() {
         getDashboardBillingSummary(billingPeriod).catch(() => null),
         getPatientCount().catch(() => null),
         getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
+        getPatientTrends().catch(() => []),
       ]);
 
       const stats = buildDashboardStats({
@@ -79,11 +98,14 @@ export function DashboardPage() {
         .slice(0, 5)
         .map((row) => mapPatientAppointmentListItemToPatientRecord(row, 'active'));
 
+      const patientTrends = normalizeTrendPoints(trends).filter((p) => p.month);
+
       return {
         medStock,
         schedule,
         stats,
         recentPatients,
+        patientTrends,
       };
     },
     {
@@ -91,6 +113,11 @@ export function DashboardPage() {
       schedule: null,
       stats: EMPTY_STATS,
       recentPatients: [],
+      patientTrends: [] as Array<{
+        month: string;
+        newPatients: number;
+        followUps: number;
+      }>,
     },
     [billingPeriod],
   );
@@ -171,7 +198,11 @@ export function DashboardPage() {
       <AsyncStatus loading={loading} error={error} onRetry={reload}>
         <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-5">
           <PatientTrendsChart
-            data={patientTrendsData}
+            data={
+              data.patientTrends.length > 0
+                ? data.patientTrends
+                : patientTrendsData
+            }
             compact
             onExpand={() => setChartOpen(true)}
           />
@@ -205,7 +236,11 @@ export function DashboardPage() {
       <ChartModal
         open={chartOpen}
         onClose={() => setChartOpen(false)}
-        data={patientTrendsFullYear}
+        data={
+          data.patientTrends.length > 0
+            ? data.patientTrends
+            : patientTrendsFullYear
+        }
       />
     </PageShell>
   );

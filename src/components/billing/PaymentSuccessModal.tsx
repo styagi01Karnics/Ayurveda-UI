@@ -8,6 +8,9 @@ export interface PaymentSuccessDetails {
   paymentTime: string;
   paymentMethod: string;
   senderName: string;
+  /** Online PayU link when invoice awaits remote payment. */
+  payUrl?: string;
+  title?: string;
 }
 
 interface PaymentSuccessModalProps {
@@ -75,7 +78,9 @@ export function PaymentSuccessModal({
           src={assets.icons.confirmSuccess}
           className="mx-auto h-16 w-16"
         />
-        <h2 className="mt-5 text-xl font-bold text-brown">Payment Success!</h2>
+        <h2 className="mt-5 text-xl font-bold text-brown">
+          {payment.title ?? 'Payment Success!'}
+        </h2>
         <p className="mt-2 text-3xl font-bold text-brown">
           {formatCurrency(payment.amount)}
         </p>
@@ -102,6 +107,18 @@ export function PaymentSuccessModal({
               {formatCurrency(payment.amount)}
             </span>
           </div>
+          {payment.payUrl ? (
+            <div className="pt-2">
+              <a
+                href={payment.payUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block break-all text-sm font-medium text-gold underline"
+              >
+                Open payment link
+              </a>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

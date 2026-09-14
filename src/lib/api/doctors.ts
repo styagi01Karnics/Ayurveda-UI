@@ -5,13 +5,17 @@ import type { CreateDoctorPayload, DoctorDto } from './types';
 
 const url = (path: string) => `${apiConfig.doctor}${path}`;
 
-export function getAllDoctors() {
-  return apiRequestList<DoctorDto>(url(apiEndpoints.doctors.getAll));
+export function getAllDoctors(page = 0, size = 100) {
+  return apiRequestList<DoctorDto>(
+    url(`${apiEndpoints.doctors.getAll}?page=${page}&size=${size}`),
+  );
 }
 
 /** ACTIVE doctors only — use for appointment booking dropdowns. */
-export function getActiveDoctors() {
-  return apiRequestList<DoctorDto>(url(apiEndpoints.doctors.getActive));
+export function getActiveDoctors(page = 0, size = 100) {
+  return apiRequestList<DoctorDto>(
+    url(`${apiEndpoints.doctors.getActive}?page=${page}&size=${size}`),
+  );
 }
 
 export function getDoctorById(doctorId: string) {
