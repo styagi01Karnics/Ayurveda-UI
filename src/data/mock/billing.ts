@@ -73,6 +73,26 @@ export const BILLING_FILTER_OPTIONS = {
   status: ['Pending', 'Unpaid', 'Partial', 'Ongoing', 'Completed'],
 } as const;
 
+/** Desk / online channel chosen before Via Payment sub-modes. */
+export const PAYMENT_CHANNELS = [
+  {
+    id: 'cash' as const,
+    title: 'Cash',
+    description: 'Collect cash at the counter (marks invoice paid)',
+  },
+  {
+    id: 'direct_upi' as const,
+    title: 'Direct UPI',
+    description: 'Create PayU QR / UPI payment link for the balance',
+  },
+  {
+    id: 'via_payment' as const,
+    title: 'Via Payment',
+    description: 'Email a PayU payment link to the patient',
+  },
+];
+
+/** Sub-modes shown when “Via Payment” is expanded. */
 export const PAYMENT_MODES = [
   {
     id: 'upi' as const,

@@ -63,6 +63,39 @@ export function getClinicLogoUrl(): string | null {
   return logo || null;
 }
 
+/** Clinic contact block for bills / prescriptions (tenant first, branding fallback). */
+export function getClinicContactDetails() {
+  const tenant = getStoredTenant();
+  const lineAddress = [
+    tenant?.addressLine1?.trim(),
+    tenant?.addressLine2?.trim(),
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const cityStatePin = [
+    [tenant?.city?.trim(), tenant?.state?.trim()].filter(Boolean).join(', '),
+    tenant?.pinCode?.trim(),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const composedAddress = [lineAddress || tenant?.address?.trim(), cityStatePin]
+    .filter(Boolean)
+    .join(' ');
+
+  return {
+    name: getClinicDisplayName(),
+    address: composedAddress || CLINIC_BRANDING.address,
+    email: tenant?.email?.trim() || CLINIC_BRANDING.email,
+    phone:
+      tenant?.mobileNumber?.trim() ||
+      tenant?.phone?.trim() ||
+      CLINIC_BRANDING.doctorPhone,
+    website: CLINIC_BRANDING.website,
+    gstNo: tenant?.registrationNumberGst?.trim() || CLINIC_BRANDING.gstNo,
+    specialties: CLINIC_BRANDING.specialties,
+  };
+}
+
 export function setStoredUser(user: AuthUser): void {
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
 }

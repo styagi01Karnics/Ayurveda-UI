@@ -301,6 +301,8 @@ export function ClinicSettingsTab() {
                   values.availabilityStartTime,
                   values.availabilityEndTime,
                 ),
+                mobileNumber: values.mobileNumber?.trim() || undefined,
+                qualification: values.qualification?.trim() || undefined,
               });
               await reload();
               showToast({

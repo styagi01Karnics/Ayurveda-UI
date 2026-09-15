@@ -237,22 +237,32 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               </div>
 
               <p className="text-center text-[10px] font-medium uppercase leading-relaxed tracking-wide text-gold">
-                {invoice.conditions}
+                For All Service Appointments
+                {invoice.clinicPhone
+                  ? ` · Call/WhatsApp: ${invoice.clinicPhone}`
+                  : ''}
+                {invoice.conditions ? ` · ${invoice.conditions}` : ''}
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-[#ece5da] pt-4 text-[11px] text-text-muted">
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {invoice.address}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 shrink-0" />
-                  {invoice.email}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 shrink-0" />
-                  {invoice.website}
-                </span>
+                {invoice.address ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {invoice.address}
+                  </span>
+                ) : null}
+                {invoice.email ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    {invoice.email}
+                  </span>
+                ) : null}
+                {invoice.website ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    {invoice.website}
+                  </span>
+                ) : null}
               </div>
 
               <div className="flex justify-end gap-3 pt-2 print:hidden">

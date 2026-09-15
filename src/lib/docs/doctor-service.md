@@ -28,7 +28,9 @@ Content-Type: application/json
   "status": "ACTIVE",
   "consultationFees": 500.00,
   "followUpFees": 300.00,
-  "availability": "Mon-Fri 10:00-14:00"
+  "availability": "Mon-Fri 10:00-14:00",
+  "mobileNumber": "9876543210",
+  "qualification": "BAMS"
 }
 ```
 
@@ -41,8 +43,8 @@ Content-Type: application/json
     "id": "…",
     "name": "Dr. Mehta",
     "specialization": "Panchakarma",
-    "qualification": null,
-    "mobileNumber": null,
+    "qualification": "BAMS",
+    "mobileNumber": "9876543210",
     "status": "ACTIVE",
     "consultationFees": 500.00,
     "followUpFees": 300.00,
@@ -51,8 +53,7 @@ Content-Type: application/json
 }
 ```
 
-**Request (`CreateDoctorRequest`):** `name`, `specialization`, `status?`, `consultationFees`, `followUpFees`, `availability`.  
-(`qualification` / `mobileNumber` are not on the create DTO; response may return null.)
+**Request (`CreateDoctorRequest`):** `name`, `specialization`, `status?`, `consultationFees`, `followUpFees`, `availability`, optional `mobileNumber`, `qualification`, `email`.
 
 ### `GET /api/v1/doctors`
 

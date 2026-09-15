@@ -7,6 +7,7 @@ import type {
   PrescriptionDto,
   PrescriptionNextFollowUpDto,
 } from '@/lib/api/prescriptions';
+import { getClinicContactDetails, getClinicDisplayName, getClinicLogoUrl } from '@/lib/auth';
 import { CLINIC_BRANDING } from '@/lib/clinicBranding';
 import { assets } from '@/lib/assets';
 import { addDaysFromSchedulingOption } from '@/lib/followUpSchedule';
@@ -217,6 +218,9 @@ export function PrescriptionPreviewModal({
 
   if (!open || (!prescription && !enriched)) return null;
 
+  const clinic = getClinicContactDetails();
+  const clinicName = getClinicDisplayName();
+  const clinicLogo = getClinicLogoUrl() || assets.brandLogo;
   const printReady = Boolean(enriched);
   const info = patient.personalInfo;
   const patientBlock = enriched?.patient;
@@ -340,14 +344,12 @@ export function PrescriptionPreviewModal({
           <header className="flex items-start justify-between gap-6">
             <div className="flex items-center gap-3">
               <img
-                src={assets.brandLogo}
-                alt={CLINIC_BRANDING.name}
+                src={clinicLogo}
+                alt={clinicName}
                 className="h-14 w-14 object-contain"
               />
-              <p className="text-xl font-bold leading-tight text-[#38271f]">
-                GANESHA
-                <br />
-                AYURVEDA
+              <p className="max-w-[12rem] text-xl font-bold leading-tight text-[#38271f]">
+                {clinicName}
               </p>
             </div>
             <div className="pr-7 text-left">
@@ -428,15 +430,14 @@ export function PrescriptionPreviewModal({
             </section>
           </div>
 
-          <div className="mt-5 rounded-md border border-[#ded1bd] bg-[#f9f5ed] px-4 py-3">
-            <p>
-              <span className="text-[#8b8179]">Diagnosis :</span>{' '}
-              <strong>{diagnosis}</strong>
-            </p>
-            <p className="mt-3 border border-[#e5dccd] bg-white px-3 py-2 text-[#756a63]">
-              ＋&nbsp; Add tests (if any)
-            </p>
-          </div>
+          {diagnosis && diagnosis !== '—' ? (
+            <div className="mt-5 rounded-md border border-[#ded1bd] bg-[#f9f5ed] px-4 py-3">
+              <p>
+                <span className="text-[#8b8179]">Diagnosis :</span>{' '}
+                <strong>{diagnosis}</strong>
+              </p>
+            </div>
+          ) : null}
 
           <section className="mt-4">
             <h3 className="font-serif text-xl font-bold italic text-[#493226]">
@@ -482,13 +483,13 @@ export function PrescriptionPreviewModal({
 
             <footer className="mt-8 border-t-2 border-[#c99432] pt-4 text-center text-[10px] font-medium leading-relaxed text-[#926716]">
               <p>
-                For All Service Appointments · Call/WhatsApp: {doctorPhone} ·{' '}
-                {CLINIC_BRANDING.specialties}
+                For All Service Appointments · Call/WhatsApp: {clinic.phone}
+                {clinic.specialties ? ` · ${clinic.specialties}` : ''}
               </p>
               <div className="mt-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[#766b61]">
-                <span>{CLINIC_BRANDING.address}</span>
-                <span>{CLINIC_BRANDING.email}</span>
-                <span>{CLINIC_BRANDING.website}</span>
+                {clinic.address ? <span>{clinic.address}</span> : null}
+                {clinic.email ? <span>{clinic.email}</span> : null}
+                {clinic.website ? <span>{clinic.website}</span> : null}
               </div>
             </footer>
           </div>

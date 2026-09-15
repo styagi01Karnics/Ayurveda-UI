@@ -76,8 +76,11 @@ export function PlatformHospitalsPage() {
     fromName: '',
   });
   const [payuForm, setPayuForm] = useState<PaymentGatewayPayload>({
+    mode: 'TEST',
     merchantKey: '',
     merchantSalt: '',
+    clientId: '',
+    clientSecret: '',
     enabled: true,
   });
 
@@ -238,9 +241,24 @@ export function PlatformHospitalsPage() {
       }
       if (gateway) {
         setPayuForm({
+          mode:
+            String(gateway.mode ?? 'TEST').toUpperCase() === 'LIVE'
+              ? 'LIVE'
+              : 'TEST',
           merchantKey: String(gateway.merchantKey ?? ''),
           merchantSalt: '',
+          clientId: String(gateway.clientId ?? ''),
+          clientSecret: '',
           enabled: gateway.enabled !== false,
+        });
+      } else {
+        setPayuForm({
+          mode: 'TEST',
+          merchantKey: '',
+          merchantSalt: '',
+          clientId: '',
+          clientSecret: '',
+          enabled: true,
         });
       }
     } finally {
@@ -262,7 +280,10 @@ export function PlatformHospitalsPage() {
           message: 'Hospital SMTP settings were updated.',
         });
       } else if (configHospital.tenantCode) {
-        await updateTenantPaymentGateway(configHospital.tenantCode, payuForm);
+        await updateTenantPaymentGateway(configHospital.tenantCode, {
+          ...payuForm,
+          mode: payuForm.mode === 'LIVE' ? 'LIVE' : 'TEST',
+        });
         showToast({
           title: 'PayU saved',
           message: 'Payment gateway keys were updated for this tenant.',
@@ -712,6 +733,28 @@ export function PlatformHospitalsPage() {
               </div>
             ) : (
               <div className="grid gap-3">
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-brown">
+                  If save returns “Per-tenant payment gateway API is
+                  disabled”, configure PayU on{' '}
+                  <strong>payment-service</strong> instead (
+                  <code className="text-[11px]">PAYU_MERCHANT_KEY</code>,{' '}
+                  <code className="text-[11px]">PAYU_MERCHANT_SALT</code>,{' '}
+                  <code className="text-[11px]">PAYU_MODE</code>).
+                </p>
+                <Select
+                  label="Mode"
+                  options={[
+                    { value: 'TEST', label: 'TEST (sandbox)' },
+                    { value: 'LIVE', label: 'LIVE (production)' },
+                  ]}
+                  value={String(payuForm.mode ?? 'TEST')}
+                  onChange={(e) =>
+                    setPayuForm((prev) => ({
+                      ...prev,
+                      mode: e.target.value === 'LIVE' ? 'LIVE' : 'TEST',
+                    }))
+                  }
+                />
                 <Input
                   label="Merchant key"
                   value={String(payuForm.merchantKey ?? '')}
@@ -730,6 +773,27 @@ export function PlatformHospitalsPage() {
                     setPayuForm((prev) => ({
                       ...prev,
                       merchantSalt: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="Client ID"
+                  value={String(payuForm.clientId ?? '')}
+                  onChange={(e) =>
+                    setPayuForm((prev) => ({
+                      ...prev,
+                      clientId: e.target.value,
+                    }))
+                  }
+                />
+                <Input
+                  label="Client secret"
+                  type="password"
+                  value={String(payuForm.clientSecret ?? '')}
+                  onChange={(e) =>
+                    setPayuForm((prev) => ({
+                      ...prev,
+                      clientSecret: e.target.value,
                     }))
                   }
                 />

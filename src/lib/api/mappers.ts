@@ -21,6 +21,7 @@ import type {
 import type { InvoiceDto, InvoiceListItemDto } from '@/lib/api/billing';
 import type { BillDoctorDetails } from '@/lib/api/loadBillInvoice';
 import { CLINIC_BRANDING, formatBillDate } from '@/lib/clinicBranding';
+import { getClinicContactDetails } from '@/lib/auth';
 import { parseScheduleDateTime } from '@/lib/appointmentAlerts';
 import { normalizeBookingTimeForSelect } from '@/lib/bookingConstraints';
 import {
@@ -246,6 +247,7 @@ export function mapPatientToDetail(
   },
 ): PatientDetail {
   const summary = mapPatientToRecord(patient, extras);
+  const clinic = getClinicContactDetails();
   return {
     ...summary,
     treatmentStatus: extras?.treatmentStatus ?? 'Pending',
@@ -345,8 +347,8 @@ export function mapPatientToDetail(
       taxRate: '—',
     },
     invoice: extras?.invoice ?? {
-      clinicName: 'Ganesha Ayurvedaa',
-      gstNo: '—',
+      clinicName: clinic.name,
+      gstNo: clinic.gstNo,
       doctorName: summary.doctor,
       doctorCredentials: '—',
       workingHours: '—',
@@ -361,10 +363,11 @@ export function mapPatientToDetail(
       sgst: 0,
       discount: 0,
       total: 0,
-      conditions: '—',
-      address: patient.address,
-      email: patient.email,
-      website: '—',
+      conditions: clinic.specialties,
+      address: clinic.address,
+      email: clinic.email,
+      website: clinic.website,
+      clinicPhone: clinic.phone,
     },
   };
 }
@@ -726,6 +729,7 @@ export function mapInvoicesToPatientBilling(
   const paid = invoices.reduce((sum, inv) => sum + (inv.paidAmount ?? 0), 0);
   const total = invoices.reduce((sum, inv) => sum + (inv.totalAmount ?? 0), 0);
   const status = latest?.status?.toUpperCase();
+  const clinic = getClinicContactDetails();
 
   return {
     billing: {
@@ -750,8 +754,8 @@ export function mapInvoicesToPatientBilling(
       taxRate: '—',
     },
     invoice: {
-      clinicName: 'Ganesha Ayurvedaa',
-      gstNo: '—',
+      clinicName: clinic.name,
+      gstNo: clinic.gstNo,
       doctorName: '—',
       doctorCredentials: '—',
       workingHours: '—',
@@ -771,10 +775,11 @@ export function mapInvoicesToPatientBilling(
       sgst: 0,
       discount: 0,
       total,
-      conditions: '—',
-      address: '—',
-      email: '—',
-      website: '—',
+      conditions: clinic.specialties,
+      address: clinic.address,
+      email: clinic.email,
+      website: clinic.website,
+      clinicPhone: clinic.phone,
     },
   };
 }
@@ -839,6 +844,7 @@ export function mapInvoiceDtoToBillView(
   doctor?: BillDoctorDetails,
 ): BillInvoiceView {
   const formattedPatientId = resolvePatientDisplayCode(dto);
+  const clinic = getClinicContactDetails();
 
   const latestPayment = dto.payments?.[0];
   const doctorDetails = doctor ?? {
@@ -853,8 +859,8 @@ export function mapInvoiceDtoToBillView(
     patientId: formattedPatientId,
     contactNumber: dto.contactNumber ?? '—',
     invoice: {
-      clinicName: CLINIC_BRANDING.name,
-      gstNo: CLINIC_BRANDING.gstNo,
+      clinicName: clinic.name,
+      gstNo: clinic.gstNo,
       doctorName: doctorDetails.doctorName,
       doctorCredentials: doctorDetails.doctorCredentials,
       workingHours: doctorDetails.workingHours,
@@ -873,10 +879,11 @@ export function mapInvoiceDtoToBillView(
       discount: dto.discount ?? 0,
       total: dto.totalAmount,
       notes: latestPayment?.remarks ?? CLINIC_BRANDING.notesDefault,
-      conditions: CLINIC_BRANDING.specialties,
-      address: CLINIC_BRANDING.address,
-      email: CLINIC_BRANDING.email,
-      website: CLINIC_BRANDING.website,
+      conditions: clinic.specialties,
+      address: clinic.address,
+      email: clinic.email,
+      website: clinic.website,
+      clinicPhone: clinic.phone,
     },
   };
 }

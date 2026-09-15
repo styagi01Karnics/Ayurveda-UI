@@ -111,6 +111,7 @@ export default defineConfig(({ mode }) => {
 
         // Payment-service :8112
         '/api/v1/payments': serviceProxy(backendHost, 8112),
+        '/pay': serviceProxy(backendHost, 8112),
       },
     },
     test: {

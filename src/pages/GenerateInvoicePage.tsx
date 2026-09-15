@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, X } from 'lucide-react';
+import { ChevronDown, Link2, X } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { BillingBreadcrumbs } from '@/components/billing/BillingBreadcrumbs';
+import { PaymentModeIcon } from '@/components/billing/PaymentModeIcon';
 import { PaymentSuccessModal, mapInvoiceToPaymentSuccess, type PaymentSuccessDetails } from '@/components/billing/PaymentSuccessModal';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -14,9 +15,9 @@ import { Input } from '@/components/ui/Input';
 import { PatientSearchSelect } from '@/components/ui/PatientSearchSelect';
 import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
-import { PAYMENT_MODES } from '@/data/mock/billing';
+import { PAYMENT_CHANNELS, PAYMENT_MODES } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { BOOKING_TIME_OPTIONS } from '@/lib/bookingConstraints';
+import { BOOKING_TIME_OPTIONS, DEFAULT_SESSION_FREQUENCY } from '@/lib/bookingConstraints';
 import { getAllTherapies, getAppointmentPatients } from '@/lib/api/appointments';
 import {
   addInvoicePayment,
@@ -40,7 +41,7 @@ import {
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
 import { getActiveTherapists } from '@/lib/api/therapists';
-import { createPaymentLink } from '@/lib/api/payments';
+import { createPaymentLink, resolvePaymentLinkUrl } from '@/lib/api/payments';
 import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantity';
 import type { MedicineDto } from '@/lib/api/types';
 import {
@@ -63,6 +64,7 @@ import { formatCurrency } from '@/lib/utils';
 import type {
   BillSummaryState,
   InvoiceLineItem,
+  PaymentChannelId,
   PaymentModeId,
   TherapyInvoiceLineItem,
 } from '@/types';
@@ -218,9 +220,12 @@ function resolveInvoiceTypeFromBillingServices(
   return 'consultation';
 }
 
+/** Billing API only accepts CASH | ONLINE | QR. */
+type ApiPaymentMethod = 'CASH' | 'ONLINE' | 'QR';
+
 async function settleInvoicePayment(
   invoice: InvoiceDto,
-  paymentMethod: string,
+  paymentMethod: ApiPaymentMethod,
   remarks: string,
   partial: boolean,
 ): Promise<InvoiceDto> {
@@ -235,14 +240,34 @@ async function settleInvoicePayment(
   await addInvoicePayment(invoice.id, {
     amountPaid,
     amount: amountPaid,
-    paymentMethod: paymentMethod === 'PARTIAL PAYMENT' ? 'CASH' : paymentMethod,
+    paymentMethod,
     remarks,
   });
   return getInvoiceById(invoice.id);
 }
 
-function isOnlinePaymentMode(mode: PaymentModeId): boolean {
-  return mode === 'upi' || mode === 'card' || mode === 'wallet' || mode === 'emi';
+function toApiPaymentMethod(channel: PaymentChannelId): ApiPaymentMethod {
+  if (channel === 'cash') return 'CASH';
+  if (channel === 'direct_upi') return 'QR';
+  return 'ONLINE';
+}
+
+function shouldCreatePaymentLink(
+  channel: PaymentChannelId,
+  mode: PaymentModeId,
+): boolean {
+  if (channel === 'direct_upi') return true;
+  if (channel === 'via_payment' && mode !== 'partial') return true;
+  return false;
+}
+
+function resolvePaymentMethodLabel(
+  channel: PaymentChannelId,
+  mode: PaymentModeId,
+): string {
+  if (channel === 'cash') return 'Cash';
+  if (channel === 'direct_upi') return 'Direct UPI';
+  return PAYMENT_MODES.find((m) => m.id === mode)?.title ?? 'Online';
 }
 
 function parseSessionMinutes(value: string): number {
@@ -250,14 +275,13 @@ function parseSessionMinutes(value: string): number {
   return match ? Number(match[0]) : 45;
 }
 
-/** Map form session frequency to API string (doc: `"ONCE"`). */
-function toSessionFrequencyApi(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed || trimmed === '1') return 'ONCE';
-  if (/^\d+$/.test(trimmed)) {
-    return trimmed === '1' ? 'ONCE' : trimmed;
-  }
-  return trimmed.toUpperCase().replace(/[\s-]+/g, '_');
+/** Map form session frequency to API integer (backend expects Integer, e.g. 1). */
+function toSessionFrequencyApi(value: string): number {
+  const trimmed = value.trim().toUpperCase();
+  if (!trimmed || trimmed === 'ONCE' || trimmed === '1') return 1;
+  const digits = trimmed.match(/\d+/);
+  if (digits) return Math.max(Number(digits[0]), 1);
+  return 1;
 }
 
 function buildServiceLineItems(data: InvoiceServiceStepValues): InvoiceLineItem[] {
@@ -369,7 +393,10 @@ export function GenerateInvoicePage() {
   const [medicineItems, setMedicineItems] = useState<InvoiceLineItem[]>([]);
   const [therapyItems, setTherapyItems] = useState<TherapyInvoiceLineItem[]>([]);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [selectedChannel, setSelectedChannel] =
+    useState<PaymentChannelId>('via_payment');
   const [selectedPayment, setSelectedPayment] = useState<PaymentModeId>('upi');
+  const [viaPaymentOpen, setViaPaymentOpen] = useState(true);
   const [paymentSuccessOpen, setPaymentSuccessOpen] = useState(false);
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [paymentSuccessDetails, setPaymentSuccessDetails] =
@@ -445,6 +472,7 @@ export function GenerateInvoicePage() {
         patientCode: string;
         fullName: string;
         mobileNumber: string;
+        email?: string;
       }>,
       medicines: [] as Array<{ value: string; label: string; price: number }>,
       therapists: [] as Array<{ value: string; label: string }>,
@@ -483,7 +511,7 @@ export function GenerateInvoicePage() {
       scheduleDate: '',
       scheduleTime: '',
       sessionDuration: '45 mins',
-      sessionFrequency: 'ONCE',
+      sessionFrequency: DEFAULT_SESSION_FREQUENCY,
     },
   });
 
@@ -898,7 +926,7 @@ export function GenerateInvoicePage() {
       scheduleDate: '',
       scheduleTime: '',
       sessionDuration: '45 mins',
-      sessionFrequency: 'ONCE',
+      sessionFrequency: DEFAULT_SESSION_FREQUENCY,
     });
   });
 
@@ -1003,8 +1031,11 @@ export function GenerateInvoicePage() {
 
     setPaymentSubmitting(true);
     try {
-      const paymentMode =
-        PAYMENT_MODES.find((m) => m.id === selectedPayment)?.title ?? 'UPI';
+      const paymentMethodApi = toApiPaymentMethod(selectedChannel);
+      const paymentModeLabel = resolvePaymentMethodLabel(
+        selectedChannel,
+        selectedPayment,
+      );
       const summary = summaryForm.getValues();
       const visitType: VisitTypeApi =
         includeTherapy && !includeConsultation
@@ -1030,7 +1061,7 @@ export function GenerateInvoicePage() {
             scheduleTime: normalizeInvoiceTime(item.scheduleTime),
             sessionDuration: parseSessionMinutes(item.sessionDuration),
             sessionFrequency: toSessionFrequencyApi(
-              item.sessionFrequency || 'ONCE',
+              item.sessionFrequency || DEFAULT_SESSION_FREQUENCY,
             ),
           }))
         : [];
@@ -1065,7 +1096,7 @@ export function GenerateInvoicePage() {
         cgstPercent: FIXED_CGST_PERCENT,
         sgstPercent: FIXED_SGST_PERCENT,
         amountPaid: 0,
-        paymentMethod: paymentMode.toUpperCase(),
+        paymentMethod: paymentMethodApi,
         paymentRemarks: activeBillingId
           ? 'Invoice generated from doctor billing draft'
           : `${invoiceType.label} invoice generated from UI`,
@@ -1079,20 +1110,44 @@ export function GenerateInvoicePage() {
 
       let settled = result;
       let paymentLinkUrl: string | undefined;
+      let paymentLinkEmailed = false;
       try {
-        if (isOnlinePaymentMode(selectedPayment)) {
+        if (shouldCreatePaymentLink(selectedChannel, selectedPayment)) {
           const due =
             result.leftAmount ??
             Math.max(
               0,
               (result.totalAmount ?? 0) - (result.paidAmount ?? 0),
             );
-          const email = patientContext?.email || undefined;
           const phone = currentService.contactNumber?.replace(/\D/g, '') ?? '';
           const firstName =
             currentService.fullName.trim().split(/\s+/)[0] || 'Patient';
 
-          if (due > 0 && email && phone.length >= 10) {
+          let email = patientContext?.email?.trim() || undefined;
+          if (!email && patientContext?.uuid) {
+            const patient = await getPatientById(patientContext.uuid).catch(
+              () => null,
+            );
+            email = patient?.email?.trim() || undefined;
+            if (email) {
+              setPatientContext((prev) =>
+                prev ? { ...prev, email } : prev,
+              );
+            }
+          }
+
+          if (due <= 0) {
+            showToast({
+              title: 'Invoice already paid',
+              message: 'No balance left to create a payment link.',
+            });
+          } else if (!email || phone.length < 10) {
+            showToast({
+              title: 'Payment link not sent',
+              message:
+                'Invoice was created unpaid. Add a valid patient email and 10-digit phone, then create the link from Billing.',
+            });
+          } else {
             const link = await createPaymentLink({
               invoiceId: result.id,
               amount: due,
@@ -1100,44 +1155,43 @@ export function GenerateInvoicePage() {
               email,
               phone: phone.slice(-10),
               sendEmail: true,
-              upiQr: selectedPayment === 'upi',
+              upiQr:
+                selectedChannel === 'direct_upi' || selectedPayment === 'upi',
             });
-            paymentLinkUrl = link.payUrl;
-          } else {
-            settled = await settleInvoicePayment(
-              result,
-              'CASH',
-              basePayload.paymentRemarks ??
-                'Collected at desk (online link skipped — missing email/phone)',
-              false,
-            );
+            paymentLinkUrl = resolvePaymentLinkUrl(link);
+            paymentLinkEmailed = true;
           }
         } else {
           settled = await settleInvoicePayment(
             result,
-            paymentMode.toUpperCase(),
+            paymentMethodApi === 'ONLINE' ? 'CASH' : paymentMethodApi,
             basePayload.paymentRemarks ??
               'Payment collected at invoice generation',
-            selectedPayment === 'partial',
+            selectedChannel === 'via_payment' && selectedPayment === 'partial',
           );
         }
-      } catch {
+      } catch (err) {
         showToast({
           title: 'Invoice created',
           message:
-            'The invoice was generated, but payment could not be recorded. You can collect it from Billing.',
+            err instanceof ApiError
+              ? `Invoice saved, but payment step failed: ${err.message}`
+              : 'The invoice was generated, but the payment link could not be created. You can retry from Billing.',
         });
       }
 
       setCreatedInvoiceId(settled.id);
-      setCreatedInvoiceNumber(settled.invoiceId);
+      setCreatedInvoiceNumber(settled.invoiceNumber ?? settled.invoiceId);
       setPaymentSuccessDetails({
         ...mapInvoiceToPaymentSuccess(settled),
         ...(paymentLinkUrl
           ? {
+              amount: settled.leftAmount ?? settled.totalAmount,
               payUrl: paymentLinkUrl,
-              title: 'Payment link created',
-              paymentMethod: paymentMode,
+              title: paymentLinkEmailed
+                ? 'Payment link sent'
+                : 'Payment link created',
+              paymentMethod: paymentModeLabel,
             }
           : {}),
       });
@@ -1146,7 +1200,7 @@ export function GenerateInvoicePage() {
       showToast({
         title: paymentLinkUrl ? 'Payment link ready' : 'Invoice generated',
         message: paymentLinkUrl
-          ? 'Share the PayU link with the patient, or open it from the success dialog.'
+          ? 'PayU link was created and emailed to the patient (if email delivery is configured). Open it from the success dialog.'
           : activeBillingId
             ? 'The billing draft has been completed and the invoice is ready.'
             : `${invoiceType.label} invoice has been generated successfully.`,
@@ -1199,27 +1253,99 @@ export function GenerateInvoicePage() {
           <div className="mt-8 rounded-xl border border-gray-100 p-4">
             <h3 className="mb-4 font-semibold text-brown">Select Mode of Payment</h3>
             <div className="space-y-3">
-              {PAYMENT_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  type="button"
-                  onClick={() => setSelectedPayment(mode.id)}
-                  className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${selectedPayment === mode.id
-                      ? 'border-gold bg-gold/5'
-                      : 'border-gray-100 hover:border-gold/30'
-                    }`}
-                >
-                  <div>
-                    <p className="font-medium text-brown">{mode.title}</p>
-                    <p className="text-xs text-text-muted">{mode.description}</p>
+              {PAYMENT_CHANNELS.map((channel) => {
+                const isVia = channel.id === 'via_payment';
+                const isSelected = selectedChannel === channel.id;
+                const isExpanded = isVia && viaPaymentOpen && isSelected;
+
+                return (
+                  <div key={channel.id} className="space-y-2">
+                    <button
+                      type="button"
+                      aria-expanded={isVia ? isExpanded : undefined}
+                      onClick={() => {
+                        if (isVia) {
+                          setSelectedChannel('via_payment');
+                          setViaPaymentOpen((open) =>
+                            selectedChannel === 'via_payment' ? !open : true,
+                          );
+                          return;
+                        }
+                        setSelectedChannel(channel.id);
+                        setViaPaymentOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition-colors ${
+                        isSelected
+                          ? 'border-gold bg-gold/5'
+                          : 'border-gray-100 hover:border-gold/30'
+                      }`}
+                    >
+                      <div>
+                        <p className="font-medium text-brown">{channel.title}</p>
+                        <p className="text-xs text-text-muted">
+                          {channel.description}
+                        </p>
+                      </div>
+                      {isVia ? (
+                        <ChevronDown
+                          className={`h-5 w-5 shrink-0 text-brown transition-transform ${
+                            isExpanded ? 'rotate-180' : ''
+                          }`}
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className={`h-4 w-4 shrink-0 rounded-full border-2 ${
+                            isSelected
+                              ? 'border-gold bg-gold'
+                              : 'border-gray-300'
+                          }`}
+                          aria-hidden
+                        />
+                      )}
+                    </button>
+
+                    {isExpanded ? (
+                      <div className="space-y-2 rounded-xl border border-gold/20 bg-cream/40 p-3 sm:p-4">
+                        <p className="mb-1 text-sm font-semibold text-brown">
+                          Select Mode of Payment
+                        </p>
+                        {PAYMENT_MODES.map((mode) => {
+                          const modeSelected = selectedPayment === mode.id;
+                          return (
+                            <button
+                              key={mode.id}
+                              type="button"
+                              onClick={() => setSelectedPayment(mode.id)}
+                              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors sm:gap-4 sm:px-4 ${
+                                modeSelected
+                                  ? 'border-gold bg-white'
+                                  : 'border-gray-100 bg-white/70 hover:border-gold/30'
+                              }`}
+                            >
+                              <PaymentModeIcon
+                                mode={mode.id}
+                                className="h-10 w-10 shrink-0 sm:h-11 sm:w-11"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-brown">
+                                  {mode.title}
+                                </p>
+                                <p className="text-xs text-text-muted">
+                                  {mode.description}
+                                </p>
+                              </div>
+                              <p className="shrink-0 font-semibold text-brown">
+                                {formatCurrency(invoiceTotals.total)}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-brown">
-                      {formatCurrency(invoiceTotals.total)}
-                    </p>
-                  </div>
-                </button>
-              ))}
+                );
+              })}
             </div>
           </div>
 

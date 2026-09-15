@@ -159,6 +159,8 @@ export interface PatientInvoice {
   address: string;
   email: string;
   website: string;
+  /** Clinic Call/WhatsApp number for bill footer. */
+  clinicPhone?: string;
 }
 
 /** Populated from GET /api/v1/invoices/{invoiceId} for bill download modal. */
@@ -413,6 +415,10 @@ export interface BillSummaryState {
   sgst: string;
 }
 
+/** Top-level billing collection channel on Generate Invoice. */
+export type PaymentChannelId = 'cash' | 'direct_upi' | 'via_payment';
+
+/** Sub-modes under “Via Payment” (PayU link / online). */
 export type PaymentModeId = 'upi' | 'card' | 'wallet' | 'partial' | 'emi';
 
 export interface DashboardStats {

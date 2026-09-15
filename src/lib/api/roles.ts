@@ -189,9 +189,14 @@ export function updateHospitalMail(
   );
 }
 
+export type PaymentGatewayMode = 'TEST' | 'LIVE';
+
 export interface PaymentGatewayPayload {
+  mode?: PaymentGatewayMode | string;
   merchantKey?: string;
   merchantSalt?: string;
+  clientId?: string;
+  clientSecret?: string;
   enabled?: boolean;
   [key: string]: unknown;
 }

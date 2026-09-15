@@ -76,7 +76,7 @@ Response `BillingResponse`: `id`, patient fields, `status`, `invoiceId`, `invoic
       "scheduleDate": "2026-09-01",
       "scheduleTime": "11:00:00",
       "sessionDuration": 45,
-      "sessionFrequency": "ONCE"
+      "sessionFrequency": 1
     }
   ],
   "discount": 0,

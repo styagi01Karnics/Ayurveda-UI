@@ -39,8 +39,8 @@ export interface InvoiceTherapyItem {
   scheduleDate?: string;
   scheduleTime?: string;
   sessionDuration?: number;
-  /** Doc example: `"ONCE"` */
-  sessionFrequency?: string;
+  /** Backend expects integer session count (e.g. 1). */
+  sessionFrequency?: number;
 }
 
 export interface CreateInvoicePayload {

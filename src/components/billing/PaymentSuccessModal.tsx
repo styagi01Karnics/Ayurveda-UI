@@ -108,7 +108,7 @@ export function PaymentSuccessModal({
             </span>
           </div>
           {payment.payUrl ? (
-            <div className="pt-2">
+            <div className="space-y-2 pt-3">
               <a
                 href={payment.payUrl}
                 target="_blank"
@@ -117,6 +117,15 @@ export function PaymentSuccessModal({
               >
                 Open payment link
               </a>
+              <button
+                type="button"
+                className="w-full rounded-lg border border-gold/40 px-3 py-2 text-sm font-medium text-brown hover:bg-gold/5"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(payment.payUrl!);
+                }}
+              >
+                Copy payment link
+              </button>
             </div>
           ) : null}
         </div>

@@ -49,11 +49,8 @@ export const clinicDoctorSchema = z
     qualification: z.string().optional(),
     mobileNumber: z
       .string()
-      .optional()
-      .refine(
-        (value) => !value || /^\d{10}$/.test(value),
-        'Enter a valid 10-digit mobile number',
-      ),
+      .min(1, 'Mobile number is required')
+      .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
     status: z.enum(CLINIC_STATUS_OPTIONS),
     consultationFees: z
       .string()
