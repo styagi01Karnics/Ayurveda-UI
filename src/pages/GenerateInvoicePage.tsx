@@ -252,6 +252,7 @@ function toApiPaymentMethod(channel: PaymentChannelId): ApiPaymentMethod {
   return 'ONLINE';
 }
 
+/** Channels that create a PayU payment link instead of marking paid at the desk. */
 function shouldCreatePaymentLink(
   channel: PaymentChannelId,
   mode: PaymentModeId,
@@ -1145,7 +1146,7 @@ export function GenerateInvoicePage() {
             showToast({
               title: 'Payment link not sent',
               message:
-                'Invoice was created unpaid. Add a valid patient email and 10-digit phone, then create the link from Billing.',
+                'Invoice was created unpaid. Add a valid patient email and 10-digit phone, then retry Via Payment.',
             });
           } else {
             const link = await createPaymentLink({
@@ -1155,8 +1156,7 @@ export function GenerateInvoicePage() {
               email,
               phone: phone.slice(-10),
               sendEmail: true,
-              upiQr:
-                selectedChannel === 'direct_upi' || selectedPayment === 'upi',
+              upiQr: false,
             });
             paymentLinkUrl = resolvePaymentLinkUrl(link);
             paymentLinkEmailed = true;
@@ -1176,7 +1176,7 @@ export function GenerateInvoicePage() {
           message:
             err instanceof ApiError
               ? `Invoice saved, but payment step failed: ${err.message}`
-              : 'The invoice was generated, but the payment link could not be created. You can retry from Billing.',
+              : 'The invoice was generated, but the payment link could not be created.',
         });
       }
 
@@ -1184,6 +1184,7 @@ export function GenerateInvoicePage() {
       setCreatedInvoiceNumber(settled.invoiceNumber ?? settled.invoiceId);
       setPaymentSuccessDetails({
         ...mapInvoiceToPaymentSuccess(settled),
+        paymentMethod: paymentModeLabel,
         ...(paymentLinkUrl
           ? {
               amount: settled.leftAmount ?? settled.totalAmount,
@@ -1191,7 +1192,6 @@ export function GenerateInvoicePage() {
               title: paymentLinkEmailed
                 ? 'Payment link sent'
                 : 'Payment link created',
-              paymentMethod: paymentModeLabel,
             }
           : {}),
       });
@@ -1200,7 +1200,7 @@ export function GenerateInvoicePage() {
       showToast({
         title: paymentLinkUrl ? 'Payment link ready' : 'Invoice generated',
         message: paymentLinkUrl
-          ? 'PayU link was created and emailed to the patient (if email delivery is configured). Open it from the success dialog.'
+          ? 'Payment link was created and emailed to the patient. Open or copy it from the success dialog.'
           : activeBillingId
             ? 'The billing draft has been completed and the invoice is ready.'
             : `${invoiceType.label} invoice has been generated successfully.`,

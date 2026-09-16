@@ -902,8 +902,6 @@ vi.mock('@/lib/api/roles', () => ({
   retryHospitalProvision: vi.fn(),
   getHospitalMail: vi.fn(async () => ({})),
   updateHospitalMail: vi.fn(async () => ({})),
-  getTenantPaymentGateway: vi.fn(async () => ({})),
-  updateTenantPaymentGateway: vi.fn(async () => ({})),
 }));
 
 vi.mock('@/lib/api/billing', () => ({

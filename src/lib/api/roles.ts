@@ -161,10 +161,13 @@ export function retryHospitalProvision(hospitalId: string) {
 }
 
 export interface HospitalMailPayload {
+  /** API field: hospital sending / From address (required). */
+  email?: string;
   host?: string;
   port?: number;
   username?: string;
   password?: string;
+  /** Legacy alias some responses may still use. */
   fromEmail?: string;
   fromName?: string;
   [key: string]: unknown;
@@ -182,37 +185,6 @@ export function updateHospitalMail(
 ) {
   return apiRequest<HospitalMailPayload>(
     url(ep.platform.hospitalMail(hospitalId)),
-    {
-      method: 'PUT',
-      body: payload,
-    },
-  );
-}
-
-export type PaymentGatewayMode = 'TEST' | 'LIVE';
-
-export interface PaymentGatewayPayload {
-  mode?: PaymentGatewayMode | string;
-  merchantKey?: string;
-  merchantSalt?: string;
-  clientId?: string;
-  clientSecret?: string;
-  enabled?: boolean;
-  [key: string]: unknown;
-}
-
-export function getTenantPaymentGateway(tenantCode: string) {
-  return apiRequest<PaymentGatewayPayload>(
-    url(ep.platform.tenantPaymentGateway(tenantCode)),
-  );
-}
-
-export function updateTenantPaymentGateway(
-  tenantCode: string,
-  payload: PaymentGatewayPayload,
-) {
-  return apiRequest<PaymentGatewayPayload>(
-    url(ep.platform.tenantPaymentGateway(tenantCode)),
     {
       method: 'PUT',
       body: payload,

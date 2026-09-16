@@ -1,9 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
+import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
 import { BillingTable } from '@/components/billing/BillingTable';
+import {
+  PaymentSuccessModal,
+  type PaymentSuccessDetails,
+} from '@/components/billing/PaymentSuccessModal';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
@@ -14,12 +19,19 @@ import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { assets } from '@/lib/assets';
 import { BILLING_FILTER_OPTIONS } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { getBillings, getInvoices, type InvoiceStatus } from '@/lib/api/billing';
+import {
+  getBillings,
+  getInvoiceById,
+  getInvoices,
+  type InvoiceStatus,
+} from '@/lib/api/billing';
 import {
   mapBillingDraftToRecord,
   mapInvoiceToBillingRecord,
 } from '@/lib/api/mappers';
-import { getAllPatients } from '@/lib/api/patients';
+import { ApiError } from '@/lib/api/client';
+import { getAllPatients, getPatientById } from '@/lib/api/patients';
+import { sendInvoicePaymentLink } from '@/lib/api/payments';
 import { formatPatientCode } from '@/lib/displayCodes';
 import type { BillingRecord } from '@/types';
 
@@ -37,10 +49,16 @@ function toApiInvoiceStatus(status: string): InvoiceStatus | undefined {
 
 export function BillingPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<BillingTab>('invoices');
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [billInvoiceId, setBillInvoiceId] = useState<string | null>(null);
+  const [sendingPaymentLinkId, setSendingPaymentLinkId] = useState<
+    string | null
+  >(null);
+  const [paymentLinkDetails, setPaymentLinkDetails] =
+    useState<PaymentSuccessDetails | null>(null);
 
   const { data: records, loading, error, reload } = useAsyncData(
     async () => {
@@ -93,7 +111,9 @@ export function BillingPage() {
       const matchesId =
         !patientIdQuery ||
         item.patientId.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
-        item.secondaryPatientId.toLowerCase().includes(patientIdQuery.toLowerCase());
+        item.secondaryPatientId
+          .toLowerCase()
+          .includes(patientIdQuery.toLowerCase());
       const matchesStatus =
         activeTab === 'pending' || !statusFilter || item.status === statusFilter;
       return matchesId && matchesStatus;
@@ -107,6 +127,87 @@ export function BillingPage() {
 
   const handleStartInvoice = (record: BillingRecord) => {
     navigate(`/billing/generate?billingId=${encodeURIComponent(record.id)}`);
+  };
+
+  const handleSendPaymentLink = async (record: BillingRecord) => {
+    if (sendingPaymentLinkId) return;
+    setSendingPaymentLinkId(record.id);
+    try {
+      const invoice = await getInvoiceById(record.id);
+      const due =
+        invoice.leftAmount ??
+        Math.max(0, (invoice.totalAmount ?? 0) - (invoice.paidAmount ?? 0));
+      if (due <= 0) {
+        showToast({
+          title: 'Nothing due',
+          message: 'This invoice has no remaining balance.',
+        });
+        return;
+      }
+
+      const patient = invoice.patientId
+        ? await getPatientById(invoice.patientId).catch(() => null)
+        : null;
+      const email = patient?.email?.trim() || undefined;
+      const phone = (
+        invoice.contactNumber ||
+        patient?.mobileNumber ||
+        ''
+      ).replace(/\D/g, '');
+      const firstName =
+        (invoice.patientName || patient?.fullName || 'Patient')
+          .trim()
+          .split(/\s+/)[0] || 'Patient';
+
+      if (!email || phone.length < 10) {
+        showToast({
+          title: 'Patient contact missing',
+          message:
+            'Patient needs a valid email and 10-digit phone to send a payment link.',
+        });
+        return;
+      }
+
+      const result = await sendInvoicePaymentLink({
+        invoiceId: invoice.id,
+        amount: due,
+        firstName,
+        email,
+        phone: phone.slice(-10),
+        sendEmail: true,
+        upiQr: false,
+      });
+
+      setPaymentLinkDetails({
+        amount: due,
+        refNumber:
+          invoice.invoiceNumber || invoice.invoiceId || record.invoiceId,
+        paymentTime: new Date().toLocaleString('en-IN'),
+        paymentMethod: 'Online',
+        senderName: invoice.patientName || patient?.fullName || 'Patient',
+        payUrl: result.payUrl,
+        title: result.resent ? 'Payment link resent' : 'Payment link sent',
+      });
+
+      showToast({
+        title: result.resent ? 'Link resent' : 'Payment link sent',
+        message: result.payUrl
+          ? 'Payment link emailed to the patient. You can also open or copy it from the dialog.'
+          : 'Payment link request completed.',
+      });
+    } catch (err) {
+      showToast({
+        title: 'Could not send link',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Payment link request failed.',
+      });
+    } finally {
+      setSendingPaymentLinkId(null);
+    }
   };
 
   return (
@@ -162,6 +263,8 @@ export function BillingPage() {
             records={filteredRecords}
             onDownload={handleDownload}
             onStartInvoice={handleStartInvoice}
+            onSendPaymentLink={(record) => void handleSendPaymentLink(record)}
+            sendingPaymentLinkId={sendingPaymentLinkId}
           />
         </AsyncStatus>
       </ListPanel>
@@ -170,6 +273,12 @@ export function BillingPage() {
         open={Boolean(billInvoiceId)}
         invoiceId={billInvoiceId}
         onClose={() => setBillInvoiceId(null)}
+      />
+
+      <PaymentSuccessModal
+        open={Boolean(paymentLinkDetails)}
+        payment={paymentLinkDetails}
+        onClose={() => setPaymentLinkDetails(null)}
       />
     </PageShell>
   );

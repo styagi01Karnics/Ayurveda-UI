@@ -41,8 +41,6 @@ export const apiEndpoints = {
       `/api/v1/platform/hospitals/${hospitalId}/retry-provision`,
     hospitalMail: (hospitalId: string) =>
       `/api/v1/platform/hospitals/${hospitalId}/mail`,
-    tenantPaymentGateway: (tenantCode: string) =>
-      `/api/v1/platform/tenants/${encodeURIComponent(tenantCode)}/payment-gateway`,
   },
   public: {
     tenants: '/api/v1/public/tenants',

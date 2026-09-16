@@ -13,13 +13,10 @@ import {
   createHospital,
   getHospitalMail,
   getHospitals,
-  getTenantPaymentGateway,
   retryHospitalProvision,
   updateHospitalMail,
   updateHospitalStatus,
-  updateTenantPaymentGateway,
   type HospitalMailPayload,
-  type PaymentGatewayPayload,
   type PlatformHospitalDto,
 } from '@/lib/api/roles';
 import {
@@ -64,7 +61,6 @@ export function PlatformHospitalsPage() {
   const [logoFileError, setLogoFileError] = useState<string | null>(null);
   const [configHospital, setConfigHospital] =
     useState<PlatformHospitalDto | null>(null);
-  const [configTab, setConfigTab] = useState<'mail' | 'payu'>('mail');
   const [configLoading, setConfigLoading] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
   const [mailForm, setMailForm] = useState<HospitalMailPayload>({
@@ -72,16 +68,8 @@ export function PlatformHospitalsPage() {
     port: 587,
     username: '',
     password: '',
-    fromEmail: '',
+    email: '',
     fromName: '',
-  });
-  const [payuForm, setPayuForm] = useState<PaymentGatewayPayload>({
-    mode: 'TEST',
-    merchantKey: '',
-    merchantSalt: '',
-    clientId: '',
-    clientSecret: '',
-    enabled: true,
   });
 
   const {
@@ -220,45 +208,26 @@ export function PlatformHospitalsPage() {
 
   const openHospitalConfig = async (hospital: PlatformHospitalDto) => {
     setConfigHospital(hospital);
-    setConfigTab('mail');
     setConfigLoading(true);
     try {
-      const [mail, gateway] = await Promise.all([
-        getHospitalMail(hospital.id).catch(() => null),
-        hospital.tenantCode
-          ? getTenantPaymentGateway(hospital.tenantCode).catch(() => null)
-          : Promise.resolve(null),
-      ]);
+      const mail = await getHospitalMail(hospital.id).catch(() => null);
       if (mail) {
         setMailForm({
           host: String(mail.host ?? ''),
           port: Number(mail.port ?? 587),
           username: String(mail.username ?? ''),
           password: '',
-          fromEmail: String(mail.fromEmail ?? ''),
+          email: String(mail.email ?? mail.fromEmail ?? ''),
           fromName: String(mail.fromName ?? ''),
         });
-      }
-      if (gateway) {
-        setPayuForm({
-          mode:
-            String(gateway.mode ?? 'TEST').toUpperCase() === 'LIVE'
-              ? 'LIVE'
-              : 'TEST',
-          merchantKey: String(gateway.merchantKey ?? ''),
-          merchantSalt: '',
-          clientId: String(gateway.clientId ?? ''),
-          clientSecret: '',
-          enabled: gateway.enabled !== false,
-        });
       } else {
-        setPayuForm({
-          mode: 'TEST',
-          merchantKey: '',
-          merchantSalt: '',
-          clientId: '',
-          clientSecret: '',
-          enabled: true,
+        setMailForm({
+          host: '',
+          port: 587,
+          username: '',
+          password: '',
+          email: '',
+          fromName: '',
         });
       }
     } finally {
@@ -268,27 +237,38 @@ export function PlatformHospitalsPage() {
 
   const saveHospitalConfig = async () => {
     if (!configHospital) return;
+
+    const host = String(mailForm.host ?? '').trim();
+    const email = String(mailForm.email ?? mailForm.fromEmail ?? '').trim();
+    if (!host) {
+      showToast({
+        title: 'SMTP host required',
+        message: 'Enter the SMTP host (e.g. smtp.gmail.com).',
+      });
+      return;
+    }
+    if (!email) {
+      showToast({
+        title: 'Sending email required',
+        message: 'Enter the hospital sending email address.',
+      });
+      return;
+    }
+
     setConfigSaving(true);
     try {
-      if (configTab === 'mail') {
-        await updateHospitalMail(configHospital.id, {
-          ...mailForm,
-          port: Number(mailForm.port) || 587,
-        });
-        showToast({
-          title: 'Mailbox saved',
-          message: 'Hospital SMTP settings were updated.',
-        });
-      } else if (configHospital.tenantCode) {
-        await updateTenantPaymentGateway(configHospital.tenantCode, {
-          ...payuForm,
-          mode: payuForm.mode === 'LIVE' ? 'LIVE' : 'TEST',
-        });
-        showToast({
-          title: 'PayU saved',
-          message: 'Payment gateway keys were updated for this tenant.',
-        });
-      }
+      await updateHospitalMail(configHospital.id, {
+        host,
+        port: Number(mailForm.port) || 587,
+        username: String(mailForm.username ?? '').trim() || email,
+        password: String(mailForm.password ?? ''),
+        email,
+        fromName: String(mailForm.fromName ?? '').trim() || undefined,
+      });
+      showToast({
+        title: 'Mailbox saved',
+        message: 'Hospital SMTP settings were updated.',
+      });
       setConfigHospital(null);
     } catch (err) {
       showToast({
@@ -570,7 +550,7 @@ export function PlatformHospitalsPage() {
                             className="px-2.5 py-1 text-xs"
                             onClick={() => void openHospitalConfig(hospital)}
                           >
-                            Mail / PayU
+                            Mail
                           </Button>
                           {status === 'FAILED' ? (
                             <Button
@@ -626,9 +606,7 @@ export function PlatformHospitalsPage() {
           <Card className="relative z-10 w-full max-w-lg space-y-4 p-5 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-brown">
-                  Hospital configuration
-                </h2>
+                <h2 className="text-lg font-bold text-brown">SMTP mailbox</h2>
                 <p className="mt-1 text-sm text-text-muted">
                   {configHospital.clinicName ??
                     configHospital.name ??
@@ -646,32 +624,13 @@ export function PlatformHospitalsPage() {
               </Button>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={configTab === 'mail' ? 'primary' : 'outline'}
-                className="px-3 py-1.5 text-xs"
-                onClick={() => setConfigTab('mail')}
-              >
-                SMTP mailbox
-              </Button>
-              <Button
-                type="button"
-                variant={configTab === 'payu' ? 'primary' : 'outline'}
-                className="px-3 py-1.5 text-xs"
-                onClick={() => setConfigTab('payu')}
-                disabled={!configHospital.tenantCode}
-              >
-                PayU gateway
-              </Button>
-            </div>
-
             {configLoading ? (
               <LoadingState />
-            ) : configTab === 'mail' ? (
+            ) : (
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input
                   label="SMTP host"
+                  placeholder="smtp.gmail.com"
                   value={String(mailForm.host ?? '')}
                   onChange={(e) =>
                     setMailForm((prev) => ({ ...prev, host: e.target.value }))
@@ -710,13 +669,14 @@ export function PlatformHospitalsPage() {
                   }
                 />
                 <Input
-                  label="From email"
+                  label="Sending email"
                   type="email"
-                  value={String(mailForm.fromEmail ?? '')}
+                  placeholder="clinic@example.com"
+                  value={String(mailForm.email ?? '')}
                   onChange={(e) =>
                     setMailForm((prev) => ({
                       ...prev,
-                      fromEmail: e.target.value,
+                      email: e.target.value,
                     }))
                   }
                 />
@@ -730,86 +690,6 @@ export function PlatformHospitalsPage() {
                     }))
                   }
                 />
-              </div>
-            ) : (
-              <div className="grid gap-3">
-                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-brown">
-                  If save returns “Per-tenant payment gateway API is
-                  disabled”, configure PayU on{' '}
-                  <strong>payment-service</strong> instead (
-                  <code className="text-[11px]">PAYU_MERCHANT_KEY</code>,{' '}
-                  <code className="text-[11px]">PAYU_MERCHANT_SALT</code>,{' '}
-                  <code className="text-[11px]">PAYU_MODE</code>).
-                </p>
-                <Select
-                  label="Mode"
-                  options={[
-                    { value: 'TEST', label: 'TEST (sandbox)' },
-                    { value: 'LIVE', label: 'LIVE (production)' },
-                  ]}
-                  value={String(payuForm.mode ?? 'TEST')}
-                  onChange={(e) =>
-                    setPayuForm((prev) => ({
-                      ...prev,
-                      mode: e.target.value === 'LIVE' ? 'LIVE' : 'TEST',
-                    }))
-                  }
-                />
-                <Input
-                  label="Merchant key"
-                  value={String(payuForm.merchantKey ?? '')}
-                  onChange={(e) =>
-                    setPayuForm((prev) => ({
-                      ...prev,
-                      merchantKey: e.target.value,
-                    }))
-                  }
-                />
-                <Input
-                  label="Merchant salt"
-                  type="password"
-                  value={String(payuForm.merchantSalt ?? '')}
-                  onChange={(e) =>
-                    setPayuForm((prev) => ({
-                      ...prev,
-                      merchantSalt: e.target.value,
-                    }))
-                  }
-                />
-                <Input
-                  label="Client ID"
-                  value={String(payuForm.clientId ?? '')}
-                  onChange={(e) =>
-                    setPayuForm((prev) => ({
-                      ...prev,
-                      clientId: e.target.value,
-                    }))
-                  }
-                />
-                <Input
-                  label="Client secret"
-                  type="password"
-                  value={String(payuForm.clientSecret ?? '')}
-                  onChange={(e) =>
-                    setPayuForm((prev) => ({
-                      ...prev,
-                      clientSecret: e.target.value,
-                    }))
-                  }
-                />
-                <label className="flex items-center gap-2 text-sm text-brown">
-                  <input
-                    type="checkbox"
-                    checked={payuForm.enabled !== false}
-                    onChange={(e) =>
-                      setPayuForm((prev) => ({
-                        ...prev,
-                        enabled: e.target.checked,
-                      }))
-                    }
-                  />
-                  Gateway enabled
-                </label>
               </div>
             )}
 
