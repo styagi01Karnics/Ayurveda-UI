@@ -329,5 +329,8 @@ export const apiEndpoints = {
       `/api/v1/payments/links/invoice/${invoiceId}`,
     linkById: (id: string) => `/api/v1/payments/links/${id}`,
     linkEmail: (id: string) => `/api/v1/payments/links/${id}/email`,
+    publicByToken: (token: string) => `/api/v1/payments/public/${token}`,
+    publicInitiate: (token: string) =>
+      `/api/v1/payments/public/${token}/initiate`,
   },
 } as const;

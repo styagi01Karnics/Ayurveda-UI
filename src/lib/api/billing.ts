@@ -102,6 +102,7 @@ export interface InvoiceDto {
   patientCode?: string;
   patientName: string;
   contactNumber?: string;
+  patientEmail?: string;
   invoiceDate: string;
   visitType?: VisitTypeApi | string;
   serviceFees?: number;

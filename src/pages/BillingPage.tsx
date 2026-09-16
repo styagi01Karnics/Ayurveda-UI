@@ -148,7 +148,10 @@ export function BillingPage() {
       const patient = invoice.patientId
         ? await getPatientById(invoice.patientId).catch(() => null)
         : null;
-      const email = patient?.email?.trim() || undefined;
+      const email =
+        patient?.email?.trim() ||
+        invoice.patientEmail?.trim() ||
+        undefined;
       const phone = (
         invoice.contactNumber ||
         patient?.mobileNumber ||
@@ -179,21 +182,29 @@ export function BillingPage() {
       });
 
       setPaymentLinkDetails({
-        amount: due,
+        amount: result.link.amount ?? due,
         refNumber:
           invoice.invoiceNumber || invoice.invoiceId || record.invoiceId,
         paymentTime: new Date().toLocaleString('en-IN'),
         paymentMethod: 'Online',
         senderName: invoice.patientName || patient?.fullName || 'Patient',
         payUrl: result.payUrl,
-        title: result.resent ? 'Payment link resent' : 'Payment link sent',
+        recipientEmail: result.link.email || email,
+        emailSent: result.emailSent,
+        title: result.resent
+          ? 'Payment link resent'
+          : result.emailSent
+            ? 'Payment link emailed'
+            : 'Payment link created',
       });
 
       showToast({
-        title: result.resent ? 'Link resent' : 'Payment link sent',
-        message: result.payUrl
-          ? 'Payment link emailed to the patient. You can also open or copy it from the dialog.'
-          : 'Payment link request completed.',
+        title: result.resent ? 'Link resent' : 'Payment link',
+        message: result.emailSent
+          ? 'Payment link emailed to the patient. Open or copy it from the dialog.'
+          : result.payUrl
+            ? 'Link created but email may not have sent — check hospital SMTP. You can still open/copy the link.'
+            : 'Payment link request completed.',
       });
     } catch (err) {
       showToast({

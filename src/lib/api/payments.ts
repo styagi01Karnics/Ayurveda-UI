@@ -5,7 +5,10 @@ import { apiEndpoints } from './endpoints';
 const url = (path: string) => `${apiConfig.payment}${path}`;
 const ep = apiEndpoints.payments;
 
-/** POST /api/v1/payments/links — Create payment link (+ optional email/QR). */
+/**
+ * POST /api/v1/payments/links
+ * Exact body used in ops how-to (no gateway credentials).
+ */
 export interface CreatePaymentLinkPayload {
   invoiceId: string;
   amount: number;
@@ -24,6 +27,9 @@ export interface PaymentLinkDto {
   token?: string;
   qrPayload?: string | null;
   status?: string;
+  email?: string;
+  emailSent?: boolean;
+  upiQr?: boolean;
   [key: string]: unknown;
 }
 
@@ -56,7 +62,15 @@ export interface InitiatePaymentDto {
   [key: string]: unknown;
 }
 
-/** POST /api/v1/payments/initiate — Direct PayU initiate */
+function normalizeAmount(amount: number): number {
+  return Math.round(Number(amount) * 100) / 100;
+}
+
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '').slice(-10);
+}
+
+/** POST /api/v1/payments/initiate */
 export function initiatePayment(payload: InitiatePaymentPayload) {
   return apiRequest<InitiatePaymentDto>(url(ep.initiate), {
     method: 'POST',
@@ -69,25 +83,27 @@ export function getPaymentByTxn(txnId: string) {
 }
 
 /**
- * Create payment link.
- * Body: { invoiceId, amount, firstName, email, phone, sendEmail?, upiQr? }
+ * Create + email payment link.
+ * ```json
+ * { "invoiceId", "amount", "firstName", "email", "phone", "sendEmail": true, "upiQr": false }
+ * ```
  */
 export function createPaymentLink(payload: CreatePaymentLinkPayload) {
   return apiRequest<PaymentLinkDto>(url(ep.links), {
     method: 'POST',
     body: {
       invoiceId: payload.invoiceId,
-      amount: payload.amount,
-      firstName: payload.firstName,
-      email: payload.email,
-      phone: payload.phone,
+      amount: normalizeAmount(payload.amount),
+      firstName: payload.firstName.trim(),
+      email: payload.email.trim(),
+      phone: normalizePhone(payload.phone),
       sendEmail: payload.sendEmail ?? true,
       upiQr: payload.upiQr ?? false,
-    },
+    } satisfies CreatePaymentLinkPayload,
   });
 }
 
-/** Prefer absolute `payUrl`; otherwise build `/pay/{token}` for the payment host. */
+/** Prefer absolute `payUrl` from payment-service (e.g. http://host:8112/pay/...). */
 export function resolvePaymentLinkUrl(link: PaymentLinkDto): string | undefined {
   const raw = typeof link.payUrl === 'string' ? link.payUrl.trim() : '';
   if (raw) {
@@ -126,6 +142,7 @@ export function getPaymentLinkById(id: string) {
   return apiRequest<PaymentLinkDto>(url(ep.linkById(id)));
 }
 
+/** POST /api/v1/payments/links/{id}/email — resend */
 export function resendPaymentLinkEmail(id: string) {
   return apiRequest<PaymentLinkDto>(url(ep.linkEmail(id)), {
     method: 'POST',
@@ -139,6 +156,7 @@ export interface SendInvoicePaymentLinkInput {
   email: string;
   phone: string;
   sendEmail?: boolean;
+  /** Default false per how-to; set true only if PayU DBQR is enabled. */
   upiQr?: boolean;
 }
 
@@ -146,10 +164,11 @@ export interface SendInvoicePaymentLinkResult {
   link: PaymentLinkDto;
   payUrl?: string;
   resent: boolean;
+  emailSent: boolean;
 }
 
 /**
- * Create a payment link (or resend an existing open link) with the standard payload.
+ * Create a payment link (or resend an existing OPEN link) using the how-to payload.
  */
 export async function sendInvoicePaymentLink(
   input: SendInvoicePaymentLinkInput,
@@ -158,8 +177,8 @@ export async function sendInvoicePaymentLink(
     () => [] as PaymentLinkDto[],
   );
   const openLink = existing.find((row) => {
-    const status = String(row.status ?? '').toUpperCase();
-    return Boolean(row.id) && status !== 'PAID' && status !== 'EXPIRED';
+    const status = String(row.status ?? 'OPEN').toUpperCase();
+    return Boolean(row.id) && (status === 'OPEN' || status === '');
   });
 
   if (openLink?.id) {
@@ -170,6 +189,7 @@ export async function sendInvoicePaymentLink(
       link: resent,
       payUrl: resolvePaymentLinkUrl(resent) ?? resolvePaymentLinkUrl(openLink),
       resent: true,
+      emailSent: resent.emailSent !== false,
     };
   }
 
@@ -187,6 +207,7 @@ export async function sendInvoicePaymentLink(
     link,
     payUrl: resolvePaymentLinkUrl(link),
     resent: false,
+    emailSent: link.emailSent === true,
   };
 }
 

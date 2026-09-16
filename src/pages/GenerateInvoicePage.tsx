@@ -41,7 +41,7 @@ import {
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
 import { getActiveTherapists } from '@/lib/api/therapists';
-import { createPaymentLink, resolvePaymentLinkUrl } from '@/lib/api/payments';
+import { sendInvoicePaymentLink } from '@/lib/api/payments';
 import { calculatePrescriptionMedicineQuantity } from '@/lib/prescriptionQuantity';
 import type { MedicineDto } from '@/lib/api/types';
 import {
@@ -1112,6 +1112,7 @@ export function GenerateInvoicePage() {
       let settled = result;
       let paymentLinkUrl: string | undefined;
       let paymentLinkEmailed = false;
+      let paymentLinkEmail: string | undefined;
       try {
         if (shouldCreatePaymentLink(selectedChannel, selectedPayment)) {
           const due =
@@ -1146,10 +1147,10 @@ export function GenerateInvoicePage() {
             showToast({
               title: 'Payment link not sent',
               message:
-                'Invoice was created unpaid. Add a valid patient email and 10-digit phone, then retry Via Payment.',
+                'Invoice was created unpaid. Add a valid patient email and 10-digit phone, then use Billing → Send link.',
             });
           } else {
-            const link = await createPaymentLink({
+            const linkResult = await sendInvoicePaymentLink({
               invoiceId: result.id,
               amount: due,
               firstName,
@@ -1158,8 +1159,9 @@ export function GenerateInvoicePage() {
               sendEmail: true,
               upiQr: false,
             });
-            paymentLinkUrl = resolvePaymentLinkUrl(link);
-            paymentLinkEmailed = true;
+            paymentLinkUrl = linkResult.payUrl;
+            paymentLinkEmailed = linkResult.emailSent;
+            paymentLinkEmail = linkResult.link.email || email;
           }
         } else {
           settled = await settleInvoicePayment(
@@ -1189,8 +1191,10 @@ export function GenerateInvoicePage() {
           ? {
               amount: settled.leftAmount ?? settled.totalAmount,
               payUrl: paymentLinkUrl,
+              recipientEmail: paymentLinkEmail,
+              emailSent: paymentLinkEmailed,
               title: paymentLinkEmailed
-                ? 'Payment link sent'
+                ? 'Payment link emailed'
                 : 'Payment link created',
             }
           : {}),
@@ -1200,7 +1204,9 @@ export function GenerateInvoicePage() {
       showToast({
         title: paymentLinkUrl ? 'Payment link ready' : 'Invoice generated',
         message: paymentLinkUrl
-          ? 'Payment link was created and emailed to the patient. Open or copy it from the success dialog.'
+          ? paymentLinkEmailed
+            ? 'Payment link emailed to the patient. Open or copy it from the success dialog.'
+            : 'Link created but email may not have sent — check hospital SMTP. You can still open/copy the link.'
           : activeBillingId
             ? 'The billing draft has been completed and the invoice is ready.'
             : `${invoiceType.label} invoice has been generated successfully.`,

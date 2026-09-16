@@ -11,6 +11,8 @@ export interface PaymentSuccessDetails {
   /** Online PayU link when invoice awaits remote payment. */
   payUrl?: string;
   title?: string;
+  recipientEmail?: string;
+  emailSent?: boolean;
 }
 
 interface PaymentSuccessModalProps {
@@ -107,6 +109,22 @@ export function PaymentSuccessModal({
               {formatCurrency(payment.amount)}
             </span>
           </div>
+          {payment.recipientEmail ? (
+            <div className="flex justify-between gap-4">
+              <span className="text-text-muted">Sent to</span>
+              <span className="break-all text-right text-brown">
+                {payment.recipientEmail}
+              </span>
+            </div>
+          ) : null}
+          {payment.emailSent != null ? (
+            <div className="flex justify-between gap-4">
+              <span className="text-text-muted">Email</span>
+              <span className="text-right text-brown">
+                {payment.emailSent ? 'Sent' : 'Not sent (check SMTP)'}
+              </span>
+            </div>
+          ) : null}
           {payment.payUrl ? (
             <div className="space-y-2 pt-3">
               <a
