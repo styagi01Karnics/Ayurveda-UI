@@ -1,0 +1,11 @@
+services:
+  ayurvedaa-ui:
+    image: ${IMAGE_NAME:-sunardock/ayurvedaa-ui}:${IMAGE_TAG:-latest}
+    container_name: ayurvedaa-ui
+    restart: unless-stopped
+
+    ports:
+      - "8100:80"
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
