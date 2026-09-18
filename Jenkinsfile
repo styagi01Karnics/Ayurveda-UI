@@ -16,6 +16,10 @@ pipeline {
 
     stages {
 
+        // ==========================================================
+        // CHECKOUT
+        // ==========================================================
+
         stage('Checkout') {
             steps {
                 echo '===== Checkout ====='
@@ -23,6 +27,11 @@ pipeline {
                 checkout scm
             }
         }
+
+
+        // ==========================================================
+        // ENVIRONMENT CHECK
+        // ==========================================================
 
         stage('Environment Check') {
             steps {
@@ -37,6 +46,11 @@ pipeline {
             }
         }
 
+
+        // ==========================================================
+        // INSTALL DEPENDENCIES
+        // ==========================================================
+
         stage('Install Dependencies') {
             steps {
                 sh '''
@@ -46,6 +60,11 @@ pipeline {
                 '''
             }
         }
+
+
+        // ==========================================================
+        // BUILD REACT APPLICATION
+        // ==========================================================
 
         stage('Build React Application') {
             steps {
@@ -64,6 +83,11 @@ pipeline {
             }
         }
 
+
+        // ==========================================================
+        // VERIFY DEPLOYMENT FILES
+        // ==========================================================
+
         stage('Verify Deployment Files') {
             steps {
                 sh '''
@@ -78,6 +102,11 @@ pipeline {
             }
         }
 
+
+        // ==========================================================
+        // DOCKER BUILD
+        // ==========================================================
+
         stage('Docker Build') {
             steps {
                 script {
@@ -90,6 +119,11 @@ pipeline {
                 }
             }
         }
+
+
+        // ==========================================================
+        // DOCKER PUSH
+        // ==========================================================
 
         stage('Docker Push') {
             steps {
@@ -116,12 +150,12 @@ pipeline {
             }
         }
 
-        /*
-         * ==========================================================
-         * DEVOPS SERVER CLEANUP
-         * Keep CURRENT BUILD IMAGE ONLY
-         * ==========================================================
-         */
+
+        // ==========================================================
+        // DEVOPS SERVER CLEANUP
+        //
+        // Keep CURRENT IMAGE ONLY as latest
+        // ==========================================================
 
         stage('DevOps Server Cleanup') {
             steps {
@@ -129,21 +163,38 @@ pipeline {
                 echo "===== DevOps Server Docker Cleanup ====="
 
                 sh '''
-                    echo "Removing local build images..."
+                    echo "===== Cleaning Jenkins Docker Images ====="
 
-                    # Remove the build image after successful Docker Hub push
+                    # Remove build-number tag.
+                    # The same image remains available as :latest
                     docker rmi "${IMAGE_NAME}:${BUILD_NUMBER}" || true
+
+                    # Remove old numeric tags for this application
+                    TAGS=$(docker images "${IMAGE_NAME}" \
+                        --format '{{.Tag}}' \
+                        | grep -E '^[0-9]+$' \
+                        || true)
+
+                    for TAG in $TAGS; do
+                        echo "Removing old local build tag: ${IMAGE_NAME}:${TAG}"
+                        docker rmi "${IMAGE_NAME}:${TAG}" || true
+                    done
 
                     # Remove dangling images
                     docker image prune -f
 
                     echo "===== DevOps Server Images ====="
 
-                    docker images "${IMAGE_NAME}" --format \
-                    "table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}"
+                    docker images "${IMAGE_NAME}" \
+                        --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}'
                 '''
             }
         }
+
+
+        // ==========================================================
+        // PREPARE APPLICATION SERVER
+        // ==========================================================
 
         stage('Prepare Application Server') {
             steps {
@@ -173,6 +224,11 @@ pipeline {
             }
         }
 
+
+        // ==========================================================
+        // COPY DOCKER COMPOSE
+        // ==========================================================
+
         stage('Copy Docker Compose') {
             steps {
 
@@ -196,6 +252,11 @@ pipeline {
             }
         }
 
+
+        // ==========================================================
+        // DEPLOY TO APPLICATION SERVER
+        // ==========================================================
+
         stage('Deploy to Application Server') {
             steps {
 
@@ -217,11 +278,16 @@ pipeline {
                              export IMAGE_NAME=$IMAGE_NAME && \
                              export IMAGE_TAG=$BUILD_NUMBER && \
                              docker compose pull && \
-                             docker compose up -d"
+                             docker compose up -d --remove-orphans"
                     '''
                 }
             }
         }
+
+
+        // ==========================================================
+        // CONTAINER VERIFICATION
+        // ==========================================================
 
         stage('Container Verification') {
             steps {
@@ -264,18 +330,17 @@ pipeline {
             }
         }
 
-        /*
-         * ==========================================================
-         * APPLICATION SERVER CLEANUP
-         *
-         * Keep:
-         *   Current image
-         *   Previous image
-         *   Previous previous image
-         *
-         * Total = LAST 3 IMAGES
-         * ==========================================================
-         */
+
+        // ==========================================================
+        // APPLICATION SERVER CLEANUP
+        //
+        // Keep:
+        //   Current build
+        //   Previous build
+        //   Previous previous build
+        //
+        // Total = LAST 3 BUILD IMAGES
+        // ==========================================================
 
         stage('Application Server Cleanup') {
             steps {
@@ -306,13 +371,21 @@ docker images "$IMAGE_NAME" \
     --format '{{.Tag}} {{.CreatedAt}} {{.ID}}'
 
 echo ""
+echo "===== Removing latest tag if present ====="
+
+# Deployment uses numeric build tags.
+# Remove :latest so only the last 3 build versions remain.
+docker rmi "$IMAGE_NAME:latest" 2>/dev/null || true
+
+echo ""
 echo "===== Keeping Latest 3 Build Images ====="
 
 # Get numeric build tags, newest first
 TAGS=\$(docker images "$IMAGE_NAME" \
     --format '{{.Tag}}' \
     | grep -E '^[0-9]+$' \
-    | sort -nr)
+    | sort -nr \
+    || true)
 
 COUNT=0
 
@@ -334,7 +407,9 @@ for TAG in \$TAGS; do
 
 done
 
-# Remove dangling images
+echo ""
+echo "===== Removing Dangling Images ====="
+
 docker image prune -f
 
 echo ""
@@ -349,9 +424,15 @@ REMOTE_SCRIPT
         }
     }
 
+
+    // ==========================================================
+    // POST ACTIONS
+    // ==========================================================
+
     post {
 
         success {
+
             echo """
             ============================================
             AYURVEDAA UI DEPLOYMENT SUCCESSFUL
@@ -366,7 +447,7 @@ REMOTE_SCRIPT
             http://${APP_SERVER}:${APP_PORT}
 
             DevOps Server:
-            Current build image only
+            Current image only (:latest)
 
             Application Server:
             Last 3 build images
@@ -375,7 +456,9 @@ REMOTE_SCRIPT
             """
         }
 
+
         failure {
+
             echo """
             ============================================
             AYURVEDAA UI DEPLOYMENT FAILED
@@ -387,7 +470,9 @@ REMOTE_SCRIPT
             """
         }
 
+
         always {
+
             echo "Cleaning Jenkins workspace..."
 
             cleanWs()
