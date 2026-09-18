@@ -1,6 +1,7 @@
 # =========================
 # Stage 1 - Build React App
 # =========================
+
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -17,6 +18,7 @@ RUN npm run build
 # =========================
 # Stage 2 - Nginx
 # =========================
+
 FROM nginx:alpine
 
 # Remove default nginx files
