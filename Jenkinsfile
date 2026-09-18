@@ -1,43 +1,29 @@
 pipeline {
-
     agent any
 
     environment {
         APP_NAME = 'ayurvedaa-ui'
         IMAGE_NAME = 'sunardock/ayurvedaa-ui'
-
         APP_SERVER = '45.195.229.15'
         DEPLOY_DIR = '/root/ayurvedaa-ui'
         APP_PORT = '8100'
-
         DOCKER_CREDENTIALS = 'dockerhub-creds'
         SSH_CREDENTIALS = 'new-server-ssh'
     }
 
     stages {
 
-        // ==========================================================
-        // CHECKOUT
-        // ==========================================================
-
         stage('Checkout') {
             steps {
                 echo '===== Checkout ====='
-
                 checkout scm
             }
         }
-
-
-        // ==========================================================
-        // ENVIRONMENT CHECK
-        // ==========================================================
 
         stage('Environment Check') {
             steps {
                 sh '''
                     echo "===== Environment Check ====="
-
                     node --version
                     npm --version
                     docker --version
@@ -46,47 +32,29 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // INSTALL DEPENDENCIES
-        // ==========================================================
-
         stage('Install Dependencies') {
             steps {
                 sh '''
                     echo "===== Install Dependencies ====="
-
                     npm ci
                 '''
             }
         }
 
-
-        // ==========================================================
-        // BUILD REACT APPLICATION
-        // ==========================================================
-
         stage('Build React Application') {
             steps {
                 sh '''
                     echo "===== Build React Application ====="
-
                     npm run build
 
-                    echo "===== Verify Build ====="
-
+                    echo "===== Verify React Build ====="
                     test -d dist
                     test -f dist/index.html
 
-                    echo "React production build successful."
+                    echo "React build successful."
                 '''
             }
         }
-
-
-        // ==========================================================
-        // VERIFY DEPLOYMENT FILES
-        // ==========================================================
 
         stage('Verify Deployment Files') {
             steps {
@@ -97,20 +65,16 @@ pipeline {
                     test -f nginx.conf
                     test -f docker-compose.yml
 
-                    echo "All deployment files found."
+                    echo "Dockerfile found."
+                    echo "nginx.conf found."
+                    echo "docker-compose.yml found."
                 '''
             }
         }
 
-
-        // ==========================================================
-        // DOCKER BUILD
-        // ==========================================================
-
         stage('Docker Build') {
             steps {
                 script {
-
                     echo "===== Docker Build ====="
 
                     docker.build(
@@ -120,28 +84,19 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // DOCKER PUSH
-        // ==========================================================
-
         stage('Docker Push') {
             steps {
                 script {
-
                     echo "===== Docker Push ====="
 
                     docker.withRegistry(
                         'https://index.docker.io/v1/',
                         "${DOCKER_CREDENTIALS}"
                     ) {
-
                         sh """
                             docker push ${IMAGE_NAME}:${BUILD_NUMBER}
 
-                            docker tag \
-                                ${IMAGE_NAME}:${BUILD_NUMBER} \
-                                ${IMAGE_NAME}:latest
+                            docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
 
                             docker push ${IMAGE_NAME}:latest
                         """
@@ -150,55 +105,37 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // DEVOPS SERVER CLEANUP
-        //
-        // Keep CURRENT IMAGE ONLY as latest
-        // ==========================================================
-
         stage('DevOps Server Cleanup') {
             steps {
-
-                echo "===== DevOps Server Docker Cleanup ====="
-
                 sh '''
-                    echo "===== Cleaning Jenkins Docker Images ====="
+                    echo "===== DevOps Server Cleanup ====="
 
-                    # Remove build-number tag.
-                    # The same image remains available as :latest
+                    echo "Removing build-number image tag..."
                     docker rmi "${IMAGE_NAME}:${BUILD_NUMBER}" || true
 
-                    # Remove old numeric tags for this application
-                    TAGS=$(docker images "${IMAGE_NAME}" \
-                        --format '{{.Tag}}' \
-                        | grep -E '^[0-9]+$' \
-                        || true)
+                    echo "Removing old numeric image tags..."
 
-                    for TAG in $TAGS; do
-                        echo "Removing old local build tag: ${IMAGE_NAME}:${TAG}"
+                    OLD_TAGS=$(docker images "${IMAGE_NAME}" \
+                        --format '{{.Tag}}' \
+                        | grep -E '^[0-9]+$' || true)
+
+                    for TAG in $OLD_TAGS
+                    do
+                        echo "Removing local tag: ${IMAGE_NAME}:${TAG}"
                         docker rmi "${IMAGE_NAME}:${TAG}" || true
                     done
 
-                    # Remove dangling images
+                    echo "Removing dangling images..."
                     docker image prune -f
 
-                    echo "===== DevOps Server Images ====="
-
-                    docker images "${IMAGE_NAME}" \
-                        --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}'
+                    echo "===== Remaining DevOps Images ====="
+                    docker images "${IMAGE_NAME}"
                 '''
             }
         }
 
-
-        // ==========================================================
-        // PREPARE APPLICATION SERVER
-        // ==========================================================
-
         stage('Prepare Application Server') {
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -206,7 +143,6 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
-
                     sh '''
                         echo "===== Prepare Application Server ====="
 
@@ -224,14 +160,8 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // COPY DOCKER COMPOSE
-        // ==========================================================
-
         stage('Copy Docker Compose') {
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -239,9 +169,8 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
-
                     sh '''
-                        echo "===== Copy docker-compose.yml ====="
+                        echo "===== Copy Docker Compose ====="
 
                         sshpass -p "$SSH_PASSWORD" scp \
                             -o StrictHostKeyChecking=no \
@@ -252,14 +181,8 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // DEPLOY TO APPLICATION SERVER
-        // ==========================================================
-
         stage('Deploy to Application Server') {
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -267,7 +190,6 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
-
                     sh '''
                         echo "===== Deploy Ayurveda UI ====="
 
@@ -284,14 +206,8 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // CONTAINER VERIFICATION
-        // ==========================================================
-
         stage('Container Verification') {
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -299,18 +215,19 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
-
                     sh '''
                         echo "===== Container Verification ====="
 
                         sleep 10
 
+                        echo "===== Docker Compose Status ====="
+
                         sshpass -p "$SSH_PASSWORD" ssh \
                             -o StrictHostKeyChecking=no \
                             "$SSH_USER@$APP_SERVER" \
-                            "docker compose -f $DEPLOY_DIR/docker-compose.yml ps"
+                            "cd $DEPLOY_DIR && docker compose ps"
 
-                        echo "===== Nginx Verification ====="
+                        echo "===== Nginx Configuration Test ====="
 
                         sshpass -p "$SSH_PASSWORD" ssh \
                             -o StrictHostKeyChecking=no \
@@ -330,21 +247,8 @@ pipeline {
             }
         }
 
-
-        // ==========================================================
-        // APPLICATION SERVER CLEANUP
-        //
-        // Keep:
-        //   Current build
-        //   Previous build
-        //   Previous previous build
-        //
-        // Total = LAST 3 BUILD IMAGES
-        // ==========================================================
-
         stage('Application Server Cleanup') {
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -352,14 +256,13 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
-
                     sh '''
-                        echo "===== Application Server Image Cleanup ====="
+                        echo "===== Application Server Cleanup ====="
 
                         sshpass -p "$SSH_PASSWORD" ssh \
                             -o StrictHostKeyChecking=no \
                             "$SSH_USER@$APP_SERVER" \
-                            "bash -s" <<'REMOTE_SCRIPT'
+                            "bash -s" <<REMOTE_SCRIPT
 
 set -e
 
@@ -367,44 +270,35 @@ IMAGE_NAME="sunardock/ayurvedaa-ui"
 
 echo "===== Images Before Cleanup ====="
 
-docker images "$IMAGE_NAME" \
-    --format '{{.Tag}} {{.CreatedAt}} {{.ID}}'
+docker images "\$IMAGE_NAME" \
+    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}'
 
 echo ""
-echo "===== Removing latest tag if present ====="
+echo "===== Removing latest Tag ====="
 
-# Deployment uses numeric build tags.
-# Remove :latest so only the last 3 build versions remain.
-docker rmi "$IMAGE_NAME:latest" 2>/dev/null || true
+docker rmi "\$IMAGE_NAME:latest" 2>/dev/null || true
 
 echo ""
 echo "===== Keeping Latest 3 Build Images ====="
 
-# Get numeric build tags, newest first
-TAGS=\$(docker images "$IMAGE_NAME" \
+TAGS=\$(docker images "\$IMAGE_NAME" \
     --format '{{.Tag}}' \
     | grep -E '^[0-9]+$' \
-    | sort -nr \
-    || true)
+    | sort -nr || true)
 
 COUNT=0
 
-for TAG in \$TAGS; do
-
+for TAG in \$TAGS
+do
     COUNT=\$((COUNT + 1))
 
-    if [ "\$COUNT" -gt 3 ]; then
-
-        echo "Removing old image: \$IMAGE_NAME:\$TAG"
-
-        docker rmi "$IMAGE_NAME:\$TAG" || true
-
-    else
-
+    if [ "\$COUNT" -le 3 ]
+    then
         echo "Keeping image: \$IMAGE_NAME:\$TAG"
-
+    else
+        echo "Removing old image: \$IMAGE_NAME:\$TAG"
+        docker rmi "\$IMAGE_NAME:\$TAG" || true
     fi
-
 done
 
 echo ""
@@ -415,66 +309,55 @@ docker image prune -f
 echo ""
 echo "===== Images After Cleanup ====="
 
-docker images "$IMAGE_NAME" \
+docker images "\$IMAGE_NAME" \
     --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}'
 
 REMOTE_SCRIPT
-                '''
+                    '''
+                }
             }
         }
     }
 
-
-    // ==========================================================
-    // POST ACTIONS
-    // ==========================================================
-
     post {
-
         success {
-
             echo """
-            ============================================
-            AYURVEDAA UI DEPLOYMENT SUCCESSFUL
-            ============================================
+============================================
+AYURVEDAA UI DEPLOYMENT SUCCESSFUL
+============================================
 
-            Build        : ${BUILD_NUMBER}
-            Docker Image : ${IMAGE_NAME}:${BUILD_NUMBER}
-            Server       : ${APP_SERVER}
-            Port         : ${APP_PORT}
+Build        : ${BUILD_NUMBER}
+Docker Image : ${IMAGE_NAME}:${BUILD_NUMBER}
+Server       : ${APP_SERVER}
+Port         : ${APP_PORT}
 
-            URL:
-            http://${APP_SERVER}:${APP_PORT}
+URL:
+http://${APP_SERVER}:${APP_PORT}
 
-            DevOps Server:
-            Current image only (:latest)
+DevOps Server:
+Current image only
 
-            Application Server:
-            Last 3 build images
+Application Server:
+Last 3 build images
 
-            ============================================
-            """
+============================================
+"""
         }
-
 
         failure {
-
             echo """
-            ============================================
-            AYURVEDAA UI DEPLOYMENT FAILED
-            ============================================
+============================================
+AYURVEDAA UI DEPLOYMENT FAILED
+============================================
 
-            Check the failed Jenkins stage.
+Check the failed Jenkins stage.
 
-            ============================================
-            """
+============================================
+"""
         }
 
-
         always {
-
             echo "Cleaning Jenkins workspace..."
-
             cleanWs()
         }
     }
