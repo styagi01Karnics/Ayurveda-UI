@@ -5,8 +5,8 @@ import { ToastProvider } from '@/app/ToastContext';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { PasswordSuccessModal } from '@/components/auth/PasswordSuccessModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { assets } from '@/lib/assets';
 import { clearAuthSession, getStoredUser } from '@/lib/auth';
+import { PLATFORM_BRANDING } from '@/lib/platformBranding';
 import { UI_MESSAGES } from '@/lib/uiMessages';
 
 export function PlatformLayout({ children }: { children?: ReactNode }) {
@@ -28,13 +28,13 @@ export function PlatformLayout({ children }: { children?: ReactNode }) {
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
               <img
-                src={assets.brandLogo}
-                alt="Ganesha Ayurvedaa"
+                src={PLATFORM_BRANDING.logoUrl}
+                alt={PLATFORM_BRANDING.name}
                 className="h-10 w-10 object-contain"
               />
               <div>
                 <p className="font-serif text-sm font-semibold tracking-wide text-brown">
-                  Platform Admin
+                  {PLATFORM_BRANDING.name}
                 </p>
                 <p className="text-xs text-text-muted">
                   {user?.fullName ?? 'Super Admin'} · {user?.email}

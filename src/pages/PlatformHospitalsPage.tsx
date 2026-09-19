@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/Card';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Input } from '@/components/ui/Input';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/Select';
 import { ApiError } from '@/lib/api/client';
 import {
@@ -19,6 +20,7 @@ import {
   type HospitalMailPayload,
   type PlatformHospitalDto,
 } from '@/lib/api/roles';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   CITIES_BY_STATE,
   INDIAN_STATES,
@@ -93,13 +95,13 @@ export function PlatformHospitalsPage() {
     setLoadingList(true);
     setListError(null);
     try {
-      const list = await getHospitals();
+      const list = await getHospitals(0, 100);
       setHospitals(list);
     } catch (err) {
       setListError(
         err instanceof ApiError
           ? err.message
-          : 'Could not load hospitals.',
+          : 'Could not load clinics.',
       );
       setHospitals([]);
     } finally {
@@ -154,10 +156,10 @@ export function PlatformHospitalsPage() {
       setShowForm(false);
       await loadHospitals();
       showToast({
-        title: 'Hospital onboarded',
+        title: 'Clinic onboarded',
         message: tenantCode
-          ? `Tenant code ${tenantCode} is ready. Share it with the hospital admin to log in.`
-          : 'Hospital and admin were created successfully.',
+          ? `Tenant code ${tenantCode} is ready. Share it with the clinic admin to log in.`
+          : 'Clinic and admin were created successfully.',
       });
     } catch (err) {
       showToast({
@@ -165,7 +167,7 @@ export function PlatformHospitalsPage() {
         message:
           err instanceof ApiError
             ? err.message
-            : 'Could not create hospital. Please try again.',
+            : 'Could not create clinic. Please try again.',
       });
     }
   };
@@ -176,7 +178,7 @@ export function PlatformHospitalsPage() {
       await loadHospitals();
       showToast({
         title: 'Status updated',
-        message: `Hospital marked as ${status}.`,
+        message: `Clinic marked as ${status}.`,
       });
     } catch (err) {
       showToast({
@@ -250,7 +252,7 @@ export function PlatformHospitalsPage() {
     if (!email) {
       showToast({
         title: 'Sending email required',
-        message: 'Enter the hospital sending email address.',
+        message: 'Enter the clinic sending email address.',
       });
       return;
     }
@@ -267,7 +269,7 @@ export function PlatformHospitalsPage() {
       });
       showToast({
         title: 'Mailbox saved',
-        message: 'Hospital SMTP settings were updated.',
+        message: 'Clinic SMTP settings were updated.',
       });
       setConfigHospital(null);
     } catch (err) {
@@ -276,27 +278,36 @@ export function PlatformHospitalsPage() {
         message:
           err instanceof ApiError
             ? err.message
-            : 'Could not save hospital configuration.',
+            : 'Could not save clinic configuration.',
       });
     } finally {
       setConfigSaving(false);
     }
   };
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+  } = useClientPagination(hospitals);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-serif text-2xl font-bold text-brown sm:text-[28px]">
-            Hospitals
+            Clinics
           </h1>
           <p className="mt-1 text-sm text-text-muted">
-            Onboard a hospital and its admin, then share the tenant code for
-            hospital login.
+            Onboard a clinic and its admin, then share the tenant code for
+            clinic login.
           </p>
         </div>
         <Button type="button" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Hide form' : 'Onboard hospital'}
+          {showForm ? 'Hide form' : 'Onboard clinic'}
         </Button>
       </div>
 
@@ -320,7 +331,7 @@ export function PlatformHospitalsPage() {
             </div>
           </dl>
           <p className="mt-3 text-xs text-text-muted">
-            Hospital login: tenant code + admin email + password (omit for Super
+            Clinic login: tenant code + admin email + password (omit for Super
             Admin).
           </p>
         </Card>
@@ -329,7 +340,7 @@ export function PlatformHospitalsPage() {
       {showForm ? (
         <Card className="p-5 sm:p-6">
           <h2 className="mb-1 text-lg font-bold text-brown">
-            Onboard hospital + admin
+            Onboard clinic + admin
           </h2>
 
 
@@ -442,12 +453,12 @@ export function PlatformHospitalsPage() {
 
             <section>
               <h3 className="mb-4 text-sm font-semibold text-brown">
-                Hospital admin
+                Clinic admin
               </h3>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Full name"
-                  placeholder="Hospital Admin"
+                  placeholder="Clinic Admin"
                   error={errors.fullName?.message}
                   {...register('fullName')}
                 />
@@ -482,7 +493,7 @@ export function PlatformHospitalsPage() {
 
             <div className="flex justify-end border-t border-[#f0ebe3] pt-5">
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Creating…' : 'Create hospital'}
+                {isSubmitting ? 'Creating…' : 'Create clinic'}
               </Button>
             </div>
           </form>
@@ -491,7 +502,7 @@ export function PlatformHospitalsPage() {
 
       <Card className="overflow-hidden p-0">
         <div className="border-b border-gray-100 px-5 py-4">
-          <h2 className="text-lg font-bold text-brown">All hospitals</h2>
+          <h2 className="text-lg font-bold text-brown">All clinics</h2>
         </div>
         {loadingList ? (
           <LoadingState />
@@ -508,7 +519,7 @@ export function PlatformHospitalsPage() {
           </div>
         ) : hospitals.length === 0 ? (
           <p className="px-5 py-8 text-sm text-text-muted">
-            No hospitals yet. Use the form above to onboard the first one.
+            No clinics yet. Use the form above to onboard the first one.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -523,9 +534,9 @@ export function PlatformHospitalsPage() {
                 </tr>
               </thead>
               <tbody>
-                {hospitals.map((hospital) => {
+                {pageItems.map((hospital) => {
                   const name =
-                    hospital.name ?? hospital.clinicName ?? 'Hospital';
+                    hospital.name ?? hospital.clinicName ?? 'Clinic';
                   const status = (hospital.status ?? '—').toUpperCase();
                   return (
                     <tr
@@ -591,6 +602,14 @@ export function PlatformHospitalsPage() {
                 })}
               </tbody>
             </table>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loadingList}
+            />
           </div>
         )}
       </Card>
@@ -610,7 +629,7 @@ export function PlatformHospitalsPage() {
                 <p className="mt-1 text-sm text-text-muted">
                   {configHospital.clinicName ??
                     configHospital.name ??
-                    'Hospital'}{' '}
+                    'Clinic'}{' '}
                   ({configHospital.tenantCode ?? '—'})
                 </p>
               </div>

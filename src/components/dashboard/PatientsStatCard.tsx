@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { DashDivider, PeriodDropdown } from '@/components/dashboard/DashboardPrimitives';
@@ -9,12 +10,15 @@ interface PatientsStatCardProps {
   stats: DashboardStats;
   period: BillingPeriod;
   onPeriodChange: (period: BillingPeriod) => void;
+  /** Optional chart (or other content) rendered below the active/inactive bars. */
+  footer?: ReactNode;
 }
 
 export function PatientsStatCard({
   stats,
   period,
   onPeriodChange,
+  footer,
 }: PatientsStatCardProps) {
   const total = stats.totalPatients;
   const activePct = total > 0 ? Math.round((stats.activePatients / total) * 100) : 0;
@@ -22,9 +26,9 @@ export function PatientsStatCard({
     total > 0 ? Math.round((stats.inactivePatients / total) * 100) : 0;
 
   return (
-    <Card className="dashboard-card flex h-full flex-col p-5">
+    <Card className="dashboard-card flex h-full min-h-0 flex-col p-5">
       <div className="mb-4 flex items-start justify-between gap-2">
-        <h3 className="text-[15px] font-medium text-text-muted">Total Patients</h3>
+        <h3 className="dashboard-card-title text-text-muted">Total Patients</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 
@@ -44,7 +48,7 @@ export function PatientsStatCard({
 
       <DashDivider className="my-4" />
 
-      <div className="mt-auto grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-2 gap-6">
         <div>
           <p className="text-[13px] leading-snug text-brown">
             <span className="font-bold">{formatNumber(stats.activePatients)}</span>
@@ -66,6 +70,13 @@ export function PatientsStatCard({
           <div className="patient-inactive-bar mt-2.5 h-3.5 w-full rounded-[3px]" />
         </div>
       </div>
+
+      {footer ? (
+        <>
+          <DashDivider className="my-4 shrink-0" />
+          <div className="flex min-h-[200px] min-w-0 flex-1 flex-col">{footer}</div>
+        </>
+      ) : null}
     </Card>
   );
 }

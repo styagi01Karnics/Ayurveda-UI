@@ -46,9 +46,9 @@ export function DoctorStatCards({ doctors }: DoctorStatCardsProps) {
   return (
     <div className="dash-grid">
       {cards.map((card) => (
-        <Card key={card.title}>
-          <p className="text-sm text-text-muted">{card.title}</p>
-          <p className="mt-1 text-3xl font-bold text-brown">{card.value}</p>
+        <Card key={card.title} className="dashboard-card">
+          <p className="dashboard-card-title text-brown">{card.title}</p>
+          <p className="mt-2 text-[28px] font-bold leading-none text-brown">{card.value}</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {card.pills.map((pill, index) => (
               <span

@@ -13,7 +13,6 @@ import { Tabs } from '@/components/ui/Tabs';
 import { getPublicTenants, forgotPassword, login, type PublicTenantDto } from '@/lib/api/auth';
 import {
   DUMMY_LOGIN_CREDENTIALS,
-  isSuperAdmin,
   mapAuthTokenToSession,
   mockLogin,
   setAuthSession,
@@ -23,6 +22,7 @@ import {
   CLINIC_LOCATIONS,
   setStoredClinicLocation,
 } from '@/lib/clinicLocations';
+import { ALL_PAGE_CODES } from '@/lib/pagePermissions';
 import {
   loginSchema,
   type LoginFormValues,
@@ -150,7 +150,7 @@ export function LoginPage() {
       if (isHospitalLogin && values.locationId) {
         setStoredClinicLocation(values.locationId);
       }
-      navigate(isSuperAdmin(session.user) ? '/platform/hospitals' : '/dashboard');
+      navigate('/dashboard');
       return;
     } catch {
       // Fall through to local mock login for offline / demo use.
@@ -170,9 +170,10 @@ export function LoginPage() {
         role: 'Super Admin',
         apiRole: 'SUPER_ADMIN',
         tenantCode: 'PLATFORM',
+        pageCodes: [...ALL_PAGE_CODES],
       };
       setStoredUser(superUser);
-      navigate('/platform/hospitals');
+      navigate('/dashboard');
       return;
     }
 
@@ -211,13 +212,19 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="max-w-[420px] px-6 py-6 sm:px-8 sm:py-7">
-        <BrandHeader className="mb-5" />
+      <AuthCard className="w-full max-w-[560px] px-7 py-7 sm:px-9 sm:py-8">
+        <BrandHeader
+          className="mb-5"
+          variant={loginMode === 'superAdmin' ? 'platform' : 'clinic'}
+        />
 
-        <div className="mb-5">
+        <div className="mb-4">
           <h2 className="font-serif text-2xl font-bold leading-tight text-brown sm:text-[26px]">
             Welcome back!
           </h2>
+          <p className="mt-1.5 text-sm text-text-muted">
+            Enter your Credentials to access your account
+          </p>
           {notice ? (
             <p className="mt-2 rounded-lg bg-success/10 px-3 py-2 text-xs text-brown">
               {notice}
@@ -240,9 +247,9 @@ export function LoginPage() {
             <>
               <Select
                 fieldVariant="auth"
-                label="Hospital"
+                label="Clinic"
                 placeholder={
-                  tenantsLoading ? 'Loading hospitals…' : 'Select hospital'
+                  tenantsLoading ? 'Loading clinics…' : 'Select clinic'
                 }
                 options={hospitalOptions}
                 error={errors.tenantCode?.message}
@@ -318,7 +325,7 @@ export function LoginPage() {
           </Link>
         </p>
         <p className="mt-1.5 text-center text-xs text-text-muted">
-          New hospital accounts are created by Super Admin after login.
+          New clinic accounts are created by Super Admin after login.
         </p>
       </AuthCard>
     </AuthLayout>

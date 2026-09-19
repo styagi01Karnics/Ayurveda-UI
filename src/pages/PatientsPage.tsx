@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
@@ -7,11 +7,13 @@ import { PatientsTable } from '@/components/patients/PatientsTable';
 import { UploadReportsModal } from '@/components/patients/UploadReportsModal';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { FILTER_OPTIONS } from '@/data/mock/patients';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   getAppointmentPatients,
   getBookingDoshas,
@@ -82,6 +84,8 @@ export function PatientsPage() {
             consultationTypes,
           ),
           doshaId: doshaFilter || undefined,
+          page: 0,
+          size: 100,
         }),
         getBookingDoshas().catch(() => []),
       ]);
@@ -107,6 +111,28 @@ export function PatientsPage() {
       return matchesStatus && matchesVisit;
     });
   }, [data.patients, statusFilter, visitTypeFilter]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredPatients);
+
+  useEffect(() => {
+    resetPage();
+  }, [
+    statusTab,
+    patientIdQuery,
+    statusFilter,
+    visitTypeFilter,
+    doshaFilter,
+    activeTab,
+    resetPage,
+  ]);
 
   const handleRowClick = (record: PatientRecord) => {
     navigate(`/patients/${record.detailId}`);
@@ -194,10 +220,18 @@ export function PatientsPage() {
         >
           <PatientsTable
             embedded
-            records={filteredPatients}
+            records={pageItems}
             onRowClick={handleRowClick}
             onUploadReport={(record) => setUploadPatient(record)}
             onDownloadBill={handleDownloadBill}
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            disabled={loading}
           />
         </AsyncStatus>
       </ListPanel>

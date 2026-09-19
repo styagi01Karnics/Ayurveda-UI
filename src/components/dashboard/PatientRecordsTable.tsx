@@ -24,7 +24,7 @@ export function PatientRecordsTable({
   return (
     <DataTableShell className={cn('dashboard-card w-full', className)}>
       <div className="flex w-full items-center justify-between border-b border-[#f0ebe3] px-5 py-4">
-        <h3 className="text-base font-semibold text-brown">{title}</h3>
+        <h3 className="dashboard-card-title text-brown">{title}</h3>
         <Link to={viewAllTo} className="text-sm font-medium text-gold hover:underline">
           View All
         </Link>
@@ -62,7 +62,7 @@ export function PatientRecordsTable({
             {records.map((record) => (
               <tr
                 key={record.id}
-                className="border-b border-gray-50 hover:bg-gray-50/50"
+                className="border-b border-[#e8dfd0] hover:bg-[#faf7f2]/60"
               >
                 <td className="px-4 py-4">
                   <div className="truncate font-medium text-brown">{record.id}</div>
@@ -85,7 +85,7 @@ export function PatientRecordsTable({
                 </td>
                 <td className="px-4 py-4">
                   {compact ? (
-                    <span className="text-brown">{record.dosha}</span>
+                    <DoshaText dosha={record.dosha} />
                   ) : (
                     <DoshaBadge dosha={record.dosha} />
                   )}
@@ -139,26 +139,33 @@ function DoshaBadge({ dosha }: { dosha: Dosha }) {
   return <Badge variant="info">{dosha}</Badge>;
 }
 
+function DoshaText({ dosha }: { dosha: Dosha }) {
+  const color =
+    dosha === 'Vata'
+      ? 'text-vata'
+      : dosha === 'Pitta'
+        ? 'text-pitta'
+        : dosha === 'Kapha'
+          ? 'text-kapha'
+          : 'text-brown';
+  return <span className={cn('font-medium', color)}>{dosha}</span>;
+}
+
 function StatusText({ status }: { status: PatientStatus }) {
   const color =
     status === 'Completed'
-      ? 'text-success'
-      : status === 'Cancelled'
-        ? 'text-danger'
-        : status === 'Follow-Up'
-          ? 'text-gold'
+      ? 'text-[#2E7D32]'
+      : status === 'Cancelled' || status === 'Missed'
+        ? 'text-[#D64545]'
+        : status === 'Pending' ||
+            status === 'Follow-Up' ||
+            status === 'Scheduled' ||
+            status === 'Upcoming'
+          ? 'text-[#EAB308]'
           : 'text-text-muted';
-  return <span className={cn('font-medium', color)}>{status}</span>;
+  return <span className={cn('text-xs font-semibold', color)}>{status}</span>;
 }
 
 function StatusBadge({ status }: { status: PatientStatus }) {
-  const variant =
-    status === 'Completed'
-      ? 'success'
-      : status === 'Cancelled'
-        ? 'danger'
-        : status === 'Follow-Up'
-          ? 'gold'
-          : 'neutral';
-  return <Badge variant={variant}>{status}</Badge>;
+  return <StatusText status={status} />;
 }

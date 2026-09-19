@@ -3,6 +3,7 @@ import type { AuthTokenResponse, TenantResponse, UserResponse } from '@/lib/api/
 import { clearStoredClinicLocation } from '@/lib/clinicLocations';
 import { CLINIC_BRANDING } from '@/lib/clinicBranding';
 import { ALL_PAGE_CODES } from '@/lib/pagePermissions';
+import { formatPersonName } from '@/lib/utils';
 
 const AUTH_KEY = 'ganesha_auth_user';
 const TOKEN_KEY = 'ganesha_auth_token';
@@ -157,9 +158,13 @@ export function isHospitalAdmin(user: AuthUser | null | undefined): boolean {
 }
 
 export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
+  const apiRole = user.role;
+  const isPlatformSuperAdmin =
+    apiRole?.toUpperCase().replace(/\s+/g, '_') === 'SUPER_ADMIN';
+
   return {
     id: user.id,
-    fullName: user.fullName,
+    fullName: formatPersonName(user.fullName) || user.fullName,
     role: formatAuthRole(user.role),
     apiRole: user.role,
     email: user.email,
@@ -171,7 +176,10 @@ export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
     tenantRoleId: user.tenantRoleId,
     tenantRoleCode: user.tenantRoleCode,
     tenantRoleName: user.tenantRoleName,
-    pageCodes: user.pageCodes ?? [],
+    // Super Admin gets full Admin page access in the clinic console.
+    pageCodes: isPlatformSuperAdmin
+      ? [...ALL_PAGE_CODES]
+      : (user.pageCodes ?? []),
     status: user.status,
   };
 }
@@ -222,6 +230,7 @@ export function mockLogin(emailOrUsername: string, password: string): AuthUser |
     tenantCode: DUMMY_LOGIN_CREDENTIALS.tenantCode,
     name: CLINIC_BRANDING.name,
     clinicName: CLINIC_BRANDING.name,
+    city: 'New Delhi',
     status: 'ACTIVE',
   });
   return session.user;

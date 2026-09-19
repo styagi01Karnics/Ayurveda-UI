@@ -19,6 +19,7 @@ import {
 } from '@/lib/api/mappers';
 import { getPatientById } from '@/lib/api/patients';
 import { getTreatmentsByPatientId } from '@/lib/api/treatments';
+import { formatDoctorDegree } from '@/lib/clinicBranding';
 import {
   DOCUMENT_SECTIONS,
   formatDocumentFileSize,
@@ -221,7 +222,12 @@ export async function loadPatientDetail(
       ...invoice,
       doctorName: doctorName ?? invoice.doctorName,
       doctorCredentials:
-        matchedDoctor?.qualification || invoice.doctorCredentials,
+        formatDoctorDegree(
+          matchedDoctor?.qualification,
+          matchedDoctor?.specialization,
+          matchedDoctor?.degree,
+          '',
+        ) || invoice.doctorCredentials,
       doctorPhone:
         matchedDoctor?.mobileNumber || invoice.doctorPhone,
       address: apiPatient.address,

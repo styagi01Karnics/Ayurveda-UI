@@ -7,7 +7,7 @@ import {
   type PageCode,
 } from '@/lib/pagePermissions';
 
-const PLATFORM_HOME = '/platform/hospitals';
+export const PLATFORM_CLINICS_PATH = '/platform/clinics';
 
 interface PageProtectedRouteProps {
   pageCode: PageCode;
@@ -22,16 +22,14 @@ export function PageProtectedRoute({
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  if (isSuperAdmin(user)) {
-    return <Navigate to={PLATFORM_HOME} replace />;
-  }
-  if (!hasPageAccess(user.pageCodes, pageCode)) {
+  // Super Admin has full Admin access.
+  if (!isSuperAdmin(user) && !hasPageAccess(user.pageCodes, pageCode)) {
     return <Navigate to={firstAllowedPath(user.pageCodes)} replace />;
   }
   return <>{children}</>;
 }
 
-/** Super Admin only — hospital onboard / platform console. */
+/** Super Admin only — clinic onboard / platform console. */
 export function SuperAdminRoute() {
   const user = getStoredUser();
   if (!user) {
@@ -51,11 +49,6 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // Super Admin uses the platform console, not clinical pages.
-  if (isSuperAdmin(user) && !location.pathname.startsWith('/platform')) {
-    return <Navigate to={PLATFORM_HOME} replace />;
-  }
-
   const pageCode = pageCodeForPath(location.pathname);
   if (
     !isSuperAdmin(user) &&
@@ -71,9 +64,6 @@ export function ProtectedRoute() {
 export function PublicRoute() {
   const user = getStoredUser();
   if (user) {
-    if (isSuperAdmin(user)) {
-      return <Navigate to={PLATFORM_HOME} replace />;
-    }
     return <Navigate to={firstAllowedPath(user.pageCodes)} replace />;
   }
   return <Outlet />;

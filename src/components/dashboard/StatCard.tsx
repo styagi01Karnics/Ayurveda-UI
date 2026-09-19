@@ -33,7 +33,7 @@ export function StatCard({
     return (
       <Card className="dashboard-card flex h-full flex-col p-5">
         <div className="mb-4 flex items-start justify-between gap-2">
-          <h3 className="text-[15px] font-medium text-text-muted">{title}</h3>
+          <h3 className="dashboard-card-title text-text-muted">{title}</h3>
           <PeriodDropdown value={period} onChange={onPeriodChange} />
         </div>
 
@@ -41,20 +41,24 @@ export function StatCard({
           {formatCurrency(stats.billingTotal)}
         </p>
 
-        <p className="mt-3 text-sm font-medium text-gold">
+        <span className="mt-3 inline-flex w-fit rounded-full bg-[#f5f0e4] px-3 py-1 text-xs font-semibold text-gold">
           Total Bills Generated: {stats.billsGenerated}
-        </p>
+        </span>
 
-        <div className="mt-auto space-y-3 pt-6">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm text-text-muted">Pending Payments:</span>
-            <span className="text-sm font-semibold text-brown">
+        <div className="mt-4 space-y-2.5">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f0e4] px-3.5 py-3">
+            <span className="text-sm font-medium text-text-muted">
+              Pending Payments
+            </span>
+            <span className="text-sm font-semibold text-[#EAB308]">
               {formatCurrency(stats.pendingPayments)}
             </span>
           </div>
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm text-text-muted">Collected Payments:</span>
-            <span className="text-sm font-semibold text-brown">
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f0e4] px-3.5 py-3">
+            <span className="text-sm font-medium text-text-muted">
+              Collected Payments
+            </span>
+            <span className="text-sm font-semibold text-[#2E7D32]">
               {formatCurrency(stats.collectedPayments)}
             </span>
           </div>
@@ -72,7 +76,7 @@ export function StatCard({
   return (
     <Card className="dashboard-card flex h-full flex-col p-5">
       <div className="mb-4 flex items-start justify-between gap-2">
-        <h3 className="text-[15px] font-medium text-text-muted">{title}</h3>
+        <h3 className="dashboard-card-title text-text-muted">{title}</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 
@@ -100,19 +104,19 @@ export function StatCard({
           label="Confirmed"
           percent={gaugePercent(confirmed, gaugeTotal)}
           count={confirmed}
-          stroke="#3d8f5a"
+          stroke="#2E7D32"
         />
         <SemiCircleGauge
           label="Cancelled"
           percent={gaugePercent(cancelled, gaugeTotal)}
           count={cancelled}
-          stroke="#c94c4c"
+          stroke="#D64545"
         />
         <SemiCircleGauge
           label="Follow-Up"
           percent={gaugePercent(followUp, gaugeTotal)}
           count={followUp}
-          stroke="#e8943a"
+          stroke="#EAB308"
         />
       </div>
     </Card>

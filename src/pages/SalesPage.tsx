@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { SalesStatCards } from '@/components/sales/SalesStatCards';
 import { SalesTable } from '@/components/sales/SalesTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { Input } from '@/components/ui/Input';
+import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/Select';
 import { SALES_FILTER_OPTIONS } from '@/data/mock/sales';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import { getAppointmentStats } from '@/lib/api/appointments';
 import { getSales } from '@/lib/api/billing';
 import {
@@ -52,6 +54,8 @@ export function SalesPage() {
         getSales({
           serviceType: serviceTypeFilter || undefined,
           dateCreated: dateFilter || undefined,
+          page: 0,
+          size: 100,
         }),
         getAppointmentStats().catch(() => null),
       ]);
@@ -87,6 +91,20 @@ export function SalesPage() {
     });
   }, [data.invoices, serviceTypeFilter, dateFilter]);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredInvoices);
+
+  useEffect(() => {
+    resetPage();
+  }, [serviceTypeFilter, dateFilter, resetPage]);
+
   return (
     <PageShell className="space-y-4">
       <SalesStatCards stats={data.stats} />
@@ -119,7 +137,15 @@ export function SalesPage() {
           empty={!loading && !error && filteredInvoices.length === 0}
           emptyMessage="No sales records found."
         >
-          <SalesTable embedded records={filteredInvoices} />
+          <SalesTable embedded records={pageItems} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            disabled={loading}
+          />
         </AsyncStatus>
       </ListPanel>
     </PageShell>

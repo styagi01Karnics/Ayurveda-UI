@@ -616,7 +616,7 @@ export function CreatePatientModal({
                 {...step1Form.register('appointmentTime')}
               />
               <Select
-                label="Assigned Doctor"
+                label="Assigned Doctor *"
                 placeholder="Select Doctor"
                 options={lookupOptions.doctors}
                 error={step1Form.formState.errors.assignedDoctor?.message}

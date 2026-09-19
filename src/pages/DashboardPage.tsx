@@ -171,40 +171,47 @@ export function DashboardPage() {
   const ongoing = mapScheduleAppointment(data.schedule?.ongoingAppointment);
   const next = mapScheduleAppointment(data.schedule?.nextAppointment);
 
-  return (
-    <PageShell className="w-full space-y-5 pb-6 pt-1 sm:space-y-6">
-      <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-5">
-        <PatientsStatCard
-          stats={data.stats}
-          period={billingPeriod}
-          onPeriodChange={setBillingPeriod}
-        />
-        <StatCard
-          title="Total Appointments"
-          stats={data.stats}
-          type="appointments"
-          period={billingPeriod}
-          onPeriodChange={setBillingPeriod}
-        />
-        <StatCard
-          title="Billing"
-          stats={data.stats}
-          type="billing"
-          period={billingPeriod}
-          onPeriodChange={setBillingPeriod}
-        />
-      </div>
+  const trendData =
+    data.patientTrends.length > 0 ? data.patientTrends : patientTrendsData;
 
+  return (
+    <PageShell className="w-full min-w-0 space-y-4 overflow-x-hidden pb-6 pt-1">
       <AsyncStatus loading={loading} error={error} onRetry={reload}>
-        <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-4 lg:grid-cols-3 lg:gap-5">
-          <PatientTrendsChart
-            data={
-              data.patientTrends.length > 0
-                ? data.patientTrends
-                : patientTrendsData
-            }
-            compact
-            onExpand={() => setChartOpen(true)}
+        {/*
+          5 cards — Total Patients spans full height of the other 4:
+          [ Patients ] [ Appointments ] [ Billing  ]
+          [ Patients ] [ Medicine     ] [ Schedule ]
+        */}
+        <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_auto]">
+          <div className="flex h-full min-h-0 min-w-0 flex-col lg:row-span-2">
+            <PatientsStatCard
+              stats={data.stats}
+              period={billingPeriod}
+              onPeriodChange={setBillingPeriod}
+              footer={
+                <PatientTrendsChart
+                  data={trendData}
+                  compact
+                  embedded
+                  onExpand={() => setChartOpen(true)}
+                />
+              }
+            />
+          </div>
+
+          <StatCard
+            title="Total Appointments"
+            stats={data.stats}
+            type="appointments"
+            period={billingPeriod}
+            onPeriodChange={setBillingPeriod}
+          />
+          <StatCard
+            title="Billing"
+            stats={data.stats}
+            type="billing"
+            period={billingPeriod}
+            onPeriodChange={setBillingPeriod}
           />
           <MedicineStockCard
             totalStock={medStock?.totalStock ?? 0}

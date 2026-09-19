@@ -31,6 +31,7 @@ import {
   resolveInvoiceDisplayCode,
   resolvePatientDisplayCode,
 } from '@/lib/displayCodes';
+import { formatPersonName } from '@/lib/utils';
 import type {
   AppointmentRecord,
   BillInvoiceView,
@@ -57,11 +58,12 @@ import type { PatientPackageDto } from '@/lib/api/types';
 
 function titleCase(value: string | null | undefined): string {
   if (!value) return '';
-  return value
-    .toLowerCase()
-    .split(/[\s_]+/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
+  return formatPersonName(value.replace(/_/g, ' '));
+}
+
+function personName(value: string | null | undefined, fallback = '—'): string {
+  const formatted = formatPersonName(value);
+  return formatted || fallback;
 }
 
 function formatDisplayDate(iso?: string | null): string {
@@ -224,9 +226,9 @@ export function mapPatientToRecord(
     detailId: patient.id,
     bookingId: extras?.bookingId ?? '',
     assignedDoctorId: extras?.assignedDoctorId,
-    name: patient.fullName,
+    name: personName(patient.fullName, ''),
     phone: patient.mobileNumber ? `+91-${patient.mobileNumber}` : '—',
-    doctor: extras?.doctor ?? '—',
+    doctor: personName(extras?.doctor),
     visitType: extras?.visitType ?? 'Consultation',
     appointmentDate:
       extras?.appointmentDate ?? formatDisplayDate(patient.createdAt),
@@ -260,14 +262,18 @@ export function mapPatientToDetail(
       registrationDate:
         extras?.personalInfo?.registrationDate ??
         formatDisplayDate(patient.createdAt),
-      assignedDoctor: extras?.personalInfo?.assignedDoctor ?? summary.doctor,
+      assignedDoctor: extras?.personalInfo?.assignedDoctor
+        ? personName(extras.personalInfo.assignedDoctor)
+        : summary.doctor,
       therapyDuration: extras?.personalInfo?.therapyDuration ?? '—',
       email: extras?.personalInfo?.email ?? patient.email ?? '',
       city: extras?.personalInfo?.city ?? patient.city ?? '',
       state: extras?.personalInfo?.state ?? patient.state ?? '',
       address: extras?.personalInfo?.address ?? patient.address ?? '',
-      emergencyName:
+      emergencyName: personName(
         extras?.personalInfo?.emergencyName ?? patient.emergencyContactName ?? '',
+        '',
+      ),
       emergencyRelation:
         extras?.personalInfo?.emergencyRelation ??
         patient.emergencyRelationship ??
@@ -377,19 +383,19 @@ export function mapAppointmentToRecord(
   doctorsById: Map<string, DoctorDto> = new Map(),
 ): AppointmentRecord {
   const doctorId = appointment.assignedDoctorId ?? appointment.doctorId;
-  const doctor =
+  const doctor = personName(
     appointment.doctorName ??
-    appointment.assignedDoctor?.doctorName ??
-    appointment.assignedDoctor?.name ??
-    (doctorId ? doctorsById.get(doctorId)?.name : undefined) ??
-    (doctorId ? doctorsById.get(doctorId)?.doctorName : undefined) ??
-    '—';
+      appointment.assignedDoctor?.doctorName ??
+      appointment.assignedDoctor?.name ??
+      (doctorId ? doctorsById.get(doctorId)?.name : undefined) ??
+      (doctorId ? doctorsById.get(doctorId)?.doctorName : undefined),
+  );
 
-  const patient =
+  const patient = personName(
     appointment.patientName ??
-    appointment.fullName ??
-    appointment.patient?.fullName ??
-    '—';
+      appointment.fullName ??
+      appointment.patient?.fullName,
+  );
 
   const patientCode = resolvePatientDisplayCode({
     patientCode: appointment.patient?.patientCode,
@@ -470,13 +476,13 @@ export function mapPatientAppointmentListItemToPatientRecord(
     secondaryId: '',
     detailId: item.patientId,
     bookingId: item.bookingId,
-    name: item.patientFullName,
+    name: personName(item.patientFullName, ''),
     phone: item.patientMobileNumber
       ? item.patientMobileNumber.startsWith('+')
         ? item.patientMobileNumber
         : `+91-${item.patientMobileNumber.replace(/^\+91-?/, '')}`
       : '—',
-    doctor: item.doctorName ?? '—',
+    doctor: personName(item.doctorName),
     visitType: normalizeVisitType(item.consultationTypes),
     appointmentDate: formatDisplayDateTime(
       item.appointmentDate,
@@ -496,8 +502,8 @@ export function mapPatientAppointmentListItemToRecord(
   return {
     id: String(item.bookingId),
     uhid: displayId,
-    patient: item.patientFullName,
-    doctor: item.doctorName ?? '—',
+    patient: personName(item.patientFullName, ''),
+    doctor: personName(item.doctorName),
     visitType: normalizeVisitType(item.consultationTypes),
     appointmentDate: formatDisplayDateTime(
       item.appointmentDate,
@@ -523,11 +529,11 @@ export function mapAppointmentTherapyToTreatment(
     therapy.therapies?.[0]?.therapyName ??
     'Therapy';
 
-  const therapistName =
+  const therapistName = personName(
     therapy.therapistName ??
-    therapy.assignedTherapist?.name ??
-    therapy.assignedTherapist?.therapistName ??
-    '—';
+      therapy.assignedTherapist?.name ??
+      therapy.assignedTherapist?.therapistName,
+  );
 
   const patientId =
     therapy.patientId ?? therapy.patient?.id ?? '';
@@ -539,11 +545,11 @@ export function mapAppointmentTherapyToTreatment(
 
   return {
     id: String(therapy.therapyId ?? therapy.id ?? crypto.randomUUID()),
-    patient:
+    patient: personName(
       patientName ??
-      therapy.patientName ??
-      therapy.patient?.fullName ??
-      '—',
+        therapy.patientName ??
+        therapy.patient?.fullName,
+    ),
     patientDetailId: patientId,
     treatmentPlanName: therapyType,
     treatmentCategory:
@@ -576,12 +582,12 @@ export function mapTreatmentDtoToRecord(
   return {
     id: dto.id,
     appointmentTherapyId: dto.appointmentTherapyId,
-    patient: patientName ?? '—',
+    patient: personName(patientName),
     patientDetailId: dto.patientId,
     treatmentPlanName: dto.treatmentPlanName ?? dto.treatmentPlanId,
     treatmentCategory: '—',
     therapyType: dto.treatmentPlanName ?? dto.treatmentPlanId,
-    assignedTherapist: dto.assignedTherapistName ?? '—',
+    assignedTherapist: personName(dto.assignedTherapistName),
     therapistSchedule: `${formatDisplayDate(dto.startDate)} – ${formatDisplayDate(dto.endDate)}`,
     startDate: dto.startDate,
     endDate: dto.endDate,
@@ -603,8 +609,8 @@ export function mapFollowUpDtoToRecord(dto: FollowUpDto): FollowUpRecord {
       patientDisplayId: dto.patientDisplayId,
       patientId: dto.patientId,
     }),
-    patient: dto.patientName ?? '—',
-    doctor: dto.doctorName ?? '—',
+    patient: personName(dto.patientName),
+    doctor: personName(dto.doctorName),
     visitType: mapFollowUpVisitType(dto),
     appointmentDate: formatIsoDateTime(dto.appointmentDate),
     dateCreated: dto.appointmentDate?.slice(0, 10) ?? '',
@@ -855,13 +861,13 @@ export function mapInvoiceDtoToBillView(
   };
 
   return {
-    patientName: dto.patientName,
+    patientName: personName(dto.patientName, ''),
     patientId: formattedPatientId,
     contactNumber: dto.contactNumber ?? '—',
     invoice: {
       clinicName: clinic.name,
       gstNo: clinic.gstNo,
-      doctorName: doctorDetails.doctorName,
+      doctorName: personName(doctorDetails.doctorName),
       doctorCredentials: doctorDetails.doctorCredentials,
       workingHours: doctorDetails.workingHours,
       doctorPhone: doctorDetails.doctorPhone,
@@ -891,7 +897,7 @@ export function mapInvoiceDtoToBillView(
 export function mapDoctorToClinicRecord(doctor: DoctorDto): ClinicDoctorRecord {
   return {
     id: doctor.id,
-    name: doctor.name || doctor.doctorName || '—',
+    name: personName(doctor.name || doctor.doctorName),
     specialization: doctor.specialization || '—',
     qualification: doctor.qualification || '',
     mobileNumber: doctor.mobileNumber || '',
@@ -908,7 +914,7 @@ export function mapDoctorToDirectoryRecord(
   return {
     id: doctor.id,
     doctorCode: doctor.doctorCode || '',
-    name: doctor.name || doctor.doctorName || '—',
+    name: personName(doctor.name || doctor.doctorName),
     specialization: doctor.specialization || '',
     qualification: doctor.qualification || '',
     department: doctor.department || '',
@@ -932,7 +938,7 @@ export function mapTherapistToClinicRecord(
 
   return {
     id: therapist.id,
-    name: therapist.name || therapist.therapistName || '—',
+    name: personName(therapist.name || therapist.therapistName),
     status:
       therapist.status === 'ACTIVE' || therapist.active ? 'Active' : 'Inactive',
     assignedTherapies,
@@ -1310,7 +1316,7 @@ export function mapScheduleAppointment(
   }
   const service = item.serviceType?.replace(/_/g, ' ') ?? 'Consultation';
   return {
-    patientName: item.patientName,
+    patientName: personName(item.patientName),
     time: item.slotTime?.slice(0, 5) ?? '—',
     reason: `${titleCase(service)} · ${item.bookingStatus ?? 'Scheduled'}`,
   };
@@ -1377,7 +1383,7 @@ export function mapTodayAppointmentToScheduleItem(
   return {
     id: item.bookingId,
     time: formatSlotTimeDisplay(item.slotTime),
-    patient: item.patientName ?? '—',
+    patient: personName(item.patientName),
     patientDetailId: item.patientId,
     visitType: normalizeVisitType(item.consultationTypes),
     status: normalizeDoctorScheduleStatus(item.bookingStatus),
@@ -1494,9 +1500,9 @@ export function mapAppointmentRecordToCalendarDetail(
     id: record.id,
     title: resolveCalendarEventTitle(record.visitType),
     appointmentDate: record.appointmentDate,
-    doctorName,
+    doctorName: personName(doctorName),
     doctorRole: 'Ayurvedic Physician',
-    patientName: record.patient,
+    patientName: personName(record.patient),
     patientAge: '—',
     patientGender: '—',
     visitType: record.visitType,

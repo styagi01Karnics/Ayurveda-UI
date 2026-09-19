@@ -159,22 +159,24 @@ export function NotificationBell() {
   };
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative flex items-center gap-2 sm:gap-3">
       <button
         type="button"
         onClick={handleOpen}
-        className="relative rounded-lg p-2 text-brown-muted hover:bg-brown/5"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[#FBF6E8] text-brown transition-colors hover:bg-[#f5edd9]"
         aria-label="Notifications"
         aria-expanded={open}
         aria-haspopup="true"
       >
         <Bell className="h-5 w-5" strokeWidth={1.5} />
         {unreadCount > 0 ? (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold leading-none text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold leading-none text-white">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         ) : null}
       </button>
+
+      <span className="hidden h-8 w-px bg-[#e8e0d4] sm:block" aria-hidden />
 
       {open ? (
         <div className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg">

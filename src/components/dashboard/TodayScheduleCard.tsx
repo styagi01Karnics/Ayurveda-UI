@@ -21,22 +21,22 @@ export function TodayScheduleCard({
   viewFullScheduleTo = '/appointments',
 }: TodayScheduleCardProps) {
   return (
-    <Card className="dashboard-card relative flex h-full flex-col overflow-hidden border-[#e8dfd0] bg-[#fdf8ee] p-5">
+    <Card className="dashboard-card relative flex h-full flex-col overflow-hidden border-[#e8dfd0] bg-[#F5F0E4] p-5">
       <img
         src={assets.scheduleDecor}
         alt=""
         aria-hidden
-        className="pointer-events-none absolute right-0 top-0 h-[88px] w-[88px] object-contain sm:h-[100px] sm:w-[100px]"
+        className="pointer-events-none absolute right-0 top-0 h-[80px] w-[80px] object-contain sm:h-[96px] sm:w-[96px]"
       />
 
-      <div className="relative mb-4 pr-16">
+      <div className="relative mb-4 pr-14 sm:pr-16">
         <div className="flex items-center gap-2">
           <Stethoscope className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.5} />
-          <h3 className="font-serif text-base font-semibold text-brown">
+          <h3 className="dashboard-card-title text-brown">
             Today&apos;s Schedule
           </h3>
         </div>
-        <p className="mt-1 pl-6 text-xs font-medium text-gold">{dateLabel}</p>
+        <p className="mt-1.5 pl-6 text-xs font-medium text-gold">{dateLabel}</p>
       </div>
 
       <div className="relative space-y-2.5">
@@ -45,7 +45,7 @@ export function TodayScheduleCard({
             {ongoing.patientName || '—'}
           </p>
           {ongoing.reason ? (
-            <p className="text-xs text-text-muted">{ongoing.reason}</p>
+            <p className="mt-0.5 text-xs text-text-muted">{ongoing.reason}</p>
           ) : null}
         </ScheduleSubCard>
 
@@ -56,7 +56,7 @@ export function TodayScheduleCard({
               : '—'}
           </p>
           {next.reason ? (
-            <p className="text-xs text-text-muted">{next.reason}</p>
+            <p className="mt-0.5 text-xs text-text-muted">{next.reason}</p>
           ) : null}
         </ScheduleSubCard>
 
@@ -67,7 +67,7 @@ export function TodayScheduleCard({
 
       <Link
         to={viewFullScheduleTo}
-        className="relative mt-auto block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5 pt-2.5"
+        className="relative mt-5 block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
       >
         View Full Schedule
       </Link>

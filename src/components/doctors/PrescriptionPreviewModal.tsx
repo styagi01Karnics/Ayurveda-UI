@@ -2,15 +2,17 @@ import { useMemo } from 'react';
 import { CalendarDays, Phone, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { getDoctorById } from '@/lib/api/doctors';
 import { getAllMedicines } from '@/lib/api/medicines';
 import type {
   PrescriptionDto,
   PrescriptionNextFollowUpDto,
 } from '@/lib/api/prescriptions';
 import { getClinicContactDetails, getClinicDisplayName, getClinicLogoUrl } from '@/lib/auth';
-import { CLINIC_BRANDING } from '@/lib/clinicBranding';
+import { CLINIC_BRANDING, formatDoctorDegree } from '@/lib/clinicBranding';
 import { assets } from '@/lib/assets';
 import { addDaysFromSchedulingOption } from '@/lib/followUpSchedule';
+import { formatPersonName } from '@/lib/utils';
 import type { DoctorPrescriptionValues } from '@/lib/validation/doctorPatient.schema';
 import type { PatientDetail } from '@/types';
 
@@ -185,6 +187,31 @@ export function PrescriptionPreviewModal({
     [enriched],
   );
 
+  const doctorId =
+    enriched?.assignedDoctorId ||
+    enriched?.consultant?.id ||
+    patient.assignedDoctorId ||
+    '';
+
+  const { data: resolvedDoctor } = useAsyncData(
+    async () => {
+      if (!open || !doctorId) return null;
+      const consultantHasDegree = Boolean(
+        enriched?.consultant?.degree?.trim() ||
+          enriched?.consultant?.qualification?.trim() ||
+          enriched?.consultant?.specialization?.trim(),
+      );
+      if (consultantHasDegree) return null;
+      try {
+        return await getDoctorById(doctorId);
+      } catch {
+        return null;
+      }
+    },
+    null,
+    [open, doctorId, enriched?.consultant?.degree, enriched?.consultant?.qualification, enriched?.consultant?.specialization],
+  );
+
   const therapyLabels = enrichedTherapyLabels;
 
   const medicineLines = useMemo(() => {
@@ -226,17 +253,26 @@ export function PrescriptionPreviewModal({
   const patientBlock = enriched?.patient;
   const consultant = enriched?.consultant;
   const treatment = enriched?.treatment;
-  const doctorName =
+  const doctorName = formatPersonName(
     consultant?.name ||
-    (info.assignedDoctor && info.assignedDoctor !== '—'
-      ? info.assignedDoctor
-      : CLINIC_BRANDING.doctorName);
-  const doctorQualification = [
-    consultant?.qualification,
-    consultant?.specialization,
-  ]
-    .filter((part) => Boolean(part && String(part).trim()))
-    .join(' · ');
+      resolvedDoctor?.name ||
+      resolvedDoctor?.doctorName ||
+      (info.assignedDoctor && info.assignedDoctor !== '—'
+        ? info.assignedDoctor
+        : CLINIC_BRANDING.doctorName),
+  );
+  const doctorDegree =
+    formatDoctorDegree(
+      consultant?.qualification || resolvedDoctor?.qualification,
+      consultant?.specialization || resolvedDoctor?.specialization,
+      consultant?.degree || resolvedDoctor?.degree,
+      '',
+    ) ||
+    (patient.invoice?.doctorCredentials &&
+    patient.invoice.doctorCredentials !== '—'
+      ? patient.invoice.doctorCredentials
+      : '') ||
+    CLINIC_BRANDING.doctorCredentials;
   const doctorPhone =
     consultant?.contactNumber ||
     consultant?.mobileNumber ||
@@ -247,8 +283,9 @@ export function PrescriptionPreviewModal({
     '—';
   const followUp = firstNextFollowUp(enriched?.nextFollowUp);
   const suggestions = followUp?.suggestions;
-  const patientName =
-    patientBlock?.name || patientBlock?.fullName || patient.name;
+  const patientName = formatPersonName(
+    patientBlock?.name || patientBlock?.fullName || patient.name,
+  );
   const patientId =
     patientBlock?.patientCode ||
     patientBlock?.displayId ||
@@ -354,9 +391,7 @@ export function PrescriptionPreviewModal({
             </div>
             <div className="pr-7 text-left">
               <p className="text-lg font-bold text-[#38271f]">{doctorName}</p>
-              {doctorQualification ? (
-                <p className="mt-1">{doctorQualification}</p>
-              ) : null}
+              <p className="mt-1">{doctorDegree}</p>
               <p className="mt-1">
                 <span className="text-[#c18813]">
                   {CLINIC_BRANDING.workingHours.split('|')[0]}
@@ -420,9 +455,7 @@ export function PrescriptionPreviewModal({
             <section>
               <p className="mb-2 font-semibold text-[#6f625a]">Consultant:</p>
               <p className="font-semibold">{doctorName}</p>
-              {doctorQualification ? (
-                <p className="mt-2">{doctorQualification}</p>
-              ) : null}
+              <p className="mt-2">{doctorDegree}</p>
               <p className="mt-2 flex items-center gap-1.5 font-semibold">
                 <Phone className="h-3.5 w-3.5 text-[#8b8179]" />
                 {doctorPhone}

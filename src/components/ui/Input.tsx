@@ -7,6 +7,7 @@ import {
   useState,
   type InputHTMLAttributes,
 } from 'react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
 export const DATE_INPUT_PLACEHOLDER = 'DD/MM/YYYY';
@@ -90,7 +91,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         onInput={isDate ? syncFilledFromDom : undefined}
         placeholder={isDate ? undefined : placeholder}
         className={cn(
-          'w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-brown placeholder:text-gray-400 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+          'w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-brown placeholder:text-gray-400 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+          fieldVariant === 'auth' ? 'py-3' : 'py-2.5',
           isDate && 'date-field',
           isDate && !filled && 'date-field-empty',
           error && 'border-danger focus:border-danger focus:ring-danger/20',
@@ -105,9 +107,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className={labelClass}>
-            {label}
-          </label>
+          <FieldLabel htmlFor={inputId} label={label} className={labelClass} />
         )}
         {isDate ? (
           <div className="relative">

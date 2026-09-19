@@ -28,21 +28,24 @@ export function PatientDetailHeader({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-text-muted">Patient Code</p>
+          <p className="text-xs font-medium text-text-muted">Patient Code</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
             <Badge variant="gold" className="rounded-md px-3 py-1">
               {patient.treatmentStatus}
             </Badge>
           </div>
+          <p className="mt-2 text-base font-semibold text-brown">{patient.name}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-text-muted">Dosha</p>
+          <p className="text-xs font-medium text-text-muted">Dosha</p>
           <p className="text-xl font-bold text-gold">{patient.dosha}</p>
         </div>
       </div>
 
-      <UnderlineTabs tabs={detailTabs} activeTab={activeTab} onChange={onTabChange} />
+      <div className="border-t border-[#ebe4d8] pt-4">
+        <UnderlineTabs tabs={detailTabs} activeTab={activeTab} onChange={onTabChange} />
+      </div>
     </div>
   );
 }
@@ -81,7 +84,7 @@ function SectionBlock({
   children: React.ReactNode;
 }) {
   return (
-    <section>
+    <section className="rounded-xl border border-[#ebe4d8] bg-[#fdf8ee]/40 p-4 sm:p-5">
       <h3 className="mb-4 text-base font-bold text-brown">{title}</h3>
       {children}
     </section>
@@ -183,7 +186,7 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
       </SectionBlock>
 
       <SectionBlock title="Medical History">
-        <div className="rounded-xl bg-gray-50 p-4">
+        <div className="rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50 p-4">
           <InfoList
             items={[
               { label: 'Present Medical Conditions', value: m.presentConditions },
@@ -259,7 +262,7 @@ function ReportRow({
   type: 'folder' | 'file';
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50 px-4 py-3">
       <div className="flex items-center gap-3">
         {type === 'folder' ? (
           <AppIcon src={assets.icons.folder} className="h-5 w-5" />
@@ -282,7 +285,7 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
   return (
     <div className="space-y-8">
       <SectionBlock title="Active Treatment Plan">
-        <div className="overflow-x-auto rounded-xl bg-gray-50">
+        <div className="overflow-x-auto rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50">
           <table className="w-full table-fixed text-sm">
             <thead>
               <tr className="text-xs text-text-muted">
@@ -463,7 +466,7 @@ function DataRow({
   highlights?: number[];
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl bg-gray-50">
+    <div className="overflow-x-auto rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50">
       <table className="w-full text-sm">
         <thead>
           <tr>

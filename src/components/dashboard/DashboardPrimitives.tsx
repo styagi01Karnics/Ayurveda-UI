@@ -17,12 +17,12 @@ interface PeriodDropdownProps {
 
 export function PeriodDropdown({ value, onChange }: PeriodDropdownProps) {
   return (
-    <div className="relative">
+    <div className="relative inline-flex shrink-0 items-center rounded-lg border border-[#EFF0F6] bg-white px-2.5 py-1.5">
       <select
         value={value}
         onChange={(event) => onChange(event.target.value as BillingPeriod)}
         aria-label="Select period"
-        className="appearance-none cursor-pointer bg-transparent py-0.5 pl-0 pr-5 text-xs font-medium text-text-muted focus:outline-none"
+        className="appearance-none cursor-pointer bg-transparent py-0 pl-0.5 pr-5 text-xs font-semibold text-brown focus:outline-none"
       >
         {DASHBOARD_PERIOD_OPTIONS.map((option) => (
           <option key={option.value} value={option.value}>
@@ -30,7 +30,7 @@ export function PeriodDropdown({ value, onChange }: PeriodDropdownProps) {
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
     </div>
   );
 }

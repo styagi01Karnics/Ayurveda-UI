@@ -30,6 +30,7 @@ export { navIconSet, type NavIconKey };
 
 export const assets = {
   brandLogo: '/assets/brand-logo.png',
+  karnicsLogo: '/assets/karnics-logo.svg',
   appLogo,
   dosha: {
     vata: '/assets/vata.png',

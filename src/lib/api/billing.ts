@@ -1,5 +1,5 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest, apiRequestList, apiRequestPage } from './client';
 import { apiEndpoints } from './endpoints';
 
 const url = (path: string) => `${apiConfig.billing}${path}`;
@@ -195,20 +195,37 @@ export interface BillingSummaryDto {
 export interface InvoicesQuery {
   patientId?: string;
   status?: InvoiceStatus;
+  page?: number;
+  size?: number;
 }
 
 export interface SalesQuery {
   serviceType?: string;
   dateCreated?: string;
+  page?: number;
+  size?: number;
 }
 
 export function getInvoices(query: InvoicesQuery = {}) {
   const params = new URLSearchParams();
   if (query.patientId) params.set('patientId', query.patientId);
   if (query.status) params.set('status', query.status);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequestList<InvoiceListItemDto>(
     url(`${ep.invoices}${qs ? `?${qs}` : ''}`),
+  );
+}
+
+export function getInvoicesPaged(query: InvoicesQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.patientId) params.set('patientId', query.patientId);
+  if (query.status) params.set('status', query.status);
+  params.set('page', String(query.page ?? 0));
+  params.set('size', String(query.size ?? 10));
+  return apiRequestPage<InvoiceListItemDto>(
+    url(`${ep.invoices}?${params.toString()}`),
   );
 }
 
@@ -285,6 +302,8 @@ export interface BillingDto {
 
 export interface BillingsQuery {
   status?: BillingDraftStatus;
+  page?: number;
+  size?: number;
 }
 
 export function createBilling(payload: CreateBillingPayload) {
@@ -297,10 +316,20 @@ export function createBilling(payload: CreateBillingPayload) {
 export function getBillings(query: BillingsQuery = {}) {
   const params = new URLSearchParams();
   if (query.status) params.set('status', query.status);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequestList<BillingDto>(
     url(`${ep.billings}${qs ? `?${qs}` : ''}`),
   );
+}
+
+export function getBillingsPaged(query: BillingsQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.status) params.set('status', query.status);
+  params.set('page', String(query.page ?? 0));
+  params.set('size', String(query.size ?? 10));
+  return apiRequestPage<BillingDto>(url(`${ep.billings}?${params.toString()}`));
 }
 
 export function getBillingById(billingId: string) {
@@ -381,6 +410,8 @@ export function getSales(query: SalesQuery = {}) {
   const params = new URLSearchParams();
   if (query.serviceType) params.set('serviceType', query.serviceType);
   if (query.dateCreated) params.set('dateCreated', query.dateCreated);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequest<SalesResponseDto | SalesRecordDto[]>(
     url(`${ep.sales}${qs ? `?${qs}` : ''}`),

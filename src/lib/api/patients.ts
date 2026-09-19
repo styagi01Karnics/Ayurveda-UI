@@ -1,14 +1,22 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest, apiRequestList, apiRequestPage, type PagedResult } from './client';
 import { apiEndpoints } from './endpoints';
 import type { CreatePatientPayload, PatientDto } from './types';
+import { DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 
 const url = (path: string) => `${apiConfig.patient}${path}`;
 
-export function getAllPatients(page = 0, size = 100) {
-  return apiRequestList<PatientDto>(
+export function getAllPatientsPaged(
+  page = 0,
+  size = DEFAULT_PAGE_SIZE,
+): Promise<PagedResult<PatientDto>> {
+  return apiRequestPage<PatientDto>(
     url(`${apiEndpoints.patients.getAll}?page=${page}&size=${size}`),
   );
+}
+
+export function getAllPatients(page = 0, size = 100) {
+  return getAllPatientsPaged(page, size).then((result) => result.content);
 }
 
 export function getPatientById(patientId: string) {

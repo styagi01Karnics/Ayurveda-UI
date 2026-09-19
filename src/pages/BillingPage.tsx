@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
@@ -12,6 +12,7 @@ import {
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +20,7 @@ import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { assets } from '@/lib/assets';
 import { BILLING_FILTER_OPTIONS } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   getBillings,
   getInvoiceById,
@@ -79,12 +81,16 @@ export function BillingPage() {
       };
 
       if (activeTab === 'pending') {
-        const drafts = await getBillings({ status: 'PENDING' });
+        const drafts = await getBillings({ status: 'PENDING', page: 0, size: 100 });
         return drafts.map(mapBillingDraftToRecord).map(withPatientCode);
       }
 
       const invoiceStatus = toApiInvoiceStatus(statusFilter);
-      const invoices = await getInvoices({ status: invoiceStatus });
+      const invoices = await getInvoices({
+        status: invoiceStatus,
+        page: 0,
+        size: 100,
+      });
       return invoices.map(mapInvoiceToBillingRecord).map(withPatientCode);
     },
     [] as BillingRecord[],
@@ -119,6 +125,20 @@ export function BillingPage() {
       return matchesId && matchesStatus;
     });
   }, [records, patientIdQuery, statusFilter, activeTab]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredRecords);
+
+  useEffect(() => {
+    resetPage();
+  }, [activeTab, patientIdQuery, statusFilter, resetPage]);
 
   const handleDownload = (record: BillingRecord) => {
     if (record.kind === 'billing-draft') return;
@@ -271,11 +291,19 @@ export function BillingPage() {
         >
           <BillingTable
             embedded
-            records={filteredRecords}
+            records={pageItems}
             onDownload={handleDownload}
             onStartInvoice={handleStartInvoice}
             onSendPaymentLink={(record) => void handleSendPaymentLink(record)}
             sendingPaymentLinkId={sendingPaymentLinkId}
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            disabled={loading}
           />
         </AsyncStatus>
       </ListPanel>

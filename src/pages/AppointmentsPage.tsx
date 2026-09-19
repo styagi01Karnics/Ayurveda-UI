@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
@@ -19,6 +19,7 @@ import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { Input } from '@/components/ui/Input';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Tabs } from '@/components/ui/Tabs';
@@ -26,6 +27,7 @@ import {
   APPOINTMENT_FILTER_OPTIONS,
 } from '@/data/mock/appointments';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   cancelAppointment,
   getAllTherapies,
@@ -56,7 +58,7 @@ import { getAllTherapists, mapTherapistSelectOptions } from '@/lib/api/therapist
 import { assets } from '@/lib/assets';
 import { resolvePatientDisplayCode } from '@/lib/displayCodes';
 import { mapFollowUpToCalendarAppointment } from '@/lib/calendarUtils';
-import { cn } from '@/lib/utils';
+import { cn, formatPersonName } from '@/lib/utils';
 import type {
   CreatePatientValues,
   FollowUpFormValues,
@@ -102,12 +104,15 @@ export function AppointmentsPage() {
   const [localAppointments, setLocalAppointments] = useState<
     AppointmentRecord[]
   >([]);
+  const [recordsOverride, setRecordsOverride] = useState<
+    AppointmentRecord[] | null
+  >(null);
 
   const {
     data,
     loading,
     error,
-    reload,
+    reload: reloadAll,
   } = useAsyncData(async () => {
     const [doctors, therapists, categories, therapies, doshas, consultationTypes, appointments, patients, followUpDtos] =
       await Promise.all([
@@ -130,7 +135,7 @@ export function AppointmentsPage() {
     const lookupOptions: BookingLookupOptions = {
       doctors: doctors.map((d) => ({
         value: d.id,
-        label: d.name || d.doctorName || '—',
+        label: formatPersonName(d.name || d.doctorName) || '—',
       })),
       therapists: mapTherapistSelectOptions(therapists),
       categories: categories.map((c) => ({
@@ -179,13 +184,33 @@ export function AppointmentsPage() {
     followUpRecords: [] as FollowUpRecord[],
   });
 
+  const reload = () => {
+    setRecordsOverride(null);
+    setLocalAppointments([]);
+    reloadAll();
+  };
+
   const appointments = useMemo(() => {
+    const baseRecords = recordsOverride ?? data.records;
     const ids = new Set(localAppointments.map((a) => a.id));
     return [
       ...localAppointments,
-      ...data.records.filter((r) => !ids.has(r.id)),
+      ...baseRecords.filter((r) => !ids.has(r.id)),
     ];
-  }, [data.records, localAppointments]);
+  }, [data.records, localAppointments, recordsOverride]);
+
+  /** Refresh appointments list once (avoids reloading all masters). */
+  const refreshAppointmentsOnce = async () => {
+    const appointmentsList = await getAppointmentsByStatus('ALL');
+    const doctorsById = new Map(
+      (data.doctors.length ? data.doctors : []).map((d) => [d.id, d]),
+    );
+    const records = appointmentsList.map((item) =>
+      mapAppointmentToRecord(item, doctorsById),
+    );
+    setRecordsOverride(records);
+    setLocalAppointments([]);
+  };
 
   const followUps = data.followUpRecords;
   const followUpRescheduleDefaults = useMemo(
@@ -261,6 +286,22 @@ export function AppointmentsPage() {
       return matchesId && matchesStatus && matchesVisit && matchesDate;
     });
   }, [followUps, patientIdQuery, statusFilter, visitTypeFilter, dateFilter]);
+
+  const appointmentsPaging = useClientPagination(filteredAppointments);
+  const followUpsPaging = useClientPagination(filteredFollowUps);
+
+  useEffect(() => {
+    appointmentsPaging.resetPage();
+    followUpsPaging.resetPage();
+  }, [
+    activeTab,
+    patientIdQuery,
+    statusFilter,
+    visitTypeFilter,
+    dateFilter,
+    appointmentsPaging.resetPage,
+    followUpsPaging.resetPage,
+  ]);
 
   const handleCancelRequest = (id: string) => {
     const item = appointments.find((a) => a.id === id);
@@ -391,8 +432,8 @@ export function AppointmentsPage() {
             `ap-${Date.now()}`,
         ),
         uhid: patientCode.startsWith('#') ? patientCode : `#${patientCode}`,
-        patient: formData.fullName,
-        doctor: doctorName || '—',
+        patient: formatPersonName(formData.fullName) || formData.fullName,
+        doctor: formatPersonName(doctorName) || '—',
         visitType: (firstTypeLabel.toUpperCase().includes('THERAPY')
           ? 'Therapy'
           : 'Consultation') as VisitType,
@@ -405,7 +446,7 @@ export function AppointmentsPage() {
       setLocalAppointments((prev) => [newAppointment, ...prev]);
       setCreatePatientOpen(false);
       setConfirmedOpen(true);
-      await reload();
+      await refreshAppointmentsOnce();
     } catch (err) {
       showToast({
         title: 'Error',
@@ -637,9 +678,17 @@ export function AppointmentsPage() {
             >
               <AppointmentsTable
                 embedded
-                items={filteredAppointments}
+                items={appointmentsPaging.pageItems}
                 onCancel={handleCancelRequest}
                 onReschedule={handleRescheduleRequest}
+              />
+              <Pagination
+                page={appointmentsPaging.page}
+                totalPages={appointmentsPaging.totalPages}
+                totalElements={appointmentsPaging.totalElements}
+                pageSize={appointmentsPaging.pageSize}
+                onPageChange={appointmentsPaging.setPage}
+                disabled={loading}
               />
             </AsyncStatus>
           ) : (
@@ -652,8 +701,16 @@ export function AppointmentsPage() {
             >
               <FollowUpsTable
                 embedded
-                items={filteredFollowUps}
+                items={followUpsPaging.pageItems}
                 onReschedule={setFollowUpRescheduleTarget}
+              />
+              <Pagination
+                page={followUpsPaging.page}
+                totalPages={followUpsPaging.totalPages}
+                totalElements={followUpsPaging.totalElements}
+                pageSize={followUpsPaging.pageSize}
+                onPageChange={followUpsPaging.setPage}
+                disabled={loading}
               />
             </AsyncStatus>
           )}

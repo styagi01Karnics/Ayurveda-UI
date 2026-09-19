@@ -22,7 +22,7 @@ export function DoctorScheduleTable({
     <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
+            <tr className="border-b border-[#e0d6c8] bg-[#faf7f2]/80 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">Time</th>
               <th className="px-5 py-3 font-medium">Patient</th>
               <th className="px-5 py-3 font-medium">Visit Type</th>
@@ -34,7 +34,7 @@ export function DoctorScheduleTable({
             {items.map((item) => (
               <tr
                 key={item.id}
-                className="border-b border-gray-50 hover:bg-gray-50/50"
+                className="border-b border-[#e8dfd0] hover:bg-[#faf7f2]/60"
               >
                 <td className="px-5 py-4 text-brown">{item.time}</td>
                 <td className="px-5 py-4 font-medium text-brown">
@@ -48,10 +48,10 @@ export function DoctorScheduleTable({
                 </td>
                 <td className="px-5 py-4">
                   {item.status === 'Scheduled' ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
-                        className="px-4 py-1.5 text-xs bg-success hover:bg-success/90"
+                        className="h-8 rounded-lg bg-success px-4 py-1.5 text-xs font-semibold text-white hover:bg-success/90"
                         onClick={() => onStart(item.id)}
                         disabled={startingId === item.id}
                       >
@@ -60,7 +60,7 @@ export function DoctorScheduleTable({
                       <button
                         type="button"
                         onClick={() => onCancel(item.id)}
-                        className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-1.5 text-xs font-semibold text-danger hover:bg-danger/15"
+                        className="h-8 rounded-lg border border-danger/25 bg-[#fceaea] px-4 py-1.5 text-xs font-semibold text-danger hover:bg-[#f8dede]"
                       >
                         Cancel
                       </button>
@@ -69,7 +69,7 @@ export function DoctorScheduleTable({
                     <Button
                       type="button"
                       variant="outline"
-                      className="px-4 py-1.5 text-xs"
+                      className="h-8 rounded-lg border-gold bg-white px-4 py-1.5 text-xs font-semibold text-gold hover:bg-gold/5"
                       onClick={() => onStart(item.id)}
                     >
                       Continue
@@ -78,7 +78,7 @@ export function DoctorScheduleTable({
                     <Button
                       type="button"
                       variant="outline"
-                      className="px-4 py-1.5 text-xs"
+                      className="h-8 rounded-lg border-gold bg-white px-4 py-1.5 text-xs font-semibold text-gold hover:bg-gold/5"
                       onClick={() => onStart(item.id)}
                     >
                       Edit
@@ -108,18 +108,11 @@ function StatusText({
 }: {
   status: DoctorScheduleItem['status'];
 }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex rounded-full px-2.5 py-1 text-xs font-medium',
-        status === 'Scheduled'
-          ? 'bg-gold/10 text-gold'
-          : status === 'In Consultation'
-            ? 'bg-info/10 text-info'
-            : 'bg-success/15 text-success',
-      )}
-    >
-      {status}
-    </span>
-  );
+  const color =
+    status === 'Completed'
+      ? 'text-[#2E7D32]'
+      : status === 'Scheduled' || status === 'In Consultation'
+        ? 'text-[#EAB308]'
+        : 'text-text-muted';
+  return <span className={cn('text-xs font-semibold', color)}>{status}</span>;
 }

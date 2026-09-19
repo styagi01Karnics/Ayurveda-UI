@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { PlatformLayout } from '@/components/layout/PlatformLayout';
 import {
   ProtectedRoute,
   PublicRoute,
@@ -43,15 +42,6 @@ export function AppRoutes() {
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route element={<SuperAdminRoute />}>
-            <Route element={<PlatformLayout />}>
-              <Route
-                path="/platform/hospitals"
-                element={<PlatformHospitalsPage />}
-              />
-            </Route>
-          </Route>
-
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/patients" element={<PatientsPage />} />
@@ -76,6 +66,18 @@ export function AppRoutes() {
             <Route path="/banners" element={<BannerPage />} />
             <Route path="/communications" element={<CommunicationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+
+            <Route element={<SuperAdminRoute />}>
+              <Route
+                path="/platform/clinics"
+                element={<PlatformHospitalsPage />}
+              />
+              <Route
+                path="/platform/hospitals"
+                element={<Navigate to="/platform/clinics" replace />}
+              />
+            </Route>
+
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Route>

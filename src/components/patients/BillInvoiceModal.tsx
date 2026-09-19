@@ -137,7 +137,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
                   </p>
                 </div>
 
-                <div className="rounded-xl border-2 border-[#d9c4a0] bg-[#faf6ee] px-4 py-3 text-center text-xs">
+                <div className="rounded-xl border-2 border-[#d9c4a0] bg-[#FAF9F5] px-4 py-3 text-center text-xs">
                   <p>
                     <span className="text-text-muted">Invoice No. : </span>
                     <span className="font-semibold text-brown">{invoice.invoiceNo}</span>
@@ -168,7 +168,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               <div className="overflow-hidden rounded-xl border border-[#ece5da]">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-[#faf6ee] text-xs font-semibold uppercase tracking-wide text-gold">
+                    <tr className="bg-[#FAF9F5] text-xs font-semibold uppercase tracking-wide text-gold">
                       <th className="px-4 py-3">Item Detail</th>
                       <th className="px-4 py-3">Description</th>
                       <th className="px-4 py-3 text-right">Amount</th>
@@ -209,7 +209,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               <div className="grid gap-6 md:grid-cols-[1fr_auto]">
                 <div>
                   <p className="text-sm font-semibold text-brown">Notes</p>
-                  <div className="mt-2 min-h-[72px] rounded-lg border border-[#ece5da] bg-[#faf8f4] px-3 py-2 text-xs text-text-muted">
+                  <div className="mt-2 min-h-[72px] rounded-lg border border-[#ece5da] bg-[#FAF9F5] px-3 py-2 text-xs text-text-muted">
                     {invoice.notes || '—'}
                   </div>
                 </div>

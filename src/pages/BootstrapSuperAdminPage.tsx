@@ -64,7 +64,7 @@ export function BootstrapSuperAdminPage() {
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
       <AuthCard className="max-w-[400px] px-7 py-8 sm:px-9 sm:py-9">
-        <BrandHeader className="mb-8" />
+        <BrandHeader className="mb-8" variant="platform" />
 
         <div className="mb-6">
           <h2 className="font-serif text-2xl font-bold leading-tight text-brown sm:text-[26px]">

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
@@ -8,10 +8,12 @@ import { MedicinesTable } from '@/components/medicines/MedicinesTable';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   createMedicine,
   createMultipleMedicines,
@@ -48,7 +50,7 @@ export function MedicinesPage() {
     reload,
   } = useAsyncData(async () => {
     const [rows, apiCategories] = await Promise.all([
-      getAllMedicines(),
+      getAllMedicines({ page: 0, size: 100 }),
       getMedicineCategories(),
     ]);
 
@@ -57,6 +59,31 @@ export function MedicinesPage() {
       categoryOptions: mapMedicineCategoryOptions(apiCategories),
     };
   }, { medicines: [] as MedicineRecord[], categoryOptions: [] });
+
+  const filteredMedicines = useMemo(() => {
+    return data.medicines.filter((item) => {
+      const matchesSearch =
+        !searchQuery ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory =
+        !categoryFilter || item.categoryCode === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [data.medicines, searchQuery, categoryFilter]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredMedicines);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchQuery, categoryFilter, resetPage]);
 
   const headerAction = useMemo(
     () => (
@@ -75,17 +102,6 @@ export function MedicinesPage() {
   );
 
   usePageAction(headerAction);
-
-  const filteredMedicines = useMemo(() => {
-    return data.medicines.filter((item) => {
-      const matchesSearch =
-        !searchQuery ||
-        item.name.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        !categoryFilter || item.categoryCode === categoryFilter;
-      return matchesSearch && matchesCategory;
-    });
-  }, [data.medicines, searchQuery, categoryFilter]);
 
   const buildPayload = (values: MedicineFormValues): CreateMedicinePayload => ({
     medicineName: values.name.trim(),
@@ -211,12 +227,20 @@ export function MedicinesPage() {
           >
             <MedicinesTable
               embedded
-              records={filteredMedicines}
+              records={pageItems}
               onEdit={(record) => {
                 setEditTarget(record);
                 setFormOpen(true);
               }}
               onDelete={setDeleteTarget}
+            />
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loading}
             />
           </AsyncStatus>
         </ListPanel>

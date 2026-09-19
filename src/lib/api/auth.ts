@@ -197,8 +197,10 @@ export function updateMe(payload: { fullName?: string }) {
   });
 }
 
-export function getUsers() {
-  return apiRequestList<UserResponse>(url(ep.users));
+export function getUsers(page = 0, size = 100) {
+  return apiRequestList<UserResponse>(
+    url(`${ep.users}?page=${page}&size=${size}`),
+  );
 }
 
 export function getUserById(userId: string) {

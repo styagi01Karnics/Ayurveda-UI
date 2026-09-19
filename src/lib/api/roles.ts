@@ -133,8 +133,10 @@ export function createHospital(payload: CreateHospitalPayload) {
   });
 }
 
-export function getHospitals() {
-  return apiRequestList<PlatformHospitalDto>(url(ep.platform.hospitals));
+export function getHospitals(page = 0, size = 100) {
+  return apiRequestList<PlatformHospitalDto>(
+    url(`${ep.platform.hospitals}?page=${page}&size=${size}`),
+  );
 }
 
 export function getHospitalById(hospitalId: string) {

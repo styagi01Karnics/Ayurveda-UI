@@ -25,7 +25,7 @@ export const patientStep1BookingSchema = z.object({
   preferredLanguage: z.string().optional(),
   registrationDate: optionalBookingDateSchema,
   appointmentTime: optionalBookingTimeSchema,
-  assignedDoctor: z.string().optional(),
+  assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
   email: z.string().optional(),
   state: z.string().optional(),
   city: z.string().optional(),

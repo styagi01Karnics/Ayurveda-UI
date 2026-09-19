@@ -37,6 +37,8 @@ export interface MessageLogDto {
 export interface MessageHistoryQuery {
   channel?: MessageChannel;
   limit?: number;
+  page?: number;
+  size?: number;
 }
 
 export function sendSms(payload: SendSmsPayload) {
@@ -62,6 +64,8 @@ export function getMessageHistory(query: MessageHistoryQuery = {}) {
   const params = new URLSearchParams();
   if (query.channel) params.set('channel', query.channel);
   if (query.limit) params.set('limit', String(query.limit));
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequestList<MessageLogDto>(
     url(qs ? `${apiEndpoints.messaging.history}?${qs}` : apiEndpoints.messaging.history),

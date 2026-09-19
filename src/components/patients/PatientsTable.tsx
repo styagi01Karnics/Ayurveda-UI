@@ -136,15 +136,18 @@ function DoshaBadge({ dosha }: { dosha: Dosha }) {
 }
 
 function StatusBadge({ status }: { status: PatientStatus }) {
-  const variant =
+  const color =
     status === 'Completed'
-      ? 'success'
-      : status === 'Cancelled'
-        ? 'danger'
-        : status === 'Follow-Up'
-          ? 'gold'
-          : 'neutral';
-  return <Badge variant={variant}>{status}</Badge>;
+      ? 'text-[#2E7D32]'
+      : status === 'Cancelled' || status === 'Missed'
+        ? 'text-[#D64545]'
+        : status === 'Pending' ||
+            status === 'Follow-Up' ||
+            status === 'Scheduled' ||
+            status === 'Upcoming'
+          ? 'text-[#EAB308]'
+          : 'text-text-muted';
+  return <span className={cn('text-xs font-semibold', color)}>{status}</span>;
 }
 
 export function PatientBreadcrumbs() {

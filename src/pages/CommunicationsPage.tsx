@@ -6,8 +6,10 @@ import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Pagination } from '@/components/ui/Pagination';
 import { Textarea } from '@/components/ui/Textarea';
 import { useAppFeedback } from '@/hooks/useAppFeedback';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   getMessageHistory,
   sendEmail,
@@ -47,7 +49,7 @@ export function CommunicationsPage() {
     setLoadingHistory(true);
     setHistoryError(null);
     try {
-      const rows = await getMessageHistory({ limit: 50 });
+      const rows = await getMessageHistory({ limit: 100, page: 0, size: 100 });
       setHistory(rows);
     } catch (error) {
       setHistory([]);
@@ -128,6 +130,20 @@ export function CommunicationsPage() {
   const filteredHistory = history.filter((row) =>
     tab === 'sms' ? row.channel === 'SMS' : row.channel === 'EMAIL',
   );
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredHistory);
+
+  useEffect(() => {
+    resetPage();
+  }, [tab, resetPage]);
 
   return (
     <PageShell className="space-y-6">
@@ -296,10 +312,18 @@ export function CommunicationsPage() {
             emptyMessage={UI_MESSAGES.empty.communications}
           >
             <div className="max-h-[520px] space-y-3 overflow-y-auto">
-              {filteredHistory.map((row) => (
+              {pageItems.map((row) => (
                 <MessageHistoryRow key={row.id} row={row} />
               ))}
             </div>
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loadingHistory}
+            />
           </AsyncStatus>
         </Card>
       </div>

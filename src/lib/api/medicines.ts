@@ -1,10 +1,27 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest, apiRequestList, apiRequestPage, type PagedResult } from './client';
 import { apiEndpoints } from './endpoints';
 import type { CreateMedicinePayload, MedicineDto } from './types';
+import { DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 
 const url = (path: string) => `${apiConfig.medicine}${path}`;
 const ep = apiEndpoints.medicines;
+
+export function getAllMedicinesPaged(params?: {
+  medicineName?: string;
+  category?: string;
+  stockStatus?: string;
+  page?: number;
+  size?: number;
+}): Promise<PagedResult<MedicineDto>> {
+  const searchParams = new URLSearchParams();
+  if (params?.medicineName) searchParams.append('medicineName', params.medicineName);
+  if (params?.category) searchParams.append('category', params.category);
+  if (params?.stockStatus) searchParams.append('stockStatus', params.stockStatus);
+  searchParams.append('page', String(params?.page ?? 0));
+  searchParams.append('size', String(params?.size ?? DEFAULT_PAGE_SIZE));
+  return apiRequestPage<MedicineDto>(`${url(ep.base)}?${searchParams.toString()}`);
+}
 
 export function getAllMedicines(params?: {
   medicineName?: string;
@@ -13,14 +30,7 @@ export function getAllMedicines(params?: {
   page?: number;
   size?: number;
 }) {
-  const searchParams = new URLSearchParams();
-  if (params?.medicineName) searchParams.append('medicineName', params.medicineName);
-  if (params?.category) searchParams.append('category', params.category);
-  if (params?.stockStatus) searchParams.append('stockStatus', params.stockStatus);
-  searchParams.append('page', String(params?.page ?? 0));
-  searchParams.append('size', String(params?.size ?? 100));
-  const query = searchParams.toString();
-  return apiRequestList<MedicineDto>(`${url(ep.base)}?${query}`);
+  return getAllMedicinesPaged(params).then((page) => page.content);
 }
 
 export function getMedicineById(medicineId: string) {

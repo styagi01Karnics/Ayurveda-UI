@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
@@ -11,9 +11,11 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/Select';
 import { DOCTOR_FILTER_OPTIONS } from '@/data/mock/doctors';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   cancelAppointment,
   getAppointmentStats,
@@ -78,6 +80,20 @@ export function DoctorsPage() {
       return matchesStatus && matchesVisit;
     });
   }, [schedule, statusFilter, visitTypeFilter]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredSchedule);
+
+  useEffect(() => {
+    resetPage();
+  }, [statusFilter, visitTypeFilter, resetPage]);
 
   const headerAction = useMemo(
     () => (
@@ -169,50 +185,60 @@ export function DoctorsPage() {
   };
 
   return (
-    <PageShell className="space-y-4">
+    <PageShell className="space-y-5">
       <AsyncStatus loading={loading} error={error} onRetry={reload}>
-        <DoctorScheduleStatCards stats={data.stats} />
+        <div className="space-y-5">
+          <DoctorScheduleStatCards stats={data.stats} />
 
-        <ListPanel
-          filters={
-            <>
-              <FilterControl>
-                <Select
-                  placeholder="Status"
-                  options={[...DOCTOR_FILTER_OPTIONS.status]}
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                />
-              </FilterControl>
-              <FilterControl>
-                <Select
-                  placeholder="Visit type"
-                  options={[...DOCTOR_FILTER_OPTIONS.visitType]}
-                  value={visitTypeFilter}
-                  onChange={(e) => setVisitTypeFilter(e.target.value)}
-                />
-              </FilterControl>
-            </>
-          }
-        >
-          <AsyncStatus
-            loading={false}
-            error={null}
-            empty={filteredSchedule.length === 0}
-            emptyMessage="No appointments scheduled for today."
+          <ListPanel
+            filters={
+              <>
+                <FilterControl>
+                  <Select
+                    placeholder="Status"
+                    options={[...DOCTOR_FILTER_OPTIONS.status]}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  />
+                </FilterControl>
+                <FilterControl>
+                  <Select
+                    placeholder="Visit type"
+                    options={[...DOCTOR_FILTER_OPTIONS.visitType]}
+                    value={visitTypeFilter}
+                    onChange={(e) => setVisitTypeFilter(e.target.value)}
+                  />
+                </FilterControl>
+              </>
+            }
           >
-            <DoctorScheduleTable
-              embedded
-              items={filteredSchedule}
-              onStart={handleStart}
-              onCancel={(id) => {
-                const item = schedule.find((row) => row.id === id);
-                if (item) setCancelTarget(item);
-              }}
-              startingId={startingId}
-            />
-          </AsyncStatus>
-        </ListPanel>
+            <AsyncStatus
+              loading={false}
+              error={null}
+              empty={filteredSchedule.length === 0}
+              emptyMessage="No appointments scheduled for today."
+            >
+              <DoctorScheduleTable
+                embedded
+                items={pageItems}
+                onStart={handleStart}
+                onCancel={(id) => {
+                  const item = schedule.find((row) => row.id === id);
+                  if (item) setCancelTarget(item);
+                }}
+                startingId={startingId}
+              />
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                totalElements={totalElements}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                disabled={loading}
+              />
+            </AsyncStatus>
+          </ListPanel>
+        </div>
       </AsyncStatus>
 
       <CancelAppointmentModal

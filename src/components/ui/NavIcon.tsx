@@ -12,18 +12,17 @@ function colorizeSvg(svg: string): string {
     .replace(/\s(width|height)="100%"/g, '')
     .replace(/\spreserveAspectRatio="[^"]*"/g, '')
     .replace(/fill="var\([^"]*\)"/gi, 'fill="currentColor"')
-    .replace(/fill="#[^"]*"/gi, 'fill="currentColor"');
+    .replace(/fill="#[^"]*"/gi, 'fill="currentColor"')
+    .replace(/stroke="var\([^"]*\)"/gi, 'stroke="currentColor"')
+    .replace(/stroke="#[^"]*"/gi, 'stroke="currentColor"');
 }
 
-/** Sidebar nav icon — outline when inactive, filled when active (gold / brown). */
+/** Sidebar nav icon — same outline glyph for active and inactive; only color changes. */
 export function NavIcon({
   outline,
-  filled,
   active = false,
   className,
 }: NavIconProps) {
-  const svg = active ? filled : outline;
-
   return (
     <span
       aria-hidden
@@ -32,7 +31,7 @@ export function NavIcon({
         active ? 'text-gold' : 'text-brown',
         className,
       )}
-      dangerouslySetInnerHTML={{ __html: colorizeSvg(svg) }}
+      dangerouslySetInnerHTML={{ __html: colorizeSvg(outline) }}
     />
   );
 }

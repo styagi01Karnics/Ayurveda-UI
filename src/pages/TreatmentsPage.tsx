@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +22,8 @@ import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 
 import { Input } from '@/components/ui/Input';
 
+import { Pagination } from '@/components/ui/Pagination';
+
 import { SearchField } from '@/components/ui/SearchField';
 
 import { Select } from '@/components/ui/Select';
@@ -29,6 +31,8 @@ import { Select } from '@/components/ui/Select';
 import { TREATMENT_FILTER_OPTIONS } from '@/data/mock/treatments';
 
 import { useAsyncData } from '@/hooks/useAsyncData';
+
+import { useClientPagination } from '@/hooks/useClientPagination';
 
 import { ApiError } from '@/lib/api/client';
 
@@ -82,7 +86,7 @@ export function TreatmentsPage() {
     const [patients, therapists, treatments, treatmentPlans] = await Promise.all([
       getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
       getActiveTherapists().catch(() => []),
-      getAllTreatments().catch(() => []),
+      getAllTreatments(0, 100).catch(() => []),
       getActiveTreatmentPlanMasters().catch(() => []),
     ]);
 
@@ -191,6 +195,20 @@ export function TreatmentsPage() {
     });
 
   }, [treatments, searchQuery, statusFilter, planFilter, dateFilter]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredTreatments);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchQuery, statusFilter, planFilter, dateFilter, resetPage]);
 
 
 
@@ -413,7 +431,7 @@ export function TreatmentsPage() {
 
             embedded
 
-            records={filteredTreatments}
+            records={pageItems}
             onComplete={handleCompleteTreatment}
             completingId={completingId}
 
@@ -423,6 +441,14 @@ export function TreatmentsPage() {
 
             }
 
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            disabled={loading}
           />
 
         </AsyncStatus>

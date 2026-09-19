@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
 export type PatientSearchOption = {
@@ -83,7 +84,11 @@ export function PatientSearchSelect({
   return (
     <div className="relative flex w-full flex-col gap-1.5">
       {label ? (
-        <span className="text-xs font-medium text-text-muted">{label}</span>
+        <FieldLabel
+          as="span"
+          label={label}
+          className="text-xs font-medium text-text-muted"
+        />
       ) : null}
       <input
         type="search"

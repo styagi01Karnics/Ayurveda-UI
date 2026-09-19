@@ -65,6 +65,7 @@ export const INDIAN_STATES = [
   'Rajasthan',
   'Tamil Nadu',
   'Uttar Pradesh',
+  'Uttarakhand',
   'West Bengal',
 ] as const;
 
@@ -75,6 +76,7 @@ export const CITIES_BY_STATE: Record<string, string[]> = {
   Gujarat: ['Ahmedabad', 'Surat', 'Vadodara'],
   'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai'],
   'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Noida'],
+  Uttarakhand: ['Pithoragarh'],
   Rajasthan: ['Jaipur', 'Udaipur', 'Jodhpur'],
   'West Bengal': ['Kolkata', 'Siliguri', 'Howrah'],
   'Andhra Pradesh': ['Hyderabad', 'Visakhapatnam', 'Vijayawada'],

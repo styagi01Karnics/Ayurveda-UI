@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
 interface RupeeInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -13,9 +14,11 @@ export const RupeeInput = forwardRef<HTMLInputElement, RupeeInputProps>(
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label ? (
-          <label htmlFor={inputId} className="text-xs font-medium text-text-muted">
-            {label}
-          </label>
+          <FieldLabel
+            htmlFor={inputId}
+            label={label}
+            className="text-xs font-medium text-text-muted"
+          />
         ) : null}
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-muted">

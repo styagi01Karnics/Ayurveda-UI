@@ -1,4 +1,5 @@
 import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -13,12 +14,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label
+          <FieldLabel
             htmlFor={textareaId}
+            label={label}
             className="text-xs font-medium text-text-muted"
-          >
-            {label}
-          </label>
+          />
         )}
         <textarea
           ref={ref}

@@ -736,17 +736,27 @@ export function DoctorPatientDetailPage() {
             <>
               <Stepper steps={WORKFLOW_STEPS} currentStep={workflowStep} />
 
-              <Card className="p-5 sm:p-6">
+              <Card className="border-[#ebe4d8] bg-[#FAF9F5] p-5 sm:p-6">
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-bold text-brown">{patient.name}</h2>
-            <Badge variant="gold" className="rounded-md px-3 py-1">
-              {patient.treatmentStatus}
-            </Badge>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium text-text-muted">Patient Code</p>
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
+                <Badge variant="gold" className="rounded-md px-3 py-1">
+                  {patient.treatmentStatus}
+                </Badge>
+              </div>
+              <p className="mt-2 text-base font-semibold text-brown">{patient.name}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-text-muted">Dosha</p>
+              <p className="text-xl font-bold text-gold">{patient.dosha || '—'}</p>
+            </div>
           </div>
 
           {workflowStep === 1 && (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 border-t border-[#ebe4d8] pt-4">
               <UnderlineTabs
                 tabs={detailTabs}
                 activeTab={activeTab}
@@ -756,7 +766,7 @@ export function DoctorPatientDetailPage() {
               <button
                 type="button"
                 onClick={handleEditToggle}
-                className={`rounded-full border p-2 transition-colors ${isEditing ? 'border-gold bg-gold/10 text-gold' : 'border-gray-200 text-text-muted hover:border-gold hover:text-gold'}`}
+                className={`mt-1 shrink-0 rounded-full border p-2 transition-colors ${isEditing ? 'border-gold bg-gold/10 text-gold' : 'border-gray-200 text-text-muted hover:border-gold hover:text-gold'}`}
                 aria-label={isEditing ? 'Exit edit mode' : 'Edit patient details'}
               >
                 <Pencil className="h-4 w-4" />
@@ -764,7 +774,7 @@ export function DoctorPatientDetailPage() {
             </div>
           )}
 
-          <div className="mt-8">
+          <div className="mt-2">
             {workflowStep === 1 && !isEditing && (
               <DoctorPatientViewTab patient={patient} activeTab={activeTab} />
             )}

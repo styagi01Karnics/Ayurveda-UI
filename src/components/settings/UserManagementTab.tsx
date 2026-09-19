@@ -4,9 +4,11 @@ import { AddUserModal } from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
 import { UsersTable } from '@/components/settings/UsersTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { USER_FILTER_OPTIONS } from '@/data/mock/settings';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   getUsers,
   registerUser,
@@ -16,6 +18,7 @@ import {
 import { ApiError } from '@/lib/api/client';
 import { getRoles } from '@/lib/api/roles';
 import { formatAuthRole } from '@/lib/auth';
+import { formatPersonName } from '@/lib/utils';
 import type { AddUserFormValues } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
 
@@ -29,7 +32,7 @@ function mapUserToRecord(user: UserResponse): SettingsUserRecord {
   return {
     id: user.id,
     userId: user.username || user.email || user.id,
-    fullName: user.fullName || '—',
+    fullName: formatPersonName(user.fullName) || user.fullName || '—',
     phone: user.mobileNumber
       ? user.mobileNumber.replace(/\D/g, '').slice(-10)
       : '—',
@@ -63,7 +66,7 @@ export function UserManagementTab({
     setLoading(true);
     setError(null);
     try {
-      const list = await getUsers();
+      const list = await getUsers(0, 100);
       setUsers(list.map(mapUserToRecord));
     } catch (err) {
       setUsers([]);
@@ -115,6 +118,20 @@ export function UserManagementTab({
       return matchesSearch && matchesStatus;
     });
   }, [users, searchQuery, statusFilter]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredUsers);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchQuery, statusFilter, resetPage]);
 
   const isRoleAlreadyAssigned = (role: string, exceptUserId?: string) =>
     users.some(
@@ -231,8 +248,16 @@ export function UserManagementTab({
 
       <AsyncStatus loading={loading} error={error} onRetry={() => void loadUsers()}>
         <UsersTable
-          records={filteredUsers}
+          records={pageItems}
           onRoleChange={handleRoleChangeRequest}
+        />
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          disabled={loading}
         />
       </AsyncStatus>
 

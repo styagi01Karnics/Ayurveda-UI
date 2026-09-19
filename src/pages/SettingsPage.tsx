@@ -46,7 +46,7 @@ export function SettingsPage() {
   usePageAction(headerAction);
 
   return (
-    <PageShell>
+    <PageShell className="space-y-6">
       <UnderlineTabs
         tabs={SETTINGS_TABS}
         activeTab={activeTab}

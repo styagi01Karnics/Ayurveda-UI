@@ -95,6 +95,8 @@ export interface PrescriptionConsultantDto {
   name?: string;
   specialization?: string;
   qualification?: string;
+  /** Alias for qualification when API returns degree. */
+  degree?: string;
   contactNumber?: string;
   mobileNumber?: string;
 }

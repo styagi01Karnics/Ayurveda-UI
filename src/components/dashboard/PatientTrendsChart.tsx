@@ -51,11 +51,16 @@ export function PatientTrendsChart({
         )}
       </div>
 
-      <div className={cn('chart-wrap w-full', compact ? 'h-[220px]' : 'h-64')}>
+      <div
+        className={cn(
+          'chart-wrap w-full overflow-hidden',
+          embedded ? 'min-h-[180px] flex-1' : compact ? 'h-[220px]' : 'h-64',
+        )}
+      >
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart
             data={data}
-            margin={{ top: 28, right: 12, left: -12, bottom: 4 }}
+            margin={{ top: 36, right: 16, left: 0, bottom: 8 }}
           >
             <defs>
               <linearGradient id="patientChartFill" x1="0" y1="0" x2="0" y2="1">
@@ -110,18 +115,21 @@ export function PatientTrendsChart({
             >
               <LabelList
                 dataKey="newPatients"
-                content={({ x, y, index }) => {
+                content={({ x, y, index, value }) => {
                   if (index !== 1 || x == null || y == null) return null;
+                  const month = data[1]?.month ?? '';
+                  const count = Number(value ?? 0);
+                  const label = `${count}+ New${month ? ` · ${month}` : ''}`;
                   return (
                     <text
                       x={Number(x)}
-                      y={Number(y) - 14}
+                      y={Number(y) - 12}
                       textAnchor="middle"
                       fill="#3d8f5a"
                       fontSize={10}
-                      fontWeight={500}
+                      fontWeight={600}
                     >
-                      120+ New Patients in Oct
+                      {label}
                     </text>
                   );
                 }}
@@ -144,7 +152,7 @@ export function PatientTrendsChart({
   );
 
   if (embedded) {
-    return <div className="min-w-0">{body}</div>;
+    return <div className="flex min-h-0 min-w-0 flex-1 flex-col">{body}</div>;
   }
 
   return (

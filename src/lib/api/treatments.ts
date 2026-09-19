@@ -11,8 +11,10 @@ import type {
 const url = (path: string) => `${apiConfig.appointment}${path}`;
 const ep = apiEndpoints.appointments.treatments;
 
-export function getAllTreatments() {
-  return apiRequestList<TreatmentDto>(url(ep.getAll));
+export function getAllTreatments(page = 0, size = 100) {
+  return apiRequestList<TreatmentDto>(
+    url(`${ep.getAll}?page=${page}&size=${size}`),
+  );
 }
 
 export function getTreatmentsByPatientId(patientId: string) {

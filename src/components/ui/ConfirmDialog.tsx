@@ -24,20 +24,20 @@ const variantStyles: Record<
   { iconBg: string; iconColor: string; buttonClass: string; Icon: LucideIcon }
 > = {
   danger: {
-    iconBg: 'bg-danger/10',
+    iconBg: 'bg-[#FFE4E6]',
     iconColor: 'text-danger',
     buttonClass: 'bg-danger hover:bg-danger/90',
     Icon: Trash2,
   },
   warning: {
-    iconBg: 'bg-gold/15',
+    iconBg: 'bg-[#FFE4E6]',
     iconColor: 'text-gold-dark',
     buttonClass: 'bg-gold hover:bg-gold/90',
     Icon: AlertTriangle,
   },
   default: {
-    iconBg: 'bg-brown/5',
-    iconColor: 'text-brown',
+    iconBg: 'bg-[#FFE4E6]',
+    iconColor: 'text-danger',
     buttonClass: '',
     Icon: LogOut,
   },

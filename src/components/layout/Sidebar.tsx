@@ -1,12 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { Megaphone, MessageCircle, Stethoscope } from 'lucide-react';
+import { Building2, Megaphone, MessageCircle } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
 import {
   getClinicDisplayName,
   getClinicLogoUrl,
   getStoredPageCodes,
+  getStoredUser,
+  isSuperAdmin,
 } from '@/lib/auth';
-import { hasPageAccess, type PageCode } from '@/lib/pagePermissions';
+import { ALL_PAGE_CODES, hasPageAccess, type PageCode } from '@/lib/pagePermissions';
+import { PLATFORM_BRANDING } from '@/lib/platformBranding';
+import { PLATFORM_CLINICS_PATH } from '@/app/ProtectedRoute';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
 
@@ -14,14 +18,14 @@ const navItems: {
   to: string;
   label: string;
   pageCode?: PageCode;
-  /** Extra items without a seeded pageCode — only when SETTINGS or full access. */
   requiresSettings?: boolean;
+  superAdminOnly?: boolean;
   icon?: NavIconKey;
-  lucide?: 'stethoscope' | 'megaphone' | 'message';
+  lucide?: 'megaphone' | 'message' | 'clinics';
 }[] = [
   { to: '/dashboard', label: 'Dashboard', pageCode: 'DASHBOARD', icon: 'dashboard' },
   { to: '/patients', label: 'Patients', pageCode: 'PATIENTS', icon: 'patients' },
-  { to: '/doctors', label: 'Doctors', pageCode: 'DOCTORS', lucide: 'stethoscope' },
+  { to: '/doctors', label: 'Doctors', pageCode: 'DOCTORS', icon: 'doctors' },
   {
     to: '/appointments',
     label: 'Appointments',
@@ -51,6 +55,12 @@ const navItems: {
     lucide: 'message',
   },
   { to: '/settings', label: 'Settings', pageCode: 'SETTINGS', icon: 'settings' },
+  {
+    to: PLATFORM_CLINICS_PATH,
+    label: 'Clinics',
+    superAdminOnly: true,
+    lucide: 'clinics',
+  },
 ];
 
 interface SidebarProps {
@@ -59,10 +69,17 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onNavigate, className }: SidebarProps) {
-  const pageCodes = getStoredPageCodes();
-  const clinicName = getClinicDisplayName();
-  const clinicLogo = getClinicLogoUrl() || assets.brandLogo;
+  const user = getStoredUser();
+  const superAdmin = isSuperAdmin(user);
+  const pageCodes = superAdmin ? ALL_PAGE_CODES : getStoredPageCodes();
+  const clinicName = superAdmin
+    ? PLATFORM_BRANDING.name
+    : getClinicDisplayName();
+  const clinicLogo = superAdmin
+    ? PLATFORM_BRANDING.logoUrl
+    : getClinicLogoUrl() || assets.brandLogo;
   const visibleItems = navItems.filter((item) => {
+    if (item.superAdminOnly) return superAdmin;
     if (item.pageCode) return hasPageAccess(pageCodes, item.pageCode);
     if (item.requiresSettings) {
       return hasPageAccess(pageCodes, 'SETTINGS');
@@ -73,13 +90,13 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'sidebar-panel flex h-full w-full flex-col px-4 py-8',
+        'sidebar-panel flex h-full w-full flex-col py-6 pl-3 pr-0 sm:py-8 sm:pl-4',
         className,
       )}
       style={{ backgroundImage: `url(${assets.sidebarBg})` }}
     >
-      <div className="relative z-[1] mb-6 shrink-0 px-1">
-        <div className="flex flex-col items-center gap-2 rounded-2xl bg-[#fffaf3]/90 px-3 py-3 text-center shadow-[0_1px_0_rgba(66,44,35,0.06)] backdrop-blur-[2px]">
+      <div className="relative z-[1] mb-6 shrink-0 px-1 pr-3 sm:pr-4">
+        <div className="flex flex-col items-center gap-1.5 text-center">
           <img
             src={clinicLogo}
             alt={clinicName}
@@ -88,13 +105,15 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
           <p className="w-full break-words font-serif text-[15px] font-bold leading-tight tracking-[0.04em] text-[#2a1810]">
             {clinicName}
           </p>
-          <p className="font-serif text-[13px] font-medium italic leading-snug text-[#a5750a]">
-            A Journey of Healing
-          </p>
+          {!superAdmin ? (
+            <p className="font-serif text-[13px] font-medium italic leading-snug text-[#a5750a]">
+              A Journey of Healing
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
+      <nav className="no-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto">
         {visibleItems.map(({ to, label, icon, lucide }) => (
           <NavLink
             key={to}
@@ -103,25 +122,16 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all',
+                'flex items-center gap-3 py-2.5 pl-3.5 pr-3 text-sm transition-colors',
                 isActive
-                  ? 'bg-white font-semibold text-gold shadow-[0_2px_12px_rgba(66,44,35,0.08)]'
-                  : 'font-medium text-brown hover:bg-white/45',
+                  ? 'rounded-l-xl bg-cream-light font-semibold text-gold'
+                  : 'rounded-l-xl font-medium text-brown hover:bg-cream-light/50',
               )
             }
           >
             {({ isActive }) => (
               <>
-                {lucide === 'stethoscope' ? (
-                  <Stethoscope
-                    className={cn(
-                      'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-gold' : 'text-brown',
-                    )}
-                    strokeWidth={1.5}
-                    aria-hidden
-                  />
-                ) : lucide === 'megaphone' ? (
+                {lucide === 'megaphone' ? (
                   <Megaphone
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
@@ -132,6 +142,15 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                   />
                 ) : lucide === 'message' ? (
                   <MessageCircle
+                    className={cn(
+                      'h-[22px] w-[22px] shrink-0',
+                      isActive ? 'text-gold' : 'text-brown',
+                    )}
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />
+                ) : lucide === 'clinics' ? (
+                  <Building2
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
                       isActive ? 'text-gold' : 'text-brown',

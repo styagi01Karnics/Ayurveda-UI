@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/Input';
 import { PatientSearchSelect } from '@/components/ui/PatientSearchSelect';
 import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
+import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { PAYMENT_CHANNELS, PAYMENT_MODES } from '@/data/mock/billing';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { BOOKING_TIME_OPTIONS, DEFAULT_SESSION_FREQUENCY } from '@/lib/bookingConstraints';
@@ -1413,25 +1414,14 @@ export function GenerateInvoicePage() {
         </div>
 
         <FormSection title="Invoice Type">
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {availableInvoiceTypes.map((option) => {
-              const selected = option.id === invoiceTypeId;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => handleInvoiceTypeChange(option.id)}
-                  className={`rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
-                    selected
-                      ? 'border-gold bg-gold/10 text-brown'
-                      : 'border-gray-100 text-text-muted hover:border-gold/40 hover:text-brown'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
+          <UnderlineTabs
+            tabs={availableInvoiceTypes.map((option) => ({
+              id: option.id,
+              label: option.label,
+            }))}
+            activeTab={invoiceTypeId}
+            onChange={handleInvoiceTypeChange}
+          />
         </FormSection>
 
         <form className="mt-6 space-y-6" noValidate>
@@ -1712,7 +1702,7 @@ function BillSummarySection({
   const sgstRate = FIXED_SGST_PERCENT;
 
   return (
-    <section className="rounded-xl border border-[#e8dfd0] bg-[#fdf8ee]/50 p-4 sm:p-5">
+    <section className="rounded-xl border border-[#e8dfd0] bg-[#FAF9F5] p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-brown">{billLabel} — Summary</h3>
         <div className="flex items-center gap-2">
@@ -1857,7 +1847,7 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-gray-100 p-4">
+    <section className="rounded-xl border border-[#e8dfd0] bg-white p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-brown">{title}</h3>
       </div>
@@ -1893,43 +1883,45 @@ function LineItemsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl bg-gray-50">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-xl border border-[#ebe4d8] bg-[#faf7f2]/60">
+      <table className="w-full table-fixed text-sm">
         <thead>
-          <tr className="text-xs text-text-muted">
+          <tr className="border-b border-[#e8dfd0] text-xs text-text-muted">
+            {onRemove && <th className="w-12 px-3 py-3" />}
             <th className="px-4 py-3 text-left font-medium">Bill Name</th>
-            <th className="px-4 py-3 text-left font-medium">Quantity</th>
-            <th className="px-4 py-3 text-right font-medium">Amount</th>
-            {onRemove && <th className="px-4 py-3" />}
+            <th className="w-28 px-4 py-3 text-center font-medium">Quantity</th>
+            <th className="w-32 px-4 py-3 text-right font-medium">Amount</th>
           </tr>
         </thead>
         <tbody>
           {items.map((item) => (
-            <tr key={item.id} className="border-t border-gray-100">
-              <td className="px-4 py-3 font-medium text-brown">
-                <span className="inline-flex items-center gap-2">
-                  <Link2 className="h-3.5 w-3.5 text-gold" />
-                  {item.name}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-brown">{item.quantity}</td>
-              <td className="px-4 py-3 text-right text-brown">
-                {formatCurrency(item.amount * item.quantity)}
-              </td>
+            <tr key={item.id} className="border-t border-[#ebe4d8]">
               {onRemove && (
-                <td className="px-4 py-3 text-right">
-                  {item.type === 'service' ? null : (
+                <td className="px-3 py-3 text-center align-middle">
+                  {item.type === 'service' ? (
+                    <span className="inline-block w-5" />
+                  ) : (
                     <button
                       type="button"
                       onClick={() => onRemove(item.id)}
-                      className="text-text-muted hover:text-danger"
+                      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-danger/40 text-danger hover:bg-danger/10"
                       aria-label="Remove item"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3 w-3" strokeWidth={2.5} />
                     </button>
                   )}
                 </td>
               )}
+              <td className="px-4 py-3 font-medium text-brown">
+                <span className="inline-flex items-center gap-2.5">
+                  <Link2 className="h-3.5 w-3.5 shrink-0 text-gold" />
+                  {item.name}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-center text-brown">{item.quantity}</td>
+              <td className="px-4 py-3 text-right font-medium text-brown">
+                {formatCurrency(item.amount * item.quantity)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -1950,9 +1942,9 @@ function TotalRow({
   className?: string;
 }) {
   return (
-    <div className={`flex justify-between ${bold ? 'text-base font-bold' : ''}`}>
+    <div className={`flex items-center justify-between gap-6 ${bold ? 'text-base font-bold' : 'text-sm'}`}>
       <span className="text-text-muted">{label}</span>
-      <span className={className ?? 'text-brown'}>{value}</span>
+      <span className={className ?? 'font-medium text-brown'}>{value}</span>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { DataTableShell } from '@/components/ui/DataTableShell';
 import { Select } from '@/components/ui/Select';
 import { formatAuthRole } from '@/lib/auth';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
-import { cn } from '@/lib/utils';
+import { cn, formatPersonName } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
 
 interface UsersTableProps {
@@ -37,7 +37,9 @@ export function UsersTable({ records, onRoleChange }: UsersTableProps) {
                 <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-5 py-4 font-medium text-brown">{record.userId}</td>
                   <td className="px-5 py-4">
-                    <p className="font-medium text-brown">{record.fullName}</p>
+                    <p className="font-medium text-brown">
+                      {formatPersonName(record.fullName) || record.fullName}
+                    </p>
                     <p className="text-xs text-text-muted">{record.phone}</p>
                   </td>
                   <td className="px-5 py-4 text-brown">{record.email}</td>

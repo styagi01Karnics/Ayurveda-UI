@@ -1,12 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronDown, KeyRound, LogOut, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getStoredUser } from '@/lib/auth';
-import {
-  getClinicLocationShortLabel,
-  getStoredClinicLocation,
-} from '@/lib/clinicLocations';
-import { cn } from '@/lib/utils';
+import { getStoredTenant, getStoredUser } from '@/lib/auth';
+import { cn, formatPersonName } from '@/lib/utils';
 
 interface UserMenuProps {
   onChangePassword: () => void;
@@ -17,9 +13,11 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const user = getStoredUser();
-  const locationLabel = getClinicLocationShortLabel(getStoredClinicLocation());
+  const tenant = getStoredTenant();
   const role = user?.role ?? 'Admin';
-  const name = user?.fullName ?? 'User';
+  const name = formatPersonName(user?.fullName) || 'User';
+  const clinicCity = tenant?.city?.trim() || '';
+  const roleLine = clinicCity ? `${role} | ${clinicCity}` : role;
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -32,29 +30,29 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
   }, []);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2 sm:gap-3">
       <div ref={ref} className="relative">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex max-w-[280px] items-center gap-2 rounded-xl bg-white px-2 py-1.5 shadow-sm sm:max-w-[360px]"
+          className="flex max-w-[280px] items-center gap-2.5 sm:max-w-[360px]"
           aria-expanded={open}
           aria-haspopup="menu"
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#FBF6E8] text-gold">
             <User className="h-5 w-5" aria-hidden="true" />
           </div>
           <div className="hidden min-w-0 text-left sm:block">
-            <p className="truncate text-sm font-semibold text-brown">{name}</p>
-            <p className="truncate text-xs text-text-muted">
-              {role}
-              <span className="mx-1 text-text-muted/70">|</span>
-              {locationLabel}
+            <p className="truncate text-sm font-semibold leading-tight text-brown">
+              {name}
+            </p>
+            <p className="truncate text-xs leading-tight text-text-muted">
+              {roleLine}
             </p>
           </div>
           <ChevronDown
             className={cn(
-              'hidden h-4 w-4 shrink-0 text-text-muted transition-transform sm:block',
+              'hidden h-4 w-4 shrink-0 text-brown transition-transform sm:block',
               open && 'rotate-180',
             )}
           />
@@ -84,10 +82,12 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
         )}
       </div>
 
+      <span className="hidden h-8 w-px bg-[#e8e0d4] sm:block" aria-hidden />
+
       <button
         type="button"
         onClick={onLogout}
-        className="rounded-lg p-2 text-brown-muted hover:bg-brown/5"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FBF6E8] text-brown transition-colors hover:bg-[#f5edd9]"
         aria-label="Logout"
       >
         <LogOut className="h-5 w-5" strokeWidth={1.5} />

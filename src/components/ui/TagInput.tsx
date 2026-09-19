@@ -1,4 +1,5 @@
 import { X } from 'lucide-react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
 export type TagOption =
@@ -44,7 +45,11 @@ export function TagInput({
   return (
     <div className="flex w-full flex-col gap-1.5">
       {label && (
-        <span className="text-xs font-medium text-text-muted">{label}</span>
+        <FieldLabel
+          as="span"
+          label={label}
+          className="text-xs font-medium text-text-muted"
+        />
       )}
       <div
         className={cn(

@@ -99,7 +99,7 @@ describe('LoginPage', () => {
       screen.getByRole('link', { name: 'Create Super Admin' }),
     ).toHaveAttribute('href', '/platform/bootstrap');
     expect(
-      screen.getByText(/New hospital accounts are created by Super Admin/i),
+      screen.getByText(/New clinic accounts are created by Super Admin/i),
     ).toBeInTheDocument();
   });
 });

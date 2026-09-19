@@ -15,16 +15,16 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   if (variant === 'login') {
     return (
-      <div className="paper-texture relative h-screen overflow-hidden">
+      <div className="paper-texture relative min-h-screen overflow-x-hidden">
         <LoginDecorations />
 
-        <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] items-center px-4 py-4 sm:px-8 lg:px-12">
-          <div className="grid h-full w-full items-center gap-8 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
-            <div className="flex max-h-full justify-center overflow-y-auto py-2 no-scrollbar lg:justify-start">
+        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] items-center px-4 py-6 sm:px-8 lg:px-12">
+          <div className="grid w-full items-center gap-8 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
+            <div className="flex justify-center lg:justify-start">
               {children}
             </div>
             {aside && (
-              <div className="hidden min-h-0 min-w-0 lg:flex lg:items-center lg:justify-center">
+              <div className="hidden min-w-0 lg:flex lg:items-center lg:justify-center">
                 {aside}
               </div>
             )}

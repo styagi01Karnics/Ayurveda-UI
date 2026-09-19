@@ -28,6 +28,8 @@ const pageTitles: Record<string, string> = {
   '/communications': 'SMS & Email',
   '/settings': 'Settings',
   '/profile': 'My Profile',
+  '/platform/clinics': 'Clinics',
+  '/platform/hospitals': 'Clinics',
 };
 
 function getPageTitle(pathname: string): string {
@@ -35,6 +37,9 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/doctors/patient/')) return 'Doctors';
   if (pathname.startsWith('/treatments/patient/')) return 'Treatments';
   if (pathname.startsWith('/billing/')) return 'Billing';
+  if (pathname.startsWith('/platform/clinics') || pathname.startsWith('/platform/hospitals')) {
+    return 'Clinics';
+  }
   return pageTitles[pathname] ?? 'Dashboard';
 }
 
@@ -73,9 +78,7 @@ export function DashboardLayout() {
           </div>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-cream-light">
-            {pathname !== '/dashboard' && (
-              <TopBanner onClaimOffer={() => setCouponOpen(true)} />
-            )}
+            <TopBanner onClaimOffer={() => setCouponOpen(true)} />
 
             <div className="flex shrink-0 items-center gap-3 border-b border-[#f0ebe3] px-4 py-3 lg:hidden">
               <button

@@ -28,9 +28,9 @@ export function ListPanel({
   const hasHeader = Boolean(tabs || toolbar || filters);
 
   return (
-    <Card className={cn('overflow-hidden p-0', className)}>
+    <Card className={cn('dashboard-card overflow-hidden p-0', className)}>
       {hasHeader && (
-        <div className="flex flex-col gap-1 p-4 sm:p-5">
+        <div className="flex flex-col gap-3 p-4 sm:p-5">
           {(tabs || toolbar) && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               {tabs}
@@ -40,7 +40,9 @@ export function ListPanel({
           {filters && <FilterBar>{filters}</FilterBar>}
         </div>
       )}
-      <div className="w-full min-w-0 overflow-x-auto">{children}</div>
+      <div className="w-full min-w-0 overflow-x-auto border-t border-[#ebe4d8]">
+        {children}
+      </div>
     </Card>
   );
 }

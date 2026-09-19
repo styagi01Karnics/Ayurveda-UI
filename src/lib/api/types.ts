@@ -64,6 +64,8 @@ export interface DoctorDto {
   mobileNumber?: string;
   email?: string;
   qualification?: string;
+  /** Alias used by some APIs for qualification / degree line. */
+  degree?: string;
   department?: string;
   consultationRoom?: string;
   consultationFees?: number;
