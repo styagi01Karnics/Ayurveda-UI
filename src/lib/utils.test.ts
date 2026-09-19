@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { formatCurrency, formatNumber, formatPersonName } from '@/lib/utils';
 
 describe('formatCurrency', () => {
