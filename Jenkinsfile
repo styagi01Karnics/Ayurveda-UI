@@ -282,53 +282,70 @@ pipeline {
                         sshpass -p "$SSH_PASSWORD" ssh \
                             -o StrictHostKeyChecking=no \
                             "$SSH_USER@$APP_SERVER" \
-                            "APP_DIR='$DEPLOY_DIR' IMAGE_NAME='$IMAGE_NAME' IMAGE_TAG='$IMAGE_TAG' BRANCH_NAME='$BRANCH_NAME' BUILD_NUMBER='$BUILD_NUMBER' APP_NAME='$APP_NAME' bash -c '
-                                set -e
+                            bash -s -- \
+                            "$DEPLOY_DIR" \
+                            "$IMAGE_NAME" \
+                            "$IMAGE_TAG" \
+                            "$BRANCH_NAME" \
+                            "$BUILD_NUMBER" \
+                            "$APP_NAME" <<'REMOTE_SCRIPT'
         
-                                echo "============================================"
-                                echo "Ayurvedaa UI Deployment"
-                                echo "============================================"
-                                echo "Branch      : \\$BRANCH_NAME"
-                                echo "Build       : \\$BUILD_NUMBER"
-                                echo "Image       : \\$IMAGE_NAME:\\$IMAGE_TAG"
-                                echo "Server      : $APP_SERVER"
-                                echo "Deploy Dir  : \\$APP_DIR"
-                                echo "============================================"
+        set -e
         
-                                echo ""
-                                echo "===== Acquiring Deployment Lock ====="
+        APP_DIR="$1"
+        IMAGE_NAME="$2"
+        IMAGE_TAG="$3"
+        BRANCH_NAME="$4"
+        BUILD_NUMBER="$5"
+        APP_NAME="$6"
         
-                                flock -n /var/lock/ayurvedaa-ui-deployment.lock bash -c "
-                                    set -e
+        echo "============================================"
+        echo "Ayurvedaa UI Deployment"
+        echo "============================================"
+        echo "Branch      : $BRANCH_NAME"
+        echo "Build       : $BUILD_NUMBER"
+        echo "Image       : $IMAGE_NAME:$IMAGE_TAG"
+        echo "Server      : 45.195.229.15"
+        echo "Deploy Dir  : $APP_DIR"
+        echo "============================================"
         
-                                    cd \\\"\\$APP_DIR\\\"
+        echo ""
+        echo "===== Acquiring Deployment Lock ====="
         
-                                    echo \\\"Deployment lock acquired.\\\"
-                                    echo \\\"\\\"
+        flock -n /var/lock/ayurvedaa-ui-deployment.lock bash <<'DEPLOY_SCRIPT'
         
-                                    echo \\\"===== Current Containers =====\\\"
-                                    docker compose ps || true
+        set -e
         
-                                    echo \\\"\\\"
-                                    echo \\\"===== Stopping Existing UI Deployment =====\\\"
-                                    docker compose down --remove-orphans
+        cd "$APP_DIR"
         
-                                    echo \\\"\\\"
-                                    echo \\\"===== Pulling New UI Image =====\\\"
-                                    IMAGE_NAME=\\\"\\$IMAGE_NAME\\\" IMAGE_TAG=\\\"\\$IMAGE_TAG\\\" docker compose pull
+        echo "Deployment lock acquired."
+        echo ""
         
-                                    echo \\\"\\\"
-                                    echo \\\"===== Starting New UI Deployment =====\\\"
-                                    IMAGE_NAME=\\\"\\$IMAGE_NAME\\\" IMAGE_TAG=\\\"\\$IMAGE_TAG\\\" docker compose up -d --remove-orphans
+        echo "===== Current Containers ====="
+        docker compose ps || true
         
-                                    echo \\\"\\\"
-                                    echo \\\"===== New Containers =====\\\"
-                                    docker compose ps
+        echo ""
+        echo "===== Stopping Existing UI Deployment ====="
+        docker compose down --remove-orphans
         
-                                    echo \\\"\\\"
-                                    echo \\\"===== Deployment Completed =====\\\"
-                                "
-                            '"
+        echo ""
+        echo "===== Pulling New UI Image ====="
+        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+        
+        echo ""
+        echo "===== Starting New UI Deployment ====="
+        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
+        
+        echo ""
+        echo "===== New Containers ====="
+        docker compose ps
+        
+        echo ""
+        echo "===== Deployment Completed ====="
+        
+        DEPLOY_SCRIPT
+        
+        REMOTE_SCRIPT
                     '''
                 }
             }
