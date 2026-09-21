@@ -61,7 +61,6 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo '===== Checkout ====='
-
                 checkout scm
             }
         }
@@ -180,6 +179,9 @@ pipeline {
 
         // ==========================================================
         // DEVOPS SERVER CLEANUP
+        //
+        // DevOps server:
+        // Keep ONLY current image
         // ==========================================================
 
         stage('DevOps Server Cleanup') {
@@ -187,17 +189,57 @@ pipeline {
                 sh '''
                     echo "===== DevOps Server Cleanup ====="
 
-                    echo "Removing local build image..."
+                    CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
-                    docker rmi "${IMAGE_NAME}:${IMAGE_TAG}" || true
+                    echo ""
+                    echo "Current image to keep:"
+                    echo "$CURRENT_IMAGE"
 
-                    echo "Removing dangling images..."
+                    echo ""
+                    echo "===== UI Images Before Cleanup ====="
+
+                    docker images "$IMAGE_NAME" \
+                        --format '{{.Repository}}:{{.Tag}}' \
+                        | sort
+
+                    echo ""
+                    echo "===== Removing Old UI Images ====="
+
+                    docker images "$IMAGE_NAME" \
+                        --format '{{.Repository}}:{{.Tag}}' \
+                        | while read -r IMAGE
+                    do
+
+                        [ -z "$IMAGE" ] && continue
+
+                        if [ "$IMAGE" = "$CURRENT_IMAGE" ]; then
+
+                            echo "KEEPING current image: $IMAGE"
+
+                        else
+
+                            echo "REMOVING old image: $IMAGE"
+
+                            docker image rm "$IMAGE" || true
+
+                        fi
+
+                    done
+
+                    echo ""
+                    echo "===== Removing Dangling Images ====="
 
                     docker image prune -f
 
-                    echo "===== Remaining Local UI Images ====="
+                    echo ""
+                    echo "===== UI Images After Cleanup ====="
 
-                    docker images "${IMAGE_NAME}"
+                    docker images "$IMAGE_NAME" \
+                        --format '{{.Repository}}:{{.Tag}}' \
+                        | sort
+
+                    echo ""
+                    echo "===== DevOps Server Cleanup Completed ====="
                 '''
             }
         }
@@ -268,75 +310,75 @@ pipeline {
         stage('Deploy to Application Server') {
             steps {
                 script {
-        
+
                     def deployScript = '''#!/bin/bash
-        
-        set -e
-        
-        APP_DIR="$1"
-        IMAGE_NAME="$2"
-        IMAGE_TAG="$3"
-        BRANCH_NAME="$4"
-        BUILD_NUMBER="$5"
-        APP_NAME="$6"
-        
-        echo "============================================"
-        echo "Ayurvedaa UI Deployment"
-        echo "============================================"
-        echo "Branch      : $BRANCH_NAME"
-        echo "Build       : $BUILD_NUMBER"
-        echo "Image       : $IMAGE_NAME:$IMAGE_TAG"
-        echo "Server      : 45.195.229.15"
-        echo "Deploy Dir  : $APP_DIR"
-        echo "============================================"
-        
-        echo ""
-        echo "===== Acquiring Deployment Lock ====="
-        
-        exec 9>/var/lock/ayurvedaa-ui-deployment.lock
-        
-        if ! flock -n 9; then
-            echo "ERROR: Another Ayurvedaa UI deployment is already running."
-            exit 1
-        fi
-        
-        echo "Deployment lock acquired."
-        echo ""
-        
-        cd "$APP_DIR"
-        
-        echo "===== Current Containers ====="
-        docker compose ps || true
-        
-        echo ""
-        echo "===== Stopping Existing UI Deployment ====="
-        docker compose down --remove-orphans
-        
-        echo ""
-        echo "===== Pulling New UI Image ====="
-        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
-        
-        echo ""
-        echo "===== Starting New UI Deployment ====="
-        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
-        
-        echo ""
-        echo "===== New Containers ====="
-        docker compose ps
-        
-        echo ""
-        echo "===== Deployment Completed ====="
-        '''
-        
+
+set -e
+
+APP_DIR="$1"
+IMAGE_NAME="$2"
+IMAGE_TAG="$3"
+BRANCH_NAME="$4"
+BUILD_NUMBER="$5"
+APP_NAME="$6"
+
+echo "============================================"
+echo "Ayurvedaa UI Deployment"
+echo "============================================"
+echo "Branch      : $BRANCH_NAME"
+echo "Build       : $BUILD_NUMBER"
+echo "Image       : $IMAGE_NAME:$IMAGE_TAG"
+echo "Server      : 45.195.229.15"
+echo "Deploy Dir  : $APP_DIR"
+echo "============================================"
+
+echo ""
+echo "===== Acquiring Deployment Lock ====="
+
+exec 9>/var/lock/ayurvedaa-ui-deployment.lock
+
+if ! flock -n 9; then
+    echo "ERROR: Another Ayurvedaa UI deployment is already running."
+    exit 1
+fi
+
+echo "Deployment lock acquired."
+echo ""
+
+cd "$APP_DIR"
+
+echo "===== Current Containers ====="
+docker compose ps || true
+
+echo ""
+echo "===== Stopping Existing UI Deployment ====="
+docker compose down --remove-orphans
+
+echo ""
+echo "===== Pulling New UI Image ====="
+IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+
+echo ""
+echo "===== Starting New UI Deployment ====="
+IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
+
+echo ""
+echo "===== New Containers ====="
+docker compose ps
+
+echo ""
+echo "===== Deployment Completed ====="
+'''
+
                     writeFile(
                         file: 'deploy-ayurvedaa-ui.sh',
                         text: deployScript
                     )
-        
+
                     sh '''
                         chmod +x deploy-ayurvedaa-ui.sh
                     '''
-        
+
                     withCredentials([
                         usernamePassword(
                             credentialsId: "${SSH_CREDENTIALS}",
@@ -344,21 +386,21 @@ pipeline {
                             passwordVariable: 'SSH_PASSWORD'
                         )
                     ]) {
-        
+
                         sh '''
                             echo "============================================"
                             echo "===== Deploy Ayurvedaa UI ====="
                             echo "============================================"
-        
+
                             echo "===== Copy Deployment Script ====="
-        
+
                             sshpass -p "$SSH_PASSWORD" scp \
                                 -o StrictHostKeyChecking=no \
                                 deploy-ayurvedaa-ui.sh \
                                 "$SSH_USER@$APP_SERVER:/tmp/deploy-ayurvedaa-ui.sh"
-        
+
                             echo "===== Execute Deployment Script ====="
-        
+
                             sshpass -p "$SSH_PASSWORD" ssh \
                                 -o StrictHostKeyChecking=no \
                                 "$SSH_USER@$APP_SERVER" \
@@ -369,25 +411,25 @@ pipeline {
                                 "$BRANCH_NAME" \
                                 "$BUILD_NUMBER" \
                                 "$APP_NAME"
-        
+
                             echo "===== Remove Remote Deployment Script ====="
-        
+
                             sshpass -p "$SSH_PASSWORD" ssh \
                                 -o StrictHostKeyChecking=no \
                                 "$SSH_USER@$APP_SERVER" \
                                 rm -f /tmp/deploy-ayurvedaa-ui.sh
-        
+
                             echo "===== Deployment SSH Stage Completed ====="
                         '''
                     }
-        
+
                     sh '''
                         rm -f deploy-ayurvedaa-ui.sh
                     '''
                 }
             }
         }
-        
+
         // ==========================================================
         // CONTAINER VERIFICATION
         // ==========================================================
@@ -438,31 +480,22 @@ pipeline {
 
         // ==========================================================
         // APPLICATION SERVER CLEANUP
-        // Keep newest 3 UI images
+        //
+        // Application server:
+        // Keep CURRENT + PREVIOUS 2 = 3 TOTAL
         // ==========================================================
 
         stage('Application Server Cleanup') {
             steps {
 
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: "${SSH_CREDENTIALS}",
-                        usernameVariable: 'SSH_USER',
-                        passwordVariable: 'SSH_PASSWORD'
-                    )
-                ]) {
+                script {
 
-                    sh '''
-                        echo "===== Application Server Cleanup ====="
-
-                        sshpass -p "$SSH_PASSWORD" ssh \
-                            -o StrictHostKeyChecking=no \
-                            "$SSH_USER@$APP_SERVER" \
-                            "bash -s" <<REMOTE_SCRIPT
+                    def cleanupScript = '''#!/bin/bash
 
 set -e
 
-IMAGE_NAME="sunardock/ayurvedaa-ui"
+IMAGE_NAME="$1"
+APP_NAME="$2"
 
 echo "============================================"
 echo "Ayurvedaa UI Image Cleanup"
@@ -471,55 +504,91 @@ echo "============================================"
 echo ""
 echo "===== Images Before Cleanup ====="
 
-docker images "\$IMAGE_NAME" \
-    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedAt}}\\t{{.ID}}'
+docker images "$IMAGE_NAME" \
+    --format '{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedAt}}' \
+    | sort -r
 
 echo ""
-echo "===== Finding Images By Creation Time ====="
+echo "===== Current Running Image ====="
 
-IMAGE_LIST=\$(docker images "\$IMAGE_NAME" \
-    --format '{{.CreatedAt}}|{{.Repository}}:{{.Tag}}' \
-    | sort -r)
+CURRENT_IMAGE=$(docker inspect \
+    "$APP_NAME" \
+    --format '{{.Config.Image}}' 2>/dev/null || true)
 
-COUNT=0
+echo "Current image: ${CURRENT_IMAGE:-None}"
 
-while IFS='|' read -r CREATED IMAGE
+if [ -z "$CURRENT_IMAGE" ]; then
+    echo "ERROR: Running UI container/image could not be determined."
+    exit 1
+fi
+
+echo ""
+echo "===== Selecting Current + Previous 2 Images ====="
+
+# Build a list of unique UI images ordered by Docker creation time.
+IMAGE_LIST=$(docker images "$IMAGE_NAME" \
+    --format '{{.ID}}|{{.CreatedAt}}|{{.Repository}}:{{.Tag}}' \
+    | sort -t'|' -k2,2r \
+    | awk -F'|' '!seen[$1]++')
+
+KEEP_IMAGES=""
+
+echo ""
+echo "KEEPING current image:"
+echo "$CURRENT_IMAGE"
+
+KEEP_IMAGES="$CURRENT_IMAGE"
+
+PREVIOUS_COUNT=0
+
+while IFS='|' read -r IMAGE_ID CREATED IMAGE
 do
 
-    [ -z "\$IMAGE" ] && continue
+    [ -z "$IMAGE" ] && continue
 
-    COUNT=\$((COUNT + 1))
+    if [ "$IMAGE" = "$CURRENT_IMAGE" ]; then
+        continue
+    fi
 
-    if [ "\$COUNT" -le 3 ]
-    then
+    KEEP_IMAGES="${KEEP_IMAGES}"$'\\n'"$IMAGE"
 
-        echo "Keeping: \$IMAGE"
+    echo "KEEPING previous image: $IMAGE"
+
+    PREVIOUS_COUNT=$((PREVIOUS_COUNT + 1))
+
+    if [ "$PREVIOUS_COUNT" -ge 2 ]; then
+        break
+    fi
+
+done <<< "$IMAGE_LIST"
+
+echo ""
+echo "===== Images To Keep ====="
+
+echo "$KEEP_IMAGES" | sed '/^$/d'
+
+echo ""
+echo "===== Removing Old UI Images ====="
+
+echo "$IMAGE_LIST" \
+    | while IFS='|' read -r IMAGE_ID CREATED IMAGE
+do
+
+    [ -z "$IMAGE" ] && continue
+
+    if echo "$KEEP_IMAGES" | grep -Fxq "$IMAGE"; then
+
+        echo "KEEPING: $IMAGE"
 
     else
 
-        echo "Checking old image: \$IMAGE"
+        echo "REMOVING: $IMAGE"
 
-        RUNNING=\$(docker ps \
-            --filter "ancestor=\$IMAGE" \
-            --format '{{.ID}}')
+        docker image rm "$IMAGE" || true
 
-        if [ -n "\$RUNNING" ]
-        then
-
-            echo "SKIPPING running image: \$IMAGE"
-
-        else
-
-            echo "Removing old image: \$IMAGE"
-
-            docker image rm "\$IMAGE" || true
-
-        fi
     fi
 
-done <<EOF
-\$IMAGE_LIST
-EOF
+done
 
 echo ""
 echo "===== Removing Dangling Images ====="
@@ -529,10 +598,59 @@ docker image prune -f
 echo ""
 echo "===== Images After Cleanup ====="
 
-docker images "\$IMAGE_NAME" \
-    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedAt}}\\t{{.ID}}'
+docker images "$IMAGE_NAME" \
+    --format '{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedAt}}' \
+    | sort -r
 
-REMOTE_SCRIPT
+echo ""
+echo "===== Application Server Cleanup Completed ====="
+'''
+
+                    writeFile(
+                        file: 'cleanup-ayurvedaa-ui.sh',
+                        text: cleanupScript
+                    )
+
+                    sh '''
+                        chmod +x cleanup-ayurvedaa-ui.sh
+                    '''
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: "${SSH_CREDENTIALS}",
+                            usernameVariable: 'SSH_USER',
+                            passwordVariable: 'SSH_PASSWORD'
+                        )
+                    ]) {
+
+                        sh '''
+                            echo "===== Copy Cleanup Script ====="
+
+                            sshpass -p "$SSH_PASSWORD" scp \
+                                -o StrictHostKeyChecking=no \
+                                cleanup-ayurvedaa-ui.sh \
+                                "$SSH_USER@$APP_SERVER:/tmp/cleanup-ayurvedaa-ui.sh"
+
+                            echo "===== Execute Cleanup Script ====="
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USER@$APP_SERVER" \
+                                bash /tmp/cleanup-ayurvedaa-ui.sh \
+                                "$IMAGE_NAME" \
+                                "$APP_NAME"
+
+                            echo "===== Remove Remote Cleanup Script ====="
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USER@$APP_SERVER" \
+                                rm -f /tmp/cleanup-ayurvedaa-ui.sh
+                        '''
+                    }
+
+                    sh '''
+                        rm -f cleanup-ayurvedaa-ui.sh
                     '''
                 }
             }
