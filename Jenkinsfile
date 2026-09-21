@@ -267,28 +267,9 @@ pipeline {
 
         stage('Deploy to Application Server') {
             steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: "${SSH_CREDENTIALS}",
-                        usernameVariable: 'SSH_USER',
-                        passwordVariable: 'SSH_PASSWORD'
-                    )
-                ]) {
-                    sh '''
-                        echo "============================================"
-                        echo "===== Deploy Ayurvedaa UI ====="
-                        echo "============================================"
+                script {
         
-                        sshpass -p "$SSH_PASSWORD" ssh \
-                            -o StrictHostKeyChecking=no \
-                            "$SSH_USER@$APP_SERVER" \
-                            bash -s -- \
-                            "$DEPLOY_DIR" \
-                            "$IMAGE_NAME" \
-                            "$IMAGE_TAG" \
-                            "$BRANCH_NAME" \
-                            "$BUILD_NUMBER" \
-                            "$APP_NAME" <<'REMOTE_SCRIPT'
+                    def deployScript = '''#!/bin/bash
         
         set -e
         
@@ -312,39 +293,96 @@ pipeline {
         echo ""
         echo "===== Acquiring Deployment Lock ====="
         
-        (
-            flock -n 9
+        exec 9>/var/lock/ayurvedaa-ui-deployment.lock
         
-            echo "Deployment lock acquired."
-            echo ""
+        if ! flock -n 9; then
+            echo "ERROR: Another Ayurvedaa UI deployment is already running."
+            exit 1
+        fi
         
-            cd "$APP_DIR"
+        echo "Deployment lock acquired."
+        echo ""
         
-            echo "===== Current Containers ====="
-            docker compose ps || true
+        cd "$APP_DIR"
         
-            echo ""
-            echo "===== Stopping Existing UI Deployment ====="
-            docker compose down --remove-orphans
+        echo "===== Current Containers ====="
+        docker compose ps || true
         
-            echo ""
-            echo "===== Pulling New UI Image ====="
-            IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+        echo ""
+        echo "===== Stopping Existing UI Deployment ====="
+        docker compose down --remove-orphans
         
-            echo ""
-            echo "===== Starting New UI Deployment ====="
-            IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
+        echo ""
+        echo "===== Pulling New UI Image ====="
+        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
         
-            echo ""
-            echo "===== New Containers ====="
-            docker compose ps
+        echo ""
+        echo "===== Starting New UI Deployment ====="
+        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
         
-            echo ""
-            echo "===== Deployment Completed ====="
+        echo ""
+        echo "===== New Containers ====="
+        docker compose ps
         
-        ) 9>/var/lock/ayurvedaa-ui-deployment.lock
+        echo ""
+        echo "===== Deployment Completed ====="
+        '''
         
-        REMOTE_SCRIPT
+                    writeFile(
+                        file: 'deploy-ayurvedaa-ui.sh',
+                        text: deployScript
+                    )
+        
+                    sh '''
+                        chmod +x deploy-ayurvedaa-ui.sh
+                    '''
+        
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: "${SSH_CREDENTIALS}",
+                            usernameVariable: 'SSH_USER',
+                            passwordVariable: 'SSH_PASSWORD'
+                        )
+                    ]) {
+        
+                        sh '''
+                            echo "============================================"
+                            echo "===== Deploy Ayurvedaa UI ====="
+                            echo "============================================"
+        
+                            echo "===== Copy Deployment Script ====="
+        
+                            sshpass -p "$SSH_PASSWORD" scp \
+                                -o StrictHostKeyChecking=no \
+                                deploy-ayurvedaa-ui.sh \
+                                "$SSH_USER@$APP_SERVER:/tmp/deploy-ayurvedaa-ui.sh"
+        
+                            echo "===== Execute Deployment Script ====="
+        
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USER@$APP_SERVER" \
+                                bash /tmp/deploy-ayurvedaa-ui.sh \
+                                "$DEPLOY_DIR" \
+                                "$IMAGE_NAME" \
+                                "$IMAGE_TAG" \
+                                "$BRANCH_NAME" \
+                                "$BUILD_NUMBER" \
+                                "$APP_NAME"
+        
+                            echo "===== Remove Remote Deployment Script ====="
+        
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USER@$APP_SERVER" \
+                                rm -f /tmp/deploy-ayurvedaa-ui.sh
+        
+                            echo "===== Deployment SSH Stage Completed ====="
+                        '''
+                    }
+        
+                    sh '''
+                        rm -f deploy-ayurvedaa-ui.sh
                     '''
                 }
             }
