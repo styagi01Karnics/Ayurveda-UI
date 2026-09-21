@@ -284,7 +284,6 @@ pipeline {
         stage('Deploy to Application Server') {
             steps {
                 script {
-
                     def deployScript = '''#!/bin/bash
 
 set -e
@@ -299,6 +298,7 @@ APP_NAME="$6"
 CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 HISTORY_FILE="${APP_DIR}/.ui-image-history"
 HISTORY_TMP="${APP_DIR}/.ui-image-history.tmp"
+CANDIDATE_FILE="${APP_DIR}/.ui-image-candidates.tmp"
 
 echo "============================================"
 echo "Ayurvedaa UI Deployment"
@@ -309,9 +309,6 @@ echo "Image       : $CURRENT_IMAGE"
 echo "Server      : 45.195.229.15"
 echo "Deploy Dir  : $APP_DIR"
 echo "============================================"
-
-echo ""
-echo "===== Acquiring Deployment Lock ====="
 
 exec 9>/var/lock/ayurvedaa-ui-deployment.lock
 
@@ -325,92 +322,80 @@ echo "Deployment lock acquired."
 cd "$APP_DIR"
 
 echo ""
-echo "===== Current Containers ====="
+echo "===== Current UI Container ====="
 
-docker compose ps || true
+RUNNING_IMAGE=$(docker inspect "$APP_NAME"     --format='{{.Config.Image}}' 2>/dev/null || true)
 
-echo ""
-echo "===== Preparing UI Image History ====="
-
-# First corrected deployment:
-# If history does not exist, use the UI images already present
-# on the application server as the initial previous-image history.
-if [ ! -f "$HISTORY_FILE" ]; then
-
-    echo "History file does not exist. Creating initial history."
-
-    TMP_INITIAL="${APP_DIR}/.ui-initial-history.tmp"
-    rm -f "$TMP_INITIAL"
-
-    docker images "$IMAGE_NAME"         --format '{{.Created}}|{{.Repository}}:{{.Tag}}' |
-    sort -r |
-    cut -d'|' -f2 |
-    while IFS= read -r IMAGE
-    do
-        [ -z "$IMAGE" ] && continue
-
-        if [ "$IMAGE" = "$CURRENT_IMAGE" ]; then
-            continue
-        fi
-
-        echo "$IMAGE"
-    done |
-    head -n 2 > "$TMP_INITIAL"
-
-    {
-        echo "$CURRENT_IMAGE"
-        cat "$TMP_INITIAL"
-    } > "$HISTORY_FILE"
-
-    rm -f "$TMP_INITIAL"
+if [ -n "$RUNNING_IMAGE" ]; then
+    echo "Currently running image: $RUNNING_IMAGE"
+else
+    echo "No currently running UI container found."
 fi
 
 echo ""
-echo "===== Existing UI Deployment History ====="
+echo "===== Existing UI Image History ====="
 
-if [ -s "$HISTORY_FILE" ]; then
+if [ -f "$HISTORY_FILE" ]; then
     nl -ba "$HISTORY_FILE"
 else
-    echo "History is empty."
+    echo "History file does not exist yet."
 fi
 
-echo ""
-echo "===== Reading Previous UI Images ====="
+rm -f "$CANDIDATE_FILE"
 
-PREVIOUS_1=""
-PREVIOUS_2=""
-
-if [ -s "$HISTORY_FILE" ]; then
-    PREVIOUS_1=$(sed -n '2p' "$HISTORY_FILE" || true)
-    PREVIOUS_2=$(sed -n '3p' "$HISTORY_FILE" || true)
-fi
-
-echo "Previous 1: ${PREVIOUS_1:-none}"
-echo "Previous 2: ${PREVIOUS_2:-none}"
-
-restore_previous_image() {
+add_candidate() {
     IMAGE="$1"
 
     [ -z "$IMAGE" ] && return 0
     [ "$IMAGE" = "$CURRENT_IMAGE" ] && return 0
 
-    if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-        echo "Already available locally: $IMAGE"
-        return 0
-    fi
-
-    echo "Image missing locally. Trying Docker Hub: $IMAGE"
-
-    if docker pull "$IMAGE"; then
-        echo "Successfully restored: $IMAGE"
-    else
-        echo "WARNING: Could not restore $IMAGE from Docker Hub."
-        echo "The image may no longer exist in Docker Hub."
+    if ! grep -Fxq "$IMAGE" "$CANDIDATE_FILE" 2>/dev/null; then
+        echo "$IMAGE" >> "$CANDIDATE_FILE"
     fi
 }
 
-restore_previous_image "$PREVIOUS_1"
-restore_previous_image "$PREVIOUS_2"
+# Always preserve the currently running UI image first.
+add_candidate "$RUNNING_IMAGE"
+
+# Then preserve previously recorded deployments.
+if [ -f "$HISTORY_FILE" ]; then
+    while IFS= read -r IMAGE
+    do
+        add_candidate "$IMAGE"
+    done < "$HISTORY_FILE"
+fi
+
+echo ""
+echo "===== Previous UI Images To Preserve ====="
+
+if [ -s "$CANDIDATE_FILE" ]; then
+    nl -ba "$CANDIDATE_FILE"
+else
+    echo "No previous UI images found."
+fi
+
+echo ""
+echo "===== Restoring Missing Previous Images ====="
+
+if [ -s "$CANDIDATE_FILE" ]; then
+    while IFS= read -r IMAGE
+    do
+        [ -z "$IMAGE" ] && continue
+
+        if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+            echo "Already available: $IMAGE"
+        else
+            echo "Not available locally. Trying Docker Hub: $IMAGE"
+
+            if docker pull "$IMAGE"; then
+                echo "Restored: $IMAGE"
+            else
+                echo "WARNING: $IMAGE is not available in Docker Hub."
+                echo "It will not be added to the new history."
+            fi
+        fi
+    done < "$CANDIDATE_FILE"
+fi
 
 echo ""
 echo "===== Stopping Existing UI Deployment ====="
@@ -423,49 +408,66 @@ echo "===== Pulling Current UI Image ====="
 IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
 
 echo ""
-echo "===== Starting New UI Deployment ====="
+echo "===== Starting Current UI Deployment ====="
 
 IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG"     docker compose up -d --remove-orphans
 
 echo ""
-echo "===== New Containers ====="
+echo "===== Verifying Current UI Container ====="
 
-docker compose ps
+DEPLOYED_IMAGE=$(docker inspect "$APP_NAME"     --format='{{.Config.Image}}' 2>/dev/null || true)
+
+if [ "$DEPLOYED_IMAGE" != "$CURRENT_IMAGE" ]; then
+    echo "ERROR: Expected $CURRENT_IMAGE"
+    echo "       but running container has: ${DEPLOYED_IMAGE:-none}"
+    exit 1
+fi
+
+echo "Running image confirmed: $DEPLOYED_IMAGE"
 
 echo ""
-echo "===== Updating UI Deployment History ====="
+echo "===== Updating UI Image History ====="
 
 rm -f "$HISTORY_TMP"
 
+# Current deployment is always first.
 echo "$CURRENT_IMAGE" >> "$HISTORY_TMP"
 
-for IMAGE in "$PREVIOUS_1" "$PREVIOUS_2"
-do
-    [ -z "$IMAGE" ] && continue
-    [ "$IMAGE" = "$CURRENT_IMAGE" ] && continue
+# Keep the first two previous images that actually exist.
+if [ -s "$CANDIDATE_FILE" ]; then
+    while IFS= read -r IMAGE
+    do
+        [ -z "$IMAGE" ] && continue
+        [ "$IMAGE" = "$CURRENT_IMAGE" ] && continue
 
-    if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-
-        if ! grep -Fxq "$IMAGE" "$HISTORY_TMP"; then
-            echo "$IMAGE" >> "$HISTORY_TMP"
+        if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+            if ! grep -Fxq "$IMAGE" "$HISTORY_TMP"; then
+                echo "$IMAGE" >> "$HISTORY_TMP"
+            fi
+        else
+            echo "Skipping unavailable image: $IMAGE"
         fi
 
-    else
-        echo "Skipping unavailable previous image: $IMAGE"
-    fi
-
-    [ "$(wc -l < "$HISTORY_TMP")" -ge 3 ] && break
-done
+        if [ "$(wc -l < "$HISTORY_TMP")" -ge 3 ]; then
+            break
+        fi
+    done < "$CANDIDATE_FILE"
+fi
 
 mv "$HISTORY_TMP" "$HISTORY_FILE"
+rm -f "$CANDIDATE_FILE"
 
 echo ""
-echo "===== Updated UI Deployment History ====="
-
+echo "===== Final UI Image History ====="
 nl -ba "$HISTORY_FILE"
 
 echo ""
-echo "===== Deployment Completed ====="
+echo "===== New Containers ====="
+docker compose ps
+
+echo ""
+echo "===== Deployment Completed Successfully ====="
+
 '''
 
                     writeFile(
@@ -473,9 +475,7 @@ echo "===== Deployment Completed ====="
                         text: deployScript
                     )
 
-                    sh '''
-                        chmod +x deploy-ayurvedaa-ui.sh
-                    '''
+                    sh 'chmod +x deploy-ayurvedaa-ui.sh'
 
                     withCredentials([
                         usernamePassword(
@@ -484,31 +484,16 @@ echo "===== Deployment Completed ====="
                             passwordVariable: 'SSH_PASSWORD'
                         )
                     ]) {
-
                         sh '''
-                            echo "============================================"
-                            echo "===== Deploy Ayurvedaa UI ====="
-                            echo "============================================"
-
-                            echo "===== Copy Deployment Script ====="
-
                             sshpass -p "$SSH_PASSWORD" scp                                 -o StrictHostKeyChecking=no                                 deploy-ayurvedaa-ui.sh                                 "$SSH_USER@$APP_SERVER:/tmp/deploy-ayurvedaa-ui.sh"
-
-                            echo "===== Execute Deployment Script ====="
 
                             sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 bash /tmp/deploy-ayurvedaa-ui.sh                                 "$DEPLOY_DIR"                                 "$IMAGE_NAME"                                 "$IMAGE_TAG"                                 "$BRANCH_NAME"                                 "$BUILD_NUMBER"                                 "$APP_NAME"
 
-                            echo "===== Remove Remote Deployment Script ====="
-
                             sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 rm -f /tmp/deploy-ayurvedaa-ui.sh
-
-                            echo "===== Deployment SSH Stage Completed ====="
                         '''
                     }
 
-                    sh '''
-                        rm -f deploy-ayurvedaa-ui.sh
-                    '''
+                    sh 'rm -f deploy-ayurvedaa-ui.sh'
                 }
             }
         }
@@ -563,13 +548,13 @@ echo "===== Deployment Completed ====="
         stage('Application Server Cleanup') {
             steps {
                 script {
-
                     def cleanupScript = '''#!/bin/bash
 
 set -e
 
 APP_DIR="/root/ayurvedaa-ui"
 IMAGE_NAME="sunardock/ayurvedaa-ui"
+APP_NAME="ayurvedaa-ui"
 HISTORY_FILE="${APP_DIR}/.ui-image-history"
 
 echo "============================================"
@@ -577,31 +562,44 @@ echo "Ayurvedaa UI Image Cleanup"
 echo "============================================"
 
 if [ ! -f "$HISTORY_FILE" ]; then
-    echo "ERROR: UI image history file does not exist:"
-    echo "$HISTORY_FILE"
+    echo "ERROR: UI image history file is missing."
+    echo "No UI images will be removed."
+    exit 1
+fi
+
+RUNNING_IMAGE=$(docker inspect "$APP_NAME"     --format='{{.Config.Image}}' 2>/dev/null || true)
+
+if [ -z "$RUNNING_IMAGE" ]; then
+    echo "ERROR: Ayurvedaa UI container is not running."
+    echo "No UI images will be removed."
+    exit 1
+fi
+
+echo "Running UI image: $RUNNING_IMAGE"
+
+if ! grep -Fxq "$RUNNING_IMAGE" "$HISTORY_FILE"; then
+    echo "ERROR: Running image is not present in history."
+    echo "No UI images will be removed."
     exit 1
 fi
 
 echo ""
-echo "===== Current UI Deployment History ====="
-
+echo "===== UI Image History ====="
 nl -ba "$HISTORY_FILE"
 
 echo ""
 echo "===== UI Images Before Cleanup ====="
-
-docker images "$IMAGE_NAME"     --format '{{.Repository}}:{{.Tag}}'
+docker images "$IMAGE_NAME" --format '{{.Repository}}:{{.Tag}}'
 
 echo ""
 echo "===== Removing UI Images Not In History ====="
 
-docker images "$IMAGE_NAME"     --format '{{.Repository}}:{{.Tag}}' |
+docker images "$IMAGE_NAME" --format '{{.Repository}}:{{.Tag}}' |
 while IFS= read -r IMAGE
 do
     [ -z "$IMAGE" ] && continue
 
-    if grep -Fxq "$IMAGE" "$HISTORY_FILE"
-    then
+    if grep -Fxq "$IMAGE" "$HISTORY_FILE"; then
         echo "KEEPING: $IMAGE"
     else
         echo "REMOVING: $IMAGE"
@@ -611,18 +609,15 @@ done
 
 echo ""
 echo "===== Final UI Images ====="
-
 docker images "$IMAGE_NAME"
 
 echo ""
-echo "===== Final UI Deployment History ====="
-
+echo "===== Final UI Image History ====="
 nl -ba "$HISTORY_FILE"
 
 echo ""
-echo "============================================"
-echo "Application Server UI Cleanup Completed"
-echo "============================================"
+echo "Application Server UI Cleanup Completed."
+
 '''
 
                     writeFile(
@@ -630,9 +625,7 @@ echo "============================================"
                         text: cleanupScript
                     )
 
-                    sh '''
-                        chmod +x cleanup-ayurvedaa-ui.sh
-                    '''
+                    sh 'chmod +x cleanup-ayurvedaa-ui.sh'
 
                     withCredentials([
                         usernamePassword(
@@ -641,25 +634,16 @@ echo "============================================"
                             passwordVariable: 'SSH_PASSWORD'
                         )
                     ]) {
-
                         sh '''
-                            echo "===== Copy Cleanup Script ====="
-
                             sshpass -p "$SSH_PASSWORD" scp                                 -o StrictHostKeyChecking=no                                 cleanup-ayurvedaa-ui.sh                                 "$SSH_USER@$APP_SERVER:/tmp/cleanup-ayurvedaa-ui.sh"
 
-                            echo "===== Execute Cleanup Script ====="
-
                             sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 bash /tmp/cleanup-ayurvedaa-ui.sh
-
-                            echo "===== Remove Remote Cleanup Script ====="
 
                             sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 rm -f /tmp/cleanup-ayurvedaa-ui.sh
                         '''
                     }
 
-                    sh '''
-                        rm -f cleanup-ayurvedaa-ui.sh
-                    '''
+                    sh 'rm -f cleanup-ayurvedaa-ui.sh'
                 }
             }
         }
@@ -672,7 +656,7 @@ echo "============================================"
     post {
 
         success {
-            echo '''
+            echo """
 ============================================
 AYURVEDAA UI DEPLOYMENT SUCCESSFUL
 ============================================
@@ -684,11 +668,11 @@ Server       : ${env.APP_SERVER}
 Port         : ${env.APP_PORT}
 
 ============================================
-'''
+"""
         }
 
         failure {
-            echo '''
+            echo """
 ============================================
 AYURVEDAA UI DEPLOYMENT FAILED
 ============================================
@@ -699,7 +683,7 @@ Build  : ${env.BUILD_NUMBER}
 Check the failed Jenkins stage.
 
 ============================================
-'''
+"""
         }
 
         always {
