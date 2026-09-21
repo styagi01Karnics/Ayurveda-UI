@@ -471,144 +471,143 @@ echo "===== Deployment Completed ====="
         // ==========================================================
         // APPLICATION SERVER CLEANUP
         //
-        // KEEP:
-        // 1. Currently running UI image
-        // 2. Newest other UI image
-        // 3. Second-newest other UI image
+        // KEEP EXACTLY 3 UI IMAGES:
         //
-        // DELETE:
-        // All older UI images only
+        // 1. Currently running image
+        // 2. Newest other UI image
+        // 3. Second newest other UI image
+        //
+        // DELETE ALL OTHER AYURVEDAA UI IMAGES ONLY
         // ==========================================================
-
+        
         stage('Application Server Cleanup') {
             steps {
-
+        
                 script {
-
+        
                     def cleanupScript = '''#!/bin/bash
-
-set -e
-
-IMAGE_NAME="sunardock/ayurvedaa-ui"
-APP_NAME="ayurvedaa-ui"
-
-echo "============================================"
-echo "Ayurvedaa UI Image Cleanup"
-echo "============================================"
-
-echo ""
-echo "===== Running UI Container ====="
-
-RUNNING_IMAGE=$(docker inspect "$APP_NAME" \
-    --format '{{.Config.Image}}' 2>/dev/null || true)
-
-if [ -z "$RUNNING_IMAGE" ]; then
-    echo "ERROR: Could not determine the currently running UI image."
-    exit 1
-fi
-
-echo "Current running image:"
-echo "$RUNNING_IMAGE"
-
-echo ""
-echo "===== UI Images Before Cleanup ====="
-
-docker images "$IMAGE_NAME" \
-    --format '{{.Repository}}:{{.Tag}}'
-
-echo ""
-echo "===== Finding UI Images ====="
-
-TMP_ALL="/tmp/ayurvedaa-ui-all-images.txt"
-TMP_KEEP="/tmp/ayurvedaa-ui-keep-images.txt"
-
-rm -f "$TMP_ALL" "$TMP_KEEP"
-
-docker images "$IMAGE_NAME" \
-    --format '{{.Repository}}:{{.Tag}}' > "$TMP_ALL"
-
-echo ""
-echo "===== Images To Keep ====="
-
-echo "$RUNNING_IMAGE" >> "$TMP_KEEP"
-
-COUNT=0
-
-while IFS= read -r IMAGE
-do
-    [ -z "$IMAGE" ] && continue
-
-    if [ "$IMAGE" = "$RUNNING_IMAGE" ]
-    then
-        continue
-    fi
-
-    CREATED=$(docker image inspect "$IMAGE" \
-        --format '{{.Created}}' 2>/dev/null || true)
-
-    if [ -z "$CREATED" ]
-    then
-        continue
-    fi
-
-    printf '%s|%s\\n' "$CREATED" "$IMAGE"
-
-done < "$TMP_ALL" |
-sort -r |
-head -n 2 |
-cut -d'|' -f2 >> "$TMP_KEEP"
-
-echo ""
-echo "Images being kept:"
-
-sort -u "$TMP_KEEP"
-
-echo ""
-echo "===== Removing Old UI Images ====="
-
-while IFS= read -r IMAGE
-do
-    [ -z "$IMAGE" ] && continue
-
-    if grep -Fxq "$IMAGE" "$TMP_KEEP"
-    then
-        echo "KEEPING: $IMAGE"
-    else
-        echo "REMOVING: $IMAGE"
-
-        docker image rm "$IMAGE" || true
-    fi
-
-done < "$TMP_ALL"
-
-echo ""
-echo "===== Removing Dangling Images ====="
-
-docker image prune -f
-
-echo ""
-echo "===== UI Images After Cleanup ====="
-
-docker images "$IMAGE_NAME" \
-    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedAt}}\\t{{.ID}}'
-
-rm -f "$TMP_ALL" "$TMP_KEEP"
-
-echo ""
-echo "============================================"
-echo "UI Image Cleanup Completed"
-echo "============================================"
-'''
-
+        
+        set -e
+        
+        IMAGE_NAME="sunardock/ayurvedaa-ui"
+        APP_NAME="ayurvedaa-ui"
+        
+        echo "============================================"
+        echo "Ayurvedaa UI Image Cleanup"
+        echo "============================================"
+        
+        echo ""
+        echo "===== Current Running Container ====="
+        
+        CURRENT_IMAGE=$(docker inspect "$APP_NAME" \
+            --format='{{.Config.Image}}' 2>/dev/null || true)
+        
+        if [ -z "$CURRENT_IMAGE" ]; then
+            echo "ERROR: Could not find running container: $APP_NAME"
+            exit 1
+        fi
+        
+        echo "Current running image:"
+        echo "$CURRENT_IMAGE"
+        
+        echo ""
+        echo "===== UI Images Before Cleanup ====="
+        
+        docker images "$IMAGE_NAME" \
+            --format '{{.Repository}}:{{.Tag}}'
+        
+        echo ""
+        echo "===== Selecting Images To Keep ====="
+        
+        KEEP_FILE="/tmp/ayurvedaa-ui-keep.txt"
+        IMAGE_FILE="/tmp/ayurvedaa-ui-images.txt"
+        
+        rm -f "$KEEP_FILE"
+        rm -f "$IMAGE_FILE"
+        
+        # Always keep the currently running image
+        echo "$CURRENT_IMAGE" > "$KEEP_FILE"
+        
+        echo "KEEP: $CURRENT_IMAGE"
+        
+        echo ""
+        echo "Finding newest two other UI images..."
+        
+        # Get all UI image tags with their real Docker creation timestamp.
+        # Exclude the currently running image.
+        docker images "$IMAGE_NAME" \
+            --format '{{.Repository}}:{{.Tag}}|{{.Created}}' |
+        while IFS='|' read -r IMAGE CREATED
+        do
+        
+            [ -z "$IMAGE" ] && continue
+        
+            if [ "$IMAGE" = "$CURRENT_IMAGE" ]; then
+                continue
+            fi
+        
+            echo "$CREATED|$IMAGE"
+        
+        done |
+        sort -r |
+        head -n 2 |
+        cut -d'|' -f2 >> "$KEEP_FILE"
+        
+        echo ""
+        echo "===== Images Being Kept ====="
+        
+        sort -u "$KEEP_FILE"
+        
+        echo ""
+        echo "===== Removing Old UI Images ====="
+        
+        docker images "$IMAGE_NAME" \
+            --format '{{.Repository}}:{{.Tag}}' > "$IMAGE_FILE"
+        
+        while IFS= read -r IMAGE
+        do
+        
+            [ -z "$IMAGE" ] && continue
+        
+            if grep -Fxq "$IMAGE" "$KEEP_FILE"
+            then
+                echo "KEEPING: $IMAGE"
+            else
+                echo "REMOVING: $IMAGE"
+        
+                docker image rm "$IMAGE" || true
+            fi
+        
+        done < "$IMAGE_FILE"
+        
+        echo ""
+        echo "===== Removing Dangling Images ====="
+        
+        docker image prune -f
+        
+        echo ""
+        echo "===== UI Images After Cleanup ====="
+        
+        docker images "$IMAGE_NAME"
+        
+        echo ""
+        echo "============================================"
+        echo "Application Server UI Cleanup Completed"
+        echo "============================================"
+        
+        rm -f "$KEEP_FILE"
+        rm -f "$IMAGE_FILE"
+        '''
+        
                     writeFile(
                         file: 'cleanup-ayurvedaa-ui.sh',
                         text: cleanupScript
                     )
-
+        
                     sh '''
                         chmod +x cleanup-ayurvedaa-ui.sh
                     '''
-
+        
                     withCredentials([
                         usernamePassword(
                             credentialsId: "${SSH_CREDENTIALS}",
@@ -616,39 +615,38 @@ echo "============================================"
                             passwordVariable: 'SSH_PASSWORD'
                         )
                     ]) {
-
+        
                         sh '''
                             echo "===== Copy Cleanup Script ====="
-
+        
                             sshpass -p "$SSH_PASSWORD" scp \
                                 -o StrictHostKeyChecking=no \
                                 cleanup-ayurvedaa-ui.sh \
                                 "$SSH_USER@$APP_SERVER:/tmp/cleanup-ayurvedaa-ui.sh"
-
+        
                             echo "===== Execute Cleanup Script ====="
-
+        
                             sshpass -p "$SSH_PASSWORD" ssh \
                                 -o StrictHostKeyChecking=no \
                                 "$SSH_USER@$APP_SERVER" \
                                 bash /tmp/cleanup-ayurvedaa-ui.sh
-
+        
                             echo "===== Remove Remote Cleanup Script ====="
-
+        
                             sshpass -p "$SSH_PASSWORD" ssh \
                                 -o StrictHostKeyChecking=no \
                                 "$SSH_USER@$APP_SERVER" \
                                 rm -f /tmp/cleanup-ayurvedaa-ui.sh
                         '''
                     }
-
+        
                     sh '''
                         rm -f cleanup-ayurvedaa-ui.sh
                     '''
                 }
             }
         }
-    }
-
+        
     // ==========================================================
     // POST ACTIONS
     // ==========================================================
