@@ -1,17 +1,64 @@
 pipeline {
+
     agent any
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+        skipDefaultCheckout(true)
+
+        buildDiscarder(
+            logRotator(
+                numToKeepStr: '20',
+                daysToKeepStr: '30'
+            )
+        )
+    }
 
     environment {
         APP_NAME = 'ayurvedaa-ui'
         IMAGE_NAME = 'sunardock/ayurvedaa-ui'
+
         APP_SERVER = '45.195.229.15'
         DEPLOY_DIR = '/root/ayurvedaa-ui'
         APP_PORT = '8100'
+
         DOCKER_CREDENTIALS = 'dockerhub-creds'
         SSH_CREDENTIALS = 'new-server-ssh'
     }
 
     stages {
+
+        // ==========================================================
+        // INITIALIZE
+        // ==========================================================
+
+        stage('Initialize') {
+            steps {
+                script {
+
+                    env.SAFE_BRANCH = (
+                        env.BRANCH_NAME ?: 'unknown'
+                    ).replaceAll(
+                        /[^A-Za-z0-9_.-]/,
+                        '-'
+                    )
+
+                    env.IMAGE_TAG = "${env.SAFE_BRANCH}-${env.BUILD_NUMBER}"
+
+                    echo "===== Build Information ====="
+                    echo "Branch     : ${env.BRANCH_NAME}"
+                    echo "Safe Branch: ${env.SAFE_BRANCH}"
+                    echo "Build      : ${env.BUILD_NUMBER}"
+                    echo "Image Tag  : ${env.IMAGE_TAG}"
+                    echo "Image      : ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+                }
+            }
+        }
+
+        // ==========================================================
+        // CHECKOUT
+        // ==========================================================
 
         stage('Checkout') {
             steps {
@@ -20,10 +67,15 @@ pipeline {
             }
         }
 
+        // ==========================================================
+        // ENVIRONMENT CHECK
+        // ==========================================================
+
         stage('Environment Check') {
             steps {
                 sh '''
                     echo "===== Environment Check ====="
+
                     node --version
                     npm --version
                     docker --version
@@ -32,22 +84,33 @@ pipeline {
             }
         }
 
+        // ==========================================================
+        // INSTALL DEPENDENCIES
+        // ==========================================================
+
         stage('Install Dependencies') {
             steps {
                 sh '''
                     echo "===== Install Dependencies ====="
+
                     npm ci
                 '''
             }
         }
 
+        // ==========================================================
+        // BUILD REACT APPLICATION
+        // ==========================================================
+
         stage('Build React Application') {
             steps {
                 sh '''
                     echo "===== Build React Application ====="
+
                     npm run build
 
                     echo "===== Verify React Build ====="
+
                     test -d dist
                     test -f dist/index.html
 
@@ -55,6 +118,10 @@ pipeline {
                 '''
             }
         }
+
+        // ==========================================================
+        // VERIFY DEPLOYMENT FILES
+        // ==========================================================
 
         stage('Verify Deployment Files') {
             steps {
@@ -72,70 +139,86 @@ pipeline {
             }
         }
 
+        // ==========================================================
+        // DOCKER BUILD
+        // ==========================================================
+
         stage('Docker Build') {
             steps {
                 script {
+
                     echo "===== Docker Build ====="
 
                     docker.build(
-                        "${IMAGE_NAME}:${BUILD_NUMBER}"
+                        "${IMAGE_NAME}:${IMAGE_TAG}"
                     )
                 }
             }
         }
 
+        // ==========================================================
+        // DOCKER PUSH
+        // ==========================================================
+
         stage('Docker Push') {
             steps {
                 script {
+
                     echo "===== Docker Push ====="
 
                     docker.withRegistry(
                         'https://index.docker.io/v1/',
                         "${DOCKER_CREDENTIALS}"
                     ) {
+
                         sh """
-                            docker push ${IMAGE_NAME}:${BUILD_NUMBER}
-
-                            docker tag ${IMAGE_NAME}:${BUILD_NUMBER} ${IMAGE_NAME}:latest
-
-                            docker push ${IMAGE_NAME}:latest
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
                         """
                     }
                 }
             }
         }
 
+        // ==========================================================
+        // DEVOPS SERVER CLEANUP
+        // ==========================================================
+
         stage('DevOps Server Cleanup') {
             steps {
                 sh '''
                     echo "===== DevOps Server Cleanup ====="
 
-                    echo "Removing build-number image tag..."
-                    docker rmi "${IMAGE_NAME}:${BUILD_NUMBER}" || true
+                    echo "Removing local build image..."
 
-                    echo "Removing old numeric image tags..."
-
-                    OLD_TAGS=$(docker images "${IMAGE_NAME}" \
-                        --format '{{.Tag}}' \
-                        | grep -E '^[0-9]+$' || true)
-
-                    for TAG in $OLD_TAGS
-                    do
-                        echo "Removing local tag: ${IMAGE_NAME}:${TAG}"
-                        docker rmi "${IMAGE_NAME}:${TAG}" || true
-                    done
+                    docker rmi "${IMAGE_NAME}:${IMAGE_TAG}" || true
 
                     echo "Removing dangling images..."
+
                     docker image prune -f
 
-                    echo "===== Remaining DevOps Images ====="
+                    echo "===== Remaining Local UI Images ====="
+
                     docker images "${IMAGE_NAME}"
                 '''
             }
         }
 
+        // ==========================================================
+        // PREPARE APPLICATION SERVER
+        // Only deployment branches
+        // ==========================================================
+
         stage('Prepare Application Server') {
+
+            when {
+                anyOf {
+                    branch 'fixes-development'
+                    branch 'dev-sonarqube-common'
+                }
+            }
+
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -143,6 +226,7 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
+
                     sh '''
                         echo "===== Prepare Application Server ====="
 
@@ -160,8 +244,22 @@ pipeline {
             }
         }
 
+        // ==========================================================
+        // COPY DOCKER COMPOSE
+        // Only deployment branches
+        // ==========================================================
+
         stage('Copy Docker Compose') {
+
+            when {
+                anyOf {
+                    branch 'fixes-development'
+                    branch 'dev-sonarqube-common'
+                }
+            }
+
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -169,6 +267,7 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
+
                     sh '''
                         echo "===== Copy Docker Compose ====="
 
@@ -181,8 +280,22 @@ pipeline {
             }
         }
 
+        // ==========================================================
+        // DEPLOY
+        // Shared deployment
+        // ==========================================================
+
         stage('Deploy to Application Server') {
+
+            when {
+                anyOf {
+                    branch 'fixes-development'
+                    branch 'dev-sonarqube-common'
+                }
+            }
+
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -190,24 +303,94 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
+
                     sh '''
-                        echo "===== Deploy Ayurveda UI ====="
+                        echo "===== Deploy Ayurvedaa UI ====="
 
                         sshpass -p "$SSH_PASSWORD" ssh \
                             -o StrictHostKeyChecking=no \
                             "$SSH_USER@$APP_SERVER" \
-                            "cd $DEPLOY_DIR && \
-                             export IMAGE_NAME=$IMAGE_NAME && \
-                             export IMAGE_TAG=$BUILD_NUMBER && \
-                             docker compose pull && \
-                             docker compose up -d --remove-orphans"
+                            "bash -s" <<REMOTE_SCRIPT
+
+set -e
+
+APP_DIR="$DEPLOY_DIR"
+IMAGE_NAME="$IMAGE_NAME"
+IMAGE_TAG="$IMAGE_TAG"
+
+echo "=========================================="
+echo "Ayurvedaa UI Deployment"
+echo "=========================================="
+
+echo "Branch    : $BRANCH_NAME"
+echo "Image     : \$IMAGE_NAME:\$IMAGE_TAG"
+echo "Server    : $APP_SERVER"
+echo "Deploy Dir: \$APP_DIR"
+
+echo ""
+echo "===== Acquiring Deployment Lock ====="
+
+exec 9>/var/lock/ayurvedaa-ui-deployment.lock
+
+flock 9
+
+echo "Deployment lock acquired."
+
+cd "\$APP_DIR"
+
+echo ""
+echo "===== Current Containers ====="
+
+docker compose ps || true
+
+echo ""
+echo "===== Stopping Existing UI Deployment ====="
+
+docker compose down --remove-orphans
+
+echo ""
+echo "===== Pulling New UI Image ====="
+
+IMAGE_NAME="\$IMAGE_NAME" \
+IMAGE_TAG="\$IMAGE_TAG" \
+docker compose pull
+
+echo ""
+echo "===== Starting New UI Deployment ====="
+
+IMAGE_NAME="\$IMAGE_NAME" \
+IMAGE_TAG="\$IMAGE_TAG" \
+docker compose up -d --remove-orphans
+
+echo ""
+echo "===== New Containers ====="
+
+docker compose ps
+
+echo ""
+echo "===== Deployment Completed ====="
+
+REMOTE_SCRIPT
                     '''
                 }
             }
         }
 
+        // ==========================================================
+        // CONTAINER VERIFICATION
+        // ==========================================================
+
         stage('Container Verification') {
+
+            when {
+                anyOf {
+                    branch 'fixes-development'
+                    branch 'dev-sonarqube-common'
+                }
+            }
+
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -215,6 +398,7 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
+
                     sh '''
                         echo "===== Container Verification ====="
 
@@ -241,14 +425,28 @@ pipeline {
                             "$SSH_USER@$APP_SERVER" \
                             "curl -f http://127.0.0.1:$APP_PORT/"
 
-                        echo "Ayurveda UI deployment verified successfully."
+                        echo "Ayurvedaa UI deployment verified successfully."
                     '''
                 }
             }
         }
 
+        // ==========================================================
+        // APPLICATION SERVER CLEANUP
+        // Keep newest 3 UI images
+        // ==========================================================
+
         stage('Application Server Cleanup') {
+
+            when {
+                anyOf {
+                    branch 'fixes-development'
+                    branch 'dev-sonarqube-common'
+                }
+            }
+
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -256,6 +454,7 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
+
                     sh '''
                         echo "===== Application Server Cleanup ====="
 
@@ -268,38 +467,62 @@ set -e
 
 IMAGE_NAME="sunardock/ayurvedaa-ui"
 
+echo "=========================================="
+echo "Ayurvedaa UI Image Cleanup"
+echo "=========================================="
+
+echo ""
 echo "===== Images Before Cleanup ====="
 
 docker images "\$IMAGE_NAME" \
-    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}'
+    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedAt}}\\t{{.ID}}'
 
 echo ""
-echo "===== Removing latest Tag ====="
+echo "===== Keeping Newest 3 Images ====="
 
-docker rmi "\$IMAGE_NAME:latest" 2>/dev/null || true
-
-echo ""
-echo "===== Keeping Latest 3 Build Images ====="
-
-TAGS=\$(docker images "\$IMAGE_NAME" \
-    --format '{{.Tag}}' \
-    | grep -E '^[0-9]+$' \
-    | sort -nr || true)
+IMAGE_LIST=\$(docker images "\$IMAGE_NAME" \
+    --format '{{.CreatedAt}}|{{.Repository}}:{{.Tag}}' \
+    | sort -r)
 
 COUNT=0
 
-for TAG in \$TAGS
+while IFS='|' read -r CREATED IMAGE
 do
+
+    [ -z "\$IMAGE" ] && continue
+
     COUNT=\$((COUNT + 1))
 
     if [ "\$COUNT" -le 3 ]
     then
-        echo "Keeping image: \$IMAGE_NAME:\$TAG"
+
+        echo "Keeping: \$IMAGE"
+
     else
-        echo "Removing old image: \$IMAGE_NAME:\$TAG"
-        docker rmi "\$IMAGE_NAME:\$TAG" || true
+
+        echo "Checking old image: \$IMAGE"
+
+        RUNNING=\$(docker ps \
+            --filter "ancestor=\$IMAGE" \
+            --format '{{.ID}}')
+
+        if [ -n "\$RUNNING" ]
+        then
+
+            echo "SKIPPING running image: \$IMAGE"
+
+        else
+
+            echo "Removing old image: \$IMAGE"
+
+            docker image rm "\$IMAGE" || true
+
+        fi
     fi
-done
+
+done <<EOF
+\$IMAGE_LIST
+EOF
 
 echo ""
 echo "===== Removing Dangling Images ====="
@@ -310,7 +533,7 @@ echo ""
 echo "===== Images After Cleanup ====="
 
 docker images "\$IMAGE_NAME" \
-    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedSince}}\\t{{.ID}}'
+    --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedAt}}\\t{{.ID}}'
 
 REMOTE_SCRIPT
                     '''
@@ -319,36 +542,41 @@ REMOTE_SCRIPT
         }
     }
 
+    // ==========================================================
+    // POST ACTIONS
+    // ==========================================================
+
     post {
+
         success {
+
             echo """
 ============================================
 AYURVEDAA UI DEPLOYMENT SUCCESSFUL
 ============================================
 
-Build        : ${BUILD_NUMBER}
-Docker Image : ${IMAGE_NAME}:${BUILD_NUMBER}
-Server       : ${APP_SERVER}
-Port         : ${APP_PORT}
+Branch      : ${env.BRANCH_NAME}
+Build       : ${env.BUILD_NUMBER}
+Docker Image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}
+Server      : ${env.APP_SERVER}
+Port        : ${env.APP_PORT}
 
 URL:
-http://${APP_SERVER}:${APP_PORT}
-
-DevOps Server:
-Current image only
-
-Application Server:
-Last 3 build images
+http://${env.APP_SERVER}:${env.APP_PORT}
 
 ============================================
 """
         }
 
         failure {
+
             echo """
 ============================================
 AYURVEDAA UI DEPLOYMENT FAILED
 ============================================
+
+Branch : ${env.BRANCH_NAME}
+Build  : ${env.BUILD_NUMBER}
 
 Check the failed Jenkins stage.
 
@@ -357,7 +585,9 @@ Check the failed Jenkins stage.
         }
 
         always {
+
             echo "Cleaning Jenkins workspace..."
+
             cleanWs()
         }
     }
