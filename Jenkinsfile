@@ -267,7 +267,7 @@ pipeline {
 
         stage('Deploy to Application Server') {
             steps {
-
+        
                 withCredentials([
                     usernamePassword(
                         credentialsId: "${SSH_CREDENTIALS}",
@@ -275,82 +275,98 @@ pipeline {
                         passwordVariable: 'SSH_PASSWORD'
                     )
                 ]) {
-
+        
                     sh '''
                         echo "===== Deploy Ayurvedaa UI ====="
-
+        
                         sshpass -p "$SSH_PASSWORD" ssh \
                             -o StrictHostKeyChecking=no \
                             "$SSH_USER@$APP_SERVER" \
-                            "bash -s" <<REMOTE_SCRIPT
-
-set -e
-
-APP_DIR="$DEPLOY_DIR"
-IMAGE_NAME="$IMAGE_NAME"
-IMAGE_TAG="$IMAGE_TAG"
-APP_NAME="$APP_NAME"
-
-echo "============================================"
-echo "Ayurvedaa UI Deployment"
-echo "============================================"
-
-echo "Branch      : $BRANCH_NAME"
-echo "Build       : $BUILD_NUMBER"
-echo "Image       : \$IMAGE_NAME:\$IMAGE_TAG"
-echo "Server      : $APP_SERVER"
-echo "Deploy Dir  : \$APP_DIR"
-echo "============================================"
-
-echo ""
-echo "===== Acquiring Deployment Lock ====="
-
-exec 9>/var/lock/ayurvedaa-ui-deployment.lock
-
-flock 9
-
-echo "Deployment lock acquired."
-
-cd "\$APP_DIR"
-
-echo ""
-echo "===== Current Containers ====="
-
-docker compose ps || true
-
-echo ""
-echo "===== Stopping Existing UI Deployment ====="
-
-docker compose down --remove-orphans
-
-echo ""
-echo "===== Pulling New UI Image ====="
-
-IMAGE_NAME="\$IMAGE_NAME" \
-IMAGE_TAG="\$IMAGE_TAG" \
-docker compose pull
-
-echo ""
-echo "===== Starting New UI Deployment ====="
-
-IMAGE_NAME="\$IMAGE_NAME" \
-IMAGE_TAG="\$IMAGE_TAG" \
-docker compose up -d --remove-orphans
-
-echo ""
-echo "===== New Containers ====="
-
-docker compose ps
-
-echo ""
-echo "===== Deployment Completed ====="
-
-REMOTE_SCRIPT
+                            bash -s -- \
+                            "$DEPLOY_DIR" \
+                            "$IMAGE_NAME" \
+                            "$IMAGE_TAG" \
+                            "$BRANCH_NAME" \
+                            "$BUILD_NUMBER" \
+                            "$APP_NAME" <<'REMOTE_SCRIPT'
+        
+        set -e
+        
+        APP_DIR="$1"
+        IMAGE_NAME="$2"
+        IMAGE_TAG="$3"
+        BRANCH_NAME="$4"
+        BUILD_NUMBER="$5"
+        APP_NAME="$6"
+        
+        echo "============================================"
+        echo "Ayurvedaa UI Deployment"
+        echo "============================================"
+        echo "Branch      : $BRANCH_NAME"
+        echo "Build       : $BUILD_NUMBER"
+        echo "Image       : $IMAGE_NAME:$IMAGE_TAG"
+        echo "Server      : 45.195.229.15"
+        echo "Deploy Dir  : $APP_DIR"
+        echo "============================================"
+        
+        if [ -z "$APP_DIR" ]; then
+            echo "ERROR: Deployment directory is empty."
+            exit 1
+        fi
+        
+        if [ ! -d "$APP_DIR" ]; then
+            echo "Creating deployment directory: $APP_DIR"
+            mkdir -p "$APP_DIR"
+        fi
+        
+        echo ""
+        echo "===== Acquiring Deployment Lock ====="
+        
+        exec 9>/var/lock/ayurvedaa-ui-deployment.lock
+        
+        flock 9
+        
+        echo "Deployment lock acquired."
+        
+        cd "$APP_DIR"
+        
+        echo ""
+        echo "===== Current Containers ====="
+        
+        docker compose ps || true
+        
+        echo ""
+        echo "===== Stopping Existing UI Deployment ====="
+        
+        docker compose down --remove-orphans
+        
+        echo ""
+        echo "===== Pulling New UI Image ====="
+        
+        IMAGE_NAME="$IMAGE_NAME" \
+        IMAGE_TAG="$IMAGE_TAG" \
+        docker compose pull
+        
+        echo ""
+        echo "===== Starting New UI Deployment ====="
+        
+        IMAGE_NAME="$IMAGE_NAME" \
+        IMAGE_TAG="$IMAGE_TAG" \
+        docker compose up -d --remove-orphans
+        
+        echo ""
+        echo "===== New Containers ====="
+        
+        docker compose ps
+        
+        echo ""
+        echo "===== Deployment Completed ====="
+        
+        REMOTE_SCRIPT
                     '''
                 }
             }
         }
-
         // ==========================================================
         // CONTAINER VERIFICATION
         // ==========================================================
