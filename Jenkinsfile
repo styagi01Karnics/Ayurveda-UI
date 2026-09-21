@@ -9,8 +9,7 @@ pipeline {
 
         buildDiscarder(
             logRotator(
-                numToKeepStr: '20',
-                daysToKeepStr: '30'
+                numToKeepStr: '3'
             )
         )
     }
@@ -37,21 +36,20 @@ pipeline {
             steps {
                 script {
 
-                    env.SAFE_BRANCH = (
-                        env.BRANCH_NAME ?: 'unknown'
-                    ).replaceAll(
-                        /[^A-Za-z0-9_.-]/,
-                        '-'
-                    )
+                    env.SAFE_BRANCH = (env.BRANCH_NAME ?: 'unknown')
+                        .replaceAll('[^A-Za-z0-9_.-]', '-')
 
                     env.IMAGE_TAG = "${env.SAFE_BRANCH}-${env.BUILD_NUMBER}"
 
-                    echo "===== Build Information ====="
-                    echo "Branch     : ${env.BRANCH_NAME}"
-                    echo "Safe Branch: ${env.SAFE_BRANCH}"
-                    echo "Build      : ${env.BUILD_NUMBER}"
-                    echo "Image Tag  : ${env.IMAGE_TAG}"
-                    echo "Image      : ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+                    echo "============================================"
+                    echo "Ayurvedaa UI Multibranch Build"
+                    echo "============================================"
+                    echo "Branch      : ${env.BRANCH_NAME}"
+                    echo "Safe Branch : ${env.SAFE_BRANCH}"
+                    echo "Build       : ${env.BUILD_NUMBER}"
+                    echo "Image Tag   : ${env.IMAGE_TAG}"
+                    echo "Docker Image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+                    echo "============================================"
                 }
             }
         }
@@ -63,6 +61,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo '===== Checkout ====='
+
                 checkout scm
             }
         }
@@ -205,18 +204,9 @@ pipeline {
 
         // ==========================================================
         // PREPARE APPLICATION SERVER
-        // Only deployment branches
         // ==========================================================
 
         stage('Prepare Application Server') {
-
-            when {
-                anyOf {
-                    branch 'fixes-development'
-                    branch 'dev-sonarqube-common'
-                }
-            }
-
             steps {
 
                 withCredentials([
@@ -246,18 +236,9 @@ pipeline {
 
         // ==========================================================
         // COPY DOCKER COMPOSE
-        // Only deployment branches
         // ==========================================================
 
         stage('Copy Docker Compose') {
-
-            when {
-                anyOf {
-                    branch 'fixes-development'
-                    branch 'dev-sonarqube-common'
-                }
-            }
-
             steps {
 
                 withCredentials([
@@ -282,18 +263,9 @@ pipeline {
 
         // ==========================================================
         // DEPLOY
-        // Shared deployment
         // ==========================================================
 
         stage('Deploy to Application Server') {
-
-            when {
-                anyOf {
-                    branch 'fixes-development'
-                    branch 'dev-sonarqube-common'
-                }
-            }
-
             steps {
 
                 withCredentials([
@@ -317,15 +289,18 @@ set -e
 APP_DIR="$DEPLOY_DIR"
 IMAGE_NAME="$IMAGE_NAME"
 IMAGE_TAG="$IMAGE_TAG"
+APP_NAME="$APP_NAME"
 
-echo "=========================================="
+echo "============================================"
 echo "Ayurvedaa UI Deployment"
-echo "=========================================="
+echo "============================================"
 
-echo "Branch    : $BRANCH_NAME"
-echo "Image     : \$IMAGE_NAME:\$IMAGE_TAG"
-echo "Server    : $APP_SERVER"
-echo "Deploy Dir: \$APP_DIR"
+echo "Branch      : $BRANCH_NAME"
+echo "Build       : $BUILD_NUMBER"
+echo "Image       : \$IMAGE_NAME:\$IMAGE_TAG"
+echo "Server      : $APP_SERVER"
+echo "Deploy Dir  : \$APP_DIR"
+echo "============================================"
 
 echo ""
 echo "===== Acquiring Deployment Lock ====="
@@ -381,14 +356,6 @@ REMOTE_SCRIPT
         // ==========================================================
 
         stage('Container Verification') {
-
-            when {
-                anyOf {
-                    branch 'fixes-development'
-                    branch 'dev-sonarqube-common'
-                }
-            }
-
             steps {
 
                 withCredentials([
@@ -425,6 +392,7 @@ REMOTE_SCRIPT
                             "$SSH_USER@$APP_SERVER" \
                             "curl -f http://127.0.0.1:$APP_PORT/"
 
+                        echo ""
                         echo "Ayurvedaa UI deployment verified successfully."
                     '''
                 }
@@ -437,14 +405,6 @@ REMOTE_SCRIPT
         // ==========================================================
 
         stage('Application Server Cleanup') {
-
-            when {
-                anyOf {
-                    branch 'fixes-development'
-                    branch 'dev-sonarqube-common'
-                }
-            }
-
             steps {
 
                 withCredentials([
@@ -467,9 +427,9 @@ set -e
 
 IMAGE_NAME="sunardock/ayurvedaa-ui"
 
-echo "=========================================="
+echo "============================================"
 echo "Ayurvedaa UI Image Cleanup"
-echo "=========================================="
+echo "============================================"
 
 echo ""
 echo "===== Images Before Cleanup ====="
@@ -478,7 +438,7 @@ docker images "\$IMAGE_NAME" \
     --format 'table {{.Repository}}\\t{{.Tag}}\\t{{.CreatedAt}}\\t{{.ID}}'
 
 echo ""
-echo "===== Keeping Newest 3 Images ====="
+echo "===== Finding Images By Creation Time ====="
 
 IMAGE_LIST=\$(docker images "\$IMAGE_NAME" \
     --format '{{.CreatedAt}}|{{.Repository}}:{{.Tag}}' \
@@ -555,11 +515,11 @@ REMOTE_SCRIPT
 AYURVEDAA UI DEPLOYMENT SUCCESSFUL
 ============================================
 
-Branch      : ${env.BRANCH_NAME}
-Build       : ${env.BUILD_NUMBER}
-Docker Image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}
-Server      : ${env.APP_SERVER}
-Port        : ${env.APP_PORT}
+Branch       : ${env.BRANCH_NAME}
+Build        : ${env.BUILD_NUMBER}
+Docker Image : ${env.IMAGE_NAME}:${env.IMAGE_TAG}
+Server       : ${env.APP_SERVER}
+Port         : ${env.APP_PORT}
 
 URL:
 http://${env.APP_SERVER}:${env.APP_PORT}
