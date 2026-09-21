@@ -312,45 +312,43 @@ pipeline {
         echo ""
         echo "===== Acquiring Deployment Lock ====="
         
-        flock -n /var/lock/ayurvedaa-ui-deployment.lock bash <<'DEPLOY_SCRIPT'
+        (
+            flock -n 9
         
-        set -e
+            echo "Deployment lock acquired."
+            echo ""
         
-        cd "$APP_DIR"
+            cd "$APP_DIR"
         
-        echo "Deployment lock acquired."
-        echo ""
+            echo "===== Current Containers ====="
+            docker compose ps || true
         
-        echo "===== Current Containers ====="
-        docker compose ps || true
+            echo ""
+            echo "===== Stopping Existing UI Deployment ====="
+            docker compose down --remove-orphans
         
-        echo ""
-        echo "===== Stopping Existing UI Deployment ====="
-        docker compose down --remove-orphans
+            echo ""
+            echo "===== Pulling New UI Image ====="
+            IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
         
-        echo ""
-        echo "===== Pulling New UI Image ====="
-        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+            echo ""
+            echo "===== Starting New UI Deployment ====="
+            IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
         
-        echo ""
-        echo "===== Starting New UI Deployment ====="
-        IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose up -d --remove-orphans
+            echo ""
+            echo "===== New Containers ====="
+            docker compose ps
         
-        echo ""
-        echo "===== New Containers ====="
-        docker compose ps
+            echo ""
+            echo "===== Deployment Completed ====="
         
-        echo ""
-        echo "===== Deployment Completed ====="
-        
-        DEPLOY_SCRIPT
+        ) 9>/var/lock/ayurvedaa-ui-deployment.lock
         
         REMOTE_SCRIPT
                     '''
                 }
             }
         }
-
         
         // ==========================================================
         // CONTAINER VERIFICATION
