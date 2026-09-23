@@ -26,7 +26,7 @@ export function EmptyState({
       )}
     >
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brown/5">
-        <Icon className="h-5 w-5 text-text-muted" strokeWidth={1.5} />
+        <Icon className="h-5 w-5 text-text-muted" fill="currentColor" strokeWidth={1.5} />
       </div>
       <p className="mt-3 text-sm font-medium text-brown">{message}</p>
       {description && (

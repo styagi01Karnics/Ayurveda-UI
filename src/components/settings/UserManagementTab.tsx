@@ -229,20 +229,23 @@ export function UserManagementTab({
   };
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="relative sm:col-start-2 sm:grid sm:grid-cols-2 sm:gap-3">
+    <div className="settings-card overflow-hidden rounded-2xl border border-[#ebe4d8] shadow-none">
+      <div className="flex flex-col gap-3 border-b border-[#EFF0F6] px-5 py-4 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <SearchField
-            placeholder="Search user"
+            placeholder="User ID"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            wrapperClassName="w-full sm:w-[200px]"
           />
-          <Select
-            placeholder="Status"
-            options={[...USER_FILTER_OPTIONS.status]}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          />
+          <div className="w-full sm:w-[160px]">
+            <Select
+              placeholder="Status"
+              options={[...USER_FILTER_OPTIONS.status]}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
@@ -251,14 +254,16 @@ export function UserManagementTab({
           records={pageItems}
           onRoleChange={handleRoleChangeRequest}
         />
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          totalElements={totalElements}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          disabled={loading}
-        />
+        <div className="border-t border-[#EFF0F6] px-5 py-3">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            disabled={loading}
+          />
+        </div>
       </AsyncStatus>
 
       <AddUserModal

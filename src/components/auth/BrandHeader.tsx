@@ -19,7 +19,7 @@ export function BrandHeader({
   return (
     <div
       className={cn(
-        'flex flex-col gap-1',
+        'flex flex-col gap-1.5',
         centered ? 'items-center text-center' : 'items-start text-left',
         className,
       )}
@@ -27,13 +27,15 @@ export function BrandHeader({
       <img
         src={isPlatform ? assets.karnicsLogo : assets.brandLogo}
         alt={isPlatform ? PLATFORM_BRANDING.name : 'Ganesha Ayurvedaa'}
-        className="h-[78px] w-[78px] object-contain"
+        className="h-16 w-16 object-contain"
       />
-      <h1 className="mt-1 font-serif text-base font-bold tracking-[0.08em] text-brown sm:text-[17px]">
+      <h1 className="font-sans text-[18.8px] font-semibold leading-none tracking-normal text-[#422C23] normal-case">
         {isPlatform ? PLATFORM_BRANDING.name.toUpperCase() : 'GANESHA AYURVEDAA'}
       </h1>
       {!isPlatform ? (
-        <p className="font-serif text-sm italic text-gold">A Journey of Healing</p>
+        <p className="font-sans text-[12px] font-semibold leading-none tracking-normal text-[#BE880B] normal-case">
+          A Journey of Healing
+        </p>
       ) : null}
     </div>
   );

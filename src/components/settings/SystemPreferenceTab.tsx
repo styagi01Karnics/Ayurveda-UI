@@ -77,7 +77,7 @@ function PreferenceSection({
   children: ReactNode;
 }) {
   return (
-    <Card className="p-5">
+    <Card className="settings-card p-5 shadow-none">
       <h3 className="mb-4 text-base font-semibold text-brown">{title}</h3>
       <div className="space-y-2">{children}</div>
     </Card>

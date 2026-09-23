@@ -39,7 +39,7 @@ export function MedicineStockCard({
 
   return (
     <Card className="dashboard-card flex h-full flex-col p-5">
-      <h3 className="dashboard-card-title text-text-muted">
+      <h3 className="dashboard-card-title">
         Medicine Stock Availability
       </h3>
 

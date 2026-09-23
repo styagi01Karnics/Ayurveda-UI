@@ -30,7 +30,7 @@ export function PatientsBillingCard({
       <div className="grid h-full min-h-0 grid-cols-1 divide-y divide-[#ebe4d8] lg:grid-cols-2 lg:divide-x lg:divide-y-0">
         <div className="flex flex-col p-5">
           <div className="mb-4 flex items-start justify-between gap-2">
-            <h3 className="dashboard-card-title text-text-muted">Total Patients</h3>
+            <h3 className="dashboard-card-title">Total Patients</h3>
             <PeriodDropdown value={period} onChange={onPeriodChange} />
           </div>
 
@@ -76,30 +76,33 @@ export function PatientsBillingCard({
 
         <div className="flex flex-col p-5">
           <div className="mb-4 flex items-start justify-between gap-2">
-            <h3 className="dashboard-card-title text-text-muted">Billing</h3>
+            <h3 className="dashboard-card-title">Billing</h3>
             <PeriodDropdown value={period} onChange={onPeriodChange} />
           </div>
 
-          <p className="text-[32px] font-bold leading-none tracking-tight text-brown">
+          <p className="font-sans text-[32px] font-bold leading-none tracking-tight text-[#422C23]">
             {formatCurrency(stats.billingTotal)}
           </p>
 
-          <p className="mt-3 text-sm font-medium text-gold">
-            Total Bills Generated: {stats.billsGenerated}
-          </p>
+          <span className="mt-3 inline-flex w-fit rounded-full bg-[#F5F0E4] px-3 py-1.5 font-sans text-xs font-semibold leading-none text-[#BE880B]">
+            Total Bills Generated:{' '}
+            <span className="ml-1 font-bold">{stats.billsGenerated}</span>
+          </span>
 
-          <DashDivider className="my-4" />
-
-          <div className="mt-auto grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <div className="rounded-xl border border-[#eee6da] bg-[#fdf8ee] px-3.5 py-3">
-              <p className="text-xs font-medium text-text-muted">Pending Payments</p>
-              <p className="mt-1 text-sm font-semibold text-brown">
+          <div className="mt-4 flex flex-1 flex-col gap-2.5">
+            <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
+              <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
+                Pending Payments
+              </p>
+              <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
                 {formatCurrency(stats.pendingPayments)}
               </p>
             </div>
-            <div className="rounded-xl border border-[#eee6da] bg-[#fdf8ee] px-3.5 py-3">
-              <p className="text-xs font-medium text-text-muted">Collected Payments</p>
-              <p className="mt-1 text-sm font-semibold text-brown">
+            <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
+              <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
+                Collected Payments
+              </p>
+              <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
                 {formatCurrency(stats.collectedPayments)}
               </p>
             </div>

@@ -170,7 +170,7 @@ export function RoleManagementTab({
   return (
     <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {roles.map((role) => (
-        <Card key={role.id} className="relative p-5">
+        <Card key={role.id} className="settings-card relative p-5 shadow-none">
           <button
             type="button"
             onClick={() => setEditTarget(role)}

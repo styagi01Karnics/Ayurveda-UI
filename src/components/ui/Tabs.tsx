@@ -21,9 +21,9 @@ export function Tabs<T extends string>({
           type="button"
           onClick={() => onChange(tab.id)}
           className={cn(
-            'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+            'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
             activeTab === tab.id
-              ? 'bg-gold/15 text-brown'
+              ? 'bg-[#FBF6E8] text-brown'
               : 'text-text-muted hover:text-brown',
           )}
         >

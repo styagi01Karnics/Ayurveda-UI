@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('LoginPage', () => {
-  it('renders login tabs and hospital form fields by default', async () => {
+  it('renders Figma login fields and role tabs by default', async () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -25,17 +25,22 @@ describe('LoginPage', () => {
     expect(screen.getByText('Welcome back!')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'System Admin' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Users' })).toBeInTheDocument();
-    expect(screen.getByText('Hospital')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('admin@gmail.com')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Enter your username or email address'),
+    ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sign Up' })).toHaveAttribute(
+      'href',
+      '/signup',
+    );
 
     await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByText('GANESHA AYURVEDAA')).toBeInTheDocument();
     });
   });
 
-  it('hides hospital field on System Admin tab', async () => {
+  it('hides clinic field on System Admin tab', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -45,14 +50,14 @@ describe('LoginPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'System Admin' }));
 
-    expect(screen.queryByText('Hospital')).not.toBeInTheDocument();
+    expect(screen.queryByText('Clinic')).not.toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('superadmin@gmail.com'),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
   });
 
-  it('shows validation errors for empty hospital submit', async () => {
+  it('shows validation errors for empty submit', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -60,7 +65,9 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     );
 
-    const emailInput = screen.getByPlaceholderText('admin@gmail.com');
+    const emailInput = screen.getByPlaceholderText(
+      'Enter your username or email address',
+    );
     const passwordInput = screen.getByPlaceholderText('Password');
     await user.clear(emailInput);
     await user.clear(passwordInput);
@@ -79,10 +86,6 @@ describe('LoginPage', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    });
-
     await user.click(screen.getByRole('button', { name: 'Login' }));
 
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
@@ -98,8 +101,5 @@ describe('LoginPage', () => {
     expect(
       screen.getByRole('link', { name: 'Create Super Admin' }),
     ).toHaveAttribute('href', '/platform/bootstrap');
-    expect(
-      screen.getByText(/New clinic accounts are created by Super Admin/i),
-    ).toBeInTheDocument();
   });
 });

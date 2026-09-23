@@ -33,34 +33,35 @@ export function StatCard({
     return (
       <Card className="dashboard-card flex h-full flex-col p-5">
         <div className="mb-4 flex items-start justify-between gap-2">
-          <h3 className="dashboard-card-title text-text-muted">{title}</h3>
+          <h3 className="dashboard-card-title">{title}</h3>
           <PeriodDropdown value={period} onChange={onPeriodChange} />
         </div>
 
-        <p className="text-[32px] font-bold leading-none tracking-tight text-brown">
+        <p className="font-sans text-[32px] font-bold leading-none tracking-tight text-[#422C23]">
           {formatCurrency(stats.billingTotal)}
         </p>
 
-        <span className="mt-3 inline-flex w-fit rounded-full bg-[#f5f0e4] px-3 py-1 text-xs font-semibold text-gold">
-          Total Bills Generated: {stats.billsGenerated}
+        <span className="mt-3 inline-flex w-fit rounded-full bg-[#F5F0E4] px-3 py-1.5 font-sans text-xs font-semibold leading-none text-[#BE880B]">
+          Total Bills Generated:{' '}
+          <span className="ml-1 font-bold">{stats.billsGenerated}</span>
         </span>
 
-        <div className="mt-4 space-y-2.5">
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f0e4] px-3.5 py-3">
-            <span className="text-sm font-medium text-text-muted">
+        <div className="mt-4 flex flex-1 flex-col gap-2.5">
+          <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
+            <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
               Pending Payments
-            </span>
-            <span className="text-sm font-semibold text-[#EAB308]">
+            </p>
+            <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
               {formatCurrency(stats.pendingPayments)}
-            </span>
+            </p>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-xl bg-[#f5f0e4] px-3.5 py-3">
-            <span className="text-sm font-medium text-text-muted">
+          <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
+            <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
               Collected Payments
-            </span>
-            <span className="text-sm font-semibold text-[#2E7D32]">
+            </p>
+            <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
               {formatCurrency(stats.collectedPayments)}
-            </span>
+            </p>
           </div>
         </div>
       </Card>
@@ -76,7 +77,7 @@ export function StatCard({
   return (
     <Card className="dashboard-card flex h-full flex-col p-5">
       <div className="mb-4 flex items-start justify-between gap-2">
-        <h3 className="dashboard-card-title text-text-muted">{title}</h3>
+        <h3 className="dashboard-card-title">{title}</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 

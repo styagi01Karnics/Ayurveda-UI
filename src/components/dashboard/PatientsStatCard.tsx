@@ -28,7 +28,7 @@ export function PatientsStatCard({
   return (
     <Card className="dashboard-card flex h-full min-h-0 flex-col p-5">
       <div className="mb-4 flex items-start justify-between gap-2">
-        <h3 className="dashboard-card-title text-text-muted">Total Patients</h3>
+        <h3 className="dashboard-card-title">Total Patients</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 

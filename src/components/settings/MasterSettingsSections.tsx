@@ -24,7 +24,9 @@ import type {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="mb-4 text-base font-semibold text-brown">{title}</h3>
+    <h3 className="font-sans text-base font-semibold leading-tight tracking-normal text-[#422C23]">
+      {title}
+    </h3>
   );
 }
 
@@ -55,7 +57,7 @@ export function ConsultationTypesSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Consultation Types" />
       </div>
@@ -85,7 +87,7 @@ export function ConsultationTypesSection({
                   type="button"
                   onClick={handleSubmit(onSubmit)}
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add consultation type"
                 >
                   <Plus className="h-4 w-4" />
@@ -130,7 +132,7 @@ export function TreatmentPlanMastersSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Treatment Plan Master" />
       </div>
@@ -160,7 +162,7 @@ export function TreatmentPlanMastersSection({
                   type="button"
                   onClick={handleSubmit(onSubmit)}
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add treatment plan"
                 >
                   <Plus className="h-4 w-4" />
@@ -205,7 +207,7 @@ export function PackageMastersSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Package Masters" />
       </div>
@@ -243,7 +245,7 @@ export function PackageMastersSection({
                   type="button"
                   onClick={handleSubmit(onSubmit)}
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add package master"
                 >
                   <Plus className="h-4 w-4" />
@@ -322,7 +324,7 @@ export function DoshasSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Dosha Master" />
       </div>
@@ -368,7 +370,7 @@ export function DoshasSection({
                   type="button"
                   onClick={handleSubmit(onSubmit)}
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add dosha"
                 >
                   <Plus className="h-4 w-4" />

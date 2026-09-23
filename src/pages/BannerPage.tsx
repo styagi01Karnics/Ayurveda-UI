@@ -141,7 +141,7 @@ export function BannerPage() {
           src={assets.scheduleDecor}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute -right-6 top-0 h-36 w-36 object-contain opacity-70 sm:h-44 sm:w-44"
+          className="pointer-events-none absolute -right-6 top-0 h-36 w-36 object-contain opacity-70 mix-blend-multiply sm:h-44 sm:w-44"
         />
         <div className="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-gold/10 blur-3xl" />
         <div className="relative max-w-2xl">

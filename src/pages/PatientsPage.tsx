@@ -164,6 +164,7 @@ export function PatientsPage() {
         tabs={
           <div>
             <UnderlineTabs
+              variant="pill"
               tabs={[
                 { id: 'active' as const, label: 'Active Patients' },
                 { id: 'inactive' as const, label: 'Inactive Patients' },

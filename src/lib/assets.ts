@@ -1,6 +1,5 @@
 /** Centralized static asset paths — public PNGs + Figma-export SVGs from src/assets */
 
-import scheduleDecor from '@/assets/signup/tulsi.png';
 import appLogo from '@/assets/signup/logo.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
@@ -24,6 +23,7 @@ import medicineCalendarIcon from '@/assets/medicines/medicine-calendar.svg';
 import folderIcon from '@/assets/appointments/book/icon-folder.svg';
 import pdfIcon from '@/assets/appointments/book/icon-pdf.svg';
 import checkmarkIcon from '@/assets/doctors/checkmark.svg';
+import scheduleDecorImg from '@/assets/dashboard/schedule-decor.png';
 import { navIconSet, type NavIconKey } from '@/lib/nav-icons';
 
 export { navIconSet, type NavIconKey };
@@ -43,7 +43,8 @@ export const assets = {
     signupDecorBottomRight: '/assets/signup-decor-right.png',
   },
   sidebarBg,
-  scheduleDecor,
+  /** Mortar + herbs — Today's Schedule card (Figma) */
+  scheduleDecor: scheduleDecorImg,
   avatar,
   calendarEvent: {
     doctor: doctorReenaAvatar,

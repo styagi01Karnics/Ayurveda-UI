@@ -740,17 +740,21 @@ export function DoctorPatientDetailPage() {
         <div className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-medium text-text-muted">Patient Code</p>
+              <p className="font-plex align-middle text-[14px] font-medium leading-5 tracking-normal text-[#737373]">
+                Patient ID
+              </p>
               <div className="mt-1 flex flex-wrap items-center gap-3">
                 <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
                 <Badge variant="gold" className="rounded-md px-3 py-1">
                   {patient.treatmentStatus}
                 </Badge>
+                <p className="text-base font-semibold text-brown">{patient.name}</p>
               </div>
-              <p className="mt-2 text-base font-semibold text-brown">{patient.name}</p>
             </div>
             <div className="text-right">
-              <p className="text-xs font-medium text-text-muted">Dosha</p>
+              <p className="font-plex align-middle text-[14px] font-medium leading-5 tracking-normal text-[#737373]">
+                Dosha
+              </p>
               <p className="text-xl font-bold text-gold">{patient.dosha || '—'}</p>
             </div>
           </div>

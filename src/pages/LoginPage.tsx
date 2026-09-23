@@ -64,6 +64,7 @@ export function LoginPage() {
   });
 
   const selectedTenantCode = watch('tenantCode');
+  const showClinicSelect = loginMode === 'all' && tenants.length > 1;
 
   useEffect(() => {
     setValue('mode', loginMode);
@@ -212,21 +213,21 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="w-full max-w-[560px] px-7 py-7 sm:px-9 sm:py-8">
+      <AuthCard className="w-full px-7 py-6 sm:px-9 sm:py-7">
         <BrandHeader
           className="mb-5"
           variant={loginMode === 'superAdmin' ? 'platform' : 'clinic'}
         />
 
-        <div className="mb-4">
-          <h2 className="font-serif text-2xl font-bold leading-tight text-brown sm:text-[26px]">
+        <div className="mb-5">
+          <h2 className="font-sans text-[clamp(28px,4.2vw,37.61px)] font-medium leading-none tracking-normal text-[#422C23]">
             Welcome back!
           </h2>
-          <p className="mt-1.5 text-sm text-text-muted">
+          <p className="mt-2 font-sans text-sm font-normal leading-snug text-text-muted">
             Enter your Credentials to access your account
           </p>
           {notice ? (
-            <p className="mt-2 rounded-lg bg-success/10 px-3 py-2 text-xs text-brown">
+            <p className="mt-3 rounded-lg bg-success/10 px-3 py-2 text-xs text-brown">
               {notice}
             </p>
           ) : null}
@@ -236,44 +237,45 @@ export function LoginPage() {
           tabs={LOGIN_TABS}
           activeTab={loginMode}
           onChange={setLoginMode}
-          className="mb-4"
+          className="mb-5"
         />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <input type="hidden" {...register('mode')} />
           <input type="hidden" {...register('locationId')} />
+          {loginMode === 'all' && !showClinicSelect ? (
+            <input type="hidden" {...register('tenantCode')} />
+          ) : null}
 
-          {loginMode === 'all' ? (
-            <>
-              <Select
-                fieldVariant="auth"
-                label="Clinic"
-                placeholder={
-                  tenantsLoading ? 'Loading clinics…' : 'Select clinic'
-                }
-                options={hospitalOptions}
-                error={errors.tenantCode?.message}
-                disabled={tenantsLoading && tenants.length === 0}
-                {...register('tenantCode')}
-              />
-
-              <Input
-                fieldVariant="auth"
-                label="Email address"
-                placeholder="admin@gmail.com"
-                error={errors.emailOrUsername?.message}
-                {...register('emailOrUsername')}
-              />
-            </>
-          ) : (
-            <Input
+          {showClinicSelect ? (
+            <Select
               fieldVariant="auth"
-              label="Email address"
-              placeholder="superadmin@gmail.com"
-              error={errors.emailOrUsername?.message}
-              {...register('emailOrUsername')}
+              label="Clinic"
+              placeholder={
+                tenantsLoading ? 'Loading clinics…' : 'Select clinic'
+              }
+              options={hospitalOptions}
+              error={errors.tenantCode?.message}
+              disabled={tenantsLoading && tenants.length === 0}
+              {...register('tenantCode')}
             />
-          )}
+          ) : null}
+
+          <Input
+            fieldVariant="auth"
+            label={
+              loginMode === 'superAdmin'
+                ? 'Email address'
+                : 'Enter your username or email address'
+            }
+            placeholder={
+              loginMode === 'superAdmin'
+                ? 'superadmin@gmail.com'
+                : 'Enter your username or email address'
+            }
+            error={errors.emailOrUsername?.message}
+            {...register('emailOrUsername')}
+          />
 
           <div>
             <Input
@@ -289,7 +291,7 @@ export function LoginPage() {
                 type="button"
                 disabled={forgotBusy}
                 onClick={() => void handleForgotPassword()}
-                className="text-xs text-brown hover:text-gold disabled:opacity-60"
+                className="text-xs text-text-muted hover:text-gold disabled:opacity-60"
               >
                 {forgotBusy ? 'Sending…' : 'Forgot password'}
               </button>
@@ -312,20 +314,25 @@ export function LoginPage() {
             type="submit"
             fullWidth
             disabled={isSubmitting}
-            className="mt-1 rounded-xl py-3 text-base font-semibold"
+            className="mt-1 rounded-lg bg-[#BE880B] py-3 text-base font-semibold text-white hover:bg-gold-dark"
           >
             Login
           </Button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-text-muted">
-          First-time platform setup?{' '}
-          <Link to="/platform/bootstrap" className="text-gold hover:underline">
-            Create Super Admin
+        <p className="mt-5 text-center font-sans text-sm text-text-muted">
+          Don&apos;t have an account?{' '}
+          <Link
+            to="/signup"
+            className="font-semibold text-[#BE880B] hover:underline"
+          >
+            Sign Up
           </Link>
         </p>
         <p className="mt-1.5 text-center text-xs text-text-muted">
-          New clinic accounts are created by Super Admin after login.
+          <Link to="/platform/bootstrap" className="text-[#BE880B] hover:underline">
+            Create Super Admin
+          </Link>
         </p>
       </AuthCard>
     </AuthLayout>

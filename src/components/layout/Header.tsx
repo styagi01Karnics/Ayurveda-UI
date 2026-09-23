@@ -17,7 +17,7 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="flex w-full min-w-0 shrink-0 items-center justify-between gap-3 bg-cream-light px-4 py-4 sm:px-6">
-      <h1 className="min-w-0 truncate text-lg font-semibold text-brown sm:text-xl">
+      <h1 className="min-w-0 truncate font-plex text-[14px] font-normal leading-[18px] tracking-[0.16px] text-[#161616]">
         {title}
       </h1>
 

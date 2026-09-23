@@ -122,10 +122,10 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 py-2.5 pl-3.5 pr-3 text-sm transition-colors',
+                'flex items-center gap-3 py-2.5 pl-3.5 pr-3 transition-colors',
                 isActive
-                  ? 'rounded-l-xl bg-cream-light font-semibold text-gold'
-                  : 'rounded-l-xl font-medium text-brown hover:bg-cream-light/50',
+                  ? 'rounded-l-xl bg-cream-light font-sans text-[16px] font-semibold leading-none tracking-normal text-[#BE880B]'
+                  : 'rounded-l-xl font-sans text-sm font-medium text-brown hover:bg-cream-light/50',
               )
             }
           >
@@ -135,7 +135,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                   <Megaphone
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-gold' : 'text-brown',
+                      isActive ? 'text-[#BE880B]' : 'text-brown',
                     )}
                     strokeWidth={1.5}
                     aria-hidden
@@ -144,7 +144,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                   <MessageCircle
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-gold' : 'text-brown',
+                      isActive ? 'text-[#BE880B]' : 'text-brown',
                     )}
                     strokeWidth={1.5}
                     aria-hidden
@@ -153,7 +153,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                   <Building2
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-gold' : 'text-brown',
+                      isActive ? 'text-[#BE880B]' : 'text-brown',
                     )}
                     strokeWidth={1.5}
                     aria-hidden

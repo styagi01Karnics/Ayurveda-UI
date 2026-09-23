@@ -15,19 +15,19 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   if (variant === 'login') {
     return (
-      <div className="paper-texture relative min-h-screen overflow-x-hidden">
+      <div className="login-shell fixed inset-0 z-0 overflow-hidden">
         <LoginDecorations />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1400px] items-center px-4 py-6 sm:px-8 lg:px-12">
-          <div className="grid w-full items-center gap-8 lg:grid-cols-[minmax(0,560px)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
-            <div className="flex justify-center lg:justify-start">
+        <div className="relative z-10 flex h-full w-full items-center justify-center px-4 py-3 sm:px-6 lg:px-8 lg:py-4 xl:px-12">
+          <div className="login-fit grid max-h-full w-full max-w-[1280px] items-center gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)] xl:gap-14">
+            <div className="mx-auto w-full max-w-[560px] lg:mx-0">
               {children}
             </div>
-            {aside && (
-              <div className="hidden min-w-0 lg:flex lg:items-center lg:justify-center">
+            {aside ? (
+              <div className="hidden min-h-0 min-w-0 items-center justify-center overflow-visible lg:flex">
                 {aside}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -36,10 +36,10 @@ export function AuthLayout({
 
   if (variant === 'signup') {
     return (
-      <div className="paper-texture relative min-h-screen overflow-x-hidden">
+      <div className="paper-texture relative min-h-svh overflow-x-hidden overflow-y-auto">
         <SignupDecorations />
 
-        <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-[1060px] items-center px-4 py-10 sm:px-6 lg:px-8">
+        <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-[1060px] items-center px-4 py-8 sm:px-6 lg:px-8">
           <div className="w-full">{children}</div>
         </div>
       </div>
@@ -47,9 +47,9 @@ export function AuthLayout({
   }
 
   return (
-    <div className="paper-texture relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-10">
+    <div className="paper-texture relative min-h-svh overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6 lg:px-10">
       <div
-        className={`relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center gap-8 ${
+        className={`relative z-10 mx-auto flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center gap-8 ${
           aside ? 'max-w-6xl lg:flex-row lg:items-center lg:justify-between' : 'max-w-md'
         }`}
       >

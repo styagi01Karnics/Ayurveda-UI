@@ -22,15 +22,19 @@ export function PeriodDropdown({ value, onChange }: PeriodDropdownProps) {
         value={value}
         onChange={(event) => onChange(event.target.value as BillingPeriod)}
         aria-label="Select period"
-        className="appearance-none cursor-pointer bg-transparent py-0 pl-0.5 pr-5 text-xs font-semibold text-brown focus:outline-none"
+        className="appearance-none cursor-pointer bg-transparent py-0 pl-0.5 pr-5 text-xs font-semibold text-[#422C23] focus:outline-none"
       >
         {DASHBOARD_PERIOD_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
+          <option
+            key={option.value}
+            value={option.value}
+            className="bg-white text-[#422C23]"
+          >
             {option.label}
           </option>
         ))}
       </select>
-      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+      <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#422C23]" />
     </div>
   );
 }

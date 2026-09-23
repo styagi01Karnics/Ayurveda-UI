@@ -23,6 +23,21 @@ describe('settings.schema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('allows clinic doctor without mobile number', () => {
+    const result = clinicDoctorSchema.safeParse({
+      name: 'Dr. Aarav Mehta',
+      specialization: 'BAMS',
+      status: 'Active',
+      mobileNumber: '',
+      consultationFees: '500',
+      followUpFees: '500',
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('rejects invalid clinic doctor fees', () => {
     const result = clinicDoctorSchema.safeParse({
       name: 'Dr. Test',

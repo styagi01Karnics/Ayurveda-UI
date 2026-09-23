@@ -6,6 +6,7 @@ import { useToast } from '@/app/ToastContext';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
 import { DoctorAvailabilityFields } from '@/components/settings/DoctorAvailabilityFields';
@@ -514,7 +515,52 @@ export function ClinicSettingsTab() {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="mb-4 text-base font-semibold text-brown">{title}</h3>
+    <h3 className="font-sans text-base font-semibold leading-tight tracking-normal text-[#422C23]">
+      {title}
+    </h3>
+  );
+}
+
+function SettingsActionButton({
+  label,
+  onClick,
+  disabled,
+  variant = 'add',
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: 'add' | 'delete';
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      className={cn(
+        'inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] transition-colors hover:bg-[#F5EBD3] disabled:opacity-60',
+        variant === 'delete' && 'hover:bg-danger/10 hover:text-danger',
+      )}
+    >
+      {variant === 'add' ? (
+        <Plus className="h-4 w-4" strokeWidth={2.25} />
+      ) : (
+        <Trash2 className="h-4 w-4" strokeWidth={2} />
+      )}
+    </button>
+  );
+}
+
+function SettingsTableHead({ columns }: { columns: string[] }) {
+  return (
+    <tr className="border-b border-[#EFF0F6] text-[12px] font-medium text-[#838A9A]">
+      {columns.map((column) => (
+        <th key={column} className="px-4 py-3 text-left font-medium">
+          {column}
+        </th>
+      ))}
+    </tr>
   );
 }
 
@@ -541,22 +587,19 @@ function TreatmentCategoriesSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Treatment Categories" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Category Name</th>
-              <th className="px-4 py-3 font-medium">Description</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+            <SettingsTableHead
+              columns={['S No.', 'Category Name', 'Description', 'Action']}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input
@@ -573,23 +616,19 @@ function TreatmentCategoriesSection({
                 />
               </td>
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
+                <SettingsActionButton
+                  label="Add category"
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
-                  aria-label="Add category"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                  onClick={() => void handleSubmit(onSubmit)()}
+                />
               </td>
             </tr>
             {categories.map((category, index) => (
-              <tr key={category.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{category.name}</td>
-                <td className="px-4 py-4 text-brown">{category.description}</td>
-                <td className="px-4 py-4 text-text-muted">—</td>
+              <tr key={category.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
+                <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
+                <td className="px-4 py-4 text-[#838A9A]">—</td>
               </tr>
             ))}
           </tbody>
@@ -636,6 +675,7 @@ function DoctorsSection({
   });
 
   const availabilityDays = watch('availabilityDays') ?? [];
+  const { showToast } = useToast();
 
   const onSubmit = async (values: ClinicDoctorFormValues) => {
     await onAdd(values);
@@ -653,50 +693,85 @@ function DoctorsSection({
     });
   };
 
+  const onInvalid = () => {
+    showToast({
+      title: 'Cannot add doctor',
+      message:
+        'Please fill name, specialization, mobile, fees, and availability.',
+    });
+  };
+
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Doctors" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full min-w-[1100px] text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Specialization</th>
-              <th className="px-4 py-3 font-medium">Qualification</th>
-              <th className="px-4 py-3 font-medium">Mobile</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Consultation Fees</th>
-              <th className="px-4 py-3 font-medium">Follow Up Fees</th>
-              <th className="px-4 py-3 font-medium min-w-[220px]">Availability</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+            <SettingsTableHead
+              columns={[
+                'S No.',
+                'Name',
+                'Specialization',
+                'Qualification',
+                'Mobile',
+                'Status',
+                'Consultation Fees',
+                'Follow Up Fees',
+                'Availability',
+                'Action',
+              ]}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="Specialization" error={errors.specialization?.message} {...register('specialization')} />
+                <Input
+                  placeholder="Specialisation"
+                  error={errors.specialization?.message}
+                  {...register('specialization')}
+                />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="Qualification" error={errors.qualification?.message} {...register('qualification')} />
+                <Input
+                  placeholder="Qualification"
+                  error={errors.qualification?.message}
+                  {...register('qualification')}
+                />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="Mobile" error={errors.mobileNumber?.message} {...register('mobileNumber')} />
+                <Input
+                  placeholder="Mobile"
+                  error={errors.mobileNumber?.message}
+                  {...register('mobileNumber')}
+                />
               </td>
               <td className="px-4 py-3">
-                <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
+                <Select
+                  placeholder="Status"
+                  options={[...CLINIC_STATUS_OPTIONS]}
+                  error={errors.status?.message}
+                  {...register('status')}
+                />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="₹" error={errors.consultationFees?.message} {...register('consultationFees')} />
+                <RupeeInput
+                  placeholder="0"
+                  error={errors.consultationFees?.message}
+                  {...register('consultationFees')}
+                />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="₹" error={errors.followUpFees?.message} {...register('followUpFees')} />
+                <RupeeInput
+                  placeholder="0"
+                  error={errors.followUpFees?.message}
+                  {...register('followUpFees')}
+                />
               </td>
               <td className="px-4 py-3 align-top">
                 <DoctorAvailabilityFields
@@ -719,24 +794,24 @@ function DoctorsSection({
                 />
               </td>
               <td className="px-4 py-3 align-top">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
+                <SettingsActionButton
+                  label="Add doctor"
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
-                  aria-label="Add doctor"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                  onClick={() => void handleSubmit(onSubmit, onInvalid)()}
+                />
               </td>
             </tr>
             {doctors.map((doctor, index) => (
-              <tr key={doctor.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{doctor.name}</td>
-                <td className="px-4 py-4 text-brown">{doctor.specialization}</td>
-                <td className="px-4 py-4 text-brown">{doctor.qualification || '—'}</td>
-                <td className="px-4 py-4 text-brown">{doctor.mobileNumber || '—'}</td>
+              <tr key={doctor.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{doctor.name}</td>
+                <td className="px-4 py-4 text-[#422C23]">{doctor.specialization}</td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {doctor.qualification || '—'}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {doctor.mobileNumber || '—'}
+                </td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={doctor.status}
@@ -744,18 +819,19 @@ function DoctorsSection({
                     onToggle={() => onToggleStatus(doctor)}
                   />
                 </td>
-                <td className="px-4 py-4 text-brown">{formatCurrency(doctor.consultationFees)}</td>
-                <td className="px-4 py-4 text-brown">{formatCurrency(doctor.followUpFees)}</td>
-                <td className="px-4 py-4 text-brown">{doctor.availability || '—'}</td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {formatCurrency(doctor.consultationFees)}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {formatCurrency(doctor.followUpFees)}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">{doctor.availability || '—'}</td>
                 <td className="px-4 py-4">
-                  <button
-                    type="button"
+                  <SettingsActionButton
+                    label={`Delete ${doctor.name}`}
+                    variant="delete"
                     onClick={() => onDelete(doctor)}
-                    className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${doctor.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </td>
               </tr>
             ))}
@@ -803,26 +879,28 @@ function TherapySection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Therapy" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full min-w-[900px] text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Duration</th>
-              <th className="px-4 py-3 font-medium">Price</th>
-              <th className="px-4 py-3 font-medium">Description</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+            <SettingsTableHead
+              columns={[
+                'S No.',
+                'Name',
+                'Category',
+                'Status',
+                'Duration',
+                'Price',
+                'Description',
+                'Action',
+              ]}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
@@ -836,36 +914,33 @@ function TherapySection({
                   {...register('category')}
                 />
               </td>
+              <td className="px-4 py-3 text-[12px] text-[#838A9A]">Active</td>
               <td className="px-4 py-3">
-                <Input placeholder="45" error={errors.duration?.message} {...register('duration')} />
+                <Input placeholder="45 min" error={errors.duration?.message} {...register('duration')} />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="₹" error={errors.price?.message} {...register('price')} />
+                <RupeeInput placeholder="0" error={errors.price?.message} {...register('price')} />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="Description" error={errors.description?.message} {...register('description')} />
+                <Input
+                  placeholder="Description"
+                  error={errors.description?.message}
+                  {...register('description')}
+                />
               </td>
-              <td className="px-4 py-3" />
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
+                <SettingsActionButton
+                  label="Add therapy"
                   disabled={isSubmitting || categoryOptions.length === 0}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
-                  aria-label="Add therapy"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                  onClick={() => void handleSubmit(onSubmit)()}
+                />
               </td>
             </tr>
             {therapies.map((therapy, index) => (
-              <tr key={therapy.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{therapy.name}</td>
-                <td className="px-4 py-4 text-brown">{therapy.category}</td>
-                <td className="px-4 py-4 text-brown">{therapy.duration}</td>
-                <td className="px-4 py-4 text-brown">{formatCurrency(therapy.price)}</td>
-                <td className="px-4 py-4 text-brown">{therapy.description}</td>
+              <tr key={therapy.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{therapy.name}</td>
+                <td className="px-4 py-4 text-[#422C23]">{therapy.category}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={therapy.status}
@@ -873,15 +948,15 @@ function TherapySection({
                     onToggle={() => onToggleStatus(therapy)}
                   />
                 </td>
+                <td className="px-4 py-4 text-[#422C23]">{therapy.duration}</td>
+                <td className="px-4 py-4 text-[#422C23]">{formatCurrency(therapy.price)}</td>
+                <td className="px-4 py-4 text-[#422C23]">{therapy.description}</td>
                 <td className="px-4 py-4">
-                  <button
-                    type="button"
+                  <SettingsActionButton
+                    label={`Delete ${therapy.name}`}
+                    variant="delete"
                     onClick={() => onDelete(therapy)}
-                    className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${therapy.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </td>
               </tr>
             ))}
@@ -950,58 +1025,70 @@ function TherapistSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Therapist" />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Assigned Therapies</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+            <SettingsTableHead
+              columns={['S No.', 'Name', 'Status', 'Assigned Therapies', 'Action']}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
               </td>
               <td className="px-4 py-3">
-                <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
+                <Select
+                  placeholder="Status"
+                  options={[...CLINIC_STATUS_OPTIONS]}
+                  error={errors.status?.message}
+                  {...register('status')}
+                />
               </td>
               <td className="px-4 py-3">
                 <div className="space-y-2">
-                  <Select
-                    placeholder={therapyOptions.length ? 'Select therapy' : 'Add therapies first'}
-                    options={therapyOptions}
-                    disabled={therapyOptions.length === 0}
-                    onChange={(e) => {
-                      addTherapyTag(e.target.value);
-                      e.target.value = '';
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex min-h-[40px] flex-wrap items-center gap-1.5 rounded-lg border border-[#EFF0F6] bg-white px-2.5 py-1.5">
                     {assignedTherapyIds.map((therapyId) => (
                       <span
                         key={therapyId}
-                        className="inline-flex items-center gap-1 rounded-full bg-cream px-2.5 py-1 text-xs text-brown"
+                        className="inline-flex items-center gap-1 rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2 py-0.5 text-[11px] font-medium text-[#422C23]"
                       >
                         {therapyLabel(therapyId)}
                         <button
                           type="button"
                           onClick={() => removeTherapyTag(therapyId)}
-                          className="text-text-muted hover:text-brown"
+                          className="text-[#838A9A] hover:text-[#422C23]"
                           aria-label={`Remove ${therapyLabel(therapyId)}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
                       </span>
                     ))}
+                    <select
+                      className="min-w-[120px] flex-1 appearance-none border-none bg-transparent py-1 font-sans text-[12px] font-medium text-[#422C23] focus:outline-none"
+                      value=""
+                      disabled={therapyOptions.length === 0}
+                      onChange={(e) => {
+                        addTherapyTag(e.target.value);
+                        e.target.value = '';
+                      }}
+                    >
+                      <option value="">
+                        {therapyOptions.length ? 'Select therapy' : 'Add therapies first'}
+                      </option>
+                      {therapyOptions
+                        .filter((opt) => !assignedTherapyIds.includes(opt.value))
+                        .map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                   {errors.assignedTherapyIds?.message && (
                     <p className="text-xs text-danger">{errors.assignedTherapyIds.message}</p>
@@ -1009,20 +1096,16 @@ function TherapistSection({
                 </div>
               </td>
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark"
-                  aria-label="Add therapist"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                <SettingsActionButton
+                  label="Add therapist"
+                  onClick={() => void handleSubmit(onSubmit)()}
+                />
               </td>
             </tr>
             {therapists.map((therapist, index) => (
-              <tr key={therapist.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{therapist.name}</td>
+              <tr key={therapist.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{therapist.name}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={therapist.status}
@@ -1035,7 +1118,7 @@ function TherapistSection({
                     {therapist.assignedTherapies.map((therapy) => (
                       <span
                         key={therapy}
-                        className="rounded-full bg-cream px-2.5 py-1 text-xs text-brown"
+                        className="rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2.5 py-1 text-[11px] font-medium text-[#422C23]"
                       >
                         {therapy}
                       </span>
@@ -1043,14 +1126,11 @@ function TherapistSection({
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  <button
-                    type="button"
+                  <SettingsActionButton
+                    label={`Delete ${therapist.name}`}
+                    variant="delete"
                     onClick={() => onDelete(therapist)}
-                    className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${therapist.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </td>
               </tr>
             ))}

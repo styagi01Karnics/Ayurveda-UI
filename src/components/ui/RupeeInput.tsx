@@ -30,7 +30,7 @@ export const RupeeInput = forwardRef<HTMLInputElement, RupeeInputProps>(
             type="text"
             inputMode="decimal"
             className={cn(
-              'w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-8 pr-4 text-sm text-brown placeholder:text-gray-400 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+              'w-full rounded-lg border border-[#EFF0F6] bg-white py-2 pl-8 pr-4 font-sans text-[12px] font-medium leading-6 tracking-normal text-[#422C23] placeholder:text-[#67554D]/70 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
               error && 'border-danger focus:border-danger focus:ring-danger/20',
               props.disabled && 'cursor-not-allowed bg-gray-50 text-text-muted',
               className,

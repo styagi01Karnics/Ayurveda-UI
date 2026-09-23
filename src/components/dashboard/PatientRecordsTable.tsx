@@ -24,7 +24,7 @@ export function PatientRecordsTable({
   return (
     <DataTableShell className={cn('dashboard-card w-full', className)}>
       <div className="flex w-full items-center justify-between border-b border-[#f0ebe3] px-5 py-4">
-        <h3 className="dashboard-card-title text-brown">{title}</h3>
+        <h3 className="dashboard-card-title">{title}</h3>
         <Link to={viewAllTo} className="text-sm font-medium text-gold hover:underline">
           View All
         </Link>

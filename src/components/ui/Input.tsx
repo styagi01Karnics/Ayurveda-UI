@@ -91,8 +91,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         onInput={isDate ? syncFilledFromDom : undefined}
         placeholder={isDate ? undefined : placeholder}
         className={cn(
-          'w-full rounded-lg border border-gray-200 bg-white px-4 text-sm text-brown placeholder:text-gray-400 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
-          fieldVariant === 'auth' ? 'py-3' : 'py-2.5',
+          'w-full rounded-lg border border-[#EFF0F6] bg-white px-4 font-sans text-[12px] font-medium leading-6 tracking-normal text-[#422C23] placeholder:text-[#67554D]/70 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+          fieldVariant === 'auth' ? 'py-2.5 text-sm' : 'py-2',
           isDate && 'date-field',
           isDate && !filled && 'date-field-empty',
           error && 'border-danger focus:border-danger focus:ring-danger/20',

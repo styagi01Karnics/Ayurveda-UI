@@ -26,20 +26,20 @@ export function TodayScheduleCard({
         src={assets.scheduleDecor}
         alt=""
         aria-hidden
-        className="pointer-events-none absolute right-0 top-0 h-[80px] w-[80px] object-contain sm:h-[96px] sm:w-[96px]"
+        className="pointer-events-none absolute right-0 top-0 z-0 h-[118px] w-[118px] object-contain object-right-top sm:h-[136px] sm:w-[136px]"
       />
 
-      <div className="relative mb-4 pr-14 sm:pr-16">
+      <div className="relative z-[1] mb-4 pr-[7.5rem] sm:pr-32">
         <div className="flex items-center gap-2">
           <Stethoscope className="h-4 w-4 shrink-0 text-text-muted" strokeWidth={1.5} />
-          <h3 className="dashboard-card-title text-brown">
-            Today&apos;s Schedule
-          </h3>
+          <h3 className="dashboard-card-title">Today&apos;s Schedule</h3>
         </div>
-        <p className="mt-1.5 pl-6 text-xs font-medium text-gold">{dateLabel}</p>
+        <p className="mt-1.5 pl-6 font-sans text-[11px] font-semibold leading-none tracking-normal text-[#BE880B]">
+          {dateLabel}
+        </p>
       </div>
 
-      <div className="relative space-y-2.5">
+      <div className="relative z-[1] space-y-2.5">
         <ScheduleSubCard title="Ongoing Appointment:">
           <p className="text-sm font-semibold text-brown">
             {ongoing.patientName || '—'}
@@ -67,7 +67,7 @@ export function TodayScheduleCard({
 
       <Link
         to={viewFullScheduleTo}
-        className="relative mt-5 block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
+        className="relative z-[1] mt-5 block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
       >
         View Full Schedule
       </Link>

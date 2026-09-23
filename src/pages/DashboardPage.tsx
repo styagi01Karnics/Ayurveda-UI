@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChartModal } from '@/components/dashboard/ChartModal';
 import { MedicineStockCard } from '@/components/dashboard/MedicineStockCard';
 import { PatientRecordsTable } from '@/components/dashboard/PatientRecordsTable';
@@ -14,10 +14,12 @@ import {
 } from '@/data/mock/dashboard';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getAppointmentPatients } from '@/lib/api/appointments';
-import type { BillingPeriod } from '@/lib/api/billing';
+import {
+  getDashboardBillingSummary,
+  type BillingPeriod,
+} from '@/lib/api/billing';
 import {
   getAppointmentStats,
-  getDashboardBillingSummary,
   getDashboardMedicineStock,
   getPatientTrends,
   getTodaysSchedule,
@@ -67,14 +69,21 @@ function normalizeTrendPoints(
 export function DashboardPage() {
   const [chartOpen, setChartOpen] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('MONTHLY');
+  const [patientsPeriod, setPatientsPeriod] =
+    useState<BillingPeriod>('MONTHLY');
+  const [appointmentsPeriod, setAppointmentsPeriod] =
+    useState<BillingPeriod>('MONTHLY');
+  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
+  // Base dashboard data — independent of period filters (no full remount on change).
   const { data, loading, error, reload } = useAsyncData(
     async () => {
       const [
         medStock,
         schedule,
         appointmentStats,
-        billingSummary,
         patientCount,
         recentRows,
         trends,
@@ -82,36 +91,39 @@ export function DashboardPage() {
         getDashboardMedicineStock().catch(() => null),
         getTodaysSchedule().catch(() => null),
         getAppointmentStats().catch(() => null),
-        getDashboardBillingSummary(billingPeriod).catch(() => null),
         getPatientCount().catch(() => null),
         getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
         getPatientTrends().catch(() => []),
       ]);
 
-      const stats = buildDashboardStats({
+      const nextStats = buildDashboardStats({
         patientCount,
         appointmentStats,
-        billingSummary,
+        billingSummary: null,
       });
 
       const recentPatients = recentRows
         .slice(0, 5)
-        .map((row) => mapPatientAppointmentListItemToPatientRecord(row, 'active'));
+        .map((row) =>
+          mapPatientAppointmentListItemToPatientRecord(row, 'active'),
+        );
 
       const patientTrends = normalizeTrendPoints(trends).filter((p) => p.month);
 
       return {
         medStock,
         schedule,
-        stats,
+        baseStats: nextStats,
         recentPatients,
         patientTrends,
       };
     },
     {
-      medStock: null as Awaited<ReturnType<typeof getDashboardMedicineStock>> | null,
+      medStock: null as Awaited<
+        ReturnType<typeof getDashboardMedicineStock>
+      > | null,
       schedule: null,
-      stats: EMPTY_STATS,
+      baseStats: EMPTY_STATS,
       recentPatients: [],
       patientTrends: [] as Array<{
         month: string;
@@ -119,8 +131,53 @@ export function DashboardPage() {
         followUps: number;
       }>,
     },
-    [billingPeriod],
+    [],
   );
+
+  useEffect(() => {
+    if (!loading) setHasLoadedOnce(true);
+  }, [loading]);
+
+  // Merge non-billing stats from base load; keep current billing numbers until refreshed.
+  useEffect(() => {
+    if (loading) return;
+    setStats((prev) => ({
+      ...data.baseStats,
+      billingTotal: prev.billingTotal,
+      billsGenerated: prev.billsGenerated,
+      pendingPayments: prev.pendingPayments,
+      collectedPayments: prev.collectedPayments,
+    }));
+  }, [loading, data.baseStats]);
+
+  // Period filter: refresh billing card only — page stays mounted.
+  useEffect(() => {
+    if (!hasLoadedOnce) return;
+
+    let active = true;
+    setBillingLoading(true);
+    getDashboardBillingSummary(billingPeriod)
+      .then((summary) => {
+        if (!active || !summary) return;
+        setStats((prev) => ({
+          ...prev,
+          billingTotal: summary.totalRevenue ?? 0,
+          billsGenerated: summary.totalBillsGenerated ?? 0,
+          pendingPayments: summary.pendingPayments ?? 0,
+          collectedPayments: summary.collectedPayments ?? 0,
+        }));
+      })
+      .catch(() => {
+        /* keep previous billing numbers */
+      })
+      .finally(() => {
+        if (active) setBillingLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [billingPeriod, hasLoadedOnce]);
 
   const medStock = data.medStock;
   const breakdown = medStock?.statusBreakdown;
@@ -176,18 +233,17 @@ export function DashboardPage() {
 
   return (
     <PageShell className="w-full min-w-0 space-y-4 overflow-x-hidden pb-6 pt-1">
-      <AsyncStatus loading={loading} error={error} onRetry={reload}>
-        {/*
-          5 cards — Total Patients spans full height of the other 4:
-          [ Patients ] [ Appointments ] [ Billing  ]
-          [ Patients ] [ Medicine     ] [ Schedule ]
-        */}
+      <AsyncStatus
+        loading={loading && !hasLoadedOnce}
+        error={error}
+        onRetry={reload}
+      >
         <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_auto]">
           <div className="flex h-full min-h-0 min-w-0 flex-col lg:row-span-2">
             <PatientsStatCard
-              stats={data.stats}
-              period={billingPeriod}
-              onPeriodChange={setBillingPeriod}
+              stats={stats}
+              period={patientsPeriod}
+              onPeriodChange={setPatientsPeriod}
               footer={
                 <PatientTrendsChart
                   data={trendData}
@@ -201,18 +257,24 @@ export function DashboardPage() {
 
           <StatCard
             title="Total Appointments"
-            stats={data.stats}
+            stats={stats}
             type="appointments"
-            period={billingPeriod}
-            onPeriodChange={setBillingPeriod}
+            period={appointmentsPeriod}
+            onPeriodChange={setAppointmentsPeriod}
           />
-          <StatCard
-            title="Billing"
-            stats={data.stats}
-            type="billing"
-            period={billingPeriod}
-            onPeriodChange={setBillingPeriod}
-          />
+          <div
+            className={
+              billingLoading ? 'opacity-80 transition-opacity' : undefined
+            }
+          >
+            <StatCard
+              title="Billing"
+              stats={stats}
+              type="billing"
+              period={billingPeriod}
+              onPeriodChange={setBillingPeriod}
+            />
+          </div>
           <MedicineStockCard
             totalStock={medStock?.totalStock ?? 0}
             tablets={medStock?.tablets ?? 0}
