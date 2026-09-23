@@ -8,6 +8,7 @@ const minimalBooking: CreatePatientValues = {
   dateOfBirth: '1990-01-15',
   mobileNumber: '9876543210',
   consultationTypeIds: ['ct-1'],
+  assignedDoctor: 'doc-1',
   treatmentCategory: '',
   recommendedTherapies: [],
   scheduleDate: '',
