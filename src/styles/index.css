@@ -102,26 +102,26 @@
       );
   }
 
-  /* Keep the full login composition on-screen on shorter laptop viewports */
+  /* Fit login card + dosha on one screen without scroll (Chrome zoom affects layout) */
   .login-fit {
-    transform-origin: center center;
+    min-height: 0;
   }
 
-  @media (max-height: 820px) {
-    .login-fit {
-      transform: scale(0.94);
+  @media (max-height: 800px) {
+    .login-card {
+      zoom: 0.92;
     }
   }
 
-  @media (max-height: 740px) {
-    .login-fit {
-      transform: scale(0.88);
+  @media (max-height: 720px) {
+    .login-card {
+      zoom: 0.86;
     }
   }
 
-  @media (max-height: 660px) {
-    .login-fit {
-      transform: scale(0.8);
+  @media (max-height: 640px) {
+    .login-card {
+      zoom: 0.8;
     }
   }
 

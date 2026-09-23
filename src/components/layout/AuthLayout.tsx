@@ -15,16 +15,16 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   if (variant === 'login') {
     return (
-      <div className="login-shell fixed inset-0 z-0 overflow-hidden">
+      <div className="login-shell fixed inset-0 z-0 h-dvh overflow-hidden overscroll-none">
         <LoginDecorations />
 
-        <div className="relative z-10 flex h-full w-full items-center justify-center px-4 py-3 sm:px-6 lg:px-8 lg:py-4 xl:px-12">
-          <div className="login-fit grid max-h-full w-full max-w-[1280px] items-center gap-6 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] lg:gap-10 xl:grid-cols-[minmax(0,560px)_minmax(0,1fr)] xl:gap-14">
-            <div className="mx-auto w-full max-w-[560px] lg:mx-0">
+        <div className="relative z-10 flex h-full w-full items-center justify-start overflow-hidden px-4 py-3 sm:px-6 lg:pr-8 xl:pr-10">
+          <div className="login-fit grid h-full max-h-full w-full max-w-[1180px] items-center gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:gap-6 xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-8">
+            <div className="mx-auto ml-12 flex h-full min-h-0 w-full max-w-[400px] items-center sm:ml-16 lg:mx-0 lg:ml-24 xl:ml-32">
               {children}
             </div>
             {aside ? (
-              <div className="hidden min-h-0 min-w-0 items-center justify-center overflow-visible lg:flex">
+              <div className="hidden h-full min-h-0 min-w-0 items-center justify-start overflow-hidden lg:flex">
                 {aside}
               </div>
             ) : null}

@@ -1,13 +1,12 @@
 import { assets } from '@/lib/assets';
 
 /**
- * Figma “Know your Dosha” triangle.
- * Icons at vertices, labels outside the triangle, arrows along the edges.
- * Center title sits on a cream wash so strokes never cut through the type.
+ * Figma “Know Your / Dosha” triangle.
+ * Sized with viewport units so it stays on-screen at 100% zoom (no scroll).
  */
 export function DoshaDiagram() {
   return (
-    <div className="relative mx-auto aspect-[1.08] w-full max-h-[min(540px,76dvh)] max-w-[min(520px,90%)]">
+    <div className="relative mx-auto aspect-square w-[min(100%,min(34vw,calc(100dvh-3.5rem)))] max-w-[560px] pb-[8%]">
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox="0 0 100 100"
@@ -27,31 +26,30 @@ export function DoshaDiagram() {
           </marker>
         </defs>
 
-        {/* Equilateral-ish perimeter between icon rims (not through labels) */}
         <path
-          d="M 58 20 L 78 58"
+          d="M 56 27 L 75 64"
           stroke="#422c23"
-          strokeWidth="0.38"
-          strokeOpacity="0.48"
+          strokeWidth="0.4"
+          strokeOpacity="0.5"
           markerEnd="url(#dosha-arrow)"
         />
         <path
-          d="M 74 70 L 26 70"
+          d="M 71 78 L 29 78"
           stroke="#422c23"
-          strokeWidth="0.38"
-          strokeOpacity="0.48"
+          strokeWidth="0.4"
+          strokeOpacity="0.5"
           markerEnd="url(#dosha-arrow)"
         />
         <path
-          d="M 22 58 L 42 20"
+          d="M 25 64 L 44 27"
           stroke="#422c23"
-          strokeWidth="0.38"
-          strokeOpacity="0.48"
+          strokeWidth="0.4"
+          strokeOpacity="0.5"
           markerEnd="url(#dosha-arrow)"
         />
       </svg>
 
-      <p className="pointer-events-none absolute left-1/2 top-[47%] z-20 -translate-x-1/2 -translate-y-1/2 rounded-md bg-[#fbf6e8] px-3 py-1.5 text-center font-inria text-[17px] font-bold leading-tight tracking-wide text-[#422C23] sm:text-[19px]">
+      <p className="pointer-events-none absolute left-1/2 top-[48%] z-20 -translate-x-1/2 -translate-y-1/2 text-center font-inria text-[clamp(16px,2.2dvh,24px)] font-bold leading-[1.15] text-[#422C23]">
         Know Your
         <br />
         Dosha
@@ -60,17 +58,17 @@ export function DoshaDiagram() {
       <DoshaNode
         name="Vata"
         image={assets.dosha.vata}
-        className="left-1/2 top-0 -translate-x-1/2"
+        className="left-[50%] top-[18%]"
       />
       <DoshaNode
         name="Kapha"
         image={assets.dosha.kapha}
-        className="bottom-0 left-0"
+        className="left-[17%] top-[74%]"
       />
       <DoshaNode
         name="Pitta"
         image={assets.dosha.pitta}
-        className="bottom-0 right-0"
+        className="left-[83%] top-[74%]"
       />
     </div>
   );
@@ -87,14 +85,14 @@ function DoshaNode({
 }) {
   return (
     <div
-      className={`absolute z-10 flex w-[118px] flex-col items-center sm:w-[128px] ${className}`}
+      className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 ${className}`}
     >
       <img
         src={image}
         alt=""
-        className="h-[92px] w-[92px] object-contain mix-blend-multiply sm:h-[104px] sm:w-[104px]"
+        className="block h-[clamp(72px,12dvh,128px)] w-[clamp(72px,12dvh,128px)] object-contain mix-blend-multiply"
       />
-      <span className="mt-1.5 text-center font-inria text-[20px] font-bold leading-none text-[#422C23] sm:text-[22px]">
+      <span className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 whitespace-nowrap text-center font-inria text-[clamp(16px,2.2dvh,24px)] font-bold leading-none text-[#422C23]">
         {name}
       </span>
     </div>

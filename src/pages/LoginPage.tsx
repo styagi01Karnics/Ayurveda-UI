@@ -213,14 +213,14 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="w-full px-7 py-6 sm:px-9 sm:py-7">
+      <AuthCard className="login-card w-full px-7 py-5 sm:px-8 sm:py-6">
         <BrandHeader
-          className="mb-5"
+          className="mb-4"
           variant={loginMode === 'superAdmin' ? 'platform' : 'clinic'}
         />
 
-        <div className="mb-5">
-          <h2 className="font-sans text-[clamp(28px,4.2vw,37.61px)] font-medium leading-none tracking-normal text-[#422C23]">
+        <div className="mb-4">
+          <h2 className="font-sans text-[clamp(26px,3.6vw,34px)] font-medium leading-none tracking-normal text-[#422C23]">
             Welcome back!
           </h2>
           <p className="mt-2 font-sans text-sm font-normal leading-snug text-text-muted">
@@ -237,10 +237,10 @@ export function LoginPage() {
           tabs={LOGIN_TABS}
           activeTab={loginMode}
           onChange={setLoginMode}
-          className="mb-5"
+          className="mb-4"
         />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
           <input type="hidden" {...register('mode')} />
           <input type="hidden" {...register('locationId')} />
           {loginMode === 'all' && !showClinicSelect ? (
@@ -320,7 +320,7 @@ export function LoginPage() {
           </Button>
         </form>
 
-        <p className="mt-5 text-center font-sans text-sm text-text-muted">
+        <p className="mt-4 text-center font-sans text-sm text-text-muted">
           Don&apos;t have an account?{' '}
           <Link
             to="/signup"
