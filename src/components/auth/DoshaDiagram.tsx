@@ -6,10 +6,10 @@ import { assets } from '@/lib/assets';
  */
 export function DoshaDiagram() {
   return (
-    <div className="relative h-[min(720px,84dvh)] w-full max-w-[760px] shrink-0">
+    <div className="relative ml-auto h-[min(760px,86dvh)] w-full max-w-none shrink-0">
       <svg
         className="h-full w-full"
-        viewBox="0 0 600 560"
+        viewBox="0 0 555 535"
         fill="none"
         aria-hidden
       >
