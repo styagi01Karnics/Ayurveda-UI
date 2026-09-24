@@ -23,8 +23,8 @@ export function Tabs<T extends string>({
           className={cn(
             'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
             activeTab === tab.id
-              ? 'bg-[#FBF6E8] text-brown'
-              : 'text-text-muted hover:text-brown',
+              ? 'bg-[#FBF6E8] text-[#161616]'
+              : 'text-text-muted hover:text-[#161616]',
           )}
         >
           {tab.label}

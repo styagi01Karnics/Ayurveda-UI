@@ -47,7 +47,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const selectId = id ?? props.name;
     const labelClass =
       fieldVariant === 'auth'
-        ? 'text-xs font-medium text-brown'
+        ? 'align-middle font-sans text-[14.1px] font-medium leading-none tracking-normal text-[#404040]'
         : 'text-xs font-medium text-text-muted';
     const [selectedValue, setSelectedValue] = useState(
       () => String(value ?? defaultValue ?? ''),
@@ -96,14 +96,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               fieldVariant === 'auth'
                 ? 'border border-gray-200 bg-white py-2.5 text-sm focus:border-gold focus:ring-gold/20'
                 : 'border border-[#EFF0F6] bg-white py-2 font-sans text-[12px] font-medium leading-6 focus:border-gold focus:ring-gold/20',
-              hasValue ? 'text-[#422C23]' : fieldVariant === 'auth' ? 'text-gray-400' : 'text-[#67554D]/70',
+              hasValue ? 'text-[#161616]' : fieldVariant === 'auth' ? 'text-gray-400' : 'text-[#67554D]/70',
               error && 'border-danger focus:border-danger focus:ring-danger/20',
               className,
             )}
             aria-invalid={Boolean(error)}
             {...props}
           >
-            <option value="" className="bg-white text-[#422C23]">
+            <option value="" className="bg-white text-[#161616]">
               {placeholder}
             </option>
             {(options || []).map((option, index) => {
@@ -113,7 +113,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 <option
                   key={`${value}-${index}`}
                   value={value}
-                  className="bg-white text-[#422C23]"
+                  className="bg-white text-[#161616]"
                 >
                   {optionLabel}
                 </option>
