@@ -48,7 +48,7 @@ export function TagInput({
         <FieldLabel
           as="span"
           label={label}
-          className="text-xs font-medium text-text-muted"
+          className="field-label"
         />
       )}
       <div

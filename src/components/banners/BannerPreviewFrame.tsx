@@ -22,7 +22,7 @@ export function BannerPreviewFrame({
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-muted">
             Live Preview
           </p>
-          <p className="font-serif text-lg text-brown">How patients see your banner</p>
+          <p className="font-sans text-lg text-brown">How patients see your banner</p>
         </div>
         <div className="flex rounded-xl border border-[#ebe4d8] bg-cream/80 p-1">
           <button

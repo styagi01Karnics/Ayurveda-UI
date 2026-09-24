@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { AppointmentConfirmedModal } from '@/components/appointments/AppointmentConfirmedModal';
@@ -17,12 +16,13 @@ import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentMo
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
-import { Tabs } from '@/components/ui/Tabs';
+import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import {
   APPOINTMENT_FILTER_OPTIONS,
 } from '@/data/mock/appointments';
@@ -237,7 +237,7 @@ export function AppointmentsPage() {
     () =>
       activeTab === 'appointments' ? (
         <Button
-          className="gap-1.5 px-4 py-2 text-sm"
+          className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
           onClick={() => setCreatePatientOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -245,7 +245,7 @@ export function AppointmentsPage() {
         </Button>
       ) : (
         <Button
-          className="gap-1.5 px-4 py-2 text-sm"
+          className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
           onClick={() => setFollowUpOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -254,8 +254,6 @@ export function AppointmentsPage() {
       ),
     [activeTab],
   );
-
-  usePageAction(headerAction);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((item) => {
@@ -569,7 +567,7 @@ export function AppointmentsPage() {
   };
 
   const tabsNode = (
-    <Tabs
+    <UnderlineTabs
       tabs={[
         { id: 'appointments' as const, label: 'All Appointments' },
         { id: 'followUps' as const, label: 'All Follow Ups' },
@@ -579,47 +577,44 @@ export function AppointmentsPage() {
         setActiveTab(tab);
         setStatusFilter('');
       }}
+      className="border-none"
     />
   );
 
   const viewToggleNode = (
-    <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
-      <button
-        type="button"
-        onClick={() => setViewMode('list')}
-        className={cn(
-          'rounded-md p-2 transition-colors',
-          viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50',
-        )}
-        aria-label="List view"
-        aria-pressed={viewMode === 'list'}
-      >
-        <AppIcon
-          src={assets.icons.listView}
-          className={cn(
-            'h-4 w-4',
-            viewMode === 'list' ? 'brightness-0' : 'opacity-40',
-          )}
-        />
-      </button>
-      <button
-        type="button"
-        onClick={() => setViewMode('calendar')}
-        className={cn(
-          'rounded-md p-2 transition-colors',
-          viewMode === 'calendar' ? 'bg-gray-100' : 'hover:bg-gray-50',
-        )}
-        aria-label="Calendar view"
-        aria-pressed={viewMode === 'calendar'}
-      >
-        <AppIcon
-          src={assets.icons.calendarView}
-          className={cn(
-            'h-4 w-4',
-            viewMode === 'calendar' ? 'brightness-0' : 'opacity-45',
-          )}
-        />
-      </button>
+    <div
+      className="flex items-center rounded-[10px] bg-white p-0.5 shadow-[0px_0px_3px_1px_#BE880B26]"
+      role="group"
+      aria-label="View mode"
+    >
+      {(['list', 'calendar'] as const).map((mode) => {
+        const selected = viewMode === mode;
+        const icon =
+          mode === 'list' ? assets.icons.listView : assets.icons.calendarView;
+        return (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setViewMode(mode)}
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+              selected && 'bg-[#BE880B] shadow-[0px_0px_3px_1px_#BE880B26]',
+            )}
+            aria-label={mode === 'list' ? 'List view' : 'Calendar view'}
+            aria-pressed={selected}
+          >
+            <img
+              src={icon}
+              alt=""
+              aria-hidden
+              className={cn(
+                'h-4 w-4 object-contain',
+                selected && 'brightness-0 invert',
+              )}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -629,6 +624,7 @@ export function AppointmentsPage() {
         <ListPanel
           tabs={tabsNode}
           toolbar={viewToggleNode}
+          actions={headerAction}
           filters={
             <>
               <FilterControl>
@@ -717,10 +713,15 @@ export function AppointmentsPage() {
         </ListPanel>
       ) : (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            {tabsNode}
-            {viewToggleNode}
-          </div>
+          <Card className="dashboard-card p-4 sm:p-5">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="min-w-0">{tabsNode}</div>
+                {viewToggleNode}
+              </div>
+              <div className="flex h-9 items-center justify-end">{headerAction}</div>
+            </div>
+          </Card>
           <AsyncStatus
             loading={loading}
             error={error}

@@ -41,7 +41,7 @@ export function BannerCollection({
           <article
             key={banner.id}
             className={cn(
-              'group relative overflow-hidden rounded-2xl border bg-white p-4 transition-all',
+              'app-card group relative overflow-hidden rounded-2xl p-4 transition-all',
               isSelected
                 ? 'border-gold shadow-[0_8px_30px_rgba(190,136,11,0.12)] ring-1 ring-gold/20'
                 : 'border-[#f0ebe3] hover:border-gold/30',

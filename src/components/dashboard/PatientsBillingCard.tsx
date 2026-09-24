@@ -80,29 +80,31 @@ export function PatientsBillingCard({
             <PeriodDropdown value={period} onChange={onPeriodChange} />
           </div>
 
-          <p className="font-sans text-[32px] font-bold leading-none tracking-tight text-[#422C23]">
+          <p className="font-sans text-[20px] font-bold leading-none tracking-tight text-[#422C23]">
             {formatCurrency(stats.billingTotal)}
           </p>
 
-          <span className="mt-3 inline-flex w-fit rounded-full bg-[#F5F0E4] px-3 py-1.5 font-sans text-xs font-semibold leading-none text-[#BE880B]">
+          <span className="mt-3 inline-flex w-fit items-center rounded-full bg-[#F5F0E4] px-3 py-1.5 font-sans text-[10px] font-medium leading-none tracking-normal text-[#404040]">
             Total Bills Generated:{' '}
-            <span className="ml-1 font-bold">{stats.billsGenerated}</span>
+            <span className="ml-1 font-sans text-[10px] font-medium leading-none tracking-normal text-[#BE880B]">
+              {stats.billsGenerated}
+            </span>
           </span>
 
-          <div className="mt-4 flex flex-1 flex-col gap-2.5">
+          <div className="mt-2 flex flex-1 flex-col gap-0">
             <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
-              <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
+              <p className="font-sans text-[12px] font-medium leading-4 tracking-normal text-[#BE880B]">
                 Pending Payments
               </p>
-              <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
+              <p className="mt-2 font-sans text-[14px] font-semibold leading-7 tracking-normal text-[#0A0A0A]">
                 {formatCurrency(stats.pendingPayments)}
               </p>
             </div>
             <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
-              <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
+              <p className="font-sans text-[12px] font-medium leading-4 tracking-normal text-[#BE880B]">
                 Collected Payments
               </p>
-              <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
+              <p className="mt-2 font-sans text-[14px] font-semibold leading-7 tracking-normal text-[#0A0A0A]">
                 {formatCurrency(stats.collectedPayments)}
               </p>
             </div>

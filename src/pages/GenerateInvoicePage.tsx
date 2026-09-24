@@ -1702,7 +1702,7 @@ function BillSummarySection({
   const sgstRate = FIXED_SGST_PERCENT;
 
   return (
-    <section className="rounded-xl border border-[#e8dfd0] bg-[#FAF9F5] p-4 sm:p-5">
+    <section className="app-card rounded-xl p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-semibold text-brown">{billLabel} — Summary</h3>
         <div className="flex items-center gap-2">
@@ -1847,7 +1847,7 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-[#e8dfd0] bg-white p-4 sm:p-5">
+    <section className="app-card rounded-xl p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-brown">{title}</h3>
       </div>

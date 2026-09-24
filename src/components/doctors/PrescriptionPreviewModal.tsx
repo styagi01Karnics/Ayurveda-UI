@@ -473,7 +473,7 @@ export function PrescriptionPreviewModal({
           ) : null}
 
           <section className="mt-4">
-            <h3 className="font-serif text-xl font-bold italic text-[#493226]">
+            <h3 className="font-sans text-xl font-bold italic text-[#493226]">
               Rx
             </h3>
             <div className="mt-3 space-y-4">

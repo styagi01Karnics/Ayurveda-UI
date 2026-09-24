@@ -145,7 +145,7 @@ function EmiIcon({ className }: { className: string }) {
         fill="white"
         fontSize="7"
         fontWeight="700"
-        fontFamily="system-ui, sans-serif"
+        fontFamily="Inter, sans-serif"
       >
         EMI
       </text>

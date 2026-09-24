@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
@@ -100,7 +99,7 @@ export function BillingPage() {
   const headerAction = useMemo(
     () => (
       <Button
-        className="gap-1.5 px-4 py-2 text-sm"
+        className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
         onClick={() => navigate('/billing/generate')}
       >
         <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -109,8 +108,6 @@ export function BillingPage() {
     ),
     [navigate],
   );
-
-  usePageAction(headerAction);
 
   const filteredRecords = useMemo(() => {
     return records.filter((item) => {
@@ -244,6 +241,7 @@ export function BillingPage() {
   return (
     <PageShell>
       <ListPanel
+        actions={headerAction}
         tabs={
           <UnderlineTabs
             tabs={[

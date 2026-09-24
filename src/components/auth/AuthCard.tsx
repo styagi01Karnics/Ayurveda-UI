@@ -10,7 +10,7 @@ export function AuthCard({ children, className }: AuthCardProps) {
   return (
     <div
       className={cn(
-        'w-full rounded-[20px] bg-white shadow-[0_10px_48px_rgba(66,44,35,0.1)]',
+        'app-card w-full rounded-[20px] shadow-[0_10px_48px_rgba(66,44,35,0.1)]',
         className,
       )}
     >
@@ -27,7 +27,7 @@ interface AuthFormSectionProps {
 
 export function AuthFormSection({ title, subtitle, children }: AuthFormSectionProps) {
   return (
-    <section className="rounded-xl border border-[#e8e4dc] p-5 sm:p-6">
+    <section className="app-card rounded-xl p-5 sm:p-6">
       <h3 className="text-base font-bold text-brown">{title}</h3>
       <p className="mb-5 text-sm text-text-muted">{subtitle}</p>
       {children}

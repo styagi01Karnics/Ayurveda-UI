@@ -91,7 +91,7 @@ describe('LoginPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 
-  it('links to platform bootstrap for super admin setup', () => {
+  it('does not show Create Super Admin on the login card', () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -99,7 +99,7 @@ describe('LoginPage', () => {
     );
 
     expect(
-      screen.getByRole('link', { name: 'Create Super Admin' }),
-    ).toHaveAttribute('href', '/platform/bootstrap');
+      screen.queryByRole('link', { name: 'Create Super Admin' }),
+    ).not.toBeInTheDocument();
   });
 });

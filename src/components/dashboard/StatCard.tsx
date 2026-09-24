@@ -31,35 +31,37 @@ export function StatCard({
 }: StatCardProps) {
   if (type === 'billing') {
     return (
-      <Card className="dashboard-card flex h-full flex-col p-5">
-        <div className="mb-4 flex items-start justify-between gap-2">
+      <Card className="dashboard-card flex h-full min-h-0 flex-col p-3.5">
+        <div className="mb-2 flex items-start justify-between gap-2">
           <h3 className="dashboard-card-title">{title}</h3>
           <PeriodDropdown value={period} onChange={onPeriodChange} />
         </div>
 
-        <p className="font-sans text-[32px] font-bold leading-none tracking-tight text-[#422C23]">
+        <p className="font-sans text-[26px] font-bold leading-none tracking-tight text-[#422C23]">
           {formatCurrency(stats.billingTotal)}
         </p>
 
-        <span className="mt-3 inline-flex w-fit rounded-full bg-[#F5F0E4] px-3 py-1.5 font-sans text-xs font-semibold leading-none text-[#BE880B]">
+        <span className="mt-2 inline-flex w-fit items-center rounded-full bg-[#F5F0E4] px-2.5 py-1 font-sans text-[10px] font-medium leading-none tracking-normal text-[#404040]">
           Total Bills Generated:{' '}
-          <span className="ml-1 font-bold">{stats.billsGenerated}</span>
+          <span className="ml-1 font-sans text-[10px] font-medium leading-none tracking-normal text-[#BE880B]">
+            {stats.billsGenerated}
+          </span>
         </span>
 
-        <div className="mt-4 flex flex-1 flex-col gap-2.5">
-          <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
-            <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
+        <div className="mt-2.5 flex min-h-0 flex-1 flex-col gap-2">
+          <div className="flex flex-1 flex-col justify-center rounded-xl bg-[#FDFBF7] px-3 py-2">
+            <p className="font-sans text-[12px] font-medium leading-4 tracking-normal text-[#BE880B]">
               Pending Payments
             </p>
-            <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
+            <p className="mt-0.5 font-sans text-[14px] font-semibold leading-7 tracking-normal text-[#0A0A0A]">
               {formatCurrency(stats.pendingPayments)}
             </p>
           </div>
-          <div className="rounded-xl bg-[#FDFBF7] px-4 py-3">
-            <p className="font-sans text-sm font-semibold leading-none text-[#BE880B]">
+          <div className="flex flex-1 flex-col justify-center rounded-xl bg-[#FDFBF7] px-3 py-2">
+            <p className="font-sans text-[12px] font-medium leading-4 tracking-normal text-[#BE880B]">
               Collected Payments
             </p>
-            <p className="mt-2 font-sans text-xl font-bold leading-none tracking-tight text-[#422C23]">
+            <p className="mt-0.5 font-sans text-[14px] font-semibold leading-7 tracking-normal text-[#0A0A0A]">
               {formatCurrency(stats.collectedPayments)}
             </p>
           </div>
@@ -75,17 +77,17 @@ export function StatCard({
   const gaugeTotal = Math.max(total, confirmed + cancelled + followUp, 1);
 
   return (
-    <Card className="dashboard-card flex h-full flex-col p-5">
-      <div className="mb-4 flex items-start justify-between gap-2">
+    <Card className="dashboard-card flex h-full min-h-0 flex-col p-3.5">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <h3 className="dashboard-card-title">{title}</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 
       <div className="flex items-end gap-2">
-        <p className="text-[32px] font-bold leading-none tracking-tight text-brown">
+        <p className="font-sans text-[26px] font-bold leading-none tracking-tight text-[#422C23]">
           {formatNumber(total)}
         </p>
-        <span className="mb-1 flex items-center gap-0.5 text-sm font-semibold text-success">
+        <span className="mb-0.5 flex items-center gap-0.5 font-sans text-sm font-semibold text-[#2E7D32]">
           <TrendingUp className="h-3.5 w-3.5" strokeWidth={2.5} />
           {stats.appointmentGrowth > 0
             ? `+${stats.appointmentGrowth}`
@@ -94,13 +96,13 @@ export function StatCard({
         </span>
       </div>
 
-      <p className="mt-2.5 text-sm font-semibold text-gold">
+      <p className="mt-1 font-sans text-sm font-medium text-[#BE880B]">
         +{stats.appointmentsToday} Today
       </p>
 
-      <DashDivider className="my-4" />
+      <DashDivider className="my-2.5" />
 
-      <div className="mt-auto flex justify-between gap-1">
+      <div className="flex min-h-0 flex-1 items-center justify-between gap-2">
         <SemiCircleGauge
           label="Confirmed"
           percent={gaugePercent(confirmed, gaugeTotal)}

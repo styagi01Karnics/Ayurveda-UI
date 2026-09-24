@@ -67,7 +67,7 @@ export function BootstrapSuperAdminPage() {
         <BrandHeader className="mb-8" variant="platform" />
 
         <div className="mb-6">
-          <h2 className="font-serif text-2xl font-bold leading-tight text-brown sm:text-[26px]">
+          <h2 className="font-sans text-2xl font-bold leading-tight text-brown sm:text-[26px]">
             Create Super Admin
           </h2>
           <p className="mt-2 text-sm text-text-muted">

@@ -87,7 +87,7 @@ export function PatientSearchSelect({
         <FieldLabel
           as="span"
           label={label}
-          className="text-xs font-medium text-text-muted"
+          className="field-label"
         />
       ) : null}
       <input

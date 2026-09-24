@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { LogOut } from 'lucide-react';
 import { Outlet, useNavigate } from 'react-router-dom';
-import { ToastProvider } from '@/app/ToastContext';
+import { ToastProvider, ToastViewport } from '@/app/ToastContext';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { PasswordSuccessModal } from '@/components/auth/PasswordSuccessModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -33,7 +33,7 @@ export function PlatformLayout({ children }: { children?: ReactNode }) {
                 className="h-10 w-10 object-contain"
               />
               <div>
-                <p className="font-serif text-sm font-semibold tracking-wide text-brown">
+                <p className="font-sans text-sm font-semibold tracking-wide text-brown">
                   {PLATFORM_BRANDING.name}
                 </p>
                 <p className="text-xs text-text-muted">
@@ -42,6 +42,7 @@ export function PlatformLayout({ children }: { children?: ReactNode }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <ToastViewport />
               <button
                 type="button"
                 onClick={() => setChangePasswordOpen(true)}

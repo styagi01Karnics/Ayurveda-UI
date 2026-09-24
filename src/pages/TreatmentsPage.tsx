@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
-import { usePageAction } from '@/app/PageActionContext';
-
 import { useToast } from '@/app/ToastContext';
 
 import { PageShell } from '@/components/layout/PageShell';
@@ -218,7 +216,7 @@ export function TreatmentsPage() {
 
       <Button
 
-        className="gap-1.5 px-4 py-2 text-sm"
+        className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
 
         onClick={() => setBookOpen(true)}
 
@@ -238,7 +236,6 @@ export function TreatmentsPage() {
 
 
 
-  usePageAction(headerAction);
 
 
 
@@ -342,6 +339,7 @@ export function TreatmentsPage() {
     <PageShell>
 
       <ListPanel
+        actions={headerAction}
 
         filters={
 

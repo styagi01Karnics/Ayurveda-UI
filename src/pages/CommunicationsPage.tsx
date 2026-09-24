@@ -152,7 +152,7 @@ export function CommunicationsPage() {
           <MessageSquare className="h-3.5 w-3.5" />
           Communications
         </span>
-        <h1 className="mt-4 font-serif text-3xl font-semibold text-brown">
+        <h1 className="mt-4 font-sans text-3xl font-semibold text-brown">
           SMS & Email Service
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-text-muted">

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthCard } from '@/components/auth/AuthCard';
 import { BrandHeader } from '@/components/auth/BrandHeader';
 import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
@@ -213,17 +212,17 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="login-card w-full px-7 py-5 sm:px-8 sm:py-6">
+      <div className="login-form w-full">
         <BrandHeader
-          className="mb-4"
+          className="mb-5"
           variant={loginMode === 'superAdmin' ? 'platform' : 'clinic'}
         />
 
         <div className="mb-4">
-          <h2 className="font-sans text-[clamp(26px,3.6vw,34px)] font-medium leading-none tracking-normal text-[#422C23]">
+          <h2 className="font-sans text-[clamp(22px,3vw,28px)] font-medium leading-none tracking-normal text-[#422C23]">
             Welcome back!
           </h2>
-          <p className="mt-2 font-sans text-sm font-normal leading-snug text-text-muted">
+          <p className="mt-2 font-sans text-[13px] font-normal leading-snug text-text-muted">
             Enter your Credentials to access your account
           </p>
           {notice ? (
@@ -234,13 +233,14 @@ export function LoginPage() {
         </div>
 
         <Tabs
+          variant="switch"
           tabs={LOGIN_TABS}
           activeTab={loginMode}
           onChange={setLoginMode}
           className="mb-4"
         />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
           <input type="hidden" {...register('mode')} />
           <input type="hidden" {...register('locationId')} />
           {loginMode === 'all' && !showClinicSelect ? (
@@ -291,7 +291,7 @@ export function LoginPage() {
                 type="button"
                 disabled={forgotBusy}
                 onClick={() => void handleForgotPassword()}
-                className="text-xs text-text-muted hover:text-gold disabled:opacity-60"
+                className="text-[12px] text-text-muted hover:text-gold disabled:opacity-60"
               >
                 {forgotBusy ? 'Sending…' : 'Forgot password'}
               </button>
@@ -314,13 +314,13 @@ export function LoginPage() {
             type="submit"
             fullWidth
             disabled={isSubmitting}
-            className="mt-1 rounded-lg bg-[#BE880B] py-3 text-base font-semibold text-white hover:bg-gold-dark"
+            className="mt-2 rounded-lg bg-[#BE880B] py-2.5 text-[14px] font-semibold text-white hover:bg-gold-dark"
           >
             Login
           </Button>
         </form>
 
-        <p className="mt-4 text-center font-sans text-sm text-text-muted">
+        <p className="mt-4 text-center font-sans text-[13px] text-text-muted">
           Don&apos;t have an account?{' '}
           <Link
             to="/signup"
@@ -329,12 +329,7 @@ export function LoginPage() {
             Sign Up
           </Link>
         </p>
-        <p className="mt-1.5 text-center text-xs text-text-muted">
-          <Link to="/platform/bootstrap" className="text-[#BE880B] hover:underline">
-            Create Super Admin
-          </Link>
-        </p>
-      </AuthCard>
+      </div>
     </AuthLayout>
   );
 }

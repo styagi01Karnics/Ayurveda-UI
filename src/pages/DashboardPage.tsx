@@ -232,13 +232,13 @@ export function DashboardPage() {
     data.patientTrends.length > 0 ? data.patientTrends : patientTrendsData;
 
   return (
-    <PageShell className="w-full min-w-0 space-y-4 overflow-x-hidden pb-6 pt-1">
+    <PageShell className="w-full min-w-0 space-y-3 overflow-x-hidden pb-6 pt-1">
       <AsyncStatus
         loading={loading && !hasLoadedOnce}
         error={error}
         onRetry={reload}
       >
-        <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:grid-cols-3 lg:grid-rows-[auto_auto]">
+        <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-3 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
           <div className="flex h-full min-h-0 min-w-0 flex-col lg:row-span-2">
             <PatientsStatCard
               stats={stats}
@@ -264,7 +264,9 @@ export function DashboardPage() {
           />
           <div
             className={
-              billingLoading ? 'opacity-80 transition-opacity' : undefined
+              billingLoading
+                ? 'h-full opacity-80 transition-opacity'
+                : 'h-full'
             }
           >
             <StatCard

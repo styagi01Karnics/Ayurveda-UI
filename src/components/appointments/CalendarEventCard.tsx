@@ -10,7 +10,7 @@ interface CalendarEventCardProps {
 
 export function CalendarEventCard({ event, className }: CalendarEventCardProps) {
   return (
-    <div className={cn('overflow-hidden bg-white', className)}>
+    <div className={cn('app-card overflow-hidden', className)}>
       <div className="bg-cream px-6 pb-10 pt-5">
         <p className="text-xs font-medium text-text-muted">Today&apos;s Event</p>
         <h2 className="mt-1 text-xl font-bold leading-snug text-brown">
@@ -81,7 +81,7 @@ export function CalendarEventCard({ event, className }: CalendarEventCardProps) 
 
 export function CalendarEventCardSkeleton() {
   return (
-    <div className="animate-pulse overflow-hidden bg-white">
+    <div className="app-card animate-pulse overflow-hidden">
       <div className="bg-cream px-6 pb-10 pt-5">
         <div className="h-3 w-20 rounded bg-brown/10" />
         <div className="mt-2 h-6 w-52 rounded bg-brown/10" />

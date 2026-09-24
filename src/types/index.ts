@@ -572,6 +572,7 @@ export interface SettingsRoleRecord {
   name: string;
   status: ClinicStatus;
   accessLevel: string;
+  description?: string;
   permissions: string[];
   userCount: number;
 }

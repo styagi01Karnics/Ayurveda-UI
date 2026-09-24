@@ -30,7 +30,7 @@ function PrescriptionSection({
   return (
     <section
       className={cn(
-        'rounded-xl border border-gray-100 bg-white p-4 sm:p-5',
+        'app-card rounded-xl p-4 sm:p-5',
         className,
       )}
     >
@@ -158,7 +158,7 @@ export function CreatePrescriptionForm({
           <div className="mb-5 overflow-x-auto rounded-xl border border-gray-100">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr>
+                <tr className="screen-label">
                   <th className="px-4 py-3">Medicine</th>
                   <th className="px-4 py-3">Dosage</th>
                   <th className="px-4 py-3">Frequency</th>

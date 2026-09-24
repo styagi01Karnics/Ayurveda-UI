@@ -104,7 +104,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
                     />
                   </div>
                   <div>
-                    <p className="font-serif text-base font-bold tracking-wide text-brown">
+                    <p className="font-sans text-base font-bold tracking-wide text-brown">
                       {invoice.clinicName}
                     </p>
                     <p className="mt-1 text-xs text-text-muted">

@@ -20,9 +20,9 @@ const detailTabs: { id: PatientDetailTab; label: string }[] = [
 ];
 
 const DETAIL_LABEL =
-  'font-plex align-middle text-[14px] font-medium leading-5 tracking-normal text-[#737373]';
+  'align-middle font-sans text-[14px] font-medium leading-5 tracking-normal text-[#737373]';
 const DETAIL_VALUE =
-  'font-plex text-sm font-medium leading-3 tracking-normal text-[#404040]';
+  'align-middle font-sans text-sm font-medium leading-3 tracking-normal text-[#404040]';
 
 export function PatientDetailHeader({
   patient,
@@ -39,7 +39,6 @@ export function PatientDetailHeader({
             <Badge variant="gold" className="rounded-md px-3 py-1">
               {patient.treatmentStatus}
             </Badge>
-            <p className="text-base font-semibold text-brown">{patient.name}</p>
           </div>
         </div>
         <div className="text-right">
@@ -89,8 +88,10 @@ function SectionBlock({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-[#ebe4d8] bg-[#fdf8ee]/40 p-4 sm:p-5">
-      <h3 className="mb-4 text-base font-bold text-brown">{title}</h3>
+    <section className="rounded-xl bg-[#FAF9F5] p-4 sm:p-5">
+      <h3 className="mb-4 font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
+        {title}
+      </h3>
       {children}
     </section>
   );
@@ -100,7 +101,7 @@ export function PersonalInfoTab({ patient }: { patient: PatientDetail }) {
   const info = patient.personalInfo;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <SectionBlock title="Basic Information">
         <InfoGrid
           items={[
@@ -156,7 +157,7 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
   const m = patient.medicalAssessment;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <SectionBlock title="Ayurvedic Assessment">
         <InfoGrid
           items={[
@@ -191,7 +192,7 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
       </SectionBlock>
 
       <SectionBlock title="Medical History">
-        <div className="rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50 p-4">
+        <div className="app-card rounded-xl p-4">
           <InfoList
             items={[
               { label: 'Present Medical Conditions', value: m.presentConditions },
@@ -267,7 +268,7 @@ function ReportRow({
   type: 'folder' | 'file';
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50 px-4 py-3">
+    <div className="app-card flex items-center justify-between rounded-xl px-4 py-3">
       <div className="flex items-center gap-3">
         {type === 'folder' ? (
           <AppIcon src={assets.icons.folder} className="h-5 w-5" />
@@ -288,9 +289,9 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
   const t = patient.treatmentFollowUp;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <SectionBlock title="Active Treatment Plan">
-        <div className="overflow-x-auto rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50">
+        <div className="app-card overflow-x-auto rounded-xl">
           <table className="w-full table-fixed">
             <thead>
               <tr>
@@ -345,7 +346,13 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
                   <td className={`py-3 ${DETAIL_VALUE}`}>{row.visitType}</td>
                   <td className={`py-3 ${DETAIL_VALUE}`}>{row.date}</td>
                   <td className="py-3">
-                    <Badge variant="success">{row.status}</Badge>
+                    {row.status === 'Completed' || row.status === 'Scheduled' ? (
+                      <span className="text-xs font-semibold text-[#2E7D32]">
+                        {row.status}
+                      </span>
+                    ) : (
+                      <Badge variant="success">{row.status}</Badge>
+                    )}
                   </td>
                   <td className="py-3">
                     <button type="button" className="text-sm font-medium text-gold underline">
@@ -372,7 +379,7 @@ export function BillingMembershipTab({
   const b = patient.billing;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {onDownloadBill && (
         <div className="flex justify-end">
           <Button
@@ -471,7 +478,7 @@ function DataRow({
   highlights?: number[];
 }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#ebe4d8]/80 bg-[#faf7f2]/50">
+    <div className="app-card overflow-x-auto rounded-xl">
       <table className="w-full">
         <thead>
           <tr>
@@ -487,10 +494,10 @@ function DataRow({
             {values.map((v, i) => (
               <td
                 key={i}
-                className={`px-4 py-3 ${highlights.includes(i) ? 'font-plex text-sm font-medium leading-3 text-gold' : DETAIL_VALUE}`}
+                className={`px-4 py-3 ${highlights.includes(i) ? 'font-sans text-sm font-medium leading-3 text-gold' : DETAIL_VALUE}`}
               >
-                {i === 2 && v === 'Completed' ? (
-                  <Badge variant="success">{v}</Badge>
+                {i === 2 && (v === 'Completed' || v === 'Scheduled') ? (
+                  <span className="text-xs font-semibold text-[#2E7D32]">{v}</span>
                 ) : (
                   v
                 )}

@@ -70,8 +70,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const labelClass =
       fieldVariant === 'auth'
-        ? 'align-middle font-sans text-[14.1px] font-medium leading-none tracking-normal text-[#404040]'
-        : 'text-xs font-medium text-text-muted';
+        ? 'align-middle font-sans text-[13px] font-medium leading-none tracking-normal text-[#404040]'
+        : 'field-label';
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       if (isDate) {
@@ -93,7 +93,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         className={cn(
           'w-full rounded-lg border border-[#EFF0F6] bg-white px-4 font-sans text-[12px] font-medium leading-6 tracking-normal text-[#422C23] placeholder:text-[#67554D]/70 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
           fieldVariant === 'auth'
-            ? 'py-2.5 text-sm text-[#161616] placeholder:text-[#9a9a9a]'
+            ? 'py-2.5 text-[13px] text-[#161616] placeholder:text-[#9a9a9a]'
             : 'py-2',
           isDate && 'date-field',
           isDate && !filled && 'date-field-empty',

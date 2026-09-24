@@ -1,8 +1,8 @@
 import type { AppointmentRecord, CalendarEvent, FollowUpRecord } from '@/types';
 
 const STATUS_COLORS: Record<AppointmentRecord['status'], string> = {
-  Scheduled: 'bg-amber-100 border-amber-400 text-amber-950',
-  Completed: 'bg-emerald-100 border-emerald-500 text-emerald-950',
+  Scheduled: 'bg-[#2E7D32]/10 border-[#2E7D32] text-[#2E7D32]',
+  Completed: 'bg-[#2E7D32]/10 border-[#2E7D32] text-[#2E7D32]',
   Cancelled: 'bg-rose-100 border-rose-400 text-rose-900',
 };
 

@@ -26,16 +26,21 @@ export function PatientTrendsChart({
   compact = false,
   embedded = false,
 }: PatientTrendsChartProps) {
+  const labelIndex = data.findIndex((row) =>
+    /oct/i.test(row.month),
+  );
+  const calloutIndex = labelIndex >= 0 ? labelIndex : Math.min(1, data.length - 1);
+
   const body = (
     <>
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex gap-4 text-xs text-text-muted">
+      <div className="mb-1.5 flex shrink-0 items-center justify-between">
+        <div className="flex gap-4 font-sans text-xs text-[#67554d]">
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-sm bg-success" />
+            <span className="h-2 w-2 rounded-[2px] bg-[#2E7D32]" />
             New Patients
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-sm bg-gold" />
+            <span className="h-2 w-2 rounded-[2px] bg-[#BE880B]" />
             Follow Ups
           </span>
         </div>
@@ -53,19 +58,19 @@ export function PatientTrendsChart({
 
       <div
         className={cn(
-          'chart-wrap w-full overflow-hidden',
-          embedded ? 'min-h-[180px] flex-1' : compact ? 'h-[220px]' : 'h-64',
+          'chart-wrap w-full min-h-0 overflow-hidden',
+          embedded ? 'flex-1' : compact ? 'h-[180px]' : 'h-56',
         )}
       >
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <LineChart
             data={data}
-            margin={{ top: 36, right: 16, left: 0, bottom: 8 }}
+            margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
           >
             <defs>
-              <linearGradient id="patientChartFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#be880b" stopOpacity={0.1} />
-                <stop offset="100%" stopColor="#be880b" stopOpacity={0} />
+              <linearGradient id="followUpLineFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#BE880B" stopOpacity={0} />
+                <stop offset="100%" stopColor="#BE880B" stopOpacity={1} />
               </linearGradient>
             </defs>
             <CartesianGrid
@@ -78,12 +83,12 @@ export function PatientTrendsChart({
               tick={{ fontSize: 11, fill: '#67554d' }}
               axisLine={false}
               tickLine={false}
-              dy={6}
+              dy={8}
             />
             <YAxis
               domain={[0, 200]}
               ticks={[0, 50, 100, 150, 200]}
-              tick={{ fontSize: 11, fill: '#67554d' }}
+              tick={{ fontSize: 10, fill: '#67554d' }}
               axisLine={false}
               tickLine={false}
               width={32}
@@ -97,35 +102,35 @@ export function PatientTrendsChart({
               }}
             />
             <Area
-              type="natural"
-              dataKey="newPatients"
+              type="monotone"
+              dataKey="followUps"
               stroke="none"
-              fill="url(#patientChartFill)"
+              fill="url(#followUpLineFill)"
               isAnimationActive={false}
             />
             <Line
-              type="natural"
+              type="monotone"
               dataKey="newPatients"
-              stroke="#3d8f5a"
+              stroke="#2E7D32"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#3d8f5a', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#2E7D32', stroke: '#fff', strokeWidth: 2 }}
               name="New Patients"
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="newPatients"
                 content={({ x, y, index, value }) => {
-                  if (index !== 1 || x == null || y == null) return null;
-                  const month = data[1]?.month ?? '';
+                  if (index !== calloutIndex || x == null || y == null) return null;
+                  const month = data[calloutIndex]?.month ?? '';
                   const count = Number(value ?? 0);
-                  const label = `${count}+ New${month ? ` · ${month}` : ''}`;
+                  const label = `${count} New Patients${month ? ` in ${month}` : ''}`;
                   return (
                     <text
                       x={Number(x)}
-                      y={Number(y) - 12}
+                      y={Number(y) - 10}
                       textAnchor="middle"
-                      fill="#3d8f5a"
+                      fill="#2E7D32"
                       fontSize={10}
                       fontWeight={600}
                     >
@@ -136,12 +141,12 @@ export function PatientTrendsChart({
               />
             </Line>
             <Line
-              type="natural"
+              type="monotone"
               dataKey="followUps"
-              stroke="#e8943a"
+              stroke="#BE880B"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#e8943a', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#BE880B', stroke: '#fff', strokeWidth: 2 }}
               name="Follow Ups"
               isAnimationActive={false}
             />

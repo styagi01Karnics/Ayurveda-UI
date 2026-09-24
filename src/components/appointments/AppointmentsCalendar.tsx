@@ -89,7 +89,7 @@ export function AppointmentsCalendar({
     typeof document !== 'undefined';
 
   return (
-    <Card className="min-w-0 overflow-hidden border-[#cfc1ad] p-0">
+    <Card className="min-w-0 overflow-hidden p-0">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#cfc1ad] bg-[#fffdf9] px-4 py-3">
         <div className="flex items-center gap-2">
           <Button

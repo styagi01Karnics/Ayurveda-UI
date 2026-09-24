@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/app/ToastContext';
-import { AddUserModal } from '@/components/settings/AddUserModal';
+import {
+  AddUserModal,
+  type TenantRoleOption,
+  type UserFormValues,
+} from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
 import { UsersTable } from '@/components/settings/UsersTable';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
@@ -13,13 +17,13 @@ import {
   getUsers,
   registerUser,
   updateUser,
+  updateUserStatus,
   type UserResponse,
 } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 import { getRoles } from '@/lib/api/roles';
 import { formatAuthRole } from '@/lib/auth';
 import { formatPersonName } from '@/lib/utils';
-import type { AddUserFormValues } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
 
 interface UserManagementTabProps {
@@ -55,8 +59,9 @@ export function UserManagementTab({
   const [statusFilter, setStatusFilter] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [tenantRoleOptions, setTenantRoleOptions] = useState<
-    Array<{ value: string; label: string }>
+    TenantRoleOption[]
   >([]);
+  const [editUser, setEditUser] = useState<SettingsUserRecord | null>(null);
   const [roleChange, setRoleChange] = useState<{
     userId: string;
     newRole: string;
@@ -96,6 +101,8 @@ export function UserManagementTab({
             .map((role) => ({
               value: role.id,
               label: role.roleName,
+              description: role.description ?? '',
+              pageCodes: role.pageCodes ?? [],
             })),
         );
       } catch {
@@ -141,8 +148,13 @@ export function UserManagementTab({
         user.status === 'Active',
     );
 
-  const handleAddUser = async (values: AddUserFormValues) => {
-    if (isRoleAlreadyAssigned(values.role)) {
+  const handleCloseUserModal = () => {
+    setEditUser(null);
+    onAddUserClose();
+  };
+
+  const handleSaveUser = async (values: UserFormValues) => {
+    if (isRoleAlreadyAssigned(values.role, editUser?.id)) {
       showToast({
         title: 'Role already assigned',
         message: `Only one user can have the ${formatAuthRole(values.role)} role. Choose a different role.`,
@@ -152,33 +164,63 @@ export function UserManagementTab({
 
     setSubmitting(true);
     try {
-      let created = await registerUser({
-        fullName: values.fullName,
-        email: values.email,
-        password: values.password,
-        role: values.role,
-        tenantRoleId: values.tenantRoleId,
-        mobileNumber: values.mobileNumber,
-      });
-      if (!created.mobileNumber && values.mobileNumber) {
-        created = await updateUser(created.id, {
+      if (editUser) {
+        const updated = await updateUser(editUser.id, {
+          fullName: values.fullName,
+          email: values.email,
+          role: values.role,
+          tenantRoleId: values.tenantRoleId,
           mobileNumber: values.mobileNumber,
+          status: values.status.toUpperCase(),
         });
+        if (updated.status?.toUpperCase() !== values.status.toUpperCase()) {
+          await updateUserStatus(editUser.id, values.status.toUpperCase());
+        }
+        setUsers((prev) =>
+          prev.map((item) =>
+            item.id === editUser.id ? mapUserToRecord(updated) : item,
+          ),
+        );
+        showToast({
+          title: 'User Updated',
+          message: `${values.fullName} has been updated successfully.`,
+        });
+        handleCloseUserModal();
+        void loadUsers();
+        return;
+      }
+
+      const addValues = values as Extract<UserFormValues, { password: string }>;
+      let created = await registerUser({
+        fullName: addValues.fullName,
+        email: addValues.email,
+        password: addValues.password,
+        role: addValues.role,
+        tenantRoleId: addValues.tenantRoleId,
+        mobileNumber: addValues.mobileNumber,
+      });
+      if (!created.mobileNumber && addValues.mobileNumber) {
+        created = await updateUser(created.id, {
+          mobileNumber: addValues.mobileNumber,
+        });
+      }
+      if (addValues.status === 'Inactive') {
+        created = await updateUserStatus(created.id, 'INACTIVE');
       }
       setUsers((prev) => [mapUserToRecord(created), ...prev]);
       showToast({
         title: 'User Added',
         message: `${created.fullName} has been added successfully.`,
       });
-      onAddUserClose();
+      handleCloseUserModal();
       void loadUsers();
     } catch (err) {
       showToast({
-        title: 'Could not add user',
+        title: editUser ? 'Could not update user' : 'Could not add user',
         message:
           err instanceof ApiError
             ? err.message
-            : 'Register user failed. Please try again.',
+            : 'Please try again.',
       });
     } finally {
       setSubmitting(false);
@@ -253,6 +295,7 @@ export function UserManagementTab({
         <UsersTable
           records={pageItems}
           onRoleChange={handleRoleChangeRequest}
+          onEdit={setEditUser}
         />
         <div className="border-t border-[#EFF0F6] px-5 py-3">
           <Pagination
@@ -267,11 +310,12 @@ export function UserManagementTab({
       </AsyncStatus>
 
       <AddUserModal
-        open={addUserOpen}
-        onClose={onAddUserClose}
-        onSubmit={handleAddUser}
+        open={addUserOpen || Boolean(editUser)}
+        onClose={handleCloseUserModal}
+        onSubmit={handleSaveUser}
         submitting={submitting}
         tenantRoleOptions={tenantRoleOptions}
+        user={editUser}
       />
 
       <RoleChangeModal

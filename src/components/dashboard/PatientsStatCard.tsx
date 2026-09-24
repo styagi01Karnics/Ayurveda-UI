@@ -10,7 +10,6 @@ interface PatientsStatCardProps {
   stats: DashboardStats;
   period: BillingPeriod;
   onPeriodChange: (period: BillingPeriod) => void;
-  /** Optional chart (or other content) rendered below the active/inactive bars. */
   footer?: ReactNode;
 }
 
@@ -26,55 +25,51 @@ export function PatientsStatCard({
     total > 0 ? Math.round((stats.inactivePatients / total) * 100) : 0;
 
   return (
-    <Card className="dashboard-card flex h-full min-h-0 flex-col p-5">
-      <div className="mb-4 flex items-start justify-between gap-2">
+    <Card className="dashboard-card flex h-full min-h-0 flex-col p-3.5">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <h3 className="dashboard-card-title">Total Patients</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
 
       <div className="flex items-end gap-2">
-        <p className="text-[32px] font-bold leading-none tracking-tight text-brown">
+        <p className="font-sans text-[26px] font-bold leading-none tracking-tight text-[#422C23]">
           {formatNumber(total)}
         </p>
-        <span className="mb-1 flex items-center gap-0.5 text-sm font-semibold text-success">
+        <span className="mb-0.5 flex items-center gap-0.5 font-sans text-sm font-semibold text-[#2E7D32]">
           <TrendingUp className="h-3.5 w-3.5" strokeWidth={2.5} />
           {stats.patientGrowth > 0 ? `+${stats.patientGrowth}` : stats.patientGrowth}%
         </span>
       </div>
 
-      <p className="mt-2.5 text-sm font-semibold text-gold">
+      <p className="mt-1 font-sans text-sm font-medium text-[#BE880B]">
         +{stats.patientsToday} Today
       </p>
 
-      <DashDivider className="my-4" />
-
-      <div className="grid grid-cols-2 gap-6">
+      <div className="mt-3 grid grid-cols-2 gap-5">
         <div>
-          <p className="text-[13px] leading-snug text-brown">
-            <span className="font-bold">{formatNumber(stats.activePatients)}</span>
-            <span className="font-medium text-text-muted">
-              {' '}
-              ({activePct}%) Active Patients
-            </span>
+          <p className="font-sans text-[16px] font-bold leading-none text-[#422C23]">
+            {formatNumber(stats.activePatients)}
           </p>
-          <div className="mt-2.5 h-3.5 w-full rounded-[3px] bg-gold" />
+          <p className="mt-4 font-sans text-[12px] font-medium leading-4 text-[#67554d]">
+            {activePct}% Active Patients
+          </p>
+          <div className="mt-1.5 h-3.5 w-full rounded-[4px] bg-[#BE880B]" />
         </div>
         <div>
-          <p className="text-[13px] leading-snug text-brown">
-            <span className="font-bold">{formatNumber(stats.inactivePatients)}</span>
-            <span className="font-medium text-text-muted">
-              {' '}
-              ({inactivePct}%) Inactive Patients
-            </span>
+          <p className="font-sans text-[16px] font-bold leading-none text-[#422C23]">
+            {formatNumber(stats.inactivePatients)}
           </p>
-          <div className="patient-inactive-bar mt-2.5 h-3.5 w-full rounded-[3px]" />
+          <p className="mt-4 font-sans text-[12px] font-medium leading-4 text-[#67554d]">
+            {inactivePct}% Inactive Patients
+          </p>
+          <div className="patient-inactive-bar mt-1.5 h-3.5 w-full rounded-[4px]" />
         </div>
       </div>
 
       {footer ? (
         <>
-          <DashDivider className="my-4 shrink-0" />
-          <div className="flex min-h-[200px] min-w-0 flex-1 flex-col">{footer}</div>
+          <DashDivider className="my-2.5 shrink-0" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">{footer}</div>
         </>
       ) : null}
     </Card>

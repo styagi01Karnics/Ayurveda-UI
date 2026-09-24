@@ -37,6 +37,7 @@ function mapApiRole(role: TenantRoleResponse): SettingsRoleRecord {
     name: role.roleName,
     status: role.active === false ? 'Inactive' : 'Active',
     accessLevel: accessLevelFor(role.pageCodes ?? []),
+    description: role.description ?? '',
     permissions: role.pageCodes ?? [],
     userCount: role.userCount ?? 0,
   };
@@ -99,6 +100,7 @@ export function RoleManagementTab({
     const active = values.status === 'Active';
     const payload = {
       roleName: values.name,
+      description: values.description?.trim() || undefined,
       pageCodes: values.permissions,
       active,
     };
@@ -134,7 +136,8 @@ export function RoleManagementTab({
                   ...role,
                   name: values.name,
                   status: values.status,
-                  accessLevel: values.accessLevel,
+                  accessLevel: values.accessLevel ?? accessLevelFor(values.permissions),
+                  description: values.description,
                   permissions: values.permissions,
                 }
               : role,
@@ -151,7 +154,8 @@ export function RoleManagementTab({
             id: `role-${Date.now()}`,
             name: values.name,
             status: values.status,
-            accessLevel: values.accessLevel,
+            accessLevel: values.accessLevel ?? accessLevelFor(values.permissions),
+            description: values.description,
             permissions: values.permissions,
             userCount: 0,
           },

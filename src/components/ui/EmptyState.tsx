@@ -20,7 +20,7 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'rounded-xl border border-gray-100 bg-white text-center',
+        'app-card rounded-xl text-center',
         compact ? 'px-4 py-8' : 'px-4 py-10',
         className,
       )}

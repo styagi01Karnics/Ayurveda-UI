@@ -24,9 +24,9 @@ export const dashboardStats: DashboardStats = {
 };
 
 export const patientTrendsData = [
-  { month: 'Sep', newPatients: 95, followUps: 72 },
-  { month: 'Oct', newPatients: 190, followUps: 138 },
-  { month: 'Nov', newPatients: 108, followUps: 96 },
+  { month: 'September', newPatients: 148, followUps: 58 },
+  { month: 'October', newPatients: 80, followUps: 92 },
+  { month: 'November', newPatients: 176, followUps: 62 },
 ];
 
 export const patientTrendsFullYear = [

@@ -78,7 +78,7 @@ export function SignupPage() {
         <BrandHeader className="mb-6" />
 
         <div className="mb-8">
-          <h2 className="font-serif text-[28px] font-bold leading-tight text-brown">
+          <h2 className="font-sans text-[28px] font-bold leading-tight text-brown">
             Let&apos;s Begin
           </h2>
           <p className="mt-2 text-sm text-text-muted">

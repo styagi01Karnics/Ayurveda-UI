@@ -1,5 +1,6 @@
 import { AppIcon } from '@/components/ui/AppIcon';
 import { DataTableShell } from '@/components/ui/DataTableShell';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
 import { formatCurrency, formatNumber } from '@/lib/utils';
@@ -56,22 +57,19 @@ export function MedicinesTable({
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex gap-2">
-                      <button
-                        type="button"
+                      <IconActionButton
                         onClick={() => onEdit(record)}
-                        className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-gold/10"
                         aria-label={`Edit ${record.name}`}
                       >
                         <AppIcon src={assets.icons.edit} className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
+                      </IconActionButton>
+                      <IconActionButton
                         onClick={() => onDelete(record)}
-                        className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
                         aria-label={`Delete ${record.name}`}
+                        className="hover:bg-danger/10"
                       >
                         <AppIcon src={assets.icons.trash} className="h-4 w-4" />
-                      </button>
+                      </IconActionButton>
                     </div>
                   </td>
                 </tr>

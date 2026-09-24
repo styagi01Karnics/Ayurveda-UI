@@ -298,7 +298,7 @@ export function PlatformHospitalsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-serif text-2xl font-bold text-brown sm:text-[28px]">
+          <h1 className="font-sans text-2xl font-bold text-brown sm:text-[28px]">
             Clinics
           </h1>
           <p className="mt-1 text-sm text-text-muted">
@@ -312,7 +312,7 @@ export function PlatformHospitalsPage() {
       </div>
 
       {lastOnboard ? (
-        <Card className="border border-success/30 bg-success/5 p-4 sm:p-5">
+        <Card className="bg-success/5 p-4 sm:p-5">
           <p className="text-sm font-semibold text-brown">
             Latest onboard success
           </p>

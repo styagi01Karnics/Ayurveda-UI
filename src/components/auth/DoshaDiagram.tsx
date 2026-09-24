@@ -6,7 +6,7 @@ import { assets } from '@/lib/assets';
  */
 export function DoshaDiagram() {
   return (
-    <div className="relative ml-auto h-[min(760px,86dvh)] w-full max-w-none shrink-0">
+    <div className="relative ml-auto h-[min(520px,72dvh)] w-full max-w-none shrink-0">
       <svg
         className="h-full w-full"
         viewBox="0 0 555 535"
@@ -16,36 +16,45 @@ export function DoshaDiagram() {
         <defs>
           <marker
             id="dosha-arrow"
-            markerWidth="12"
-            markerHeight="12"
-            refX="10"
-            refY="6"
+            viewBox="0 0 10 10"
+            markerWidth="8"
+            markerHeight="8"
+            refX="8"
+            refY="5"
             orient="auto"
+            markerUnits="userSpaceOnUse"
           >
-            <path d="M0 0 L12 6 L0 12 Z" fill="#422c23" fillOpacity="0.6" />
+            <path
+              d="M 1.5 1.5 L 8.5 5 L 1.5 8.5"
+              fill="none"
+              stroke="#422C23"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </marker>
         </defs>
 
         {/* Vata circle (300,80) r≈48 — strokes start at the left/right rims */}
         <path
           d="M 348 100 L 483 397"
-          stroke="#422c23"
-          strokeWidth="1.6"
-          strokeOpacity="0.55"
+          stroke="#422C23"
+          strokeWidth="1.86"
+          vectorEffect="non-scaling-stroke"
           markerEnd="url(#dosha-arrow)"
         />
         <path
           d="M 458 440 L 142 440"
-          stroke="#422c23"
-          strokeWidth="1.6"
-          strokeOpacity="0.55"
+          stroke="#422C23"
+          strokeWidth="1.86"
+          vectorEffect="non-scaling-stroke"
           markerEnd="url(#dosha-arrow)"
         />
         <path
           d="M 117 397 L 252 100"
-          stroke="#422c23"
-          strokeWidth="1.6"
-          strokeOpacity="0.55"
+          stroke="#422C23"
+          strokeWidth="1.86"
+          vectorEffect="non-scaling-stroke"
           markerEnd="url(#dosha-arrow)"
         />
 
@@ -79,7 +88,7 @@ export function DoshaDiagram() {
           y="148"
           textAnchor="middle"
           fill="#422C23"
-          fontFamily="Inria Serif, serif"
+          fontFamily="Inter, sans-serif"
           fontSize="28"
           fontWeight="700"
         >
@@ -90,7 +99,7 @@ export function DoshaDiagram() {
           y="522"
           textAnchor="middle"
           fill="#422C23"
-          fontFamily="Inria Serif, serif"
+          fontFamily="Inter, sans-serif"
           fontSize="28"
           fontWeight="700"
         >
@@ -101,7 +110,7 @@ export function DoshaDiagram() {
           y="522"
           textAnchor="middle"
           fill="#422C23"
-          fontFamily="Inria Serif, serif"
+          fontFamily="Inter, sans-serif"
           fontSize="28"
           fontWeight="700"
         >
@@ -114,8 +123,9 @@ export function DoshaDiagram() {
           textAnchor="middle"
           fill="#422C23"
           fontFamily="Inria Serif, serif"
-          fontSize="19"
+          fontSize="18.65"
           fontWeight="700"
+          letterSpacing="0"
         >
           Know Your
         </text>
@@ -125,8 +135,9 @@ export function DoshaDiagram() {
           textAnchor="middle"
           fill="#422C23"
           fontFamily="Inria Serif, serif"
-          fontSize="19"
+          fontSize="18.65"
           fontWeight="700"
+          letterSpacing="0"
         >
           Dosha
         </text>

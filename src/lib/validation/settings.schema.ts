@@ -145,15 +145,21 @@ export const clinicDoshaSchema = z.object({
 
 export type ClinicDoshaFormValues = z.infer<typeof clinicDoshaSchema>;
 
+const userDetailFields = {
+  tenantRoleId: z.string().min(1, 'Role is required'),
+  fullName: z.string().min(1, 'Full name is required'),
+  mobileNumber: z
+    .string()
+    .min(1, 'Mobile number is required')
+    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+  role: z.string().min(1, 'Role is required'),
+  status: z.enum(USER_STATUS_OPTIONS),
+};
+
 export const addUserSchema = z
   .object({
-    tenantRoleId: z.string().min(1, 'Tenant role is required'),
-    fullName: z.string().min(1, 'Full name is required'),
-    mobileNumber: z
-      .string()
-      .min(1, 'Mobile number is required')
-      .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-    email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+    ...userDetailFields,
     password: z
       .string()
       .min(1, 'Password is required')
@@ -163,7 +169,6 @@ export const addUserSchema = z
         'Password must include upper, lower case and a number',
       ),
     confirmPassword: z.string().min(1, 'Confirm password is required'),
-    role: z.string().min(1, 'Role is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -172,10 +177,15 @@ export const addUserSchema = z
 
 export type AddUserFormValues = z.infer<typeof addUserSchema>;
 
+export const editUserSchema = z.object(userDetailFields);
+
+export type EditUserFormValues = z.infer<typeof editUserSchema>;
+
 export const roleSchema = z.object({
   name: z.string().min(1, 'Role name is required'),
+  description: z.string().optional(),
   status: z.enum(CLINIC_STATUS_OPTIONS),
-  accessLevel: z.string().min(1, 'Access level is required'),
+  accessLevel: z.string().optional(),
   permissions: z.array(z.string()).min(1, 'Select at least one permission'),
 });
 

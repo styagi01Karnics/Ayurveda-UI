@@ -36,7 +36,7 @@ export function DoctorScheduleStatCards({ stats }: DoctorScheduleStatCardsProps)
       title: 'Follow Ups Due',
       value: stats.followUpsDue,
       pills: [
-        { label: `${stats.followUpsScheduled} Scheduled`, tone: 'muted' as const },
+        { label: `${stats.followUpsScheduled} Scheduled`, tone: 'success' as const },
         { label: `${stats.followUpsPending} Pending`, tone: 'muted' as const },
       ],
     },
@@ -46,8 +46,10 @@ export function DoctorScheduleStatCards({ stats }: DoctorScheduleStatCardsProps)
     <div className="dash-grid">
       {cards.map((card) => (
         <Card key={card.title} className="dashboard-card space-y-3 p-5">
-          <p className="dashboard-card-title text-brown">{card.title}</p>
-          <p className="text-[28px] font-bold leading-none tracking-tight text-brown">
+          <p className="font-sans text-[16px] font-semibold leading-5 tracking-normal text-[#838A9A]">
+            {card.title}
+          </p>
+          <p className="font-sans text-[22px] font-semibold leading-9 tracking-normal text-[#422C23]">
             {card.value}
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
@@ -57,7 +59,7 @@ export function DoctorScheduleStatCards({ stats }: DoctorScheduleStatCardsProps)
                 className={cn(
                   'rounded-full px-2.5 py-1 text-xs font-medium',
                   pill.tone === 'success'
-                    ? 'bg-success/15 text-success'
+                    ? 'bg-[#2E7D32]/10 text-[#2E7D32]'
                     : 'bg-[#faf4e5] text-brown',
                 )}
               >

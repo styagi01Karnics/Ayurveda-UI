@@ -24,6 +24,9 @@ import folderIcon from '@/assets/appointments/book/icon-folder.svg';
 import pdfIcon from '@/assets/appointments/book/icon-pdf.svg';
 import checkmarkIcon from '@/assets/doctors/checkmark.svg';
 import scheduleDecorImg from '@/assets/dashboard/schedule-decor.png';
+import loginDecorTopRight from '@/assets/7591fc220fd4d8861e092b7d5e5997c8 2.png';
+import loginDecorBottomLeft from '@/assets/47384bbb6cb6c3b72f9f27676ca317b2 1.png';
+import loginBg from '@/assets/Rectangle 1 (1).png';
 import { navIconSet, type NavIconKey } from '@/lib/nav-icons';
 
 export { navIconSet, type NavIconKey };
@@ -38,8 +41,9 @@ export const assets = {
     kapha: '/assets/kapha.png',
   },
   auth: {
-    loginDecorTopRight: '/assets/login-decor-right.png',
-    loginDecorBottomLeft: '/assets/login-decor-left.png',
+    loginBg,
+    loginDecorTopRight,
+    loginDecorBottomLeft,
     signupDecorBottomRight: '/assets/signup-decor-right.png',
   },
   sidebarBg,

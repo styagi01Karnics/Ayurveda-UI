@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { usePageAction } from '@/app/PageActionContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { ClinicSettingsTab } from '@/components/settings/ClinicSettingsTab';
 import { RoleManagementTab } from '@/components/settings/RoleManagementTab';
@@ -7,6 +6,7 @@ import { SystemPreferenceTab } from '@/components/settings/SystemPreferenceTab';
 import { UserManagementTab } from '@/components/settings/UserManagementTab';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { assets } from '@/lib/assets';
 import { SETTINGS_TABS } from '@/data/mock/settings';
@@ -43,15 +43,18 @@ export function SettingsPage() {
     return null;
   }, [activeTab]);
 
-  usePageAction(headerAction);
-
   return (
     <PageShell className="space-y-5">
-      <UnderlineTabs
-        tabs={SETTINGS_TABS}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      />
+      <Card className="dashboard-card p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <UnderlineTabs
+            tabs={SETTINGS_TABS}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          />
+          {headerAction}
+        </div>
+      </Card>
 
       {activeTab === 'clinic' && <ClinicSettingsTab />}
       {activeTab === 'users' && (

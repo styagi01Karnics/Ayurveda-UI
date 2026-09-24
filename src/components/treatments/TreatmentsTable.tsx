@@ -104,11 +104,11 @@ function TreatmentStatus({ status }: { status: TreatmentRecord['status'] }) {
 
   const colors: Record<TreatmentRecord['status'], string> = {
 
-    Scheduled: 'text-text-muted',
+    Scheduled: 'text-[#2E7D32]',
 
     Ongoing: 'text-gold',
 
-    Completed: 'text-success',
+    Completed: 'text-[#2E7D32]',
 
   };
 

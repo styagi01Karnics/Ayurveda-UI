@@ -86,8 +86,8 @@ function AppointmentStatus({
   status: AppointmentRecord['status'];
 }) {
   const colors = {
-    Scheduled: 'text-gold',
-    Completed: 'text-success',
+    Scheduled: 'text-[#2E7D32]',
+    Completed: 'text-[#2E7D32]',
     Cancelled: 'text-danger',
   };
   return <span className={cn('font-medium', colors[status])}>{status}</span>;

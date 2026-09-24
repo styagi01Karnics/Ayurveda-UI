@@ -69,7 +69,7 @@ function FollowUpStatus({ status }: { status: FollowUpRecord['status'] }) {
   const colors: Record<FollowUpRecord['status'], string> = {
     Upcoming: 'text-gold',
     Missed: 'text-danger',
-    Completed: 'text-success',
+    Completed: 'text-[#2E7D32]',
     Cancelled: 'text-text-muted',
   };
   return <span className={cn('font-medium', colors[status])}>{status}</span>;

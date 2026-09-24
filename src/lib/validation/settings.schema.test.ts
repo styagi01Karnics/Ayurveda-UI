@@ -82,6 +82,7 @@ describe('settings.schema', () => {
       password: 'Password1',
       confirmPassword: 'Password1',
       role: 'ADMIN',
+      status: 'Active',
     });
     expect(result.success).toBe(true);
   });
@@ -95,6 +96,7 @@ describe('settings.schema', () => {
       password: 'Password1',
       confirmPassword: 'Password2',
       role: 'ADMIN',
+      status: 'Active',
     });
     expect(result.success).toBe(false);
   });

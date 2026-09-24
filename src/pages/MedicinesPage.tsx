@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { DeleteMedicineModal } from '@/components/medicines/DeleteMedicineModal';
@@ -88,7 +87,7 @@ export function MedicinesPage() {
   const headerAction = useMemo(
     () => (
       <Button
-        className="gap-1.5 px-4 py-2 text-sm"
+        className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
         onClick={() => {
           setEditTarget(null);
           setFormOpen(true);
@@ -100,8 +99,6 @@ export function MedicinesPage() {
     ),
     [],
   );
-
-  usePageAction(headerAction);
 
   const buildPayload = (values: MedicineFormValues): CreateMedicinePayload => ({
     medicineName: values.name.trim(),
@@ -199,6 +196,7 @@ export function MedicinesPage() {
     <PageShell>
       <AsyncStatus loading={loading} error={error} onRetry={reload}>
         <ListPanel
+          actions={headerAction}
           filters={
             <>
               <FilterControl>

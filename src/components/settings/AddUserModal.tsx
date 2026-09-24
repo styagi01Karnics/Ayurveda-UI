@@ -1,23 +1,35 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select, type SelectOption } from '@/components/ui/Select';
+import { Modal } from '@/components/ui/Modal';
+import { Select } from '@/components/ui/Select';
 import {
   USER_ROLE_OPTIONS,
   addUserSchema,
+  editUserSchema,
   type AddUserFormValues,
+  type EditUserFormValues,
 } from '@/lib/validation/settings.schema';
+import type { SettingsUserRecord } from '@/types';
+
+export interface TenantRoleOption {
+  value: string;
+  label: string;
+  description?: string;
+  pageCodes?: string[];
+}
+
+export type UserFormValues = AddUserFormValues | EditUserFormValues;
 
 interface AddUserModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: AddUserFormValues) => void | Promise<void>;
+  onSubmit: (values: UserFormValues) => void | Promise<void>;
   submitting?: boolean;
-  /** Tenant roles from GET /api/v1/roles — value is role UUID (`tenantRoleId`). */
-  tenantRoleOptions?: SelectOption[];
+  tenantRoleOptions?: TenantRoleOption[];
+  user?: SettingsUserRecord | null;
 }
 
 export function AddUserModal({
@@ -26,14 +38,16 @@ export function AddUserModal({
   onSubmit,
   submitting = false,
   tenantRoleOptions = [],
+  user = null,
 }: AddUserModalProps) {
+  const isEdit = Boolean(user);
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<AddUserFormValues>({
-    resolver: zodResolver(addUserSchema),
+  } = useForm<UserFormValues>({
+    resolver: zodResolver(isEdit ? editUserSchema : addUserSchema),
     defaultValues: {
       tenantRoleId: '',
       fullName: '',
@@ -42,22 +56,34 @@ export function AddUserModal({
       password: '',
       confirmPassword: '',
       role: '',
+      status: 'Active',
     },
   });
 
   useEffect(() => {
-    if (open) {
+    if (!open) return;
+    if (user) {
       reset({
-        tenantRoleId: '',
-        fullName: '',
-        mobileNumber: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        role: '',
+        tenantRoleId: user.tenantRoleId ?? '',
+        fullName: user.fullName === '—' ? '' : user.fullName,
+        mobileNumber: user.phone.replace(/\D/g, '').slice(-10),
+        email: user.email === '—' ? '' : user.email,
+        role: user.assignedRole,
+        status: user.status,
       });
+      return;
     }
-  }, [open, reset]);
+    reset({
+      tenantRoleId: '',
+      fullName: '',
+      mobileNumber: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: '',
+      status: 'Active',
+    });
+  }, [open, user, reset]);
 
   const handleClose = () => {
     reset();
@@ -68,8 +94,12 @@ export function AddUserModal({
     <Modal
       open={open}
       onClose={handleClose}
-      title="Add User"
-      subtitle="Please fill out the details to add user"
+      title={isEdit ? 'Edit User' : 'Add User'}
+      subtitle={
+        isEdit
+          ? 'Please fill out the details to update user'
+          : 'Please fill out the details to add user'
+      }
       footer={
         <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
           {submitting ? 'Saving...' : 'Confirm'}
@@ -81,48 +111,56 @@ export function AddUserModal({
           label="Tenant Role"
           placeholder="Select tenant role"
           options={tenantRoleOptions}
-          error={errors.tenantRoleId?.message}
+          error={'tenantRoleId' in errors ? errors.tenantRoleId?.message : undefined}
           {...register('tenantRoleId')}
         />
         <Input
           label="Full Name"
           placeholder="Full Name"
-          error={errors.fullName?.message}
+          error={'fullName' in errors ? errors.fullName?.message : undefined}
           {...register('fullName')}
         />
         <Input
           label="Mobile Number"
           placeholder="Mobile Number"
-          error={errors.mobileNumber?.message}
+          error={'mobileNumber' in errors ? errors.mobileNumber?.message : undefined}
           {...register('mobileNumber')}
         />
         <Input
           label="Email"
           type="email"
           placeholder="Email"
-          error={errors.email?.message}
+          error={'email' in errors ? errors.email?.message : undefined}
           {...register('email')}
         />
-        <Input
-          label="Password"
-          type="password"
-          placeholder="Password"
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <Input
-          label="Confirm Password"
-          type="password"
-          placeholder="Confirm Password"
-          error={errors.confirmPassword?.message}
-          {...register('confirmPassword')}
-        />
+        {!isEdit ? (
+          <>
+            <Input
+              label="Password"
+              type="password"
+              placeholder="Password"
+              error={'password' in errors ? errors.password?.message : undefined}
+              {...register('password')}
+            />
+            <Input
+              label="Confirm Password"
+              type="password"
+              placeholder="Confirm Password"
+              error={
+                'confirmPassword' in errors
+                  ? errors.confirmPassword?.message
+                  : undefined
+              }
+              {...register('confirmPassword')}
+            />
+          </>
+        ) : null}
         <div className="sm:col-span-2">
           <Select
             label="Role"
             placeholder="Role"
             options={[...USER_ROLE_OPTIONS]}
-            error={errors.role?.message}
+            error={'role' in errors ? errors.role?.message : undefined}
             {...register('role')}
           />
         </div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { LoginDecorations } from '@/components/auth/LoginDecorations';
 import { SignupDecorations } from '@/components/auth/SignupDecorations';
+import { assets } from '@/lib/assets';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -15,16 +16,19 @@ export function AuthLayout({
 }: AuthLayoutProps) {
   if (variant === 'login') {
     return (
-      <div className="login-shell fixed inset-0 z-0 h-dvh overflow-hidden overscroll-none">
+      <div
+        className="login-shell fixed inset-0 z-0 h-dvh overflow-hidden"
+        style={{ backgroundImage: `url(${assets.auth.loginBg})` }}
+      >
         <LoginDecorations />
 
-        <div className="relative z-10 flex h-full w-full items-center overflow-hidden py-4 pl-8 pr-2 sm:pl-12 lg:pl-16 xl:pl-20">
-          <div className="login-fit grid h-full max-h-full w-full items-center gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
-            <div className="mx-auto ml-6 flex h-full min-h-0 w-full max-w-[400px] items-center sm:ml-10 lg:mx-0 lg:ml-14 xl:ml-20">
+        <div className="relative z-10 flex h-full w-full items-center overflow-hidden pl-8 pr-2 sm:pl-12 lg:pl-16 xl:pl-20">
+          <div className="login-fit grid h-full w-full items-center gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
+            <div className="mx-auto flex h-full min-h-0 w-full max-w-[400px] items-center lg:mx-0 lg:ml-10 xl:ml-16">
               {children}
             </div>
             {aside ? (
-              <div className="hidden h-full min-h-0 min-w-0 items-center justify-end pr-0 lg:flex">
+              <div className="hidden h-full min-h-0 min-w-0 items-center justify-end overflow-hidden lg:flex">
                 {aside}
               </div>
             ) : null}

@@ -24,7 +24,7 @@ export function AsyncStatus({
 }: AsyncStatusProps) {
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-100 bg-white">
+      <div className="app-card rounded-xl">
         <LoadingState label={UI_MESSAGES.loading} />
       </div>
     );

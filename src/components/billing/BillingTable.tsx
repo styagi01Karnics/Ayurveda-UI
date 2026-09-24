@@ -1,6 +1,7 @@
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
 import { DataTableShell } from '@/components/ui/DataTableShell';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { assets } from '@/lib/assets';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { BillingRecord } from '@/types';
@@ -116,17 +117,15 @@ export function BillingTable({
                         Start Invoice
                       </Button>
                     ) : (
-                      <button
-                        type="button"
+                      <IconActionButton
                         onClick={() => onDownload(record)}
-                        className="rounded-lg border border-gray-200 bg-cream p-2 text-gold hover:bg-gold/10"
                         aria-label="Download bill"
                       >
                         <AppIcon
                           src={assets.icons.download}
                           className="h-4 w-4"
                         />
-                      </button>
+                      </IconActionButton>
                     )}
                   </td>
                 </tr>
@@ -149,7 +148,7 @@ function BillingStatus({ status }: { status: BillingRecord['status'] }) {
           status === 'Partial' ||
           status === 'Ongoing'
           ? 'text-gold'
-          : 'text-success',
+          : 'text-[#2E7D32]',
       )}
     >
       {status}

@@ -17,7 +17,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           <FieldLabel
             htmlFor={textareaId}
             label={label}
-            className="text-xs font-medium text-text-muted"
+            className="field-label"
           />
         )}
         <textarea

@@ -1,4 +1,5 @@
 import { Settings2 } from 'lucide-react';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Select } from '@/components/ui/Select';
 import { formatAuthRole } from '@/lib/auth';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
@@ -8,6 +9,7 @@ import type { SettingsUserRecord } from '@/types';
 interface UsersTableProps {
   records: SettingsUserRecord[];
   onRoleChange: (userId: string, newRole: string) => void;
+  onEdit: (user: SettingsUserRecord) => void;
 }
 
 function formatDisplayUserId(userId: string): string {
@@ -25,7 +27,7 @@ function formatDisplayPhone(phone: string): string {
   return phone || '—';
 }
 
-export function UsersTable({ records, onRoleChange }: UsersTableProps) {
+export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
   return (
     <div className="w-full min-w-0 overflow-x-auto">
       <table className="w-full min-w-[900px] text-left text-sm">
@@ -93,13 +95,12 @@ export function UsersTable({ records, onRoleChange }: UsersTableProps) {
                         }
                       }}
                     />
-                    <button
-                      type="button"
-                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] transition-colors hover:bg-[#BE880B] hover:text-white"
+                    <IconActionButton
+                      onClick={() => onEdit(record)}
                       aria-label={`Edit ${record.fullName}`}
                     >
-                      <Settings2 className="h-4 w-4" strokeWidth={1.75} />
-                    </button>
+                      <Settings2 className="h-4 w-4 text-[#422C23]" strokeWidth={1.75} />
+                    </IconActionButton>
                   </div>
                 </td>
               </tr>

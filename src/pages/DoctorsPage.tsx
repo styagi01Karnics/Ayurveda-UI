@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentModal';
@@ -98,7 +97,7 @@ export function DoctorsPage() {
   const headerAction = useMemo(
     () => (
       <Button
-        className="gap-1.5 px-4 py-2 text-sm"
+        className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
         onClick={() => navigate('/appointments')}
       >
         <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -107,8 +106,6 @@ export function DoctorsPage() {
     ),
     [navigate],
   );
-
-  usePageAction(headerAction);
 
   const handleStart = async (bookingId: string) => {
     if (startingId) return;
@@ -164,7 +161,7 @@ export function DoctorsPage() {
       await cancelAppointment(cancelTarget.id, reason);
       setLocalSchedule((prev) => prev.filter((row) => row.id !== cancelTarget.id));
       showToast({
-        title: 'Appointment cancelled',
+        title: 'Appointment has been cancelled',
         message: `${cancelTarget.patient}'s appointment was cancelled.`,
       });
       await reload();
@@ -191,6 +188,7 @@ export function DoctorsPage() {
           <DoctorScheduleStatCards stats={data.stats} />
 
           <ListPanel
+            actions={headerAction}
             filters={
               <>
                 <FilterControl>

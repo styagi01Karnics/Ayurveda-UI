@@ -95,18 +95,18 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
       )}
       style={{ backgroundImage: `url(${assets.sidebarBg})` }}
     >
-      <div className="relative z-[1] mb-6 shrink-0 px-1 pr-3 sm:pr-4">
-        <div className="flex flex-col items-center gap-1.5 text-center">
+      <div className="relative z-[1] mb-10 shrink-0 px-1 pr-3 sm:pr-4">
+        <div className="flex flex-col items-center gap-2 text-center">
           <img
             src={clinicLogo}
             alt={clinicName}
-            className="h-14 w-14 object-contain"
+            className="h-16 w-16 object-contain"
           />
-          <p className="w-full break-words font-serif text-[15px] font-bold leading-tight tracking-[0.04em] text-[#2a1810]">
+          <p className="w-full break-words font-sans text-[20px] font-semibold uppercase leading-none tracking-normal text-[#422C23]">
             {clinicName}
           </p>
           {!superAdmin ? (
-            <p className="font-serif text-[13px] font-medium italic leading-snug text-[#a5750a]">
+            <p className="mb-1 font-sans text-[14px] font-semibold leading-none tracking-normal text-[#BE880B] normal-case">
               A Journey of Healing
             </p>
           ) : null}
@@ -137,6 +137,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                       'h-[22px] w-[22px] shrink-0',
                       isActive ? 'text-[#BE880B]' : 'text-brown',
                     )}
+                    fill={isActive ? 'currentColor' : 'none'}
                     strokeWidth={1.5}
                     aria-hidden
                   />
@@ -146,6 +147,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                       'h-[22px] w-[22px] shrink-0',
                       isActive ? 'text-[#BE880B]' : 'text-brown',
                     )}
+                    fill={isActive ? 'currentColor' : 'none'}
                     strokeWidth={1.5}
                     aria-hidden
                   />
@@ -155,6 +157,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                       'h-[22px] w-[22px] shrink-0',
                       isActive ? 'text-[#BE880B]' : 'text-brown',
                     )}
+                    fill={isActive ? 'currentColor' : 'none'}
                     strokeWidth={1.5}
                     aria-hidden
                   />

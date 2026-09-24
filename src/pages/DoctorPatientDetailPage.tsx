@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { DoctorPatientBreadcrumbs } from '@/components/doctors/DoctorPatientBreadcrumbs';
 import {
@@ -205,21 +204,6 @@ export function DoctorPatientDetailPage() {
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [pendingTab, setPendingTab] = useState<PatientDetailTab | null>(null);
   const [pendingAction, setPendingAction] = useState<'step' | 'tab' | null>(null);
-
-  const headerAction = useMemo(
-    () => (
-      <Button
-        className="gap-1.5 px-4 py-2 text-sm"
-        onClick={() => navigate('/appointments')}
-      >
-        <Plus className="h-4 w-4" />
-        Book Appointment
-      </Button>
-    ),
-    [navigate],
-  );
-
-  usePageAction(headerAction);
 
   useEffect(() => {
     if (loadedPatient) {
@@ -736,11 +720,11 @@ export function DoctorPatientDetailPage() {
             <>
               <Stepper steps={WORKFLOW_STEPS} currentStep={workflowStep} />
 
-              <Card className="border-[#ebe4d8] bg-[#FAF9F5] p-5 sm:p-6">
+              <Card className="p-5 sm:p-6">
         <div className="space-y-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="font-plex align-middle text-[14px] font-medium leading-5 tracking-normal text-[#737373]">
+              <p className="font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
                 Patient ID
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-3">
@@ -748,11 +732,10 @@ export function DoctorPatientDetailPage() {
                 <Badge variant="gold" className="rounded-md px-3 py-1">
                   {patient.treatmentStatus}
                 </Badge>
-                <p className="text-base font-semibold text-brown">{patient.name}</p>
               </div>
             </div>
             <div className="text-right">
-              <p className="font-plex align-middle text-[14px] font-medium leading-5 tracking-normal text-[#737373]">
+              <p className="font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
                 Dosha
               </p>
               <p className="text-xl font-bold text-gold">{patient.dosha || '—'}</p>
