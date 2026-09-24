@@ -7,17 +7,25 @@ interface NavIconProps {
   className?: string;
 }
 
-function colorizeSvg(svg: string): string {
-  return svg
+/** Same path for both states — stroke when idle, fill when selected. */
+function renderNavSvg(svg: string, filled: boolean): string {
+  const cleaned = svg
     .replace(/\s(width|height)="100%"/g, '')
     .replace(/\spreserveAspectRatio="[^"]*"/g, '')
-    .replace(/fill="var\([^"]*\)"/gi, 'fill="currentColor"')
-    .replace(/fill="#[^"]*"/gi, 'fill="currentColor"')
-    .replace(/stroke="var\([^"]*\)"/gi, 'stroke="currentColor"')
-    .replace(/stroke="#[^"]*"/gi, 'stroke="currentColor"');
+    .replace(/\sfill="[^"]*"/gi, '')
+    .replace(/\sstroke="[^"]*"/gi, '')
+    .replace(/\sstroke-width="[^"]*"/gi, '');
+
+  if (filled) {
+    return cleaned.replace(/<path\b/gi, '<path fill="currentColor"');
+  }
+
+  return cleaned.replace(
+    /<path\b/gi,
+    '<path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"',
+  );
 }
 
-/** Sidebar nav icon — outline when idle, filled gold when selected. */
 export function NavIcon({
   outline,
   filled,
@@ -33,7 +41,7 @@ export function NavIcon({
         className,
       )}
       dangerouslySetInnerHTML={{
-        __html: colorizeSvg(active ? filled : outline),
+        __html: renderNavSvg(filled || outline, active),
       }}
     />
   );
