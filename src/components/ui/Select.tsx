@@ -152,7 +152,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-labelledby={selectId}
-          onBlur={onBlur}
+          onBlur={() => {
+            const node = hiddenRef.current;
+            if (!node) return;
+            onBlur?.({
+              target: node,
+              currentTarget: node,
+            } as Parameters<NonNullable<typeof onBlur>>[0]);
+          }}
           onClick={() => !disabled && setOpen((current) => !current)}
           className={cn(
             'select-trigger flex w-full items-center justify-between rounded-lg px-4 pr-3 text-left focus:outline-none focus:ring-2',

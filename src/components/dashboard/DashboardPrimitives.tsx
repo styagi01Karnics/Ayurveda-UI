@@ -91,41 +91,54 @@ export function SemiCircleGauge({
   count,
   stroke,
 }: SemiCircleGaugeProps) {
-  const radius = 28;
-  const arcLength = Math.PI * radius;
-  const offset = arcLength * (1 - Math.min(100, Math.max(0, percent)) / 100);
+  const clamped = Math.min(100, Math.max(0, percent));
+  const radius = 34;
+  const cx = 46;
+  const cy = 46;
+  const d = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center">
-      <svg width="80" height="48" viewBox="0 0 80 48" aria-hidden>
+      <svg
+        width="92"
+        height="56"
+        viewBox="0 0 92 56"
+        className="shrink-0 overflow-visible"
+        aria-hidden
+      >
         <path
-          d="M 10 42 A 28 28 0 0 1 70 42"
+          d={d}
           fill="none"
-          stroke="#ebe4d8"
-          strokeWidth="6"
+          stroke="#E8E4DC"
+          strokeWidth="9"
           strokeLinecap="round"
         />
         <path
-          d="M 10 42 A 28 28 0 0 1 70 42"
+          d={d}
           fill="none"
           stroke={stroke}
-          strokeWidth="6"
+          strokeWidth="9"
           strokeLinecap="round"
-          strokeDasharray={arcLength}
-          strokeDashoffset={offset}
+          pathLength={100}
+          strokeDasharray={100}
+          strokeDashoffset={100 - clamped}
         />
         <text
-          x="40"
-          y="40"
+          x={cx}
+          y={cy - 4}
           textAnchor="middle"
-          fill="#67554d"
-          style={{ fontSize: 12, fontWeight: 600 }}
+          fill="#67554D"
+          style={{ fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
         >
-          {percent}%
+          {clamped}%
         </text>
       </svg>
-      <span className="mt-1.5 font-sans text-[11px] text-[#67554d]">{label}</span>
-      <span className="font-sans text-sm font-semibold text-[#BE880B]">{count}</span>
+      <span className="mt-1 font-sans text-[12px] font-medium leading-4 text-[#67554D]">
+        {label}
+      </span>
+      <span className="mt-0.5 font-sans text-[14px] font-semibold leading-none text-[#BE880B]">
+        {count}
+      </span>
     </div>
   );
 }

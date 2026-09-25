@@ -216,7 +216,7 @@ export function TreatmentsPage() {
 
       <Button
 
-        className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
+        className="h-9 gap-1.5 px-4 py-0 text-sm"
 
         onClick={() => setBookOpen(true)}
 

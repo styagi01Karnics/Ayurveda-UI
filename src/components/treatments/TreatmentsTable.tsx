@@ -74,7 +74,7 @@ export function TreatmentsTable({
                   {record.status === 'Scheduled' && onComplete ? (
                     <Button
                       type="button"
-                      className="bg-success px-3 py-1.5 text-xs hover:bg-success/90"
+                      size="sm"
                       disabled={completingId === record.id}
                       onClick={(event) => {
                         event.stopPropagation();

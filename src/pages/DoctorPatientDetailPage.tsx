@@ -753,7 +753,14 @@ export function DoctorPatientDetailPage() {
               <button
                 type="button"
                 onClick={handleEditToggle}
-                className={`mt-1 shrink-0 rounded-full border p-2 transition-colors ${isEditing ? 'border-gold bg-gold/10 text-gold' : 'border-gray-200 text-text-muted hover:border-gold hover:text-gold'}`}
+                className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                  isEditing
+                    ? 'bg-gold text-white'
+                    : 'bg-[#FBF6E8] text-[#422C23]'
+                }`}
+                style={
+                  isEditing ? undefined : { border: '0.23px solid #BE880B' }
+                }
                 aria-label={isEditing ? 'Exit edit mode' : 'Edit patient details'}
               >
                 <Pencil className="h-4 w-4" />

@@ -1,48 +1,48 @@
+import type { ComponentType } from 'react';
 import { cn } from '@/lib/utils';
 
+export interface NavGlyphProps {
+  className?: string;
+  fill?: string;
+  strokeWidth?: string | number;
+}
+
+export type NavGlyph = ComponentType<NavGlyphProps>;
+
 interface NavIconProps {
-  outline: string;
-  filled: string;
+  icon: NavGlyph;
   active?: boolean;
   className?: string;
 }
 
-/** Same path for both states — stroke when idle, fill when selected. */
-function renderNavSvg(svg: string, filled: boolean): string {
-  const cleaned = svg
-    .replace(/\s(width|height)="100%"/g, '')
-    .replace(/\spreserveAspectRatio="[^"]*"/g, '')
-    .replace(/\sfill="[^"]*"/gi, '')
-    .replace(/\sstroke="[^"]*"/gi, '')
-    .replace(/\sstroke-width="[^"]*"/gi, '');
-
-  if (filled) {
-    return cleaned.replace(/<path\b/gi, '<path fill="currentColor"');
-  }
-
-  return cleaned.replace(
-    /<path\b/gi,
-    '<path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"',
+/** Closed medical plus — same path outline and filled. */
+export function MedicalCross({ className, fill, strokeWidth }: NavGlyphProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={fill}
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9.5 3.5h5v5.5H20v5h-5.5V20h-5v-6H4v-5h5.5V3.5z" />
+    </svg>
   );
 }
 
-export function NavIcon({
-  outline,
-  filled,
-  active = false,
-  className,
-}: NavIconProps) {
+/** Same glyph for both states — outline when idle, filled when selected. */
+export function NavIcon({ icon: Icon, active = false, className }: NavIconProps) {
   return (
-    <span
-      aria-hidden
+    <Icon
       className={cn(
-        'inline-flex shrink-0 items-center justify-center [&_svg]:block [&_svg]:h-[22px] [&_svg]:w-[22px]',
+        'h-[22px] w-[22px] shrink-0',
         active ? 'text-[#BE880B]' : 'text-brown',
         className,
       )}
-      dangerouslySetInnerHTML={{
-        __html: renderNavSvg(filled || outline, active),
-      }}
+      fill={active ? 'currentColor' : 'none'}
+      strokeWidth={1.5}
     />
   );
 }

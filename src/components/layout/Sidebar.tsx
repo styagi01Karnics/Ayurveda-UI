@@ -1,6 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { Building2, Megaphone, MessageCircle } from 'lucide-react';
-import { assets, type NavIconKey } from '@/lib/assets';
+import {
+  BriefcaseMedical,
+  Building2,
+  CalendarDays,
+  ChartColumn,
+  FileText,
+  Heart,
+  History,
+  LayoutGrid,
+  Megaphone,
+  MessageCircle,
+  Settings,
+  User,
+} from 'lucide-react';
+import { assets } from '@/lib/assets';
 import {
   getClinicDisplayName,
   getClinicLogoUrl,
@@ -11,7 +24,7 @@ import {
 import { ALL_PAGE_CODES, hasPageAccess, type PageCode } from '@/lib/pagePermissions';
 import { PLATFORM_BRANDING } from '@/lib/platformBranding';
 import { PLATFORM_CLINICS_PATH } from '@/app/ProtectedRoute';
-import { NavIcon } from '@/components/ui/NavIcon';
+import { MedicalCross, NavIcon, type NavGlyph } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
 
 const navItems: {
@@ -20,46 +33,45 @@ const navItems: {
   pageCode?: PageCode;
   requiresSettings?: boolean;
   superAdminOnly?: boolean;
-  icon?: NavIconKey;
-  lucide?: 'megaphone' | 'message' | 'clinics';
+  icon: NavGlyph;
 }[] = [
-  { to: '/dashboard', label: 'Dashboard', pageCode: 'DASHBOARD', icon: 'dashboard' },
-  { to: '/patients', label: 'Patients', pageCode: 'PATIENTS', icon: 'patients' },
-  { to: '/doctors', label: 'Doctors', pageCode: 'DOCTORS', icon: 'doctors' },
+  { to: '/dashboard', label: 'Dashboard', pageCode: 'DASHBOARD', icon: LayoutGrid },
+  { to: '/patients', label: 'Patients', pageCode: 'PATIENTS', icon: User },
+  { to: '/doctors', label: 'Doctors', pageCode: 'DOCTORS', icon: MedicalCross },
   {
     to: '/appointments',
     label: 'Appointments',
     pageCode: 'APPOINTMENTS',
-    icon: 'appointments',
+    icon: CalendarDays,
   },
-  { to: '/treatments', label: 'Treatments', pageCode: 'TREATMENTS', icon: 'treatments' },
-  { to: '/medicines', label: 'Medicines', pageCode: 'MEDICINES', icon: 'medicines' },
-  { to: '/sales', label: 'Sales', pageCode: 'SALES', icon: 'sales' },
+  { to: '/treatments', label: 'Treatments', pageCode: 'TREATMENTS', icon: Heart },
+  { to: '/medicines', label: 'Medicines', pageCode: 'MEDICINES', icon: BriefcaseMedical },
+  { to: '/sales', label: 'Sales', pageCode: 'SALES', icon: ChartColumn },
   {
     to: '/activity-logs',
     label: 'Activity Logs',
     pageCode: 'ACTIVITY_LOG',
-    icon: 'activityLogs',
+    icon: History,
   },
-  { to: '/billing', label: 'Billing', pageCode: 'BILLING', icon: 'billing' },
+  { to: '/billing', label: 'Billing', pageCode: 'BILLING', icon: FileText },
   {
     to: '/banners',
     label: 'Banners',
     requiresSettings: true,
-    lucide: 'megaphone',
+    icon: Megaphone,
   },
   {
     to: '/communications',
     label: 'SMS & Email',
     requiresSettings: true,
-    lucide: 'message',
+    icon: MessageCircle,
   },
-  { to: '/settings', label: 'Settings', pageCode: 'SETTINGS', icon: 'settings' },
+  { to: '/settings', label: 'Settings', pageCode: 'SETTINGS', icon: Settings },
   {
     to: PLATFORM_CLINICS_PATH,
     label: 'Clinics',
     superAdminOnly: true,
-    lucide: 'clinics',
+    icon: Building2,
   },
 ];
 
@@ -114,7 +126,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
       </div>
 
       <nav className="no-scrollbar flex flex-1 flex-col gap-0.5 overflow-y-auto">
-        {visibleItems.map(({ to, label, icon, lucide }) => (
+        {visibleItems.map(({ to, label, icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -131,43 +143,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
           >
             {({ isActive }) => (
               <>
-                {lucide === 'megaphone' ? (
-                  <Megaphone
-                    className={cn(
-                      'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-[#BE880B]' : 'text-brown',
-                    )}
-                    fill={isActive ? 'currentColor' : 'none'}
-                    strokeWidth={1.5}
-                    aria-hidden
-                  />
-                ) : lucide === 'message' ? (
-                  <MessageCircle
-                    className={cn(
-                      'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-[#BE880B]' : 'text-brown',
-                    )}
-                    fill={isActive ? 'currentColor' : 'none'}
-                    strokeWidth={1.5}
-                    aria-hidden
-                  />
-                ) : lucide === 'clinics' ? (
-                  <Building2
-                    className={cn(
-                      'h-[22px] w-[22px] shrink-0',
-                      isActive ? 'text-[#BE880B]' : 'text-brown',
-                    )}
-                    fill={isActive ? 'currentColor' : 'none'}
-                    strokeWidth={1.5}
-                    aria-hidden
-                  />
-                ) : icon ? (
-                  <NavIcon
-                    outline={assets.icons.nav[icon].outline}
-                    filled={assets.icons.nav[icon].filled}
-                    active={isActive}
-                  />
-                ) : null}
+                <NavIcon icon={icon} active={isActive} />
                 <span className="truncate">{label}</span>
               </>
             )}

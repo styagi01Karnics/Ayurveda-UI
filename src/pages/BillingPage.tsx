@@ -244,6 +244,7 @@ export function BillingPage() {
         actions={headerAction}
         tabs={
           <UnderlineTabs
+            variant="pill"
             tabs={[
               { id: 'invoices' as const, label: 'Invoices' },
               { id: 'pending' as const, label: 'Pending' },

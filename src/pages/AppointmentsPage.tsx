@@ -237,7 +237,7 @@ export function AppointmentsPage() {
     () =>
       activeTab === 'appointments' ? (
         <Button
-          className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
+          className="h-9 gap-1.5 px-4 py-0 text-sm"
           onClick={() => setCreatePatientOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -245,7 +245,7 @@ export function AppointmentsPage() {
         </Button>
       ) : (
         <Button
-          className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
+          className="h-9 gap-1.5 px-4 py-0 text-sm"
           onClick={() => setFollowUpOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -577,13 +577,14 @@ export function AppointmentsPage() {
         setActiveTab(tab);
         setStatusFilter('');
       }}
+      variant="pill"
       className="border-none"
     />
   );
 
   const viewToggleNode = (
     <div
-      className="flex items-center rounded-[10px] bg-white p-0.5 shadow-[0px_0px_3px_1px_#BE880B26]"
+      className="flex items-center rounded-[16px] bg-white p-0.5 shadow-[0px_0px_3px_1px_#BE880B26]"
       role="group"
       aria-label="View mode"
     >
@@ -597,7 +598,7 @@ export function AppointmentsPage() {
             type="button"
             onClick={() => setViewMode(mode)}
             className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-lg transition-colors',
+              'flex h-8 w-8 items-center justify-center rounded-[16px] transition-colors',
               selected && 'bg-[#BE880B] shadow-[0px_0px_3px_1px_#BE880B26]',
             )}
             aria-label={mode === 'list' ? 'List view' : 'Calendar view'}

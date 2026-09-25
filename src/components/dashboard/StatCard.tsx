@@ -102,24 +102,24 @@ export function StatCard({
 
       <DashDivider className="my-2.5" />
 
-      <div className="flex min-h-0 flex-1 items-center justify-between gap-2">
+      <div className="mt-1 flex min-h-0 flex-1 items-end justify-between gap-1">
         <SemiCircleGauge
           label="Confirmed"
           percent={gaugePercent(confirmed, gaugeTotal)}
           count={confirmed}
-          stroke="#2E7D32"
+          stroke="#3D8B40"
         />
         <SemiCircleGauge
           label="Cancelled"
           percent={gaugePercent(cancelled, gaugeTotal)}
           count={cancelled}
-          stroke="#D64545"
+          stroke="#E24B4A"
         />
         <SemiCircleGauge
           label="Follow-Up"
           percent={gaugePercent(followUp, gaugeTotal)}
           count={followUp}
-          stroke="#EAB308"
+          stroke="#E0A020"
         />
       </div>
     </Card>

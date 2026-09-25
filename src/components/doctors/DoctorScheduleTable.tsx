@@ -51,25 +51,31 @@ export function DoctorScheduleTable({
                     <div className="flex flex-wrap gap-2">
                       <Button
                         type="button"
-                        className="h-8 rounded-2xl bg-[#2E7D32]/10 px-4 py-1.5 text-xs font-semibold text-[#2E7D32] hover:bg-[#2E7D32]/15"
+                        size="sm"
+                        variant="ghost"
+                        className="bg-[#E6EFE3] text-[#036F4B] hover:bg-[#d8e8d4]"
+                        style={{ border: '0.23px solid #036F4B' }}
                         onClick={() => onStart(item.id)}
                         disabled={startingId === item.id}
                       >
                         {startingId === item.id ? 'Starting…' : 'Start'}
                       </Button>
-                      <button
+                      <Button
                         type="button"
+                        size="sm"
+                        variant="ghost"
+                        className="bg-[#FAE3E2] text-[#DC2626] hover:bg-[#f4d4d2]"
+                        style={{ border: '0.23px solid #DC2626' }}
                         onClick={() => onCancel(item.id)}
-                        className="h-8 rounded-2xl border border-danger/25 bg-[#fceaea] px-4 py-1.5 text-xs font-semibold text-danger hover:bg-[#f8dede]"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   ) : item.status === 'In Consultation' ? (
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-8 rounded-2xl border-gold bg-white px-4 py-1.5 text-xs font-semibold text-gold hover:bg-gold/5"
+                      size="sm"
                       onClick={() => onStart(item.id)}
                     >
                       Continue
@@ -78,7 +84,7 @@ export function DoctorScheduleTable({
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-8 rounded-2xl border-gold bg-white px-4 py-1.5 text-xs font-semibold text-gold hover:bg-gold/5"
+                      size="sm"
                       onClick={() => onStart(item.id)}
                     >
                       Edit

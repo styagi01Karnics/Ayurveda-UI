@@ -50,7 +50,7 @@ export function FollowUpsTable({
                   <Button
                     type="button"
                     variant="outline"
-                    className="px-3 py-1.5 text-xs"
+                    size="sm"
                     onClick={() => onReschedule(item)}
                     disabled={item.status === 'Cancelled'}
                   >

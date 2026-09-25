@@ -5,7 +5,7 @@ interface UnderlineTabsProps<T extends string> {
   activeTab: T;
   onChange: (tab: T) => void;
   className?: string;
-  /** Pill tabs (Patients Active/Inactive). Default is underline. */
+  /** Pill tabs (Active / Inactive Patients). Default is underline. */
   variant?: 'underline' | 'pill';
 }
 

@@ -58,9 +58,9 @@ function InfoGrid({ items }: { items: { label: string; value: string }[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
-        <div key={item.label}>
+        <div key={item.label} className="flex flex-col gap-2">
           <p className={DETAIL_LABEL}>{item.label}</p>
-          <p className={`mt-0.5 ${DETAIL_VALUE}`}>{item.value}</p>
+          <p className={DETAIL_VALUE}>{item.value}</p>
         </div>
       ))}
     </div>
@@ -88,8 +88,8 @@ function SectionBlock({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl bg-[#FAF9F5] p-4 sm:p-5">
-      <h3 className="mb-4 font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
+    <section className="rounded-xl bg-[#FAF9F5] p-4">
+      <h3 className="mb-3 font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
         {title}
       </h3>
       {children}
@@ -192,18 +192,16 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
       </SectionBlock>
 
       <SectionBlock title="Medical History">
-        <div className="app-card rounded-xl p-4">
-          <InfoList
-            items={[
-              { label: 'Present Medical Conditions', value: m.presentConditions },
-              { label: 'Past Medical Conditions', value: m.pastConditions },
-              { label: 'Past Surgeries', value: m.pastSurgeries },
-              { label: 'Current Medication', value: m.currentMedication },
-              { label: 'Allergies', value: m.allergies },
-              { label: 'Family History', value: m.familyHistory },
-            ]}
-          />
-        </div>
+        <InfoList
+          items={[
+            { label: 'Present Medical Conditions', value: m.presentConditions },
+            { label: 'Past Medical Conditions', value: m.pastConditions },
+            { label: 'Past Surgeries', value: m.pastSurgeries },
+            { label: 'Current Medication', value: m.currentMedication },
+            { label: 'Allergies', value: m.allergies },
+            { label: 'Family History', value: m.familyHistory },
+          ]}
+        />
       </SectionBlock>
 
       <SectionBlock title="Lifestyle">
@@ -285,38 +283,53 @@ function ReportRow({
   );
 }
 
+function hasPlanValue(value?: string | number) {
+  if (value == null) return false;
+  const text = String(value).trim();
+  return text !== '' && text !== '—' && text !== '-';
+}
+
 export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
   const t = patient.treatmentFollowUp;
+  const hasActivePlan =
+    hasPlanValue(t.treatmentName) ||
+    hasPlanValue(t.startDate) ||
+    hasPlanValue(t.endDate) ||
+    hasPlanValue(t.assignedTherapist);
 
   return (
     <div className="space-y-4">
       <SectionBlock title="Active Treatment Plan">
-        <div className="app-card overflow-x-auto rounded-xl">
-          <table className="w-full table-fixed">
-            <thead>
-              <tr>
-                <th className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>Treatment Name</th>
-                <th className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>Start / End Date</th>
-                <th className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>Total Sessions</th>
-                <th className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>Sessions Completed</th>
-                <th className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>Remaining Sessions</th>
-                <th className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>Assigned Therapist</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className={`px-4 py-3 ${DETAIL_VALUE}`}>{t.treatmentName}</td>
-                <td className={`px-4 py-3 ${DETAIL_VALUE}`}>
-                  {t.startDate} - {t.endDate}
-                </td>
-                <td className={`px-4 py-3 ${DETAIL_VALUE}`}>{t.totalSessions}</td>
-                <td className={`px-4 py-3 ${DETAIL_VALUE}`}>{t.sessionsCompleted}</td>
-                <td className={`px-4 py-3 ${DETAIL_VALUE}`}>{t.remainingSessions}</td>
-                <td className={`px-4 py-3 ${DETAIL_VALUE}`}>{t.assignedTherapist}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {hasActivePlan ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Treatment Name</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Start / End Date</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Total Sessions</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Sessions Completed</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Remaining Sessions</th>
+                  <th className={`py-2 text-left ${DETAIL_LABEL}`}>Assigned Therapist</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.treatmentName}</td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>
+                    {t.startDate} - {t.endDate}
+                  </td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.totalSessions}</td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.sessionsCompleted}</td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.remainingSessions}</td>
+                  <td className={`py-2 ${DETAIL_VALUE}`}>{t.assignedTherapist}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className={DETAIL_VALUE}>No active treatment plan</p>
+        )}
       </SectionBlock>
 
       <SectionBlock title="Upcoming Follow up">
@@ -393,15 +406,13 @@ export function BillingMembershipTab({
         </div>
       )}
       <SectionBlock title="Billing & Membership">
-        <DataRow
-          headers={['Package Name', 'Validity', 'Status', 'Discount Applied']}
-          values={[
-            b.packageName,
-            b.validity,
-            b.membershipStatus,
-            `₹${b.discountApplied}`,
+        <InfoGrid
+          items={[
+            { label: 'Package Name', value: b.packageName || '—' },
+            { label: 'Validity', value: b.validity || '—' },
+            { label: 'Status', value: b.membershipStatus || '—' },
+            { label: 'Discount Applied', value: `₹${b.discountApplied}` },
           ]}
-          highlights={[3]}
         />
       </SectionBlock>
 
@@ -464,48 +475,6 @@ export function BillingMembershipTab({
           ]}
         />
       </SectionBlock>
-    </div>
-  );
-}
-
-function DataRow({
-  headers,
-  values,
-  highlights = [],
-}: {
-  headers: string[];
-  values: string[];
-  highlights?: number[];
-}) {
-  return (
-    <div className="app-card overflow-x-auto rounded-xl">
-      <table className="w-full">
-        <thead>
-          <tr>
-            {headers.map((h) => (
-              <th key={h} className={`px-4 py-3 text-left ${DETAIL_LABEL}`}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {values.map((v, i) => (
-              <td
-                key={i}
-                className={`px-4 py-3 ${highlights.includes(i) ? 'font-sans text-sm font-medium leading-3 text-gold' : DETAIL_VALUE}`}
-              >
-                {i === 2 && (v === 'Completed' || v === 'Scheduled') ? (
-                  <span className="text-xs font-semibold text-[#2E7D32]">{v}</span>
-                ) : (
-                  v
-                )}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
     </div>
   );
 }

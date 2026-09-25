@@ -88,7 +88,7 @@ export function FilterControl({
   return (
     <div
       className={cn(
-        'w-[160px] shrink-0 [&>div]:gap-0 [&_input]:h-9 [&_input]:rounded-[10px] [&_select]:h-9 [&_select]:rounded-[10px] [&_button.select-trigger]:h-9 [&_button.select-trigger]:rounded-[10px]',
+        'w-[160px] shrink-0 [&>div]:gap-0 [&_input]:h-9 [&_input]:rounded-[16px] [&_select]:h-9 [&_select]:rounded-[16px] [&_button.select-trigger]:h-9 [&_button.select-trigger]:rounded-[16px]',
         className,
       )}
     >

@@ -44,7 +44,7 @@ export function Pagination({
         <Button
           type="button"
           variant="outline"
-          className="px-3 py-1.5 text-xs"
+          size="sm"
           disabled={disabled || current <= 0}
           onClick={() => onPageChange(current - 1)}
         >
@@ -56,7 +56,7 @@ export function Pagination({
         <Button
           type="button"
           variant="outline"
-          className="px-3 py-1.5 text-xs"
+          size="sm"
           disabled={disabled || current >= safeTotalPages - 1}
           onClick={() => onPageChange(current + 1)}
         >
