@@ -27,9 +27,13 @@ interface AuthFormSectionProps {
 
 export function AuthFormSection({ title, subtitle, children }: AuthFormSectionProps) {
   return (
-    <section className="rounded-xl border border-[#e8e4dc] p-5 sm:p-6">
-      <h3 className="text-base font-bold text-brown">{title}</h3>
-      <p className="mb-5 text-sm text-text-muted">{subtitle}</p>
+    <section className="rounded-xl border border-[#e8e4dc] bg-white p-5 sm:p-6">
+      <h3 className="font-sans text-[18px] font-medium leading-5 tracking-normal text-brown">
+        {title}
+      </h3>
+      <p className="mb-5 font-sans text-sm font-medium leading-[150%] tracking-normal text-[#737373]">
+        {subtitle}
+      </p>
       {children}
     </section>
   );

@@ -26,26 +26,27 @@ export function StatCard({
 }: StatCardProps) {
   if (type === 'billing') {
     return (
-      <Card className="dashboard-card">
-        <div className="mb-3 flex items-start justify-between">
-          <h3 className="text-base font-medium text-text-muted">{title}</h3>
+      <Card className="dashboard-card flex flex-col">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <h3 className="text-[15px] font-medium text-text-muted">{title}</h3>
           <PeriodDropdown value={period} onChange={onPeriodChange} />
-        </div>        <p className="text-2xl font-bold text-brown lg:text-[28px]">
+        </div>
+        <p className="text-[28px] font-bold leading-none text-brown">
           {formatCurrency(stats.billingTotal)}
         </p>
-        <span className="mt-2 inline-block rounded-full bg-[#f3e8d4] px-3 py-1 text-xs font-medium text-gold">
+        <span className="mt-3 inline-block w-fit rounded-full bg-[#f3e8d4] px-3 py-1 text-xs font-medium text-gold">
           Total Bills Generated: {stats.billsGenerated}
         </span>
-        <div className="mt-4 flex flex-col gap-2">
-          <div className="rounded-xl bg-[#fffbf2] px-3 py-2.5">
+        <div className="mt-auto flex flex-col gap-3 pt-5">
+          <div>
             <p className="text-xs text-text-muted">Pending Payments</p>
-            <p className="mt-0.5 text-sm font-semibold text-brown">
+            <p className="mt-0.5 text-[15px] font-semibold text-brown">
               {formatCurrency(stats.pendingPayments)}
             </p>
           </div>
-          <div className="rounded-xl bg-[#fffbf2] px-3 py-2.5">
+          <div>
             <p className="text-xs text-text-muted">Collected Payments</p>
-            <p className="mt-0.5 text-sm font-semibold text-brown">
+            <p className="mt-0.5 text-[15px] font-semibold text-brown">
               {formatCurrency(stats.collectedPayments)}
             </p>
           </div>
@@ -59,26 +60,26 @@ export function StatCard({
   const today = stats.appointmentsToday;
 
   return (
-    <Card className="dashboard-card">
-      <div className="mb-3 flex items-start justify-between">
-        <h3 className="text-base font-medium text-text-muted">{title}</h3>
+    <Card className="dashboard-card flex flex-col">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <h3 className="text-[15px] font-medium text-text-muted">{title}</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
       <div className="flex items-end gap-2">
-        <p className="text-2xl font-bold text-brown lg:text-[28px]">
+        <p className="text-[28px] font-bold leading-none text-brown">
           {formatNumber(total)}
         </p>
-        <span className="mb-1 flex items-center gap-0.5 text-sm font-medium text-success">
+        <span className="mb-0.5 flex items-center gap-0.5 text-sm font-medium text-success">
           <TrendingUp className="h-4 w-4" />
           {growth}%
         </span>
       </div>
 
-      <p className="mt-1 text-sm font-medium text-gold">+{today} Today</p>
+      <p className="mt-2 text-sm font-medium text-gold">+{today} Today</p>
 
       <DashDivider className="my-4" />
 
-      <div className="flex justify-between gap-1">
+      <div className="mt-auto flex justify-between gap-2 px-1">
         <SemiCircleGauge
           label="Confirmed"
           percent={60}

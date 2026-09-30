@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { Megaphone, MessageCircle, Stethoscope } from 'lucide-react';
+import { Icon } from '@iconify/react';
+import { Megaphone, MessageCircle } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { cn } from '@/lib/utils';
@@ -8,17 +9,60 @@ const navItems: {
   to: string;
   label: string;
   icon?: NavIconKey;
-  lucide?: 'stethoscope' | 'megaphone' | 'message';
+  iconify?: { outline: string; filled: string };
+  lucide?: 'megaphone' | 'message';
 }[] = [
   { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { to: '/patients', label: 'Patients', icon: 'patients' },
-  { to: '/doctors', label: 'Doctors', lucide: 'stethoscope' },
-  { to: '/appointments', label: 'Appointments', icon: 'appointments' },
-  { to: '/treatments', label: 'Treatments', icon: 'treatments' },
-  { to: '/medicines', label: 'Medicines', icon: 'medicines' },
+  {
+    to: '/patients',
+    label: 'Patients',
+    iconify: {
+      outline: 'fluent:person-32-regular',
+      filled: 'fluent:person-32-filled',
+    },
+  },
+  {
+    to: '/doctors',
+    label: 'Doctors',
+    iconify: {
+      outline: 'fluent:doctor-24-regular',
+      filled: 'fluent:doctor-24-filled',
+    },
+  },
+  {
+    to: '/appointments',
+    label: 'Appointments',
+    iconify: {
+      outline: 'fluent:calendar-person-24-regular',
+      filled: 'fluent:calendar-person-32-filled',
+    },
+  },
+  {
+    to: '/treatments',
+    label: 'Treatments',
+    iconify: {
+      outline: 'fluent:heart-pulse-20-regular',
+      filled: 'fluent:heart-pulse-20-filled',
+    },
+  },
+  {
+    to: '/medicines',
+    label: 'Medicines',
+    iconify: {
+      outline: 'fluent:briefcase-medical-20-regular',
+      filled: 'fluent:briefcase-medical-20-filled',
+    },
+  },
   { to: '/sales', label: 'Sales', icon: 'sales' },
   { to: '/activity-logs', label: 'Activity Logs', icon: 'activityLogs' },
-  { to: '/billing', label: 'Billing', icon: 'billing' },
+  {
+    to: '/billing',
+    label: 'Billing',
+    iconify: {
+      outline: 'fluent:document-bullet-list-20-regular',
+      filled: 'fluent:document-bullet-list-20-filled',
+    },
+  },
   { to: '/banners', label: 'Banners', lucide: 'megaphone' },
   { to: '/communications', label: 'SMS & Email', lucide: 'message' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
@@ -33,27 +77,27 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
   return (
     <aside
       className={cn(
-        'sidebar-panel flex h-full w-full flex-col px-4 py-8',
+        'sidebar-panel flex h-full w-full flex-col py-7 pl-3 pr-0',
         className,
       )}
-      style={{ backgroundImage: `url(${assets.sidebarBg})` }}
+      style={{ backgroundImage: `url(${assets.auth.loginBg})` }}
     >
-      <div className="mb-10 flex flex-col items-center gap-2 px-1 text-center">
+      <div className="mb-8 flex flex-col items-center gap-1.5 px-3 pr-6 text-center">
         <img
           src={assets.brandLogo}
           alt="Ganesha Ayurvedaa"
-          className="h-14 w-14 object-contain"
+          className="h-[72px] w-[72px] object-contain"
         />
-        <p className="font-serif text-[11px] font-semibold tracking-[0.12em] text-brown">
+        <p className="font-sans text-base font-semibold leading-none tracking-normal text-brown">
           GANESHA AYURVEDAA
         </p>
-        <p className="font-serif text-[11px] italic text-gold">
+        <p className="font-sans text-xs font-semibold leading-none tracking-normal text-[#BE880B]">
           A Journey of Healing
         </p>
       </div>
 
-      <nav className="no-scrollbar flex flex-1 flex-col gap-1 overflow-y-auto pr-1">
-        {navItems.map(({ to, label, icon, lucide }) => (
+      <nav className="no-scrollbar flex flex-1 flex-col gap-3 overflow-y-auto pl-1">
+        {navItems.map(({ to, label, icon, iconify, lucide }) => (
           <NavLink
             key={to}
             to={to}
@@ -61,22 +105,22 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm transition-all',
+                'flex items-center gap-3.5 pl-3.5 pr-4 text-base leading-none transition-all',
                 isActive
-                  ? 'bg-white font-semibold text-gold shadow-[0_2px_12px_rgba(66,44,35,0.08)]'
-                  : 'font-medium text-brown hover:bg-white/45',
+                  ? 'rounded-l-[10px] rounded-r-none bg-white py-4 font-semibold text-gold'
+                  : 'rounded-l-[10px] py-3 font-medium text-brown',
               )
             }
           >
             {({ isActive }) => (
               <>
-                {lucide === 'stethoscope' ? (
-                  <Stethoscope
+                {iconify ? (
+                  <Icon
+                    icon={isActive ? iconify.filled : iconify.outline}
                     className={cn(
                       'h-[22px] w-[22px] shrink-0',
                       isActive ? 'text-gold' : 'text-brown',
                     )}
-                    strokeWidth={1.5}
                     aria-hidden
                   />
                 ) : lucide === 'megaphone' ? (
@@ -102,6 +146,7 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                     outline={assets.icons.nav[icon].outline}
                     filled={assets.icons.nav[icon].filled}
                     active={isActive}
+                    className="[&_svg]:h-[22px] [&_svg]:w-[22px]"
                   />
                 ) : null}
                 <span className="truncate">{label}</span>

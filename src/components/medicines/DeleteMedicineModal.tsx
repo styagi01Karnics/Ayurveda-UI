@@ -13,7 +13,6 @@ export function DeleteMedicineModal({
   open,
   onClose,
   onConfirm,
-  medicineName,
   submitting = false,
 }: DeleteMedicineModalProps) {
   return (
@@ -22,7 +21,7 @@ export function DeleteMedicineModal({
       onClose={onClose}
       onConfirm={onConfirm}
       title="Delete Medicine"
-      message={UI_MESSAGES.confirm.deleteMessage(medicineName ?? 'this medicine')}
+      message={UI_MESSAGES.confirm.deleteMessage('this medicine')}
       confirmLabel={UI_MESSAGES.confirm.delete}
       submitting={submitting}
     />

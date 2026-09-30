@@ -48,17 +48,17 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="max-w-[400px] px-7 py-8 sm:px-9 sm:py-9">
-        <BrandHeader className="mb-8" />
+      <AuthCard className="w-full max-w-[510px] rounded-[11.7px] bg-[#FFFFFFCC] px-9 py-11 shadow-[0_0_3.53px_1.18px_#BE880B1A] sm:px-11 sm:py-12">
+        <BrandHeader className="mb-7" />
 
         <div className="mb-6">
-          <h2 className="font-serif text-2xl font-bold leading-tight text-brown sm:text-[26px]">
+          <h2 className="font-sans text-[37.61px] font-medium leading-none tracking-normal text-brown">
             Welcome back!
           </h2>
-          <p className="mt-2 text-sm text-text-muted">
-            Enter your credentials to access your account
+          <p className="mt-2 text-sm text-text-muted sm:text-[15px]">
+            Enter your Credentials to access your account
           </p>
-          <p className="mt-2 rounded-lg bg-gold/10 px-3 py-2 text-xs text-brown">
+          <p className="mt-2 text-xs text-brown/70">
             Demo login (no API):{' '}
             <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.emailOrUsername}</span>
             {' / '}
@@ -66,11 +66,12 @@ export function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
           <Input
             fieldVariant="auth"
             label="Enter your username or email address"
             placeholder="Enter your username or email address"
+            className="py-3 text-[15px]"
             error={errors.emailOrUsername?.message}
             {...register('emailOrUsername')}
           />
@@ -81,10 +82,11 @@ export function LoginPage() {
               label="Password"
               type="password"
               placeholder="Password"
+              className="py-3 text-[15px]"
               error={errors.password?.message}
               {...register('password')}
             />
-            <div className="mt-2 text-right">
+            <div className="mt-1.5 text-right">
               <button
                 type="button"
                 className="text-xs text-brown hover:text-gold"
@@ -104,13 +106,13 @@ export function LoginPage() {
             type="submit"
             fullWidth
             disabled={isSubmitting}
-            className="mt-1 rounded-xl py-3 text-base font-semibold"
+            className="mt-2 rounded-[11.7px] py-1.5 text-base font-semibold"
           >
             Login
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-text-muted">
+        <p className="mt-6 text-center text-[15px] text-text-muted">
           Don&apos;t have an account?{' '}
           <Link to="/signup" className="font-semibold text-gold hover:underline">
             Sign Up

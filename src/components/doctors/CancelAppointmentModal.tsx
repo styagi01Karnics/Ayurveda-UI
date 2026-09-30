@@ -21,7 +21,7 @@ export function CancelAppointmentModal({
       onConfirm={onConfirm}
       title={UI_MESSAGES.confirm.cancelAppointmentTitle}
       message={UI_MESSAGES.confirm.cancelAppointmentMessage}
-      confirmLabel="Cancel Appointment"
+      confirmLabel={UI_MESSAGES.confirm.delete}
       submitting={loading}
     />
   );

@@ -30,13 +30,13 @@ export function MedicineStockCard({
   viewAllTo = '/medicines',
 }: MedicineStockCardProps) {
   return (
-    <Card className="dashboard-card">
-      <h3 className="text-sm font-medium text-text-muted">
+    <Card className="dashboard-card flex flex-col">
+      <h3 className="text-[15px] font-medium text-text-muted">
         Medicine Stock Availability
       </h3>
 
-      <div className="mt-2 flex items-start justify-between gap-3">
-        <p className="text-2xl font-bold text-brown lg:text-[28px]">{totalStock}</p>
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <p className="text-[28px] font-bold leading-none text-brown">{totalStock}</p>
         <div className="flex shrink-0 gap-1.5 sm:gap-2">
           <CategoryChip count={tablets} label="Tablets" />
           <CategoryChip count={syrups} label="Syrups" />
@@ -67,7 +67,7 @@ export function MedicineStockCard({
 
       <DashDivider className="my-4" />
 
-      <div>
+      <div className="mt-auto">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-brown">Low Stock</span>
           <Link to={viewAllTo} className="text-xs font-medium text-gold underline">

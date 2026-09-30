@@ -7,6 +7,7 @@ import { MedicineFormModal } from '@/components/medicines/MedicineFormModal';
 import { MedicinesTable } from '@/components/medicines/MedicinesTable';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import { SuccessDialog } from '@/components/ui/SuccessDialog';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
@@ -40,6 +41,7 @@ export function MedicinesPage() {
   const [editTarget, setEditTarget] = useState<MedicineRecord | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [addedOpen, setAddedOpen] = useState(false);
 
   const {
     data,
@@ -114,10 +116,7 @@ export function MedicinesPage() {
         });
       } else {
         await createMedicine(payload);
-        showToast({
-          title: 'Medicine Added',
-          message: `${values.name} has been added to inventory.`,
-        });
+        setAddedOpen(true);
       }
 
       setFormOpen(false);
@@ -139,10 +138,7 @@ export function MedicinesPage() {
     try {
       const payloads = items.map(buildPayload);
       await createMultipleMedicines(payloads);
-      showToast({
-        title: 'Medicines Added',
-        message: `${payloads.length} medicines have been added to inventory.`,
-      });
+      setAddedOpen(true);
       setFormOpen(false);
       setEditTarget(null);
       reload();
@@ -246,6 +242,13 @@ export function MedicinesPage() {
         }}
         onConfirm={handleDeleteConfirm}
         medicineName={deleteTarget?.name}
+      />
+
+      <SuccessDialog
+        open={addedOpen}
+        onClose={() => setAddedOpen(false)}
+        title="Medicine Added"
+        message="The medicine has been successfully added to inventory"
       />
     </PageShell>
   );

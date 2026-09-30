@@ -33,23 +33,24 @@ export function Modal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 sm:p-6">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       <button
         type="button"
         className="fixed inset-0 bg-black/40"
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div
-        className={cn(
-          'relative z-10 my-4 w-full rounded-2xl bg-white shadow-xl',
-          sizeClasses[size],
-          className,
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="modal-title"
-      >
+      <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+        <div
+          className={cn(
+            'relative z-10 my-4 w-full rounded-2xl bg-white shadow-xl',
+            sizeClasses[size],
+            className,
+          )}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
         <div className="flex items-start justify-between border-b border-gray-100 px-6 py-5">
           <div>
             <h2 id="modal-title" className="text-lg font-semibold text-brown">
@@ -81,6 +82,7 @@ export function Modal({
             {footer}
           </div>
         )}
+        </div>
       </div>
     </div>
   );

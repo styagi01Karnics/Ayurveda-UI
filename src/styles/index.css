@@ -3,6 +3,7 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-serif: 'Playfair Display', ui-serif, Georgia, serif;
+  --font-inria: 'Inria Serif', ui-serif, Georgia, serif;
 
   --color-cream: #f5f0e8;
   --color-cream-light: #fcfaf6;
@@ -78,17 +79,17 @@
   }
 
   .sidebar-slot {
-    width: 273px;
-    padding: 8px 0 0 12px;
+    width: 300px;
+    padding: 10px 0 0 12px;
     overflow: hidden;
   }
 
   .sidebar-panel {
-    background-color: var(--color-sidebar);
+    background-color: var(--color-cream);
     background-size: cover;
-    background-position: center top;
+    background-position: center;
     background-repeat: no-repeat;
-    border-radius: 24px 30px 0 24px;
+    border-radius: 24px 28px 0 24px;
     overflow: hidden;
     isolation: isolate;
   }
@@ -148,6 +149,7 @@
 
   .dashboard-card {
     box-shadow: 0 4px 20px rgba(66, 44, 35, 0.05);
+    height: 100%;
   }
 
   .patient-inactive-bar {

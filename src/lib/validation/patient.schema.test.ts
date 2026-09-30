@@ -18,6 +18,8 @@ const validStep1 = {
   dateOfBirth: '1995-05-15',
   mobileNumber: '9876543210',
   consultationTypeIds: ['ct-consultation'],
+  registrationDate: '2026-10-20',
+  assignedDoctor: 'doc-1',
 };
 
 describe('patientStep1BookingSchema', () => {
@@ -37,6 +39,38 @@ describe('patientStep1BookingSchema', () => {
     const result = patientStep1BookingSchema.safeParse({
       ...validStep1,
       mobileNumber: '123',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing assigned doctor', () => {
+    const result = patientStep1BookingSchema.safeParse({
+      ...validStep1,
+      assignedDoctor: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects missing registration date', () => {
+    const result = patientStep1BookingSchema.safeParse({
+      ...validStep1,
+      registrationDate: '',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid email when provided', () => {
+    const result = patientStep1BookingSchema.safeParse({
+      ...validStep1,
+      email: 'not-an-email',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid emergency phone when provided', () => {
+    const result = patientStep1BookingSchema.safeParse({
+      ...validStep1,
+      emergencyPhone: '123',
     });
     expect(result.success).toBe(false);
   });

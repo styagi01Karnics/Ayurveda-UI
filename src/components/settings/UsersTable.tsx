@@ -1,6 +1,4 @@
-import { Settings2 } from 'lucide-react';
-import { DataTableShell } from '@/components/ui/DataTableShell';
-import { Select } from '@/components/ui/Select';
+import { ChevronDown, Lock, UserPlus } from 'lucide-react';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
 import { cn } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
@@ -10,77 +8,102 @@ interface UsersTableProps {
   onRoleChange: (userId: string, newRole: string) => void;
 }
 
+const COLUMNS =
+  'grid grid-cols-[7.5rem_minmax(0,1.3fr)_minmax(0,1.3fr)_5.5rem_7.5rem_minmax(11.5rem,auto)] items-center gap-3';
+
 export function UsersTable({ records, onRoleChange }: UsersTableProps) {
   return (
-    <DataTableShell>
-      <table className="w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-5 py-3 font-medium">User ID</th>
-              <th className="px-5 py-3 font-medium">Name / Phone Number</th>
-              <th className="px-5 py-3 font-medium">Email</th>
-              <th className="px-5 py-3 font-medium">Status</th>
-              <th className="px-5 py-3 font-medium">Assigned Role</th>
-              <th className="px-5 py-3 font-medium">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-5 py-12 text-center text-text-muted">
-                  No users found matching your filters.
-                </td>
-              </tr>
-            ) : (
-              records.map((record) => (
-                <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-5 py-4 font-medium text-brown">{record.userId}</td>
-                  <td className="px-5 py-4">
-                    <p className="font-medium text-brown">{record.fullName}</p>
-                    <p className="text-xs text-text-muted">{record.phone}</p>
-                  </td>
-                  <td className="px-5 py-4 text-brown">{record.email}</td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={cn(
-                        'font-medium',
-                        record.status === 'Active' ? 'text-success' : 'text-text-muted',
-                      )}
-                    >
-                      {record.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className="rounded-full bg-cream px-3 py-1 text-xs font-medium text-gold">
-                      {record.assignedRole}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-                      <Select
-                        className="min-w-[140px] text-xs"
-                        options={[...USER_ROLE_OPTIONS]}
-                        value={record.assignedRole}
-                        onChange={(e) => {
-                          if (e.target.value && e.target.value !== record.assignedRole) {
-                            onRoleChange(record.id, e.target.value);
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-gold/10"
-                        aria-label={`Edit ${record.fullName}`}
-                      >
-                        <Settings2 className="h-4 w-4 text-gold" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-    </DataTableShell>
+    <div className="min-w-0 overflow-x-auto">
+      <div className="min-w-[52rem]">
+      <div
+        className={cn(
+          COLUMNS,
+          'border-t border-dashed border-[#eadfc8] px-1 py-3 text-xs text-text-muted',
+        )}
+      >
+        <span>User ID</span>
+        <span>Name / Phone Number</span>
+        <span>Email</span>
+        <span>Status</span>
+        <span>Assigned Role</span>
+        <span>Action</span>
+      </div>
+
+      {records.length === 0 ? (
+        <p className="border-t border-[#eadfc8] px-1 py-12 text-center text-sm text-text-muted">
+          No users found matching your filters.
+        </p>
+      ) : (
+        records.map((record) => (
+          <div
+            key={record.id}
+            className={cn(COLUMNS, 'border-t border-[#eadfc8] px-1 py-4 text-sm')}
+          >
+            <span className="font-medium text-brown">{record.userId}</span>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-brown">{record.fullName}</p>
+              <p className="truncate text-xs text-text-muted">{record.phone}</p>
+            </div>
+            <span className="min-w-0 truncate text-brown">{record.email}</span>
+            <span
+              className={cn(
+                'font-medium',
+                record.status === 'Active' ? 'text-success' : 'text-text-muted',
+              )}
+            >
+              {record.status}
+            </span>
+            <div>
+              {record.fullName ? (
+                <span className="inline-flex rounded-full bg-[#faf4e5] px-3 py-1 text-xs font-medium text-gold">
+                  {record.assignedRole}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <div className="relative">
+                <select
+                  value={record.assignedRole}
+                  onChange={(event) => {
+                    if (
+                      event.target.value &&
+                      event.target.value !== record.assignedRole
+                    ) {
+                      onRoleChange(record.id, event.target.value);
+                    }
+                  }}
+                  className="appearance-none rounded-lg border border-gold bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
+                  aria-label={`Change role for ${record.fullName || record.userId}`}
+                >
+                  {USER_ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gold" />
+              </div>
+              <button
+                type="button"
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-lg',
+                  record.status === 'Active'
+                    ? 'border border-gold bg-[#faf4e5] text-gold hover:bg-gold/10'
+                    : 'bg-gold text-white hover:bg-gold-dark',
+                )}
+                aria-label={`Edit ${record.fullName || record.userId}`}
+              >
+                {record.status === 'Active' ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+      </div>
+    </div>
   );
 }

@@ -107,31 +107,29 @@ function StockAlertToggle({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <section className="space-y-3 border-t border-gray-100 pt-5">
+    <section className="space-y-3">
       <h3 className="text-sm font-semibold text-brown">Low Stock Alert</h3>
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm text-text-muted">
-          Notify when stock below {threshold || '20'} units
-        </p>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={checked}
-          aria-label="Low stock alert"
-          onClick={() => onChange(!checked)}
+      <p className="text-sm text-text-muted">
+        Notify when stock below {threshold || '20'} units
+      </p>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label="Low stock alert"
+        onClick={() => onChange(!checked)}
+        className={cn(
+          'relative h-[23px] w-[50px] shrink-0 overflow-hidden rounded-full transition-colors',
+          checked ? 'bg-brown' : 'bg-gray-300',
+        )}
+      >
+        <span
           className={cn(
-            'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-            checked ? 'bg-brown' : 'bg-gray-300',
+            'absolute top-[3px] h-[17px] w-[17px] rounded-full bg-white shadow-sm transition-[left] duration-200',
+            checked ? 'left-[28px]' : 'left-[3px]',
           )}
-        >
-          <span
-            className={cn(
-              'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
-              checked ? 'translate-x-[22px]' : 'translate-x-0.5',
-            )}
-          />
-        </button>
-      </div>
+        />
+      </button>
     </section>
   );
 }
@@ -252,29 +250,15 @@ export function MedicineFormModal({
       onClose={handleClose}
       title={isEdit ? 'Edit Medicine' : 'Add Medicine'}
       subtitle="Please fill out the medicine details"
-      size="xl"
+      size="lg"
       footer={
-        <div className="flex w-full flex-wrap items-center justify-end gap-3">
-          {!isEdit && (
-            <Button
-              type="button"
-              variant="outline"
-              className="gap-1.5"
-              disabled={submitting || categoriesLoading}
-              onClick={() => void handleAddMore()}
-            >
-              <Plus className="h-4 w-4" />
-              Add More Medicine
-            </Button>
-          )}
-          <Button
-            type="button"
-            onClick={() => void handleConfirmClick()}
-            disabled={submitting || categoriesLoading}
-          >
-            {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Confirm'}
-          </Button>
-        </div>
+        <Button
+          type="button"
+          onClick={() => void handleConfirmClick()}
+          disabled={submitting || categoriesLoading}
+        >
+          {submitting ? 'Saving…' : isEdit ? 'Save Changes' : 'Confirm'}
+        </Button>
       }
     >
       <form className="space-y-6" noValidate onSubmit={(e) => e.preventDefault()}>
@@ -357,6 +341,21 @@ export function MedicineFormModal({
           }
         />
         <input type="hidden" {...register('lowStockThreshold')} />
+
+        {!isEdit && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="gap-1.5"
+              disabled={submitting || categoriesLoading}
+              onClick={() => void handleAddMore()}
+            >
+              <Plus className="h-4 w-4" />
+              Add More Medicine
+            </Button>
+          </div>
+        )}
       </form>
     </Modal>
   );

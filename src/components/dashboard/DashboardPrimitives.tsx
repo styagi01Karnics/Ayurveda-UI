@@ -52,41 +52,41 @@ export function SemiCircleGauge({
   count,
   stroke,
 }: SemiCircleGaugeProps) {
-  const radius = 32;
+  const radius = 40;
   const arcLength = Math.PI * radius;
   const offset = arcLength * (1 - percent / 100);
 
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center">
-      <svg width="76" height="46" viewBox="0 0 76 46" aria-hidden>
+      <svg width="104" height="64" viewBox="0 0 104 64" aria-hidden>
         <path
-          d="M 10 40 A 28 28 0 0 1 66 40"
+          d="M 12 54 A 40 40 0 0 1 92 54"
           fill="none"
           stroke="#ebe4d8"
-          strokeWidth="5"
+          strokeWidth="7"
           strokeLinecap="round"
         />
         <path
-          d="M 10 40 A 28 28 0 0 1 66 40"
+          d="M 12 54 A 40 40 0 0 1 92 54"
           fill="none"
           stroke={stroke}
-          strokeWidth="5"
+          strokeWidth="7"
           strokeLinecap="round"
           strokeDasharray={arcLength}
           strokeDashoffset={offset}
         />
         <text
-          x="38"
-          y="36"
+          x="52"
+          y="50"
           textAnchor="middle"
-          className="fill-text-muted text-[11px] font-medium"
-          style={{ fontSize: 11 }}
+          className="fill-text-muted font-medium"
+          style={{ fontSize: 13 }}
         >
           {percent}%
         </text>
       </svg>
-      <span className="mt-0.5 text-[11px] text-text-muted">{label}</span>
-      <span className="text-[11px] font-semibold text-gold">{count}</span>
+      <span className="mt-1 text-[11px] text-text-muted">{label}</span>
+      <span className="text-xs font-semibold text-gold">{count}</span>
     </div>
   );
 }

@@ -6,7 +6,10 @@ interface BrandHeaderProps {
   centered?: boolean;
 }
 
-export function BrandHeader({ className, centered = true }: BrandHeaderProps) {
+export function BrandHeader({
+  className,
+  centered = true,
+}: BrandHeaderProps) {
   return (
     <div
       className={cn(
@@ -20,10 +23,12 @@ export function BrandHeader({ className, centered = true }: BrandHeaderProps) {
         alt="Ganesha Ayurvedaa"
         className="h-[72px] w-[72px] object-contain"
       />
-      <h1 className="font-serif text-[15px] font-semibold tracking-[0.1em] text-brown">
+      <p className="font-sans text-base font-semibold leading-none tracking-normal text-brown">
         GANESHA AYURVEDAA
-      </h1>
-      <p className="font-serif text-[13px] italic text-gold">A Journey of Healing</p>
+      </p>
+      <p className="font-sans text-xs font-semibold leading-none tracking-normal text-[#BE880B]">
+        A Journey of Healing
+      </p>
     </div>
   );
 }

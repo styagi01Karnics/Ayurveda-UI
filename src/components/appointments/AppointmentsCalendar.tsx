@@ -29,6 +29,7 @@ const CALENDAR_HOURS = Array.from(
 interface AppointmentsCalendarProps {
   appointments: AppointmentRecord[];
   onEventClick?: (eventId: string) => void;
+  embedded?: boolean;
 }
 
 function formatHourLabel(hour: number): string {
@@ -41,6 +42,7 @@ function formatHourLabel(hour: number): string {
 export function AppointmentsCalendar({
   appointments,
   onEventClick,
+  embedded = false,
 }: AppointmentsCalendarProps) {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
@@ -89,7 +91,14 @@ export function AppointmentsCalendar({
     typeof document !== 'undefined';
 
   return (
-    <Card className="min-w-0 overflow-hidden border-[#cfc1ad] p-0">
+    <Card
+      className={cn(
+        'min-w-0 overflow-hidden p-0',
+        embedded
+          ? 'rounded-none border-0 border-t border-[#cfc1ad]'
+          : 'border-[#cfc1ad]',
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#cfc1ad] bg-[#fffdf9] px-4 py-3">
         <div className="flex items-center gap-2">
           <Button

@@ -15,7 +15,6 @@ import patientsFilled from '@/assets/nav/filled/patients.svg?raw';
 import doctorsFilled from '@/assets/nav/filled/doctors.svg?raw';
 import treatmentsFilled from '@/assets/nav/filled/treatments.svg?raw';
 import medicinesFilled from '@/assets/nav/filled/medicines.svg?raw';
-import activityLogsFilled from '@/assets/nav/filled/activity-logs.svg?raw';
 import billingFilled from '@/assets/nav/filled/billing.svg?raw';
 import settingsFilled from '@/assets/nav/filled/settings.svg?raw';
 
@@ -27,7 +26,7 @@ export const navIconSet = {
   treatments: { outline: heartOutline, filled: treatmentsFilled },
   medicines: { outline: briefcaseOutline, filled: medicinesFilled },
   sales: { outline: histogramOutline, filled: salesFilled },
-  activityLogs: { outline: historyOutline, filled: activityLogsFilled },
+  activityLogs: { outline: historyOutline, filled: historyOutline },
   billing: { outline: documentOutline, filled: billingFilled },
   settings: { outline: settingsOutline, filled: settingsFilled },
 } as const;

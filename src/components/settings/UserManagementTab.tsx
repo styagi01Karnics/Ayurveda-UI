@@ -76,11 +76,13 @@ export function UserManagementTab({
   };
 
   return (
-    <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="relative sm:col-start-2 sm:grid sm:grid-cols-2 sm:gap-3">
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2 sm:gap-3">
           <SearchField
             placeholder="User ID"
+            iconPosition="right"
+            wrapperClassName="sm:w-44"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -89,6 +91,7 @@ export function UserManagementTab({
             options={[...USER_FILTER_OPTIONS.status]}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            className="sm:w-36"
           />
         </div>
       </div>

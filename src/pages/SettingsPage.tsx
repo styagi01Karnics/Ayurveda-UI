@@ -7,9 +7,10 @@ import { SystemPreferenceTab } from '@/components/settings/SystemPreferenceTab';
 import { UserManagementTab } from '@/components/settings/UserManagementTab';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
-import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
+import { Card } from '@/components/ui/Card';
 import { assets } from '@/lib/assets';
 import { SETTINGS_TABS } from '@/data/mock/settings';
+import { cn } from '@/lib/utils';
 import type { SettingsTab } from '@/types';
 
 export function SettingsPage() {
@@ -47,26 +48,54 @@ export function SettingsPage() {
 
   return (
     <PageShell>
-      <UnderlineTabs
-        tabs={SETTINGS_TABS}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      />
+      <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
+        <nav
+          className="grid grid-cols-2 border-b border-[#eadfc8] sm:grid-cols-4"
+          aria-label="Settings sections"
+        >
+          {SETTINGS_TABS.map((tab) => {
+            const isCurrent = tab.id === activeTab;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                aria-current={isCurrent ? 'page' : undefined}
+                className="flex justify-start"
+              >
+                <span
+                  className={cn(
+                    'relative pb-3 text-sm font-medium transition-colors',
+                    isCurrent ? 'text-gold' : 'text-brown',
+                  )}
+                >
+                  {tab.label}
+                  {isCurrent ? (
+                    <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gold" />
+                  ) : null}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
 
-      {activeTab === 'clinic' && <ClinicSettingsTab />}
-      {activeTab === 'users' && (
-        <UserManagementTab
-          addUserOpen={addUserOpen}
-          onAddUserClose={() => setAddUserOpen(false)}
-        />
-      )}
-      {activeTab === 'roles' && (
-        <RoleManagementTab
-          addRoleOpen={addRoleOpen}
-          onAddRoleClose={() => setAddRoleOpen(false)}
-        />
-      )}
-      {activeTab === 'system' && <SystemPreferenceTab />}
+        <div className="flex-1 pt-6">
+          {activeTab === 'clinic' && <ClinicSettingsTab />}
+          {activeTab === 'users' && (
+            <UserManagementTab
+              addUserOpen={addUserOpen}
+              onAddUserClose={() => setAddUserOpen(false)}
+            />
+          )}
+          {activeTab === 'roles' && (
+            <RoleManagementTab
+              addRoleOpen={addRoleOpen}
+              onAddRoleClose={() => setAddRoleOpen(false)}
+            />
+          )}
+          {activeTab === 'system' && <SystemPreferenceTab />}
+        </div>
+      </Card>
     </PageShell>
   );
 }

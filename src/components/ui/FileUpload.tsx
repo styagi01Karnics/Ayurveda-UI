@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { Building2, CloudUpload, Pencil, Trash2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { assets } from '@/lib/assets';
 
 interface FileUploadProps {
   label: string;
@@ -45,57 +45,39 @@ export function FileUpload({
   };
 
   const shortLabel = label.replace(/^Your /, '');
+  const isPhoto = label.toLowerCase().includes('photo');
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm font-semibold text-brown">{label}</p>
+    <div className="flex h-full flex-col gap-2.5">
+      <p className="text-xs font-medium text-brown">{label}</p>
+      <div className="h-px w-full bg-[#DBDCDE]" />
 
-      <div className="flex items-start gap-3">
-        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold/10">
-          {preview ? (
-            <img src={preview} alt="" className="h-full w-full object-cover" />
-          ) : label.toLowerCase().includes('logo') ? (
-            <Building2 className="h-7 w-7 text-gold" />
-          ) : (
-            <User className="h-7 w-7 text-gold" />
-          )}
-          <button
-            type="button"
-            className="absolute -bottom-0.5 -right-0.5 rounded-full bg-gold p-1 text-white"
-            onClick={() => inputRef.current?.click()}
-            aria-label={`Edit ${label}`}
-          >
-            <Pencil className="h-3 w-3" />
-          </button>
+      <div className="flex items-center gap-2.5">
+        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#F5E6A8]">
+          <img
+            src={preview ?? assets.auth.signupAvatar}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         </div>
-
-        {editOnly ? (
+        <div className="flex min-w-0 flex-col gap-0.5">
           <button
             type="button"
-            className="mt-4 text-left text-xs font-medium text-gold hover:underline"
+            className="text-left text-xs font-medium text-brown"
             onClick={() => inputRef.current?.click()}
           >
-            Edit your {shortLabel}
+            Edit your {isPhoto ? 'photo' : shortLabel}
           </button>
-        ) : (
-          <div className="flex flex-col gap-1 text-xs">
-            <button
-              type="button"
-              className="text-left font-medium text-gold hover:underline"
-              onClick={() => inputRef.current?.click()}
-            >
-              Edit your {shortLabel}
-            </button>
-            <div className="flex items-center gap-2">
+          {!editOnly ? (
+            <div className="flex items-center gap-2 text-[11px] leading-none">
               <button
                 type="button"
-                className="flex items-center gap-1 text-left text-text-muted hover:text-danger"
+                className="text-left text-[#737373] hover:text-danger"
                 onClick={() => {
                   handleFile(undefined);
                   if (inputRef.current) inputRef.current.value = '';
                 }}
               >
-                <Trash2 className="h-3 w-3" />
                 Delete
               </button>
               <button
@@ -106,8 +88,8 @@ export function FileUpload({
                 Update
               </button>
             </div>
-          </div>
-        )}
+          ) : null}
+        </div>
       </div>
 
       {!editOnly ? (
@@ -123,18 +105,24 @@ export function FileUpload({
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           className={cn(
-            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-6 text-center transition-colors hover:bg-gold/10',
-            isDragging && 'border-gold bg-gold/15',
+            'flex min-h-[168px] flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-gold bg-transparent px-3 py-8 text-center transition-colors',
+            isDragging && 'bg-gold/5',
             error && 'border-danger',
           )}
         >
-          <CloudUpload className="h-8 w-8 text-gold" />
-          <p className="text-sm text-brown">
-            <span className="font-medium text-gold">Click to upload</span> or drag
-            and drop
+          <img
+            src={assets.auth.signupUploadIcon}
+            alt=""
+            className="mb-1 h-8 w-8 object-contain"
+          />
+          <p className="text-[12px] font-medium leading-tight text-gold">
+            Click to upload or drag and drop
           </p>
-          <p className="text-xs text-text-muted">
-            SVG, PNG, JPG or GIF (max. 800x400px)
+          <p className="text-[11px] font-medium leading-tight text-brown">
+            SVG, PNG, JPG or GIF
+          </p>
+          <p className="text-[11px] leading-tight text-brown">
+            (max, 800×400px)
           </p>
           {value && <p className="text-xs text-success">{value.name}</p>}
         </div>

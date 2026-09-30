@@ -59,7 +59,7 @@ describe('BillingPage', () => {
 });
 
 describe('GenerateInvoicePage', () => {
-  it('renders generate invoice stepper', async () => {
+  it('renders generate invoice tabs', async () => {
     const { GenerateInvoicePage } = await import('@/pages/GenerateInvoicePage');
     render(
       <MemoryRouter>
@@ -69,7 +69,30 @@ describe('GenerateInvoicePage', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { name: 'Generate Invoice' })).toBeInTheDocument();
-    expect(screen.getByText('Service Type')).toBeInTheDocument();
-    expect(screen.getByText('Medicine')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Service Type' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Medicine' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Therapy' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Summary' })).toBeInTheDocument();
+  });
+
+  it('requires patient details before leaving the first tab', async () => {
+    const user = userEvent.setup();
+    const { GenerateInvoicePage } = await import('@/pages/GenerateInvoicePage');
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <GenerateInvoicePage />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
+    expect(screen.queryByText('+ Add More Medicine')).not.toBeInTheDocument();
+    expect(await screen.findByText('Patient details required')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Therapy' }));
+    expect(screen.queryByText('Therapy Treatment')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 });
