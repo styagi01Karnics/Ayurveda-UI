@@ -74,14 +74,14 @@ export function SignupPage() {
 
   return (
     <AuthLayout variant="signup">
-      <AuthCard className="px-6 py-8 sm:px-10 sm:py-10">
-        <BrandHeader className="mb-6" />
+      <AuthCard className="w-full max-w-[1159px] rounded-[11.75px] bg-[#FFFFFFCC] px-6 py-8 shadow-[0_0_3.53px_1.18px_#BE880B1A] sm:px-10 sm:py-12 lg:px-12 lg:py-14">
+        <BrandHeader className="mb-8" />
 
         <div className="mb-8">
-          <h2 className="font-sans text-[28px] font-bold leading-tight text-brown">
+          <h2 className="font-sans text-[37.61px] font-medium leading-none tracking-normal text-brown">
             Let&apos;s Begin
           </h2>
-          <p className="mt-2 text-sm text-text-muted">
+          <p className="mt-2 font-sans text-[18.8px] font-medium leading-none tracking-normal text-[#737373]">
             Enter your Credentials to create admin account
           </p>
         </div>
@@ -91,7 +91,7 @@ export function SignupPage() {
             title="Clinic Information"
             subtitle="Basic Information about your company"
           >
-            <div className="grid gap-6 lg:grid-cols-[1fr_250px]">
+            <div className="grid gap-6 lg:grid-cols-[1fr_minmax(220px,260px)] lg:items-stretch">
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
@@ -132,7 +132,7 @@ export function SignupPage() {
                   <Input
                     {...authField}
                     label="PIN Code"
-                    placeholder="Pin Code"
+                    placeholder="PIN Code"
                     error={errors.pinCode?.message}
                     {...register('pinCode')}
                   />
@@ -177,7 +177,7 @@ export function SignupPage() {
             title="Contact Information"
             subtitle="Primary contact information for your company"
           >
-            <div className="grid gap-6 lg:grid-cols-[1fr_250px]">
+            <div className="grid gap-6 lg:grid-cols-[1fr_minmax(220px,260px)] lg:items-stretch">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   {...authField}
@@ -236,7 +236,7 @@ export function SignupPage() {
             </div>
           </AuthFormSection>
 
-          <div className="space-y-4 pt-2">
+          <div className="flex flex-col items-center space-y-4 pt-2">
             {submitError && (
               <p className="text-sm text-danger" role="alert">
                 {submitError}
@@ -244,15 +244,14 @@ export function SignupPage() {
             )}
             <Button
               type="submit"
-              fullWidth
               disabled={isSubmitting}
-              className="rounded-xl py-3.5 text-base font-semibold"
+              className="h-12 w-full max-w-[380px] rounded-full py-3 text-base font-semibold"
             >
               {isSubmitting ? 'Creating account...' : 'Signup'}
             </Button>
-            <p className="text-center text-sm text-text-muted">
+            <p className="text-center text-sm font-medium text-brown">
               Already have an account?{' '}
-              <Link to="/login" className="font-semibold text-gold hover:underline">
+              <Link to="/login" className="font-medium text-gold hover:underline">
                 Login
               </Link>
             </p>

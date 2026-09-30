@@ -1,147 +1,145 @@
 import { assets } from '@/lib/assets';
 
-/**
- * Equilateral “Know Your Dosha” triangle.
- * Arrows leave the Vata circle at the sides so they don’t cut the label.
- */
+const WIDTH = 620;
+const HEIGHT = 540;
+const ICON = 132;
+const LINE_PAD = ICON / 2 + 10;
+
+const nodes = {
+  vata: {
+    x: 310,
+    y: 72,
+    name: 'Vata',
+    src: assets.dosha.vata,
+    labelOffset: 4,
+  },
+  pitta: {
+    x: 528,
+    y: 418,
+    name: 'Pitta',
+    src: assets.dosha.pitta,
+    labelOffset: 6,
+  },
+  kapha: {
+    x: 92,
+    y: 418,
+    name: 'Kapha',
+    src: assets.dosha.kapha,
+    labelOffset: 6,
+  },
+};
+
+const edges: Array<[keyof typeof nodes, keyof typeof nodes]> = [
+  ['vata', 'pitta'],
+  ['pitta', 'kapha'],
+  ['kapha', 'vata'],
+];
+
+function edgeCoords(
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.hypot(dx, dy);
+  const ux = dx / len;
+  const uy = dy / len;
+  return {
+    x1: from.x + ux * LINE_PAD,
+    y1: from.y + uy * LINE_PAD,
+    x2: to.x - ux * LINE_PAD,
+    y2: to.y - uy * LINE_PAD,
+  };
+}
+
 export function DoshaDiagram() {
+  const centroid = {
+    x: (nodes.vata.x + nodes.pitta.x + nodes.kapha.x) / 3,
+    y: (nodes.vata.y + nodes.pitta.y + nodes.kapha.y) / 3 + 10,
+  };
+
   return (
-    <div className="relative ml-auto h-[min(520px,72dvh)] w-full max-w-none shrink-0">
+    <div
+      className="relative mx-auto w-full max-w-[min(680px,calc((100vh-11rem)*1.15))]"
+      style={{ aspectRatio: `${WIDTH} / ${HEIGHT}` }}
+    >
       <svg
-        className="h-full w-full"
-        viewBox="0 0 555 535"
-        fill="none"
+        className="absolute inset-0 h-full w-full"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         aria-hidden
       >
         <defs>
           <marker
             id="dosha-arrow"
-            viewBox="0 0 10 10"
-            markerWidth="8"
-            markerHeight="8"
-            refX="8"
-            refY="5"
+            markerWidth="11"
+            markerHeight="11"
+            refX="9"
+            refY="5.5"
             orient="auto"
             markerUnits="userSpaceOnUse"
           >
-            <path
-              d="M 1.5 1.5 L 8.5 5 L 1.5 8.5"
-              fill="none"
-              stroke="#422C23"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M0 0 L11 5.5 L0 11 Z" fill="#3c2a21" opacity="0.75" />
           </marker>
         </defs>
-
-        {/* Vata circle (300,80) r≈48 — strokes start at the left/right rims */}
-        <path
-          d="M 348 100 L 483 397"
-          stroke="#422C23"
-          strokeWidth="1.86"
-          vectorEffect="non-scaling-stroke"
-          markerEnd="url(#dosha-arrow)"
-        />
-        <path
-          d="M 458 440 L 142 440"
-          stroke="#422C23"
-          strokeWidth="1.86"
-          vectorEffect="non-scaling-stroke"
-          markerEnd="url(#dosha-arrow)"
-        />
-        <path
-          d="M 117 397 L 252 100"
-          stroke="#422C23"
-          strokeWidth="1.86"
-          vectorEffect="non-scaling-stroke"
-          markerEnd="url(#dosha-arrow)"
-        />
-
-        <image
-          href={assets.dosha.vata}
-          x="252"
-          y="32"
-          width="96"
-          height="96"
-          style={{ mixBlendMode: 'multiply' }}
-        />
-        <image
-          href={assets.dosha.kapha}
-          x="44"
-          y="392"
-          width="96"
-          height="96"
-          style={{ mixBlendMode: 'multiply' }}
-        />
-        <image
-          href={assets.dosha.pitta}
-          x="460"
-          y="392"
-          width="96"
-          height="96"
-          style={{ mixBlendMode: 'multiply' }}
-        />
-
-        <text
-          x="300"
-          y="148"
-          textAnchor="middle"
-          fill="#422C23"
-          fontFamily="Inter, sans-serif"
-          fontSize="28"
-          fontWeight="700"
-        >
-          Vata
-        </text>
-        <text
-          x="92"
-          y="522"
-          textAnchor="middle"
-          fill="#422C23"
-          fontFamily="Inter, sans-serif"
-          fontSize="28"
-          fontWeight="700"
-        >
-          Kapha
-        </text>
-        <text
-          x="508"
-          y="522"
-          textAnchor="middle"
-          fill="#422C23"
-          fontFamily="Inter, sans-serif"
-          fontSize="28"
-          fontWeight="700"
-        >
-          Pitta
-        </text>
-
-        <text
-          x="300"
-          y="292"
-          textAnchor="middle"
-          fill="#422C23"
-          fontFamily="Inria Serif, serif"
-          fontSize="18.65"
-          fontWeight="700"
-          letterSpacing="0"
-        >
-          Know Your
-        </text>
-        <text
-          x="300"
-          y="316"
-          textAnchor="middle"
-          fill="#422C23"
-          fontFamily="Inria Serif, serif"
-          fontSize="18.65"
-          fontWeight="700"
-          letterSpacing="0"
-        >
-          Dosha
-        </text>
+        {edges.map(([fromKey, toKey]) => {
+          const line = edgeCoords(nodes[fromKey], nodes[toKey]);
+          return (
+            <line
+              key={`${fromKey}-${toKey}`}
+              x1={line.x1}
+              y1={line.y1}
+              x2={line.x2}
+              y2={line.y2}
+              stroke="#3c2a21"
+              strokeWidth="1.4"
+              strokeOpacity="0.6"
+              markerEnd="url(#dosha-arrow)"
+            />
+          );
+        })}
       </svg>
+
+      <p
+        className="absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center font-inria text-[18.65px] font-bold leading-[1.35] tracking-normal text-brown"
+        style={{
+          left: `${(centroid.x / WIDTH) * 100}%`,
+          top: `${(centroid.y / HEIGHT) * 100}%`,
+        }}
+      >
+        Know your
+        <br />
+        Dosha
+      </p>
+
+      {Object.values(nodes).map((node) => (
+        <div key={node.name}>
+          <div
+            className="absolute z-10"
+            style={{
+              left: `${(node.x / WIDTH) * 100}%`,
+              top: `${(node.y / HEIGHT) * 100}%`,
+              width: `${(ICON / WIDTH) * 100}%`,
+              transform: 'translate(-50%, -50%)',
+            }}
+          >
+            <img
+              src={node.src}
+              alt=""
+              className="h-auto w-full object-contain"
+            />
+          </div>
+          <span
+            className="absolute z-10 font-serif text-[22px] text-brown"
+            style={{
+              left: `${(node.x / WIDTH) * 100}%`,
+              top: `${((node.y + ICON / 2 + node.labelOffset) / HEIGHT) * 100}%`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            {node.name}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

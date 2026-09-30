@@ -534,19 +534,19 @@ export function AppointmentsPage() {
 
   const calendarAppointments = useMemo(() => {
     if (activeTab === 'followUps') {
-      return filteredFollowUps.map(mapFollowUpToCalendarAppointment);
+      return followUps.map(mapFollowUpToCalendarAppointment);
     }
-    return filteredAppointments;
-  }, [activeTab, filteredAppointments, filteredFollowUps]);
+    return appointments;
+  }, [activeTab, appointments, followUps]);
 
   const handleEventClick = async (eventId: string) => {
     if (activeTab === 'followUps') {
-      const followUp = filteredFollowUps.find((item) => item.id === eventId);
+      const followUp = followUps.find((item) => item.id === eventId);
       if (followUp) setFollowUpRescheduleTarget(followUp);
       return;
     }
 
-    const record = filteredAppointments.find((item) => item.id === eventId);
+    const record = appointments.find((item) => item.id === eventId);
     if (!record) return;
 
     setEventModalOpen(true);
@@ -621,12 +621,11 @@ export function AppointmentsPage() {
 
   return (
     <PageShell>
-      {viewMode === 'list' ? (
-        <ListPanel
-          tabs={tabsNode}
-          toolbar={viewToggleNode}
-          actions={headerAction}
-          filters={
+      <ListPanel
+        tabs={tabsNode}
+        toolbar={viewToggleNode}
+        filters={
+          viewMode === 'list' ? (
             <>
               <FilterControl>
                 <SearchField
@@ -663,9 +662,11 @@ export function AppointmentsPage() {
                 />
               </FilterControl>
             </>
-          }
-        >
-          {activeTab === 'appointments' ? (
+          ) : undefined
+        }
+      >
+        {viewMode === 'list' ? (
+          activeTab === 'appointments' ? (
             <AsyncStatus
               loading={loading}
               error={error}
@@ -710,37 +711,17 @@ export function AppointmentsPage() {
                 disabled={loading}
               />
             </AsyncStatus>
-          )}
-        </ListPanel>
-      ) : (
-        <div className="space-y-4">
-          <Card className="dashboard-card p-4 sm:p-5">
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">{tabsNode}</div>
-                {viewToggleNode}
-              </div>
-              <div className="flex h-9 items-center justify-end">{headerAction}</div>
-            </div>
-          </Card>
-          <AsyncStatus
-            loading={loading}
-            error={error}
-            onRetry={reload}
-            empty={!loading && !error && calendarAppointments.length === 0}
-            emptyMessage={
-              activeTab === 'followUps'
-                ? 'No follow-ups found for calendar.'
-                : 'No appointments found for calendar.'
-            }
-          >
+          )
+        ) : (
+          <AsyncStatus loading={loading} error={error} onRetry={reload}>
             <AppointmentsCalendar
+              embedded
               appointments={calendarAppointments}
               onEventClick={handleEventClick}
             />
           </AsyncStatus>
-        </div>
-      )}
+        )}
+      </ListPanel>
 
       <CreatePatientModal
         open={createPatientOpen}

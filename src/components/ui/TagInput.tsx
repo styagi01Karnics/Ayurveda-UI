@@ -60,7 +60,7 @@ export function TagInput({
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 rounded-md bg-gold/15 px-2 py-0.5 text-xs font-medium text-brown"
+            className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-0.5 text-xs font-medium text-brown"
           >
             {labelByValue.get(tag) ?? tag}
             <button

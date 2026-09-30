@@ -8,7 +8,7 @@ export const invoiceServiceStepSchema = z.object({
     .min(1, 'Contact number is required')
     .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit contact number'),
   invoiceDate: z.string().min(1, 'Invoice date is required'),
-  visitType: z.string().min(1, 'Visit type is required'),
+  visitType: z.string().optional(),
   serviceFees: z
     .string()
     .optional()
@@ -20,10 +20,10 @@ export const invoiceServiceStepSchema = z.object({
     .optional()
     .refine((value) => !value || /^\d+$/.test(value), 'Enter a valid amount'),
 }).superRefine((data, ctx) => {
-  if (data.packageMasterId?.trim() && !data.packageCharges?.trim()) {
+  if (data.packageType?.trim() && !data.packageCharges?.trim()) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: 'Package charges is required when a package is selected',
+      message: 'Package charges is required when package type is selected',
       path: ['packageCharges'],
     });
   }

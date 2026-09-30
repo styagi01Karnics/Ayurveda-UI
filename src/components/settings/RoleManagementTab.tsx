@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Pencil, Users } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AddRoleModal } from '@/components/settings/AddRoleModal';
-import { Card } from '@/components/ui/Card';
 import { initialSettingsRoles } from '@/data/mock/settings';
 import {
   createRole,
@@ -172,52 +171,56 @@ export function RoleManagementTab({
   };
 
   return (
-    <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {roles.map((role) => (
-        <Card key={role.id} className="settings-card relative p-5 shadow-none">
+        <article
+          key={role.id}
+          className="relative flex min-h-[260px] flex-col rounded-2xl bg-[#faf6ee] p-5"
+        >
           <button
             type="button"
             onClick={() => setEditTarget(role)}
-            className="absolute right-4 top-4 rounded-full border border-gray-200 bg-cream p-2 text-gold hover:bg-gold/10"
+            className="absolute right-4 top-4 rounded-full border border-[#eadfc8] bg-[#faf6ee] p-2 text-gold hover:bg-gold/10"
             aria-label={`Edit ${role.name}`}
           >
             <Pencil className="h-4 w-4" />
           </button>
 
-          <div className="flex items-start justify-between gap-3 pr-10">
-            <div>
-              <h3 className="text-lg font-semibold text-gold">{role.name}</h3>
-              <span
-                className={cn(
-                  'mt-1 inline-block text-xs font-medium',
-                  role.status === 'Active' ? 'text-success' : 'text-text-muted',
-                )}
-              >
-                {role.status}
-              </span>
+          <div className="pr-10">
+            <h3 className="text-lg font-semibold text-gold">{role.name}</h3>
+            <span
+              className={cn(
+                'mt-1 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium',
+                role.status === 'Active'
+                  ? 'bg-success/15 text-success'
+                  : 'bg-gray-100 text-text-muted',
+              )}
+            >
+              {role.status}
+            </span>
+          </div>
+
+          <div className="mt-4 flex-1 border-t border-dashed border-[#eadfc8] pt-4">
+            <p className="text-xs text-text-muted">{role.accessLevel}</p>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {role.permissions.map((permission) => (
+                <span
+                  key={permission}
+                  className="rounded-full bg-[#f3ead6] px-2.5 py-1 text-xs text-brown"
+                >
+                  {permission}
+                </span>
+              ))}
             </div>
           </div>
 
-          <p className="mt-3 text-xs text-text-muted">{role.accessLevel}</p>
-
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {role.permissions.map((permission) => (
-              <span
-                key={permission}
-                className="rounded-full bg-cream px-2.5 py-1 text-xs text-brown"
-              >
-                {pageLabel(permission)}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-5 flex items-center gap-1.5 text-xs text-text-muted">
+          <div className="mt-auto flex items-center gap-1.5 pt-5 text-xs text-text-muted">
             <Users className="h-4 w-4" />
             <span>
               {role.userCount} {role.userCount === 1 ? 'user' : 'users'}
             </span>
           </div>
-        </Card>
+        </article>
       ))}
 
       <AddRoleModal

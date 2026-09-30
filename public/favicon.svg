@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <circle cx="32" cy="32" r="32" fill="#C89116"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <circle cx="40" cy="40" r="40" fill="#C89116"/>
   <path
-    d="M32 14c-2.5 8-10 12-10 20 0 5.5 4.5 10 10 10s10-4.5 10-10c0-8-7.5-12-10-20z"
-    fill="#fff"
+    d="M40 18c-3 10-12 14-12 24 0 6.6 5.4 12 12 12s12-5.4 12-12c0-10-9-14-12-24z"
+    fill="white"
     opacity="0.95"
   />
   <path
-    d="M32 38c-6 4.5-10 9-10 16h20c0-7-4-11.5-10-16z"
-    fill="#fff"
+    d="M40 46c-7 5-11 10-11 18h22c0-8-4-13-11-18z"
+    fill="white"
     opacity="0.9"
   />
 </svg>

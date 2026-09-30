@@ -53,20 +53,20 @@ export const UI_MESSAGES = {
     cancel: 'Cancel',
     confirm: 'Confirm',
     delete: 'Delete',
-    logout: 'Log Out',
+    logout: 'Confirm',
     logoutTitle: 'Log Out',
-    logoutMessage: 'Are you sure you want to log out of your account?',
+    logoutMessage: 'Are you sure you want to log out your account',
     deleteTitle: 'Delete Item',
     deleteMessage: (item?: string) =>
       item
-        ? `Are you sure you want to delete ${item}? This action cannot be undone.`
-        : 'Are you sure you want to delete this item? This action cannot be undone.',
+        ? `Are you sure you want to delete ${item}?`
+        : 'Are you sure you want to delete this item?',
     cancelAppointmentTitle: 'Cancel Appointment',
     cancelAppointmentMessage:
-      'Are you sure you want to cancel this appointment? This action cannot be undone.',
+      'Are you sure you want to delete this appointment?',
     deleteBannerTitle: 'Delete Banner',
     deleteBannerMessage:
-      'Are you sure you want to delete this banner? This action cannot be undone.',
+      'Are you sure you want to delete this banner?',
     uploadTitle: 'Upload Documents',
     uploadMessage: (count: number) =>
       count === 1

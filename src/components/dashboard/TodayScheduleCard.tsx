@@ -21,12 +21,12 @@ export function TodayScheduleCard({
   viewFullScheduleTo = '/appointments',
 }: TodayScheduleCardProps) {
   return (
-    <Card className="dashboard-card today-schedule-card relative flex h-full min-h-0 flex-col overflow-hidden p-3.5">
+    <Card className="dashboard-card relative flex flex-col overflow-hidden border-[#e8dfd0] bg-[#fdf8ee] p-5">
       <img
         src={assets.scheduleDecor}
         alt=""
         aria-hidden
-        className="pointer-events-none absolute right-0 top-0 z-0 h-[88px] w-[88px] object-contain object-right-top sm:h-[100px] sm:w-[100px]"
+        className="pointer-events-none absolute right-0 top-0 h-[72px] w-[72px] object-contain sm:h-[100px] sm:w-[100px]"
       />
 
       <div className="relative z-[1] mb-2 pr-24 sm:pr-28">
@@ -41,7 +41,7 @@ export function TodayScheduleCard({
         </p>
       </div>
 
-      <div className="relative z-[1] flex min-h-0 flex-1 flex-col gap-1.5">
+      <div className="mb-4 flex-1 space-y-2.5">
         <ScheduleSubCard title="Ongoing Appointment:">
           <p className={SCHEDULE_VALUE}>
             {ongoing.patientName || '—'}
@@ -69,7 +69,7 @@ export function TodayScheduleCard({
 
       <Link
         to={viewFullScheduleTo}
-        className="relative z-[1] mt-2 block w-full shrink-0 rounded-xl border border-[#BE880B] bg-[#FFFFFFCC] py-2 text-center text-sm font-semibold text-[#BE880B] transition-colors hover:bg-white"
+        className="mt-auto block w-full rounded-xl border border-gold bg-transparent py-2.5 text-center text-sm font-semibold text-gold transition-colors hover:bg-gold/5"
       >
         View Full Schedule
       </Link>

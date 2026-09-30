@@ -17,18 +17,18 @@ export function AuthLayout({
   if (variant === 'login') {
     return (
       <div
-        className="login-shell fixed inset-0 z-0 h-dvh overflow-hidden"
+        className="relative h-screen overflow-hidden bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${assets.auth.loginBg})` }}
       >
         <LoginDecorations />
 
-        <div className="relative z-10 flex h-full w-full items-center overflow-hidden pl-8 pr-2 sm:pl-12 lg:pl-16 xl:pl-20">
-          <div className="login-fit grid h-full w-full items-center gap-4 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)]">
-            <div className="mx-auto flex h-full min-h-0 w-full max-w-[400px] items-center lg:mx-0 lg:ml-10 xl:ml-16">
+        <div className="relative z-10 flex h-full w-full items-center justify-center px-8 pb-28 pt-8 sm:px-12 lg:px-16">
+          <div className="flex w-full max-w-[1340px] items-center gap-12 lg:gap-16 xl:gap-20">
+            <div className="flex w-full max-w-[510px] shrink-0 justify-start">
               {children}
             </div>
-            {aside ? (
-              <div className="hidden h-full min-h-0 min-w-0 items-center justify-end overflow-hidden lg:flex">
+            {aside && (
+              <div className="hidden min-w-0 flex-1 lg:flex lg:items-center lg:justify-center">
                 {aside}
               </div>
             ) : null}
@@ -40,11 +40,14 @@ export function AuthLayout({
 
   if (variant === 'signup') {
     return (
-      <div className="paper-texture relative min-h-svh overflow-x-hidden overflow-y-auto">
+      <div
+        className="relative min-h-screen overflow-x-hidden bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${assets.auth.loginBg})` }}
+      >
         <SignupDecorations />
 
-        <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-[1060px] items-center px-4 py-8 sm:px-6 lg:px-8">
-          <div className="w-full">{children}</div>
+        <div className="relative z-10 flex min-h-screen w-full items-start justify-center px-4 py-16 sm:px-6 lg:justify-start lg:px-0 lg:pl-20 lg:pr-16 lg:pt-[139px] lg:pb-16">
+          <div className="w-full max-w-[1159px]">{children}</div>
         </div>
       </div>
     );

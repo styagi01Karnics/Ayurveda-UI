@@ -18,12 +18,13 @@ export function ChartModal({ open, onClose, data }: ChartModalProps) {
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div className="relative z-10 w-full max-w-3xl rounded-2xl bg-white p-6 shadow-xl">
+      <div className="relative z-10 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-brown">Total Patients</h2>
           <div className="flex gap-2">
             <button
               type="button"
+              onClick={onClose}
               className="rounded p-1 text-text-muted hover:bg-brown/5"
               aria-label="Minimize"
             >

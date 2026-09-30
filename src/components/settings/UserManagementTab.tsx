@@ -271,23 +271,24 @@ export function UserManagementTab({
   };
 
   return (
-    <div className="settings-card overflow-hidden rounded-2xl border border-[#ebe4d8] shadow-none">
-      <div className="flex flex-col gap-3 border-b border-[#EFF0F6] px-5 py-4 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+    <div className="space-y-3">
+      <div className="flex justify-end">
+        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2 sm:gap-3">
           <SearchField
             placeholder="User ID"
+            iconPosition="right"
+            wrapperClassName="sm:w-44"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             wrapperClassName="w-full sm:w-[200px]"
           />
-          <div className="w-full sm:w-[160px]">
-            <Select
-              placeholder="Status"
-              options={[...USER_FILTER_OPTIONS.status]}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            />
-          </div>
+          <Select
+            placeholder="Status"
+            options={[...USER_FILTER_OPTIONS.status]}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="sm:w-36"
+          />
         </div>
       </div>
 

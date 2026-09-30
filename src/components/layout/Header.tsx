@@ -14,8 +14,8 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   return (
-    <header className="relative flex w-full min-w-0 shrink-0 items-center justify-between gap-3 bg-cream-light px-4 py-4 sm:px-6">
-      <h1 className="screen-label min-w-0 truncate">
+    <header className="flex w-full min-w-0 shrink-0 items-center justify-between gap-3 bg-cream-light px-5 py-4 sm:px-6">
+      <h1 className="min-w-0 truncate text-lg font-semibold text-brown sm:text-xl">
         {title}
       </h1>
 

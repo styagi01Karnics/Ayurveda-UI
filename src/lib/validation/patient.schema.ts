@@ -3,13 +3,29 @@ import {
   DEFAULT_SESSION_FREQUENCY,
   bookingDateNotPastMessage,
   isBookingDateOnOrAfterToday,
-  optionalBookingDateSchema,
   optionalBookingTimeSchema,
   requiredBookingDateSchema,
   requiredBookingTimeSchema,
 } from '@/lib/bookingConstraints';
 
-/** Step 1 — booking flow: only core fields required on first screen. */
+const optionalEmailSchema = z
+  .string()
+  .optional()
+  .refine(
+    (value) =>
+      !value?.trim() || z.string().email().safeParse(value.trim()).success,
+    'Enter a valid email',
+  );
+
+const optionalPhoneSchema = z
+  .string()
+  .optional()
+  .refine(
+    (value) => !value?.trim() || /^[6-9]\d{9}$/.test(value.trim()),
+    'Enter a valid 10-digit phone number',
+  );
+
+/** Step 1 — booking flow: core identity, contact, and booking fields. */
 export const patientStep1BookingSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
   gender: z.string().min(1, 'Gender is required'),
@@ -21,18 +37,24 @@ export const patientStep1BookingSchema = z.object({
   consultationTypeIds: z
     .array(z.string())
     .min(1, 'Select at least one consultation type'),
-  age: z.string().optional(),
+  age: z
+    .string()
+    .optional()
+    .refine(
+      (value) => !value?.trim() || /^\d+$/.test(value.trim()),
+      'Age must be a number',
+    ),
   preferredLanguage: z.string().optional(),
-  registrationDate: optionalBookingDateSchema,
+  registrationDate: requiredBookingDateSchema,
   appointmentTime: optionalBookingTimeSchema,
   assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
-  email: z.string().optional(),
+  email: optionalEmailSchema,
   state: z.string().optional(),
   city: z.string().optional(),
   permanentAddress: z.string().optional(),
   emergencyName: z.string().optional(),
   emergencyRelation: z.string().optional(),
-  emergencyPhone: z.string().optional(),
+  emergencyPhone: optionalPhoneSchema,
   patientId: z.string().optional(),
   idProofType: z.string().optional(),
   idNumber: z.string().optional(),

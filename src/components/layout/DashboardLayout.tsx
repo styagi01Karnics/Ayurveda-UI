@@ -101,7 +101,7 @@ export function DashboardLayout() {
               onLogout={() => setLogoutOpen(true)}
             />
 
-            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-5">
+            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-5 pb-6 sm:px-6">
               <Outlet />
             </main>
           </div>
@@ -114,7 +114,7 @@ export function DashboardLayout() {
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
               />
-              <div className="sidebar-slot relative z-10 h-full p-3 pl-4">
+              <div className="sidebar-slot relative z-10 h-full py-3 pl-4 pr-0">
                 <Sidebar
                   className="h-full"
                   onNavigate={() => setMobileOpen(false)}
@@ -143,7 +143,7 @@ export function DashboardLayout() {
           title={UI_MESSAGES.confirm.logoutTitle}
           message={UI_MESSAGES.confirm.logoutMessage}
           confirmLabel={UI_MESSAGES.confirm.logout}
-          variant="default"
+          variant="logout"
           icon={LogOut}
         />
         <RedeemCouponModal

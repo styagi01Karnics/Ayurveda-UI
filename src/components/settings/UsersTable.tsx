@@ -1,7 +1,4 @@
-import { Settings2 } from 'lucide-react';
-import { IconActionButton } from '@/components/ui/IconActionButton';
-import { Select } from '@/components/ui/Select';
-import { formatAuthRole } from '@/lib/auth';
+import { ChevronDown, Lock, UserPlus } from 'lucide-react';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
 import { cn, formatPersonName } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
@@ -12,102 +9,102 @@ interface UsersTableProps {
   onEdit: (user: SettingsUserRecord) => void;
 }
 
-function formatDisplayUserId(userId: string): string {
-  const trimmed = userId.trim();
-  if (!trimmed || trimmed === '—') return '—';
-  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
-}
+const COLUMNS =
+  'grid grid-cols-[7.5rem_minmax(0,1.3fr)_minmax(0,1.3fr)_5.5rem_7.5rem_minmax(11.5rem,auto)] items-center gap-3';
 
-function formatDisplayPhone(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 10) return `+91-${digits}`;
-  if (digits.length === 12 && digits.startsWith('91')) {
-    return `+91-${digits.slice(2)}`;
-  }
-  return phone || '—';
-}
-
-export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
+export function UsersTable({ records, onRoleChange }: UsersTableProps) {
   return (
-    <div className="w-full min-w-0 overflow-x-auto">
-      <table className="w-full min-w-[900px] text-left text-sm">
-        <thead>
-          <tr className="border-b border-[#EFF0F6] text-[12px] font-medium text-[#838A9A]">
-            <th className="px-5 py-3.5 font-medium">User ID</th>
-            <th className="px-5 py-3.5 font-medium">Name / Phone Number</th>
-            <th className="px-5 py-3.5 font-medium">Email</th>
-            <th className="px-5 py-3.5 font-medium">Status</th>
-            <th className="px-5 py-3.5 font-medium">Assigned Role</th>
-            <th className="px-5 py-3.5 font-medium">Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {records.length === 0 ? (
-            <tr>
-              <td colSpan={6} className="px-5 py-12 text-center text-[#838A9A]">
-                No users found matching your filters.
-              </td>
-            </tr>
-          ) : (
-            records.map((record) => (
-              <tr key={record.id} className="border-b border-[#EFF0F6]">
-                <td className="px-5 py-4 font-medium text-[#422C23]">
-                  {formatDisplayUserId(record.userId)}
-                </td>
-                <td className="px-5 py-4">
-                  <p className="font-medium text-[#422C23]">
-                    {formatPersonName(record.fullName) || record.fullName}
-                  </p>
-                  <p className="mt-0.5 text-xs text-[#67554D]">
-                    {formatDisplayPhone(record.phone)}
-                  </p>
-                </td>
-                <td className="px-5 py-4 text-[#422C23]">{record.email}</td>
-                <td className="px-5 py-4">
-                  <span
-                    className={cn(
-                      'text-sm font-medium',
-                      record.status === 'Active'
-                        ? 'text-success'
-                        : 'text-[#838A9A]',
-                    )}
-                  >
-                    {record.status}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <span className="inline-flex rounded-full bg-[#FAF4E5] px-3 py-1 text-xs font-medium text-[#422C23]">
-                    {formatAuthRole(record.assignedRole)}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <Select
-                      className="min-w-[148px] !border-[#BE880B] !bg-white !py-2 !text-xs !font-medium !text-[#422C23]"
-                      options={[...USER_ROLE_OPTIONS]}
-                      value={record.assignedRole}
-                      onChange={(e) => {
-                        if (
-                          e.target.value &&
-                          e.target.value !== record.assignedRole
-                        ) {
-                          onRoleChange(record.id, e.target.value);
-                        }
-                      }}
-                    />
-                    <IconActionButton
-                      onClick={() => onEdit(record)}
-                      aria-label={`Edit ${record.fullName}`}
-                    >
-                      <Settings2 className="h-4 w-4 text-[#422C23]" strokeWidth={1.75} />
-                    </IconActionButton>
-                  </div>
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+    <div className="min-w-0 overflow-x-auto">
+      <div className="min-w-[52rem]">
+      <div
+        className={cn(
+          COLUMNS,
+          'border-t border-dashed border-[#eadfc8] px-1 py-3 text-xs text-text-muted',
+        )}
+      >
+        <span>User ID</span>
+        <span>Name / Phone Number</span>
+        <span>Email</span>
+        <span>Status</span>
+        <span>Assigned Role</span>
+        <span>Action</span>
+      </div>
+
+      {records.length === 0 ? (
+        <p className="border-t border-[#eadfc8] px-1 py-12 text-center text-sm text-text-muted">
+          No users found matching your filters.
+        </p>
+      ) : (
+        records.map((record) => (
+          <div
+            key={record.id}
+            className={cn(COLUMNS, 'border-t border-[#eadfc8] px-1 py-4 text-sm')}
+          >
+            <span className="font-medium text-brown">{record.userId}</span>
+            <div className="min-w-0">
+              <p className="truncate font-medium text-brown">{record.fullName}</p>
+              <p className="truncate text-xs text-text-muted">{record.phone}</p>
+            </div>
+            <span className="min-w-0 truncate text-brown">{record.email}</span>
+            <span
+              className={cn(
+                'font-medium',
+                record.status === 'Active' ? 'text-success' : 'text-text-muted',
+              )}
+            >
+              {record.status}
+            </span>
+            <div>
+              {record.fullName ? (
+                <span className="inline-flex rounded-full bg-[#faf4e5] px-3 py-1 text-xs font-medium text-gold">
+                  {record.assignedRole}
+                </span>
+              ) : null}
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <div className="relative">
+                <select
+                  value={record.assignedRole}
+                  onChange={(event) => {
+                    if (
+                      event.target.value &&
+                      event.target.value !== record.assignedRole
+                    ) {
+                      onRoleChange(record.id, event.target.value);
+                    }
+                  }}
+                  className="appearance-none rounded-lg border border-gold bg-white py-1.5 pl-3 pr-8 text-xs font-medium text-gold focus:outline-none focus:ring-2 focus:ring-gold/20"
+                  aria-label={`Change role for ${record.fullName || record.userId}`}
+                >
+                  {USER_ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gold" />
+              </div>
+              <button
+                type="button"
+                className={cn(
+                  'flex h-9 w-9 items-center justify-center rounded-lg',
+                  record.status === 'Active'
+                    ? 'border border-gold bg-[#faf4e5] text-gold hover:bg-gold/10'
+                    : 'bg-gold text-white hover:bg-gold-dark',
+                )}
+                aria-label={`Edit ${record.fullName || record.userId}`}
+              >
+                {record.status === 'Active' ? (
+                  <Lock className="h-4 w-4" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+      </div>
     </div>
   );
 }

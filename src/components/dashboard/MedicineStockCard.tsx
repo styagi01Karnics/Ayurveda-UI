@@ -40,16 +40,14 @@ export function MedicineStockCard({
   const hasStatus = inStockPct + outOfStockPct + lowStockPct > 0;
 
   return (
-    <Card className="dashboard-card flex h-full min-h-0 flex-col p-3.5">
-      <h3 className="dashboard-card-title">
+    <Card className="dashboard-card flex flex-col">
+      <h3 className="text-[15px] font-medium text-text-muted">
         Medicine Stock Availability
       </h3>
 
-      <div className="mt-2 flex items-start justify-between gap-3">
-        <p className="font-sans text-[26px] font-bold leading-none tracking-tight text-[#422C23]">
-          {totalStock}
-        </p>
-        <div className="flex shrink-0 gap-2 sm:gap-2.5">
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <p className="text-[28px] font-bold leading-none text-brown">{totalStock}</p>
+        <div className="flex shrink-0 gap-1.5 sm:gap-2">
           <CategoryChip count={tablets} label="Tablets" />
           <CategoryChip count={syrups} label="Syrups" />
           <CategoryChip count={powder} label="Powder" />
@@ -100,8 +98,8 @@ export function MedicineStockCard({
 
       <DashDivider className="my-2.5" />
 
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="mb-2 flex items-center justify-between">
+      <div className="mt-auto">
+        <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-semibold text-brown">Low Stock</span>
           <Link to={viewAllTo} className="text-xs font-medium text-gold underline">
             View All
