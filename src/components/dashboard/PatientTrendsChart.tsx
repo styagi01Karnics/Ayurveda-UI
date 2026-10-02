@@ -1,23 +1,46 @@
 import {
-  Area,
-  CartesianGrid,
+  Bar,
+  ComposedChart,
   LabelList,
   Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { Maximize2 } from 'lucide-react';
-import { Card } from '@/components/ui/Card';
 import { cn } from '@/lib/utils';
 
+interface TrendPoint {
+  month: string;
+  newPatients: number;
+  followUps: number;
+}
+
 interface PatientTrendsChartProps {
-  data: { month: string; newPatients: number; followUps: number }[];
+  data: TrendPoint[];
   onExpand?: () => void;
   compact?: boolean;
   embedded?: boolean;
+  className?: string;
+}
+
+function niceYMax(data: TrendPoint[]) {
+  const peak = Math.max(
+    0,
+    ...data.flatMap((point) => [point.newPatients, point.followUps]),
+  );
+  if (peak <= 200) return 200;
+  if (peak <= 400) return 400;
+  if (peak <= 600) return 600;
+  return Math.ceil(peak / 200) * 200;
+}
+
+function yTicks(max: number) {
+  const step = max <= 200 ? 50 : max <= 400 ? 100 : 200;
+  const ticks: number[] = [];
+  for (let value = 0; value <= max; value += step) ticks.push(value);
+  return ticks;
 }
 
 export function PatientTrendsChart({
@@ -25,22 +48,26 @@ export function PatientTrendsChart({
   onExpand,
   compact = false,
   embedded = false,
+  className,
 }: PatientTrendsChartProps) {
-  const labelIndex = data.findIndex((row) =>
-    /oct/i.test(row.month),
-  );
-  const calloutIndex = labelIndex >= 0 ? labelIndex : Math.min(1, data.length - 1);
+  const tall = compact || embedded;
+  const yMax = niceYMax(data);
+  const ticks = yTicks(yMax);
+  const chartData = data.map((point) => ({
+    ...point,
+    decor: yMax,
+  }));
 
-  const body = (
-    <>
-      <div className="mb-1.5 flex shrink-0 items-center justify-between">
-        <div className="flex gap-4 font-sans text-xs text-[#67554d]">
+  return (
+    <div className={cn('flex min-h-0 min-w-0 flex-col', className)}>
+      <div className="mb-3 flex shrink-0 items-center justify-between">
+        <div className="flex gap-4 text-xs text-text-muted">
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-[2px] bg-[#2E7D32]" />
+            <span className="h-2 w-2 rounded-sm bg-success" />
             New Patients
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-[2px] bg-[#BE880B]" />
+            <span className="h-2 w-2 rounded-sm bg-[#e8943a]" />
             Follow Ups
           </span>
         </div>
@@ -56,44 +83,44 @@ export function PatientTrendsChart({
         )}
       </div>
 
-      <div
-        className={cn(
-          'chart-wrap w-full min-h-0 overflow-hidden',
-          embedded ? 'flex-1' : compact ? 'h-[180px]' : 'h-56',
-        )}
-      >
+      <div className={cn('relative min-h-0 w-full', tall ? 'min-h-[220px] flex-1' : 'h-80')}>
+        <div className={tall ? 'absolute inset-0' : 'h-full'}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-          <LineChart
-            data={data}
-            margin={{ top: 16, right: 8, left: 0, bottom: 0 }}
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 20, right: 4, left: 4, bottom: 0 }}
+            barCategoryGap={tall ? 2 : 6}
+            barGap={1}
           >
             <defs>
-              <linearGradient id="followUpLineFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#BE880B" stopOpacity={0} />
-                <stop offset="100%" stopColor="#BE880B" stopOpacity={1} />
+              <linearGradient id="patientDecorBar" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FFFEF7" />
+                <stop offset="100%" stopColor="#FBF7EE" />
               </linearGradient>
             </defs>
-            <CartesianGrid
-              strokeDasharray="4 4"
-              vertical={false}
-              stroke="#ebe4d8"
-            />
             <XAxis
               dataKey="month"
               tick={{ fontSize: 11, fill: '#67554d' }}
               axisLine={false}
               tickLine={false}
-              dy={8}
+              dy={4}
             />
             <YAxis
-              domain={[0, 200]}
-              ticks={[0, 50, 100, 150, 200]}
-              tick={{ fontSize: 10, fill: '#67554d' }}
+              domain={[0, yMax]}
+              ticks={ticks}
+              tick={{ fontSize: 11, fill: '#67554d' }}
               axisLine={false}
-              tickLine={false}
-              width={32}
+              tickLine
+              tickSize={4}
+              width={36}
+              tickMargin={6}
+              allowDecimals={false}
             />
             <Tooltip
+              formatter={(value, name) => {
+                if (name === 'decor') return [null, null];
+                return [value, name];
+              }}
               contentStyle={{
                 borderRadius: '8px',
                 border: '1px solid #e8e0d4',
@@ -101,68 +128,69 @@ export function PatientTrendsChart({
                 boxShadow: '0 2px 8px rgba(66,44,35,0.06)',
               }}
             />
-            <Area
-              type="monotone"
-              dataKey="followUps"
-              stroke="none"
-              fill="url(#followUpLineFill)"
+            <Bar
+              dataKey="decor"
+              fill="url(#patientDecorBar)"
+              radius={[6, 6, 0, 0]}
+              barSize={tall ? 120 : 48}
+              tooltipType="none"
               isAnimationActive={false}
             />
             <Line
-              type="monotone"
+              type="natural"
               dataKey="newPatients"
-              stroke="#2E7D32"
+              stroke="#3d8f5a"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#2E7D32', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#3d8f5a', stroke: '#fff', strokeWidth: 2 }}
               name="New Patients"
               isAnimationActive={false}
             >
               <LabelList
                 dataKey="newPatients"
                 content={({ x, y, index, value }) => {
-                  if (index !== calloutIndex || x == null || y == null) return null;
-                  const month = data[calloutIndex]?.month ?? '';
-                  const count = Number(value ?? 0);
-                  const label = `${count} New Patients${month ? ` in ${month}` : ''}`;
+                  const month = data[index ?? -1]?.month;
+                  if (month !== 'Oct' || x == null || y == null) return null;
                   return (
-                    <text
-                      x={Number(x)}
-                      y={Number(y) - 10}
-                      textAnchor="middle"
-                      fill="#2E7D32"
-                      fontSize={10}
-                      fontWeight={600}
-                    >
-                      {label}
-                    </text>
+                    <g>
+                      <rect
+                        x={Number(x) - 78}
+                        y={Number(y) - 28}
+                        width={156}
+                        height={20}
+                        rx={4}
+                        fill="white"
+                        stroke="#e8e0d4"
+                      />
+                      <text
+                        x={Number(x)}
+                        y={Number(y) - 14}
+                        textAnchor="middle"
+                        fill="#3d8f5a"
+                        fontSize={10}
+                        fontWeight={500}
+                      >
+                        {value}: New Patients in October
+                      </text>
+                    </g>
                   );
                 }}
               />
             </Line>
             <Line
-              type="monotone"
+              type="natural"
               dataKey="followUps"
-              stroke="#BE880B"
+              stroke="#e8943a"
               strokeWidth={2}
               dot={false}
-              activeDot={{ r: 4, fill: '#BE880B', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 4, fill: '#e8943a', stroke: '#fff', strokeWidth: 2 }}
               name="Follow Ups"
               isAnimationActive={false}
             />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </div>
-    </>
-  );
-
-  if (embedded) {
-    return <div className="flex min-h-0 min-w-0 flex-1 flex-col">{body}</div>;
-  }
-
-  return (
-    <Card className="dashboard-card flex h-full w-full min-w-0 flex-col overflow-hidden p-5">
-      {body}
-    </Card>
+    </div>
   );
 }

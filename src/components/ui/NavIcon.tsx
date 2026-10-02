@@ -1,48 +1,38 @@
-import type { ComponentType } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface NavGlyphProps {
-  className?: string;
-  fill?: string;
-  strokeWidth?: string | number;
-}
-
-export type NavGlyph = ComponentType<NavGlyphProps>;
-
 interface NavIconProps {
-  icon: NavGlyph;
+  outline: string;
+  filled: string;
   active?: boolean;
   className?: string;
 }
 
-/** Closed medical plus — same path outline and filled. */
-export function MedicalCross({ className, fill, strokeWidth }: NavGlyphProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill={fill}
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M9.5 3.5h5v5.5H20v5h-5.5V20h-5v-6H4v-5h5.5V3.5z" />
-    </svg>
-  );
+function colorizeSvg(svg: string): string {
+  return svg
+    .replace(/\s(width|height)="100%"/g, '')
+    .replace(/\spreserveAspectRatio="[^"]*"/g, '')
+    .replace(/fill="var\([^"]*\)"/gi, 'fill="currentColor"')
+    .replace(/fill="#[^"]*"/gi, 'fill="currentColor"');
 }
 
-/** Same glyph for both states — outline when idle, filled when selected. */
-export function NavIcon({ icon: Icon, active = false, className }: NavIconProps) {
+/** Sidebar nav icon — outline when inactive, filled when active. */
+export function NavIcon({
+  outline,
+  filled,
+  active = false,
+  className,
+}: NavIconProps) {
+  const svg = active ? filled : outline;
+
   return (
-    <Icon
+    <span
+      aria-hidden
       className={cn(
-        'h-[22px] w-[22px] shrink-0',
-        active ? 'text-[#BE880B]' : 'text-brown',
+        'inline-flex shrink-0 items-center justify-center [&_svg]:block [&_svg]:h-[22px] [&_svg]:w-[22px]',
+        active ? 'text-gold' : 'text-brown',
         className,
       )}
-      fill={active ? 'currentColor' : 'none'}
-      strokeWidth={1.5}
+      dangerouslySetInnerHTML={{ __html: colorizeSvg(svg) }}
     />
   );
 }

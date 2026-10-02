@@ -82,14 +82,6 @@ export function Stepper({
                   {step.label}
                 </span>
               </div>
-              <span
-                className={cn(
-                  'hidden text-center text-xs font-medium sm:block',
-                  isActive || isCompleted ? 'text-gold' : 'text-text-muted',
-                )}
-              >
-                {step.label}
-              </span>
             </div>
           );
         })}

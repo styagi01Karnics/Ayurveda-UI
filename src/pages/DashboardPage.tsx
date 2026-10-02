@@ -232,28 +232,28 @@ export function DashboardPage() {
     data.patientTrends.length > 0 ? data.patientTrends : patientTrendsData;
 
   return (
-    <PageShell className="w-full min-w-0 space-y-3 overflow-x-hidden pb-6 pt-1">
+    <PageShell className="w-full space-y-5">
       <AsyncStatus
         loading={loading && !hasLoadedOnce}
         error={error}
         onRetry={reload}
       >
-        <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-3 lg:grid-cols-3 lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="flex h-full min-h-0 min-w-0 flex-col lg:row-span-2">
-            <PatientsStatCard
-              stats={stats}
-              period={patientsPeriod}
-              onPeriodChange={setPatientsPeriod}
-              footer={
-                <PatientTrendsChart
-                  data={trendData}
-                  compact
-                  embedded
-                  onExpand={() => setChartOpen(true)}
-                />
-              }
-            />
-          </div>
+        <div className="grid w-full min-w-0 grid-cols-1 items-stretch gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1.15fr)_minmax(0,0.82fr)]">
+          <PatientsStatCard
+            className="lg:row-span-2"
+            stats={stats}
+            period={patientsPeriod}
+            onPeriodChange={setPatientsPeriod}
+            footer={
+              <PatientTrendsChart
+                data={trendData}
+                compact
+                embedded
+                onExpand={() => setChartOpen(true)}
+                className="mt-1 flex min-h-0 flex-1 flex-col"
+              />
+            }
+          />
 
           <StatCard
             title="Total Appointments"
