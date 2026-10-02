@@ -16,7 +16,6 @@ import { CancelAppointmentModal } from '@/components/doctors/CancelAppointmentMo
 import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { Input } from '@/components/ui/Input';
 import { Pagination } from '@/components/ui/Pagination';
@@ -624,6 +623,7 @@ export function AppointmentsPage() {
       <ListPanel
         tabs={tabsNode}
         toolbar={viewToggleNode}
+        actions={headerAction}
         filters={
           viewMode === 'list' ? (
             <>

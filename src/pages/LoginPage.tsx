@@ -212,21 +212,18 @@ export function LoginPage() {
 
   return (
     <AuthLayout variant="login" aside={<DoshaDiagram />}>
-      <AuthCard className="w-full max-w-[510px] rounded-[11.7px] bg-[#FFFFFFCC] px-9 py-11 shadow-[0_0_3.53px_1.18px_#BE880B1A] sm:px-11 sm:py-12">
-        <BrandHeader className="mb-7" />
+      <div className="login-form w-full">
+        <BrandHeader
+          className="mb-5"
+          variant={loginMode === 'superAdmin' ? 'platform' : 'clinic'}
+        />
 
-        <div className="mb-6">
-          <h2 className="font-sans text-[37.61px] font-medium leading-none tracking-normal text-brown">
+        <div className="mb-4">
+          <h2 className="font-sans text-[clamp(22px,3vw,28px)] font-medium leading-none tracking-normal text-[#422C23]">
             Welcome back!
           </h2>
-          <p className="mt-2 text-sm text-text-muted sm:text-[15px]">
+          <p className="mt-2 font-sans text-[13px] font-normal leading-snug text-text-muted">
             Enter your Credentials to access your account
-          </p>
-          <p className="mt-2 text-xs text-brown/70">
-            Demo login (no API):{' '}
-            <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.emailOrUsername}</span>
-            {' / '}
-            <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.password}</span>
           </p>
           {notice ? (
             <p className="mt-3 rounded-lg bg-success/10 px-3 py-2 text-xs text-brown">
@@ -235,12 +232,47 @@ export function LoginPage() {
           ) : null}
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
+        <Tabs
+          variant="switch"
+          tabs={LOGIN_TABS}
+          activeTab={loginMode}
+          onChange={setLoginMode}
+          className="mb-4"
+        />
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
+          <input type="hidden" {...register('mode')} />
+          <input type="hidden" {...register('locationId')} />
+          {loginMode === 'all' && !showClinicSelect ? (
+            <input type="hidden" {...register('tenantCode')} />
+          ) : null}
+
+          {showClinicSelect ? (
+            <Select
+              fieldVariant="auth"
+              label="Clinic"
+              placeholder={
+                tenantsLoading ? 'Loading clinics…' : 'Select clinic'
+              }
+              options={hospitalOptions}
+              error={errors.tenantCode?.message}
+              disabled={tenantsLoading && tenants.length === 0}
+              {...register('tenantCode')}
+            />
+          ) : null}
+
           <Input
             fieldVariant="auth"
-            label="Enter your username or email address"
-            placeholder="Enter your username or email address"
-            className="py-3 text-[15px]"
+            label={
+              loginMode === 'superAdmin'
+                ? 'Email address'
+                : 'Enter your username or email address'
+            }
+            placeholder={
+              loginMode === 'superAdmin'
+                ? 'superadmin@gmail.com'
+                : 'Enter your username or email address'
+            }
             error={errors.emailOrUsername?.message}
             {...register('emailOrUsername')}
           />
@@ -251,11 +283,10 @@ export function LoginPage() {
               label="Password"
               type="password"
               placeholder="Password"
-              className="py-3 text-[15px]"
               error={errors.password?.message}
               {...register('password')}
             />
-            <div className="mt-1.5 text-right">
+            <div className="mt-2 text-right">
               <button
                 type="button"
                 disabled={forgotBusy}
@@ -283,13 +314,13 @@ export function LoginPage() {
             type="submit"
             fullWidth
             disabled={isSubmitting}
-            className="mt-2 rounded-[11.7px] py-1.5 text-base font-semibold"
+            className="mt-2 rounded-lg bg-[#BE880B] py-2.5 text-[14px] font-semibold text-white hover:bg-gold-dark"
           >
             Login
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-[15px] text-text-muted">
+        <p className="mt-4 text-center font-sans text-[13px] text-text-muted">
           Don&apos;t have an account?{' '}
           <Link
             to="/signup"

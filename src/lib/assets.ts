@@ -1,9 +1,8 @@
 /** Centralized static asset paths — public PNGs + Figma-export SVGs from src/assets */
 
+import appLogo from '@/assets/signup/logo.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
-import signupAvatar from '@/assets/signup/avatar.png';
-import signupUploadIcon from '@/assets/signup/upload-cloud.svg';
 import doctorReenaAvatar from '@/assets/appointments/doctor-reena.png';
 import patientRajAvatar from '@/assets/appointments/patient-raj.png';
 import searchIcon from '@/assets/appointments/search.svg';
@@ -42,15 +41,14 @@ export const assets = {
     kapha: '/assets/kapha.png',
   },
   auth: {
-    loginBg: '/assets/LoginBG.svg',
-    loginDecorTopRight: '/assets/login-decor-right.png',
-    loginDecorBottomLeft: '/assets/login-decor-left.png',
+    loginBg,
+    loginDecorTopRight,
+    loginDecorBottomLeft,
     signupDecorBottomRight: '/assets/signup-decor-right.png',
-    signupAvatar,
-    signupUploadIcon,
   },
   sidebarBg,
-  scheduleDecor: '/assets/SceduleCorner.svg',
+  /** Mortar + herbs — Today's Schedule card (Figma) */
+  scheduleDecor: scheduleDecorImg,
   avatar,
   calendarEvent: {
     doctor: doctorReenaAvatar,

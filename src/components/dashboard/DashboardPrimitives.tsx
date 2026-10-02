@@ -91,51 +91,54 @@ export function SemiCircleGauge({
   count,
   stroke,
 }: SemiCircleGaugeProps) {
-  const radius = 40;
-  const arcLength = Math.PI * radius;
-  const offset = arcLength * (1 - percent / 100);
+  const clamped = Math.min(100, Math.max(0, percent));
+  const radius = 34;
+  const cx = 46;
+  const cy = 46;
+  const d = `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${cx + radius} ${cy}`;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col items-center">
-      <svg width="104" height="64" viewBox="0 0 104 64" aria-hidden>
+      <svg
+        width="92"
+        height="56"
+        viewBox="0 0 92 56"
+        className="shrink-0 overflow-visible"
+        aria-hidden
+      >
         <path
-          d="M 12 54 A 40 40 0 0 1 92 54"
+          d={d}
           fill="none"
-          stroke="#ebe4d8"
-          strokeWidth="7"
+          stroke="#E8E4DC"
+          strokeWidth="9"
           strokeLinecap="round"
         />
         <path
-          d="M 12 54 A 40 40 0 0 1 92 54"
+          d={d}
           fill="none"
           stroke={stroke}
-          strokeWidth="7"
+          strokeWidth="9"
           strokeLinecap="round"
           pathLength={100}
           strokeDasharray={100}
           strokeDashoffset={100 - clamped}
         />
         <text
-          x="52"
-          y="50"
+          x={cx}
+          y={cy - 4}
           textAnchor="middle"
-          className="fill-text-muted font-medium"
-          style={{ fontSize: 13 }}
+          fill="#67554D"
+          style={{ fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}
         >
           {clamped}%
         </text>
       </svg>
-      <span className="mt-1 text-[11px] text-text-muted">{label}</span>
-      <span className="text-xs font-semibold text-gold">{count}</span>
-    </div>
-  );
-}
-
-export function CategoryChip({ count, label }: { count: number; label: string }) {
-  return (
-    <div className="min-w-[58px] rounded-lg bg-[#fffbf2] px-2 py-1.5 text-center">
-      <p className="text-sm font-bold leading-tight text-brown">{count}</p>
-      <p className="text-[10px] leading-tight text-text-muted">{label}</p>
+      <span className="mt-1 font-sans text-[12px] font-medium leading-4 text-[#67554D]">
+        {label}
+      </span>
+      <span className="mt-0.5 font-sans text-[14px] font-semibold leading-none text-[#BE880B]">
+        {count}
+      </span>
     </div>
   );
 }

@@ -12,7 +12,10 @@ interface BrandHeaderProps {
 export function BrandHeader({
   className,
   centered = true,
+  variant = 'clinic',
 }: BrandHeaderProps) {
+  const isPlatform = variant === 'platform';
+
   return (
     <div
       className={cn(
@@ -26,12 +29,14 @@ export function BrandHeader({
         alt={isPlatform ? PLATFORM_BRANDING.name : 'Ganesha Ayurvedaa'}
         className="h-16 w-16 object-contain"
       />
-      <p className="font-sans text-base font-semibold leading-none tracking-normal text-brown">
-        GANESHA AYURVEDAA
-      </p>
-      <p className="font-sans text-xs font-semibold leading-none tracking-normal text-[#BE880B]">
-        A Journey of Healing
-      </p>
+      <h1 className="font-sans text-[24px] font-semibold leading-none tracking-normal text-[#422C23] normal-case">
+        {isPlatform ? PLATFORM_BRANDING.name.toUpperCase() : 'GANESHA AYURVEDAA'}
+      </h1>
+      {!isPlatform ? (
+        <p className="mb-1 font-sans text-[14px] font-semibold leading-none tracking-normal text-[#BE880B] normal-case">
+          A Journey of Healing
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -46,8 +46,9 @@ export function SettingsPage() {
   return (
     <PageShell>
       <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#eadfc8]">
         <nav
-          className="grid grid-cols-2 border-b border-[#eadfc8] sm:grid-cols-4"
+          className="grid min-w-0 flex-1 grid-cols-2 sm:grid-cols-4"
           aria-label="Settings sections"
         >
           {SETTINGS_TABS.map((tab) => {
@@ -75,6 +76,8 @@ export function SettingsPage() {
             );
           })}
         </nav>
+        {headerAction}
+        </div>
 
         <div className="flex-1 pt-6">
           {activeTab === 'clinic' && <ClinicSettingsTab />}

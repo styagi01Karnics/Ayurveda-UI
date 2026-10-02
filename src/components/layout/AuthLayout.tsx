@@ -31,7 +31,7 @@ export function AuthLayout({
               <div className="hidden min-w-0 flex-1 lg:flex lg:items-center lg:justify-center">
                 {aside}
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       </div>

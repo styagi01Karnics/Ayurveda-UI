@@ -41,9 +41,41 @@ export function CancelAppointmentModal({
       open={open}
       onClose={loading ? () => undefined : onClose}
       title={UI_MESSAGES.confirm.cancelAppointmentTitle}
-      message={UI_MESSAGES.confirm.cancelAppointmentMessage}
-      confirmLabel={UI_MESSAGES.confirm.delete}
-      submitting={loading}
-    />
+      subtitle={UI_MESSAGES.confirm.cancelAppointmentMessage}
+      size="md"
+      className="border border-[#ebe4d8] shadow-[0_12px_40px_rgba(66,44,35,0.14)]"
+      footer={
+        <div className="flex flex-wrap justify-end gap-3">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-xl bg-[#faf4e5] px-5 py-2.5 text-brown hover:bg-[#f3ead4]"
+          >
+            Keep Appointment
+          </Button>
+          <Button
+            className="rounded-xl bg-danger px-5 py-2.5 text-white hover:bg-danger/90"
+            onClick={handleConfirm}
+            disabled={loading}
+          >
+            {loading ? 'Cancelling…' : 'Cancel Appointment'}
+          </Button>
+        </div>
+      }
+    >
+      <Textarea
+        label="Reason of Cancellation *"
+        placeholder="Enter cancel reason"
+        rows={4}
+        value={reason}
+        onChange={(e) => {
+          setReason(e.target.value);
+          if (error) setError(null);
+        }}
+        error={error ?? undefined}
+        disabled={loading}
+      />
+    </Modal>
   );
 }

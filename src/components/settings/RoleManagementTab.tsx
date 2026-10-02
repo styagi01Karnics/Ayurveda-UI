@@ -12,7 +12,6 @@ import {
 } from '@/lib/api/roles';
 import {
   ALL_PAGE_CODES,
-  PAGE_CODE_LABELS,
   type PageCode,
 } from '@/lib/pagePermissions';
 import type { RoleFormValues } from '@/lib/validation/settings.schema';
@@ -40,10 +39,6 @@ function mapApiRole(role: TenantRoleResponse): SettingsRoleRecord {
     permissions: role.pageCodes ?? [],
     userCount: role.userCount ?? 0,
   };
-}
-
-function pageLabel(code: string): string {
-  return PAGE_CODE_LABELS[code as PageCode] ?? code;
 }
 
 export function RoleManagementTab({

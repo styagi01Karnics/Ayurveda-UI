@@ -277,7 +277,6 @@ export function UserManagementTab({
           <SearchField
             placeholder="User ID"
             iconPosition="right"
-            wrapperClassName="sm:w-44"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             wrapperClassName="w-full sm:w-[200px]"
