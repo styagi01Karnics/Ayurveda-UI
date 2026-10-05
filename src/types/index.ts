@@ -468,6 +468,8 @@ export interface AuthUser {
   /** UiPageSeeder codes controlling sidebar + routes. Empty = full access. */
   pageCodes?: string[];
   status?: string;
+  /** Hospital city from login tenant payload (optional). */
+  city?: string;
 }
 
 export interface SignupFormData {

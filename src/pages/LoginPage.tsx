@@ -10,18 +10,16 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Tabs } from '@/components/ui/Tabs';
 import { getPublicTenants, forgotPassword, login, type PublicTenantDto } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
 import {
   DUMMY_LOGIN_CREDENTIALS,
   mapAuthTokenToSession,
-  mockLogin,
   setAuthSession,
-  setStoredUser,
 } from '@/lib/auth';
 import {
   CLINIC_LOCATIONS,
   setStoredClinicLocation,
 } from '@/lib/clinicLocations';
-import { ALL_PAGE_CODES } from '@/lib/pagePermissions';
 import {
   loginSchema,
   type LoginFormValues,
@@ -151,36 +149,13 @@ export function LoginPage() {
         setStoredClinicLocation(values.locationId);
       }
       navigate('/dashboard');
-      return;
-    } catch {
-      // Fall through to local mock login for offline / demo use.
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setSubmitError(error.message);
+        return;
+      }
+      setSubmitError('Login failed. Please try again.');
     }
-
-    const user = mockLogin(usernameOrEmail, values.password);
-    if (!user) {
-      setSubmitError(
-        'Invalid credentials. Password must be at least 6 characters.',
-      );
-      return;
-    }
-
-    if (values.mode === 'superAdmin') {
-      const superUser = {
-        ...user,
-        role: 'Super Admin',
-        apiRole: 'SUPER_ADMIN',
-        tenantCode: 'PLATFORM',
-        pageCodes: [...ALL_PAGE_CODES],
-      };
-      setStoredUser(superUser);
-      navigate('/dashboard');
-      return;
-    }
-
-    if (values.locationId) {
-      setStoredClinicLocation(values.locationId);
-    }
-    navigate('/dashboard');
   };
 
   const handleForgotPassword = async () => {

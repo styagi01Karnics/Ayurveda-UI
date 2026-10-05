@@ -98,11 +98,13 @@ export default defineConfig(({ mode }) => {
 
         // Attendance-service :8106
         '/api/v1/attendances': serviceProxy(backendHost, 8106),
+        '/api/v1/employee-attendances': serviceProxy(backendHost, 8106),
+        '/api/v1/employee-attendance-master': serviceProxy(backendHost, 8106),
 
         // Activity-log-service :8107
         '/api/v1/activity-logs': serviceProxy(backendHost, 8107),
 
-        // Medicine & Dashboard-service :8108
+        // Medicine-service :8108
         '/api/v1/medicines': serviceProxy(backendHost, 8108),
         '/api/v1/dashboard/medicine-stock': serviceProxy(backendHost, 8108),
 

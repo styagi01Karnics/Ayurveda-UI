@@ -125,9 +125,19 @@ export interface UpdateUserPayload {
 }
 
 export function login(payload: LoginPayload) {
+  const body: LoginPayload = {
+    usernameOrEmail: payload.usernameOrEmail,
+    password: payload.password,
+  };
+  if (payload.tenantCode?.trim()) {
+    body.tenantCode = payload.tenantCode.trim();
+  }
+  if (payload.city?.trim()) {
+    body.city = payload.city.trim();
+  }
   return apiRequest<AuthTokenResponse>(url(ep.login), {
     method: 'POST',
-    body: payload,
+    body,
   });
 }
 

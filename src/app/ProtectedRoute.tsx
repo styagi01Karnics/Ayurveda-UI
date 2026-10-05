@@ -1,5 +1,11 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { getStoredUser, isSuperAdmin } from '@/lib/auth';
+import {
+  clearAuthSession,
+  getStoredToken,
+  getStoredUser,
+  isMockAuthToken,
+  isSuperAdmin,
+} from '@/lib/auth';
 import {
   firstAllowedPath,
   hasPageAccess,
@@ -8,6 +14,20 @@ import {
 } from '@/lib/pagePermissions';
 
 export const PLATFORM_CLINICS_PATH = '/platform/clinics';
+
+function hasValidSession(): boolean {
+  const user = getStoredUser();
+  const token = getStoredToken();
+  if (!user || !token) {
+    return false;
+  }
+  // Old demo sessions used mock-dev-token and cause API 401s.
+  if (isMockAuthToken(token)) {
+    clearAuthSession();
+    return false;
+  }
+  return true;
+}
 
 interface PageProtectedRouteProps {
   pageCode: PageCode;
@@ -19,7 +39,7 @@ export function PageProtectedRoute({
   children,
 }: PageProtectedRouteProps) {
   const user = getStoredUser();
-  if (!user) {
+  if (!hasValidSession() || !user) {
     return <Navigate to="/login" replace />;
   }
   // Super Admin has full Admin access.
@@ -32,7 +52,7 @@ export function PageProtectedRoute({
 /** Super Admin only — clinic onboard / platform console. */
 export function SuperAdminRoute() {
   const user = getStoredUser();
-  if (!user) {
+  if (!hasValidSession() || !user) {
     return <Navigate to="/login" replace />;
   }
   if (!isSuperAdmin(user)) {
@@ -45,7 +65,7 @@ export function ProtectedRoute() {
   const user = getStoredUser();
   const location = useLocation();
 
-  if (!user) {
+  if (!hasValidSession() || !user) {
     return <Navigate to="/login" replace />;
   }
 
@@ -63,7 +83,7 @@ export function ProtectedRoute() {
 
 export function PublicRoute() {
   const user = getStoredUser();
-  if (user) {
+  if (hasValidSession() && user) {
     return <Navigate to={firstAllowedPath(user.pageCodes)} replace />;
   }
   return <Outlet />;
