@@ -41,4 +41,28 @@ describe('loginSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('treats blank tenant code as undefined', () => {
+    const result = loginSchema.safeParse({
+      emailOrUsername: 'admin@ganesha.com',
+      password: 'password123',
+      tenantCode: '   ',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tenantCode).toBeUndefined();
+    }
+  });
+
+  it('keeps non-empty tenant code as typed', () => {
+    const result = loginSchema.safeParse({
+      emailOrUsername: 'admin@ganesha.com',
+      password: 'password123',
+      tenantCode: 'Hosp-1',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tenantCode).toBe('Hosp-1');
+    }
+  });
 });

@@ -443,6 +443,8 @@ export interface AuthUser {
   username?: string;
   tenantId?: string;
   tenantCode?: string;
+  /** Hospital city from login tenant payload (optional). */
+  city?: string;
 }
 
 export interface SignupFormData {

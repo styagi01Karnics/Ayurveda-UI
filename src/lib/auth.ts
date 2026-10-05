@@ -14,6 +14,7 @@ export const DUMMY_LOGIN_CREDENTIALS = {
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
+  ADMIN: 'Admin',
   TENANT_ADMIN: 'Tenant Admin',
   DOCTOR: 'Doctor',
   THERAPIST: 'Therapist',
@@ -64,7 +65,10 @@ export function formatAuthRole(role: string): string {
   return ROLE_LABELS[role] ?? role.replace(/_/g, ' ');
 }
 
-export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
+export function mapUserResponseToAuthUser(
+  user: UserResponse,
+  tenant?: AuthTokenResponse['tenant'],
+): AuthUser {
   return {
     id: user.id,
     fullName: user.fullName,
@@ -72,7 +76,8 @@ export function mapUserResponseToAuthUser(user: UserResponse): AuthUser {
     email: user.email,
     username: user.username,
     tenantId: user.tenantId,
-    tenantCode: user.tenantCode,
+    tenantCode: user.tenantCode ?? tenant?.tenantCode,
+    city: tenant?.city,
   };
 }
 
@@ -82,8 +87,13 @@ export function mapAuthTokenToSession(response: AuthTokenResponse): {
 } {
   return {
     token: response.accessToken,
-    user: mapUserResponseToAuthUser(response.user),
+    user: mapUserResponseToAuthUser(response.user, response.tenant),
   };
+}
+
+/** True when stored session is the old demo mock (not a real JWT). */
+export function hasMockAuthSession(): boolean {
+  return isMockAuthToken(getStoredToken());
 }
 
 export function createMockAuthSession(input: {

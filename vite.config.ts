@@ -69,6 +69,7 @@ export default defineConfig(({ mode }) => {
         '/api/v1/lifestyle-information': serviceProxy(backendHost, 8103),
         '/api/v1/ayurvedic-assessments': serviceProxy(backendHost, 8103),
         '/api/v1/dashboard/todays-schedule': serviceProxy(backendHost, 8103),
+        '/api/v1/dashboard/patient-trends': serviceProxy(backendHost, 8103),
         '/api/v1/treatments': serviceProxy(backendHost, 8103),
         '/api/v1/follow-ups': serviceProxy(backendHost, 8103),
         '/api/v1/prescriptions': serviceProxy(backendHost, 8103),
@@ -76,17 +77,23 @@ export default defineConfig(({ mode }) => {
         // Auth-service :8111
         '/api/v1/auth': serviceProxy(backendHost, 8111),
         '/api/v1/tenants': serviceProxy(backendHost, 8111),
+        '/api/v1/public': serviceProxy(backendHost, 8111),
+        '/api/v1/platform': serviceProxy(backendHost, 8111),
+        '/api/v1/roles': serviceProxy(backendHost, 8111),
+        '/api/v1/ui-pages': serviceProxy(backendHost, 8111),
 
         // File-upload-service :8105
         '/api/v1/documents': serviceProxy(backendHost, 8105),
 
         // Attendance-service :8106
         '/api/v1/attendances': serviceProxy(backendHost, 8106),
+        '/api/v1/employee-attendances': serviceProxy(backendHost, 8106),
+        '/api/v1/employee-attendance-master': serviceProxy(backendHost, 8106),
 
         // Activity-log-service :8107
         '/api/v1/activity-logs': serviceProxy(backendHost, 8107),
 
-        // Medicine & Dashboard-service :8108
+        // Medicine-service :8108
         '/api/v1/medicines': serviceProxy(backendHost, 8108),
         '/api/v1/dashboard/medicine-stock': serviceProxy(backendHost, 8108),
 

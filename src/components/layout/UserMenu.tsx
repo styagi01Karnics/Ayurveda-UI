@@ -39,9 +39,13 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
           </div>
           <div className="hidden min-w-0 text-left sm:block">
             <p className="truncate text-sm font-semibold text-brown">
-              {user?.fullName ?? 'Rahul Sharma'}
+              {user?.fullName ?? 'User'}
             </p>
-            <p className="truncate text-xs text-text-muted">{user?.role ?? 'Super Admin'}</p>
+            <p className="truncate text-xs text-text-muted">
+              {[user?.role, user?.city || user?.tenantCode]
+                .filter(Boolean)
+                .join(' | ') || 'Signed in'}
+            </p>
           </div>
           <ChevronDown
             className={cn(

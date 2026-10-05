@@ -8,10 +8,9 @@ import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import {
-  DUMMY_LOGIN_CREDENTIALS,
-  mockLogin,
-} from '@/lib/auth';
+import { login as loginApi } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { mapAuthTokenToSession, setAuthSession } from '@/lib/auth';
 import {
   loginSchema,
   type LoginFormValues,
@@ -28,22 +27,30 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      emailOrUsername: DUMMY_LOGIN_CREDENTIALS.emailOrUsername,
-      password: DUMMY_LOGIN_CREDENTIALS.password,
+      emailOrUsername: '',
+      password: '',
+      tenantCode: '',
     },
   });
 
-  const onSubmit = (values: LoginFormValues) => {
+  const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
-    const user = mockLogin(
-      values.emailOrUsername.trim(),
-      values.password,
-    );
-    if (!user) {
-      setSubmitError('Invalid credentials. Password must be at least 6 characters.');
-      return;
+    try {
+      const response = await loginApi({
+        usernameOrEmail: values.emailOrUsername.trim(),
+        password: values.password,
+        tenantCode: values.tenantCode,
+      });
+      const session = mapAuthTokenToSession(response);
+      setAuthSession(session.token, session.user);
+      navigate('/dashboard');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setSubmitError(error.message);
+        return;
+      }
+      setSubmitError('Login failed. Please try again.');
     }
-    navigate('/dashboard');
   };
 
   return (
@@ -59,19 +66,28 @@ export function LoginPage() {
             Enter your Credentials to access your account
           </p>
           <p className="mt-2 text-xs text-brown/70">
-            Demo login (no API):{' '}
-            <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.emailOrUsername}</span>
-            {' / '}
-            <span className="font-medium">{DUMMY_LOGIN_CREDENTIALS.password}</span>
+            Hospital login needs tenant code (e.g. GAN-AP). Leave tenant blank for
+            Super Admin.
           </p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5" noValidate>
           <Input
             fieldVariant="auth"
+            label="Hospital tenant code (optional for Super Admin)"
+            placeholder="e.g. GAN-AP"
+            className="py-3 text-[15px] uppercase"
+            autoComplete="organization"
+            error={errors.tenantCode?.message}
+            {...register('tenantCode')}
+          />
+
+          <Input
+            fieldVariant="auth"
             label="Enter your username or email address"
             placeholder="Enter your username or email address"
             className="py-3 text-[15px]"
+            autoComplete="username"
             error={errors.emailOrUsername?.message}
             {...register('emailOrUsername')}
           />
@@ -83,6 +99,7 @@ export function LoginPage() {
               type="password"
               placeholder="Password"
               className="py-3 text-[15px]"
+              autoComplete="current-password"
               error={errors.password?.message}
               {...register('password')}
             />
@@ -108,7 +125,7 @@ export function LoginPage() {
             disabled={isSubmitting}
             className="mt-2 rounded-[11.7px] py-1.5 text-base font-semibold"
           >
-            Login
+            {isSubmitting ? 'Logging in…' : 'Login'}
           </Button>
         </form>
 

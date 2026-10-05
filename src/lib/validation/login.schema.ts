@@ -15,6 +15,15 @@ export const loginSchema = z.object({
     .string()
     .min(1, 'Password is required')
     .min(6, 'Password must be at least 6 characters'),
+  /**
+   * Required for hospital users.
+   * Leave empty for platform Super Admin login.
+   */
+  tenantCode: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : undefined)),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
