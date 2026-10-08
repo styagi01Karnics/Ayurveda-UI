@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
@@ -71,12 +71,17 @@ import {
 } from '@/lib/validation/settings.schema';
 import { cn, formatCurrency } from '@/lib/utils';
 import { formatDoctorAvailability } from '@/lib/doctorAvailability';
+import type { TherapistDto, TherapyDto, TreatmentCategoryDto } from '@/lib/api/types';
 import type {
+  ClinicConsultationTypeRecord,
   ClinicDoctorRecord,
+  ClinicDoshaRecord,
+  ClinicPackageMasterRecord,
   ClinicStatus,
   ClinicTherapistRecord,
   ClinicTherapyRecord,
   ClinicTreatmentCategoryRecord,
+  ClinicTreatmentPlanMasterRecord,
 } from '@/types';
 
 type DeleteTarget =
@@ -91,6 +96,91 @@ function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
 
 function nextStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
   return status === 'Active' ? 'INACTIVE' : 'ACTIVE';
+}
+
+type ClinicSettingsData = {
+  doctors: ClinicDoctorRecord[];
+  therapists: ClinicTherapistRecord[];
+  therapies: ClinicTherapyRecord[];
+  categories: ClinicTreatmentCategoryRecord[];
+  categoryOptions: { value: string; label: string }[];
+  consultationTypes: ClinicConsultationTypeRecord[];
+  treatmentPlans: ClinicTreatmentPlanMasterRecord[];
+  packageMasters: ClinicPackageMasterRecord[];
+  doshas: ClinicDoshaRecord[];
+};
+
+const EMPTY_CLINIC_SETTINGS: ClinicSettingsData = {
+  doctors: [],
+  therapists: [],
+  therapies: [],
+  categories: [],
+  categoryOptions: [],
+  consultationTypes: [],
+  treatmentPlans: [],
+  packageMasters: [],
+  doshas: [],
+};
+
+function toCategoryOptions(categories: TreatmentCategoryDto[]) {
+  return categories
+    .filter((c) => c.id)
+    .map((c) => ({
+      value: c.id,
+      label: (c.categoryName || c.name || c.categoryCode || '').trim() || c.id,
+    }));
+}
+
+function mapClinicTherapies(
+  therapies: TherapyDto[],
+  categories: TreatmentCategoryDto[],
+) {
+  const categoriesById = new Map(categories.map((c) => [c.id, c]));
+  return therapies.map((therapy) =>
+    mapTherapyToClinicRecord(therapy, categoriesById),
+  );
+}
+
+function mapClinicTherapists(
+  therapists: TherapistDto[],
+  therapies: TherapyDto[],
+) {
+  const therapiesById = new Map(therapies.map((t) => [t.id, t]));
+  return therapists.map((t) => mapTherapistToClinicRecord(t, therapiesById));
+}
+
+async function loadClinicSettings(): Promise<ClinicSettingsData> {
+  const [
+    doctors,
+    therapists,
+    therapies,
+    categories,
+    consultationTypes,
+    treatmentPlans,
+    packageMasters,
+    doshas,
+  ] = await Promise.all([
+    getAllDoctors(),
+    getAllTherapists(),
+    getAllTherapies(),
+    getAllTreatmentCategories(),
+    getAllConsultationTypes().catch(() => []),
+    getAllTreatmentPlanMasters().catch(() => []),
+    getAllPackageMasters().catch(() => []),
+    getAllDoshas().catch(() => []),
+  ]);
+
+  return {
+    doctors: doctors.map(mapDoctorToClinicRecord),
+    therapists: mapClinicTherapists(therapists, therapies),
+    therapies: mapClinicTherapies(therapies, categories),
+    categories: categories.map(mapTreatmentCategoryToRecord),
+    categoryOptions: toCategoryOptions(categories),
+    consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
+    treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
+    packageMasters: packageMasters.map(mapPackageMasterToRecord),
+    doshas: doshas.map(mapDoshaToRecord),
+  };
 }
 
 function StatusToggle({
@@ -122,85 +212,116 @@ export function ClinicSettingsTab() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const { data, loading, error, reload } = useAsyncData(async () => {
-    const [
-      doctors,
-      therapists,
-      therapies,
-      categories,
-      consultationTypes,
-      treatmentPlans,
-      packageMasters,
-      doshas,
-    ] = await Promise.all([
-      getAllDoctors(),
-      getAllTherapists(),
-      getAllTherapies(),
-      getAllTreatmentCategories(),
-      getAllConsultationTypes().catch(() => []),
-      getAllTreatmentPlanMasters().catch(() => []),
-      getAllPackageMasters().catch(() => []),
-      getAllDoshas().catch(() => []),
-    ]);
-
-    const categoriesById = new Map(categories.map((c) => [c.id, c]));
-    const therapiesById = new Map(therapies.map((t) => [t.id, t]));
-
-    return {
-      doctors: doctors.map(mapDoctorToClinicRecord),
-      therapists: therapists.map((t) =>
-        mapTherapistToClinicRecord(t, therapiesById),
-      ),
-      therapies: therapies.map((therapy) =>
-        mapTherapyToClinicRecord(therapy, categoriesById),
-      ),
-      categories: categories.map(mapTreatmentCategoryToRecord),
-      categoryOptions: categories.map((c) => ({
-        value: c.id,
-        label: c.categoryName,
-      })),
-      consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
-      treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
-      packageMasters: packageMasters.map(mapPackageMasterToRecord),
-      doshas: doshas.map(mapDoshaToRecord),
-    };
-  }, {
-    doctors: [] as ClinicDoctorRecord[],
-    therapists: [] as ClinicTherapistRecord[],
-    therapies: [] as ClinicTherapyRecord[],
-    categories: [] as ClinicTreatmentCategoryRecord[],
-    categoryOptions: [] as { value: string; label: string }[],
-    consultationTypes: [],
-    treatmentPlans: [],
-    packageMasters: [],
-    doshas: [],
-  });
+  const { data, setData, loading, error, reload } = useAsyncData(
+    loadClinicSettings,
+    EMPTY_CLINIC_SETTINGS,
+  );
 
   const { doctors, therapies, therapists } = data;
+
+  const refreshDoctors = async () => {
+    const doctorsList = await getAllDoctors();
+    setData((prev) => ({
+      ...prev,
+      doctors: doctorsList.map(mapDoctorToClinicRecord),
+    }));
+  };
+
+  const refreshCategories = async () => {
+    const [categories, therapiesList] = await Promise.all([
+      getAllTreatmentCategories(),
+      getAllTherapies(),
+    ]);
+    setData((prev) => ({
+      ...prev,
+      categories: categories.map(mapTreatmentCategoryToRecord),
+      categoryOptions: toCategoryOptions(categories),
+      therapies: mapClinicTherapies(therapiesList, categories),
+    }));
+  };
+
+  const refreshTherapies = async () => {
+    const [therapiesList, categories, therapistsList] = await Promise.all([
+      getAllTherapies(),
+      getAllTreatmentCategories(),
+      getAllTherapists(),
+    ]);
+    setData((prev) => ({
+      ...prev,
+      therapies: mapClinicTherapies(therapiesList, categories),
+      categoryOptions: toCategoryOptions(categories),
+      therapists: mapClinicTherapists(therapistsList, therapiesList),
+    }));
+  };
+
+  const refreshTherapists = async () => {
+    const [therapistsList, therapiesList] = await Promise.all([
+      getAllTherapists(),
+      getAllTherapies(),
+    ]);
+    setData((prev) => ({
+      ...prev,
+      therapists: mapClinicTherapists(therapistsList, therapiesList),
+    }));
+  };
+
+  const refreshConsultationTypes = async () => {
+    const consultationTypes = await getAllConsultationTypes();
+    setData((prev) => ({
+      ...prev,
+      consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
+    }));
+  };
+
+  const refreshTreatmentPlans = async () => {
+    const treatmentPlans = await getAllTreatmentPlanMasters();
+    setData((prev) => ({
+      ...prev,
+      treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
+    }));
+  };
+
+  const refreshPackageMasters = async () => {
+    const packageMasters = await getAllPackageMasters();
+    setData((prev) => ({
+      ...prev,
+      packageMasters: packageMasters.map(mapPackageMasterToRecord),
+    }));
+  };
+
+  const refreshDoshas = async () => {
+    const doshas = await getAllDoshas();
+    setData((prev) => ({
+      ...prev,
+      doshas: doshas.map(mapDoshaToRecord),
+    }));
+  };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
       if (deleteTarget.type === 'Doctor') {
         await deleteDoctor(deleteTarget.record.id);
+        await refreshDoctors();
         showToast({
           title: 'Doctor has been deleted',
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       } else if (deleteTarget.type === 'Therapy') {
         await deleteTherapy(deleteTarget.record.id);
+        await refreshTherapies();
         showToast({
           title: 'Therapy has been deleted',
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       } else if (deleteTarget.type === 'Therapist') {
         await deleteTherapist(deleteTarget.record.id);
+        await refreshTherapists();
         showToast({
           title: 'Therapist has been deleted',
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       }
-      await reload();
     } catch (err) {
       showToast({
         title: 'Error deleting record',
@@ -215,7 +336,7 @@ export function ClinicSettingsTab() {
     setTogglingId(doctor.id);
     try {
       await updateDoctorStatus(doctor.id, nextStatus(doctor.status));
-      await reload();
+      await refreshDoctors();
     } catch (err) {
       showToast({
         title: 'Failed to update doctor status',
@@ -230,7 +351,7 @@ export function ClinicSettingsTab() {
     setTogglingId(therapy.id);
     try {
       await updateTherapyStatus(therapy.id, nextStatus(therapy.status));
-      await reload();
+      await refreshTherapies();
     } catch (err) {
       showToast({
         title: 'Failed to update therapy status',
@@ -245,7 +366,7 @@ export function ClinicSettingsTab() {
     setTogglingId(therapist.id);
     try {
       await updateTherapistStatus(therapist.id, nextStatus(therapist.status));
-      await reload();
+      await refreshTherapists();
     } catch (err) {
       showToast({
         title: 'Failed to update therapist status',
@@ -268,7 +389,7 @@ export function ClinicSettingsTab() {
                 description: values.description.trim(),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshCategories();
               showToast({
                 title: 'Category Added',
                 message: `${values.categoryName} has been added successfully.`,
@@ -302,10 +423,10 @@ export function ClinicSettingsTab() {
                   values.availabilityStartTime,
                   values.availabilityEndTime,
                 ),
-                mobileNumber: values.mobileNumber?.trim() || undefined,
-                qualification: values.qualification?.trim() || undefined,
+                mobileNumber: values.mobileNumber,
+                qualification: values.qualification ?? '',
               });
-              await reload();
+              await refreshDoctors();
               showToast({
                 title: 'Doctor Added',
                 message: `${values.name} has been added successfully.`,
@@ -347,7 +468,7 @@ export function ClinicSettingsTab() {
                 description: values.description,
               });
 
-              await reload();
+              await refreshTherapies();
               showToast({
                 title: 'Therapy Added',
                 message: `${values.name} has been added successfully.`,
@@ -380,7 +501,7 @@ export function ClinicSettingsTab() {
                 status: toApiStatus(values.status),
                 assignedTherapyIds: values.assignedTherapyIds,
               });
-              await reload();
+              await refreshTherapists();
               showToast({
                 title: 'Therapist Added',
                 message: `${values.name} has been added successfully.`,
@@ -406,7 +527,7 @@ export function ClinicSettingsTab() {
                 name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshConsultationTypes();
               showToast({
                 title: 'Consultation type added',
                 message: `${values.name} has been added successfully.`,
@@ -431,7 +552,7 @@ export function ClinicSettingsTab() {
                 name: values.name.trim(),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshTreatmentPlans();
               showToast({
                 title: 'Treatment plan added',
                 message: `${values.name} has been added successfully.`,
@@ -457,7 +578,7 @@ export function ClinicSettingsTab() {
                 packagePrice: Number(values.packagePrice),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshPackageMasters();
               showToast({
                 title: 'Package master added',
                 message: `${values.name} has been added successfully.`,
@@ -485,7 +606,7 @@ export function ClinicSettingsTab() {
                 status: 'ACTIVE',
               });
               invalidateBookingDoshasCache();
-              await reload();
+              await refreshDoshas();
               showToast({
                 title: 'Dosha added',
                 message: `${values.name} has been added to Dosha Master.`,
@@ -535,7 +656,11 @@ function SettingsActionButton({
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
       disabled={disabled}
       aria-label={label}
       className={cn(
@@ -638,6 +763,19 @@ function TreatmentCategoriesSection({
   );
 }
 
+const EMPTY_DOCTOR_FORM: ClinicDoctorFormValues = {
+  name: '',
+  specialization: '',
+  qualification: '',
+  mobileNumber: '',
+  status: 'Active',
+  consultationFees: '',
+  followUpFees: '',
+  availabilityDays: ['weekdays'],
+  availabilityStartTime: '09:00',
+  availabilityEndTime: '17:00',
+};
+
 function DoctorsSection({
   doctors,
   togglingId,
@@ -653,6 +791,7 @@ function DoctorsSection({
 }) {
   const {
     register,
+    control,
     handleSubmit,
     reset,
     watch,
@@ -660,18 +799,7 @@ function DoctorsSection({
     formState: { errors, isSubmitting },
   } = useForm<ClinicDoctorFormValues>({
     resolver: zodResolver(clinicDoctorSchema),
-    defaultValues: {
-      name: '',
-      specialization: '',
-      qualification: '',
-      mobileNumber: '',
-      status: 'Active',
-      consultationFees: '',
-      followUpFees: '',
-      availabilityDays: ['weekdays'],
-      availabilityStartTime: '09:00',
-      availabilityEndTime: '17:00',
-    },
+    defaultValues: EMPTY_DOCTOR_FORM,
   });
 
   const availabilityDays = watch('availabilityDays') ?? [];
@@ -679,18 +807,7 @@ function DoctorsSection({
 
   const onSubmit = async (values: ClinicDoctorFormValues) => {
     await onAdd(values);
-    reset({
-      name: '',
-      specialization: '',
-      qualification: '',
-      mobileNumber: '',
-      status: 'Active',
-      consultationFees: '',
-      followUpFees: '',
-      availabilityDays: ['weekdays'],
-      availabilityStartTime: '09:00',
-      availabilityEndTime: '17:00',
-    });
+    reset(EMPTY_DOCTOR_FORM);
   };
 
   const onInvalid = () => {
@@ -706,8 +823,121 @@ function DoctorsSection({
       <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Doctors" />
       </div>
+      <form
+        className="border-b border-[#EFF0F6] px-5 py-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit(onSubmit, onInvalid)();
+        }}
+      >
+        <div className="grid w-full min-w-0 grid-cols-7 gap-2">
+          <div className="min-w-0">
+            <Input
+              label="Name"
+              placeholder="Name"
+              error={errors.name?.message}
+              {...register('name')}
+            />
+          </div>
+          <div className="min-w-0">
+            <Input
+              label="Specialisation"
+              placeholder="Specialisation"
+              error={errors.specialization?.message}
+              {...register('specialization')}
+            />
+          </div>
+          <div className="min-w-0">
+            <Controller
+              name="qualification"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Qualification"
+                  placeholder="Qualification"
+                  error={errors.qualification?.message}
+                  name={field.name}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
+            />
+          </div>
+          <div className="min-w-0">
+            <Controller
+              name="mobileNumber"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Mobile"
+                  placeholder="10-digit no."
+                  error={errors.mobileNumber?.message}
+                  name={field.name}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
+            />
+          </div>
+          <div className="min-w-0">
+            <Select
+              label="Status"
+              placeholder="Status"
+              options={[...CLINIC_STATUS_OPTIONS]}
+              error={errors.status?.message}
+              {...register('status')}
+            />
+          </div>
+          <div className="min-w-0">
+            <RupeeInput
+              label="Consultation"
+              placeholder="0"
+              error={errors.consultationFees?.message}
+              {...register('consultationFees')}
+            />
+          </div>
+          <div className="min-w-0">
+            <RupeeInput
+              label="Follow up"
+              placeholder="0"
+              error={errors.followUpFees?.message}
+              {...register('followUpFees')}
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <DoctorAvailabilityFields
+              selectedDays={availabilityDays}
+              onDaysChange={(days) =>
+                setValue('availabilityDays', days, { shouldValidate: true })
+              }
+              startTime={watch('availabilityStartTime') ?? '09:00'}
+              endTime={watch('availabilityEndTime') ?? '17:00'}
+              onStartTimeChange={(value) =>
+                setValue('availabilityStartTime', value, { shouldValidate: true })
+              }
+              onEndTimeChange={(value) =>
+                setValue('availabilityEndTime', value, { shouldValidate: true })
+              }
+              daysError={errors.availabilityDays?.message}
+              startTimeError={errors.availabilityStartTime?.message}
+              endTimeError={errors.availabilityEndTime?.message}
+            />
+          </div>
+          <SettingsActionButton
+            label="Add doctor"
+            disabled={isSubmitting}
+            onClick={() => void handleSubmit(onSubmit, onInvalid)()}
+          />
+        </div>
+      </form>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1100px] text-left text-sm">
+        <table className="w-full min-w-[960px] text-left text-sm">
           <thead>
             <SettingsTableHead
               columns={[
@@ -725,82 +955,6 @@ function DoctorsSection({
             />
           </thead>
           <tbody>
-            <tr className="border-b border-[#EFF0F6]">
-              <td className="px-4 py-3" />
-              <td className="px-4 py-3">
-                <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input
-                  placeholder="Specialisation"
-                  error={errors.specialization?.message}
-                  {...register('specialization')}
-                />
-              </td>
-              <td className="px-4 py-3">
-                <Input
-                  placeholder="Qualification"
-                  error={errors.qualification?.message}
-                  {...register('qualification')}
-                />
-              </td>
-              <td className="px-4 py-3">
-                <Input
-                  placeholder="Mobile"
-                  error={errors.mobileNumber?.message}
-                  {...register('mobileNumber')}
-                />
-              </td>
-              <td className="px-4 py-3">
-                <Select
-                  placeholder="Status"
-                  options={[...CLINIC_STATUS_OPTIONS]}
-                  error={errors.status?.message}
-                  {...register('status')}
-                />
-              </td>
-              <td className="px-4 py-3">
-                <RupeeInput
-                  placeholder="0"
-                  error={errors.consultationFees?.message}
-                  {...register('consultationFees')}
-                />
-              </td>
-              <td className="px-4 py-3">
-                <RupeeInput
-                  placeholder="0"
-                  error={errors.followUpFees?.message}
-                  {...register('followUpFees')}
-                />
-              </td>
-              <td className="px-4 py-3 align-top">
-                <DoctorAvailabilityFields
-                  compact
-                  selectedDays={availabilityDays}
-                  onDaysChange={(days) =>
-                    setValue('availabilityDays', days, { shouldValidate: true })
-                  }
-                  startTime={watch('availabilityStartTime') ?? '09:00'}
-                  endTime={watch('availabilityEndTime') ?? '17:00'}
-                  onStartTimeChange={(value) =>
-                    setValue('availabilityStartTime', value, { shouldValidate: true })
-                  }
-                  onEndTimeChange={(value) =>
-                    setValue('availabilityEndTime', value, { shouldValidate: true })
-                  }
-                  daysError={errors.availabilityDays?.message}
-                  startTimeError={errors.availabilityStartTime?.message}
-                  endTimeError={errors.availabilityEndTime?.message}
-                />
-              </td>
-              <td className="px-4 py-3 align-top">
-                <SettingsActionButton
-                  label="Add doctor"
-                  disabled={isSubmitting}
-                  onClick={() => void handleSubmit(onSubmit, onInvalid)()}
-                />
-              </td>
-            </tr>
             {doctors.map((doctor, index) => (
               <tr key={doctor.id} className="border-b border-[#EFF0F6]">
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
@@ -1115,14 +1269,18 @@ function TherapistSection({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-1.5">
-                    {therapist.assignedTherapies.map((therapy) => (
-                      <span
-                        key={therapy}
-                        className="rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2.5 py-1 text-[11px] font-medium text-[#422C23]"
-                      >
-                        {therapy}
-                      </span>
-                    ))}
+                    {therapist.assignedTherapies.length ? (
+                      therapist.assignedTherapies.map((therapy) => (
+                        <span
+                          key={therapy}
+                          className="rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2.5 py-1 text-[11px] font-medium text-[#422C23]"
+                        >
+                          {therapy}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[#838A9A]">—</span>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-4">

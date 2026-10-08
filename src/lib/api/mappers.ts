@@ -899,7 +899,7 @@ export function mapDoctorToClinicRecord(doctor: DoctorDto): ClinicDoctorRecord {
     id: doctor.id,
     name: personName(doctor.name || doctor.doctorName),
     specialization: doctor.specialization || '—',
-    qualification: doctor.qualification || '',
+    qualification: doctor.qualification || doctor.degree || '',
     mobileNumber: doctor.mobileNumber || '',
     status: doctor.status === 'ACTIVE' || doctor.active ? 'Active' : 'Inactive',
     consultationFees: doctor.consultationFees ?? 0,
@@ -929,19 +929,38 @@ export function mapTherapistToClinicRecord(
   therapist: TherapistDto,
   therapiesById: Map<string, TherapyDto> = new Map(),
 ): ClinicTherapistRecord {
-  const assignedTherapies = (therapist.assignedTherapyIds ?? [])
-    .map((id) => {
-      const therapy = therapiesById.get(id);
-      return therapy?.name || therapy?.therapyName || id;
-    })
-    .filter(Boolean);
+  const names: string[] = [];
+  const seen = new Set<string>();
+
+  const pushName = (raw: string) => {
+    const name = raw.trim();
+    if (!name || seen.has(name)) return;
+    seen.add(name);
+    names.push(name);
+  };
+
+  for (const therapy of therapist.assignedTherapies ?? []) {
+    const lookedUp = therapy.id ? therapiesById.get(therapy.id) : undefined;
+    pushName(
+      therapy.name ||
+        therapy.therapyName ||
+        lookedUp?.name ||
+        lookedUp?.therapyName ||
+        '',
+    );
+  }
+
+  for (const id of therapist.assignedTherapyIds ?? []) {
+    const lookedUp = therapiesById.get(id);
+    pushName(lookedUp?.name || lookedUp?.therapyName || '');
+  }
 
   return {
     id: therapist.id,
     name: personName(therapist.name || therapist.therapistName),
     status:
       therapist.status === 'ACTIVE' || therapist.active ? 'Active' : 'Inactive',
-    assignedTherapies,
+    assignedTherapies: names,
   };
 }
 
@@ -968,7 +987,7 @@ export function mapTreatmentCategoryToRecord(
 ): ClinicTreatmentCategoryRecord {
   return {
     id: category.id,
-    name: category.categoryName,
+    name: category.categoryName || category.name || category.categoryCode || '—',
     description: category.description || '—',
   };
 }

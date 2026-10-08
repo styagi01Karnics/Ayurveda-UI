@@ -2,11 +2,13 @@ import {
   forwardRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
   type SelectHTMLAttributes,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
@@ -25,7 +27,9 @@ function normalizeOption(option: SelectOption): { value: string; label: string }
   if (typeof option === 'string') {
     return { value: option, label: option };
   }
-  return option;
+  const value = String(option.value ?? '');
+  const label = String(option.label ?? '').trim() || value;
+  return { value, label };
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
@@ -56,7 +60,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const [selectedValue, setSelectedValue] = useState(
       () => String(value ?? defaultValue ?? ''),
     );
+    const [menuBox, setMenuBox] = useState<{
+      top: number;
+      left: number;
+      width: number;
+    }>({ top: 0, left: 0, width: 0 });
     const rootRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const menuRef = useRef<HTMLUListElement | null>(null);
     const hiddenRef = useRef<HTMLSelectElement | null>(null);
 
     useEffect(() => {
@@ -65,11 +76,40 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       }
     }, [value]);
 
+    const updateMenuBox = useCallback(() => {
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const box = trigger.getBoundingClientRect();
+      setMenuBox({
+        top: box.bottom + 4,
+        left: box.left,
+        width: box.width,
+      });
+    }, []);
+
+    useLayoutEffect(() => {
+      if (!open) return;
+      updateMenuBox();
+    }, [open, updateMenuBox, options]);
+
+    useEffect(() => {
+      if (!open) return;
+      const onWin = () => updateMenuBox();
+      window.addEventListener('resize', onWin);
+      window.addEventListener('scroll', onWin, true);
+      return () => {
+        window.removeEventListener('resize', onWin);
+        window.removeEventListener('scroll', onWin, true);
+      };
+    }, [open, updateMenuBox]);
+
     useEffect(() => {
       const handleClick = (event: MouseEvent) => {
-        if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
-          setOpen(false);
+        const target = event.target as Node;
+        if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) {
+          return;
         }
+        setOpen(false);
       };
       document.addEventListener('mousedown', handleClick);
       return () => document.removeEventListener('mousedown', handleClick);
@@ -116,10 +156,64 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
     const normalized = (options || [])
       .filter((option) => option != null)
-      .map(normalizeOption);
+      .map(normalizeOption)
+      .filter((option) => option.value !== '');
     const selectedLabel =
       normalized.find((option) => option.value === selectedValue)?.label ?? '';
     const hasValue = selectedValue !== '';
+
+    const menu = open ? (
+      <ul
+        ref={menuRef}
+        className="max-h-56 overflow-auto rounded-lg border border-[#EFF0F6] bg-white py-1.5 shadow-[0_0_3px_1px_#BE880B26]"
+        role="listbox"
+        style={{
+          position: 'fixed',
+          top: menuBox.top,
+          left: menuBox.left,
+          width: menuBox.width,
+          zIndex: 80,
+        }}
+      >
+        <li role="option" aria-selected={!hasValue}>
+          <button
+            type="button"
+            className={cn(
+              'w-full px-4 py-2.5 text-left font-sans text-xs font-semibold',
+              !hasValue
+                ? 'bg-[#422C23] text-white'
+                : 'text-[#422C23] hover:bg-[#FBF6E8]',
+            )}
+            onClick={() => pick('')}
+          >
+            {placeholder}
+          </button>
+        </li>
+        {normalized.map((option, index) => {
+          const active = option.value === selectedValue;
+          return (
+            <li
+              key={`${option.value}-${index}`}
+              role="option"
+              aria-selected={active}
+            >
+              <button
+                type="button"
+                className={cn(
+                  'w-full px-4 py-2.5 text-left font-sans text-xs font-semibold',
+                  active
+                    ? 'bg-[#422C23] text-white'
+                    : 'text-[#422C23] hover:bg-[#FBF6E8]',
+                )}
+                onClick={() => pick(option.value)}
+              >
+                {option.label}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    ) : null;
 
     return (
       <div ref={rootRef} className="relative flex w-full flex-col gap-1.5">
@@ -127,16 +221,19 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <FieldLabel htmlFor={selectId} label={label} className={labelClass} />
         )}
         <select
+          {...props}
           ref={setRefs}
           id={selectId}
           className="sr-only"
           tabIndex={-1}
           aria-hidden
           disabled={disabled}
-          {...(value !== undefined ? { value } : { defaultValue })}
           onChange={handleChange}
           onBlur={onBlur}
-          {...props}
+          {...(value !== undefined ? { value } : {})}
+          {...(value === undefined && defaultValue !== undefined
+            ? { defaultValue }
+            : {})}
         >
           <option value="">{placeholder}</option>
           {normalized.map((option, index) => (
@@ -147,6 +244,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         </select>
 
         <button
+          ref={triggerRef}
           type="button"
           disabled={disabled}
           aria-haspopup="listbox"
@@ -182,50 +280,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <ChevronDown className="h-4 w-4 shrink-0 text-[#422C23]" />
         </button>
 
-        {open ? (
-          <ul
-            className="absolute left-0 right-0 top-full z-30 mt-1 max-h-56 overflow-auto rounded-lg border border-[#EFF0F6] bg-white py-1.5 shadow-[0_0_3px_1px_#BE880B26]"
-            role="listbox"
-          >
-            <li role="option" aria-selected={!hasValue}>
-              <button
-                type="button"
-                className={cn(
-                  'w-full px-4 py-2.5 text-left font-sans text-xs font-semibold',
-                  !hasValue
-                    ? 'bg-[#422C23] text-white'
-                    : 'text-[#422C23] hover:bg-[#FBF6E8]',
-                )}
-                onClick={() => pick('')}
-              >
-                {placeholder}
-              </button>
-            </li>
-            {normalized.map((option, index) => {
-              const active = option.value === selectedValue;
-              return (
-                <li
-                  key={`${option.value}-${index}`}
-                  role="option"
-                  aria-selected={active}
-                >
-                  <button
-                    type="button"
-                    className={cn(
-                      'w-full px-4 py-2.5 text-left font-sans text-xs font-semibold',
-                      active
-                        ? 'bg-[#422C23] text-white'
-                        : 'text-[#422C23] hover:bg-[#FBF6E8]',
-                    )}
-                    onClick={() => pick(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : null}
+        {open && typeof document !== 'undefined'
+          ? createPortal(menu, document.body)
+          : null}
 
         {error && (
           <p className="text-xs text-danger" role="alert">

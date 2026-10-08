@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/Input';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 import {
   DOCTOR_AVAILABILITY_DAY_OPTIONS,
@@ -15,7 +16,6 @@ interface DoctorAvailabilityFieldsProps {
   daysError?: string;
   startTimeError?: string;
   endTimeError?: string;
-  compact?: boolean;
 }
 
 export function DoctorAvailabilityFields({
@@ -28,7 +28,6 @@ export function DoctorAvailabilityFields({
   daysError,
   startTimeError,
   endTimeError,
-  compact = false,
 }: DoctorAvailabilityFieldsProps) {
   const toggleDay = (day: DoctorAvailabilityDay) => {
     if (selectedDays.includes(day)) {
@@ -39,44 +38,59 @@ export function DoctorAvailabilityFields({
   };
 
   return (
-    <div className={cn('space-y-2', compact ? 'min-w-[200px]' : 'min-w-[240px]')}>
-      <div className="flex flex-wrap gap-1.5">
-        {DOCTOR_AVAILABILITY_DAY_OPTIONS.map((option) => {
-          const active = selectedDays.includes(option.value);
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => toggleDay(option.value)}
-              className={cn(
-                'rounded-md border px-2 py-1 text-xs font-medium transition-colors',
-                active
-                  ? 'border-gold bg-gold/15 text-brown'
-                  : 'border-gray-200 bg-white text-text-muted hover:border-gold/40',
-              )}
-            >
-              {option.label}
-            </button>
-          );
-        })}
+    <div className="min-w-0 space-y-2">
+      <FieldLabel as="span" label="Availability" className="field-label" />
+      <div className="flex flex-wrap items-end gap-4">
+        <div
+          role="group"
+          aria-label="Available days"
+          className="inline-flex rounded-lg border border-[#EFF0F6] bg-white p-1"
+        >
+          {DOCTOR_AVAILABILITY_DAY_OPTIONS.map((option) => {
+            const active = selectedDays.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleDay(option.value)}
+                className={cn(
+                  'rounded-md px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors',
+                  active
+                    ? 'bg-[#FAF4E5] text-brown ring-1 ring-[#E8D5A8]'
+                    : 'text-text-muted hover:bg-[#FAF9F5] hover:text-brown',
+                )}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-end gap-2">
+          <div className="w-[138px] shrink-0">
+            <Input
+              label="From"
+              type="time"
+              value={startTime}
+              onChange={(e) => onStartTimeChange(e.target.value)}
+              error={startTimeError}
+            />
+          </div>
+          <span className="mb-2.5 text-sm text-[#838A9A]" aria-hidden>
+            –
+          </span>
+          <div className="w-[138px] shrink-0">
+            <Input
+              label="To"
+              type="time"
+              value={endTime}
+              onChange={(e) => onEndTimeChange(e.target.value)}
+              error={endTimeError}
+            />
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Input
-          label={compact ? undefined : 'From'}
-          type="time"
-          value={startTime}
-          onChange={(e) => onStartTimeChange(e.target.value)}
-          error={startTimeError}
-        />
-        <Input
-          label={compact ? undefined : 'To'}
-          type="time"
-          value={endTime}
-          onChange={(e) => onEndTimeChange(e.target.value)}
-          error={endTimeError}
-        />
-      </div>
-      {daysError && <p className="text-xs text-danger">{daysError}</p>}
+      {daysError ? <p className="text-xs text-danger">{daysError}</p> : null}
     </div>
   );
 }

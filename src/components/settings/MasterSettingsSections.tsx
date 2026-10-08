@@ -85,7 +85,11 @@ export function ConsultationTypesSection({
               <td className="px-4 py-3">
                 <button
                   type="button"
-                  onClick={handleSubmit(onSubmit)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleSubmit(onSubmit)();
+                  }}
                   disabled={isSubmitting}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add consultation type"
@@ -160,7 +164,11 @@ export function TreatmentPlanMastersSection({
               <td className="px-4 py-3">
                 <button
                   type="button"
-                  onClick={handleSubmit(onSubmit)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleSubmit(onSubmit)();
+                  }}
                   disabled={isSubmitting}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add treatment plan"
@@ -243,7 +251,11 @@ export function PackageMastersSection({
               <td className="px-4 py-3">
                 <button
                   type="button"
-                  onClick={handleSubmit(onSubmit)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleSubmit(onSubmit)();
+                  }}
                   disabled={isSubmitting}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add package master"
@@ -368,7 +380,11 @@ export function DoshasSection({
               <td className="px-4 py-3">
                 <button
                   type="button"
-                  onClick={handleSubmit(onSubmit)}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    void handleSubmit(onSubmit)();
+                  }}
                   disabled={isSubmitting}
                   className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
                   aria-label="Add dosha"

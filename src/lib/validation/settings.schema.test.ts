@@ -11,9 +11,10 @@ describe('settings.schema', () => {
   it('validates clinic doctor form', () => {
     const result = clinicDoctorSchema.safeParse({
       name: 'Dr. Shweta Arya',
-      specialization: 'BAMS',
+      specialization: 'Panchakarma',
+      qualification: ' BAMS ',
       status: 'Active',
-      mobileNumber: '9876543210',
+      mobileNumber: ' 9876543210 ',
       consultationFees: '500',
       followUpFees: '500',
       availabilityDays: ['weekdays'],
@@ -21,6 +22,10 @@ describe('settings.schema', () => {
       availabilityEndTime: '17:00',
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.qualification).toBe('BAMS');
+      expect(result.data.mobileNumber).toBe('9876543210');
+    }
   });
 
   it('allows clinic doctor without mobile number', () => {

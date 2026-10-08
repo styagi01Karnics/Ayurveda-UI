@@ -6,9 +6,12 @@ import path from 'node:path';
 
 function resolveBackendHost(raw: string): string {
   const trimmed = raw.replace(/\/+$/, '');
-  // Avoid Windows resolving localhost to IPv6 ::1 when services listen on 127.0.0.1
-  if (trimmed === 'http://localhost' || trimmed === 'https://localhost') {
-    return 'http://127.0.0.1';
+  if (
+    trimmed === 'http://localhost' ||
+    trimmed === 'https://localhost' ||
+    trimmed === 'http://127.0.0.1'
+  ) {
+    return 'http://45.195.229.15';
   }
   return trimmed;
 }
@@ -18,8 +21,7 @@ function resolveBackendHost(raw: string): string {
  * no `/appointment-api` prefix. Vite forwards to the correct service port.
  *
  * Override in `.env.development.local`:
- *   VITE_BACKEND_HOST=http://45.195.229.15   (remote staging)
- *   VITE_BACKEND_HOST=http://127.0.0.1         (local microservices)
+ *   VITE_BACKEND_HOST=http://45.195.229.15
  */
 function serviceProxy(backendHost: string, port: number) {
   return {

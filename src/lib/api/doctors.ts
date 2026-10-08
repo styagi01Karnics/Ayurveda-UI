@@ -3,6 +3,7 @@ import { apiRequest, apiRequestPage, type PagedResult } from './client';
 import { apiEndpoints } from './endpoints';
 import type { CreateDoctorPayload, DoctorDto } from './types';
 import { DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
+import { toCreateDoctorPayload } from '@/lib/createDoctorPayload';
 
 const url = (path: string) => `${apiConfig.doctor}${path}`;
 
@@ -40,7 +41,7 @@ export function getDoctorById(doctorId: string) {
 export function createDoctor(payload: CreateDoctorPayload) {
   return apiRequest<DoctorDto>(url(apiEndpoints.doctors.create), {
     method: 'POST',
-    body: payload,
+    body: toCreateDoctorPayload(payload),
   });
 }
 

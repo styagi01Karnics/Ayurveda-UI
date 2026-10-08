@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { ApiError } from '@/lib/api/client';
 
 interface AsyncState<T> {
   data: T;
+  setData: Dispatch<SetStateAction<T>>;
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -79,5 +80,5 @@ export function useAsyncData<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- caller controls deps
   }, [tick, ...deps]);
 
-  return { data, loading, error, reload };
+  return { data, setData, loading, error, reload };
 }

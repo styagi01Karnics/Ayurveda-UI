@@ -139,7 +139,7 @@ export function AppointmentsPage() {
       therapists: mapTherapistSelectOptions(therapists),
       categories: categories.map((c) => ({
         value: c.id,
-        label: c.categoryName,
+        label: (c.categoryName || c.name || c.categoryCode || '').trim() || c.id,
       })),
       therapies: therapies.map((t) => ({
         value: t.id,

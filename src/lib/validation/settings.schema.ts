@@ -46,9 +46,10 @@ export const clinicDoctorSchema = z
   .object({
     name: z.string().min(1, 'Name is required'),
     specialization: z.string().min(1, 'Specialization is required'),
-    qualification: z.string().optional(),
+    qualification: z.string().trim().optional(),
     mobileNumber: z
       .string()
+      .trim()
       .min(1, 'Mobile number is required')
       .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
     status: z.enum(CLINIC_STATUS_OPTIONS),

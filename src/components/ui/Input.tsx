@@ -82,11 +82,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const inputElement = (
       <input
+        {...props}
         ref={setRefs}
         id={inputId}
         type={type}
-        value={value}
-        defaultValue={defaultValue}
         onChange={handleChange}
         onInput={isDate ? syncFilledFromDom : undefined}
         placeholder={isDate ? undefined : placeholder}
@@ -102,7 +101,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : undefined}
-        {...props}
+        {...(value !== undefined ? { value } : {})}
+        {...(value === undefined && defaultValue !== undefined
+          ? { defaultValue }
+          : {})}
       />
     );
 

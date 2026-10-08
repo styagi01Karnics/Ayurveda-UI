@@ -183,6 +183,10 @@
     overflow: hidden;
   }
 
+  .field-label {
+    @apply text-[12px] font-medium leading-none tracking-normal text-[#838A9A];
+  }
+
   .no-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;

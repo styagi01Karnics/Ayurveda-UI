@@ -107,7 +107,11 @@ export interface TherapistDto {
   qualification?: string;
   therapyRoom?: string;
   assignedTherapyIds?: string[];
-  assignedTherapies?: { id: string; name?: string | null }[];
+  assignedTherapies?: {
+    id: string;
+    name?: string | null;
+    therapyName?: string | null;
+  }[];
   status?: string;
   active?: boolean;
   createdAt?: string;
@@ -130,7 +134,8 @@ export interface CreateTherapistPayload {
 export interface TreatmentCategoryDto {
   id: string;
   categoryCode: string | null;
-  categoryName: string;
+  categoryName?: string;
+  name?: string;
   description: string;
   status?: string;
   active?: boolean;
