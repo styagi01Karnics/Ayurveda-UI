@@ -10,7 +10,7 @@ import {
 import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
-export const DATE_INPUT_PLACEHOLDER = 'DD/MM/YYYY';
+export const DATE_INPUT_PLACEHOLDER = 'dd/mm/yyyy';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -41,6 +41,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const [filled, setFilled] = useState(() =>
       isDate ? Boolean(value ?? defaultValue) : true,
     );
+    const [isFocused, setIsFocused] = useState(false);
 
     const syncFilledFromDom = useCallback(() => {
       if (!isDate || !innerRef.current) return;
@@ -87,6 +88,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         id={inputId}
         type={type}
         onChange={handleChange}
+        onFocus={() => setIsFocused(true)}
         onInput={isDate ? syncFilledFromDom : undefined}
         placeholder={isDate ? undefined : placeholder}
         className={cn(
@@ -95,7 +97,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ? 'py-2.5 text-[13px] text-[#161616] placeholder:text-[#9a9a9a]'
             : 'py-2',
           isDate && 'date-field',
-          isDate && !filled && 'date-field-empty',
+          isDate && !filled && !isFocused && 'date-field-empty',
           error && 'border-danger focus:border-danger focus:ring-danger/20',
           className,
         )}
@@ -116,7 +118,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {isDate ? (
           <div className="relative">
             {inputElement}
-            {!filled && (
+            {!filled && !isFocused && (
               <span
                 className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400"
                 aria-hidden
