@@ -607,7 +607,7 @@ export function CreatePatientModal({
                 error={step1Form.formState.errors.consultationTypeIds?.message}
               />
               <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
-              <Input label="Registration Date" type="date" min={dateInputProps.min} error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
+              <Input label="Appointment Date" type="date" min={dateInputProps.min} error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
               <Select
                 label="Appointment Time"
                 placeholder="Select time"
