@@ -116,6 +116,31 @@ pipeline {
         }
 
         // ==========================================================
+        // SONARQUBE ANALYSIS
+        // ==========================================================
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        set -e
+
+                        echo "===== SonarQube Analysis: Ayurvedaa UI ====="
+
+                        sonar-scanner \
+                            -Dsonar.projectKey=ayurvedaa-ui \
+                            -Dsonar.projectName="Ayurvedaa UI" \
+                            -Dsonar.sources=src \
+                            -Dsonar.exclusions="node_modules/**,dist/**,build/**,coverage/**" \
+                            -Dsonar.sourceEncoding=UTF-8
+
+                        echo "SonarQube analysis completed."
+                    '''
+                }
+            }
+        }
+        
+        // ==========================================================
         // VERIFY DEPLOYMENT FILES
         // ==========================================================
 
