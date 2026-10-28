@@ -1,0 +1,156 @@
+import { useMemo, useState } from 'react';
+import { LogOut, Menu, X } from 'lucide-react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { PageActionContext } from '@/app/PageActionContext';
+import { ToastProvider } from '@/app/ToastContext';
+import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
+import { PasswordSuccessModal } from '@/components/auth/PasswordSuccessModal';
+import { RedeemCouponModal } from '@/components/dashboard/RedeemCouponModal';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { clearAuthSession } from '@/lib/auth';
+import { UI_MESSAGES } from '@/lib/uiMessages';
+import { useTodayAppointmentAlerts } from '@/hooks/useTodayAppointmentAlerts';
+import { Header } from './Header';
+import { Sidebar } from './Sidebar';
+import { TopBanner } from './TopBanner';
+
+const pageTitles: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/patients': 'Patients',
+  '/doctors': 'Doctors',
+  '/appointments': 'Appointments',
+  '/treatments': 'Treatments',
+  '/medicines': 'Medicines',
+  '/sales': 'Sales',
+  '/activity-logs': 'Activity Log',
+  '/billing': 'Billing',
+  '/banners': 'Banner Studio',
+  '/communications': 'SMS & Email',
+  '/settings': 'Settings',
+  '/profile': 'My Profile',
+  '/platform/clinics': 'Clinics',
+  '/platform/hospitals': 'Clinics',
+};
+
+function getPageTitle(pathname: string): string {
+  if (pathname.startsWith('/patients/')) return 'Patients';
+  if (pathname.startsWith('/doctors/patient/')) return 'Doctors';
+  if (pathname.startsWith('/treatments/patient/')) return 'Treatments';
+  if (pathname.startsWith('/billing/')) return 'Billing';
+  if (pathname.startsWith('/platform/clinics') || pathname.startsWith('/platform/hospitals')) {
+    return 'Clinics';
+  }
+  return pageTitles[pathname] ?? 'Dashboard';
+}
+
+function AppointmentAlertsListener() {
+  useTodayAppointmentAlerts(true);
+  return null;
+}
+
+export function DashboardLayout() {
+  const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [passwordSuccessOpen, setPasswordSuccessOpen] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const { pathname } = useLocation();
+  const title = getPageTitle(pathname);
+  const contextValue = useMemo(
+    () => ({ setHeaderAction: () => {} }),
+    [],
+  );
+
+  const handleLogout = () => {
+    clearAuthSession();
+    navigate('/login');
+  };
+
+  return (
+    <ToastProvider>
+      <AppointmentAlertsListener />
+      <PageActionContext.Provider value={contextValue}>
+        <div className="app-shell flex h-screen w-screen max-w-[100vw] overflow-hidden bg-cream-light">
+          <div className="sidebar-slot hidden shrink-0 lg:block">
+            <Sidebar className="h-full" />
+          </div>
+
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-cream-light">
+            <TopBanner onClaimOffer={() => setCouponOpen(true)} />
+
+            <div className="flex shrink-0 items-center gap-3 border-b border-[#f0ebe3] px-4 py-3 lg:hidden">
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="rounded-lg p-2 hover:bg-brown/5"
+                aria-label="Open menu"
+              >
+                {mobileOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
+              <span className="truncate font-semibold text-brown">{title}</span>
+            </div>
+
+            <Header
+              title={title}
+              onChangePassword={() => setChangePasswordOpen(true)}
+              onLogout={() => setLogoutOpen(true)}
+            />
+
+            <main className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden px-5 pb-6 sm:px-6">
+              <Outlet />
+            </main>
+          </div>
+
+          {mobileOpen && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <button
+                type="button"
+                className="absolute inset-0 bg-black/40"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+              />
+              <div className="sidebar-slot relative z-10 h-full py-3 pl-4 pr-0">
+                <Sidebar
+                  className="h-full"
+                  onNavigate={() => setMobileOpen(false)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <ChangePasswordModal
+          open={changePasswordOpen}
+          onClose={() => setChangePasswordOpen(false)}
+          onSuccess={() => {
+            setChangePasswordOpen(false);
+            setPasswordSuccessOpen(true);
+          }}
+        />
+        <PasswordSuccessModal
+          open={passwordSuccessOpen}
+          onClose={() => setPasswordSuccessOpen(false)}
+        />
+        <ConfirmDialog
+          open={logoutOpen}
+          onClose={() => setLogoutOpen(false)}
+          onConfirm={handleLogout}
+          title={UI_MESSAGES.confirm.logoutTitle}
+          message={UI_MESSAGES.confirm.logoutMessage}
+          confirmLabel={UI_MESSAGES.confirm.logout}
+          variant="logout"
+          icon={LogOut}
+        />
+        <RedeemCouponModal
+          open={couponOpen}
+          onClose={() => setCouponOpen(false)}
+        />
+      </PageActionContext.Provider>
+    </ToastProvider>
+  );
+}

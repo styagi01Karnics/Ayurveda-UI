@@ -1,0 +1,40 @@
+import type { ReactNode } from 'react';
+import { cn } from '@/lib/utils';
+
+interface AuthCardProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function AuthCard({ children, className }: AuthCardProps) {
+  return (
+    <div
+      className={cn(
+        'app-card w-full rounded-[20px] shadow-[0_10px_48px_rgba(66,44,35,0.1)]',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+interface AuthFormSectionProps {
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}
+
+export function AuthFormSection({ title, subtitle, children }: AuthFormSectionProps) {
+  return (
+    <section className="rounded-xl border border-[#e8e4dc] bg-white p-5 sm:p-6">
+      <h3 className="font-sans text-[18px] font-medium leading-5 tracking-normal text-brown">
+        {title}
+      </h3>
+      <p className="mb-5 font-sans text-sm font-medium leading-[150%] tracking-normal text-[#737373]">
+        {subtitle}
+      </p>
+      {children}
+    </section>
+  );
+}

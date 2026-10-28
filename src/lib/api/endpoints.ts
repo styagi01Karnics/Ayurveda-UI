@@ -1,0 +1,336 @@
+/**
+ * Canonical API paths matching backend Postman collection.
+ * In local dev, bases are empty so the browser calls these paths
+ * directly (e.g. POST /api/v1/appointments) — Vite proxies to :8103.
+ */
+export const apiEndpoints = {
+  /** Auth-service :8111 */
+  auth: {
+    login: '/api/v1/auth/login',
+    signup: '/api/v1/auth/signup',
+    forgotPassword: '/api/v1/auth/forgot-password',
+    resetPassword: '/api/v1/auth/reset-password',
+    validate: '/api/v1/auth/validate',
+    registerUser: '/api/v1/auth/register-user',
+    me: '/api/v1/auth/me',
+    changePassword: '/api/v1/auth/change-password',
+    users: '/api/v1/auth/users',
+    usersPaged: '/api/v1/auth/users/paged',
+    userById: (userId: string) => `/api/v1/auth/users/${userId}`,
+    userStatus: (userId: string) => `/api/v1/auth/users/${userId}/status`,
+    tenant: '/api/v1/auth/tenant',
+  },
+  tenants: {
+    register: '/api/v1/tenants/register',
+  },
+  uiPages: '/api/v1/ui-pages',
+  roles: {
+    base: '/api/v1/roles',
+    byId: (roleId: string) => `/api/v1/roles/${roleId}`,
+  },
+  platform: {
+    bootstrapSuperAdmin: '/api/v1/platform/bootstrap-super-admin',
+    hospitals: '/api/v1/platform/hospitals',
+    hospitalById: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}`,
+    hospitalAdmins: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/admins`,
+    hospitalStatus: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/status`,
+    hospitalRetryProvision: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/retry-provision`,
+    hospitalMail: (hospitalId: string) =>
+      `/api/v1/platform/hospitals/${hospitalId}/mail`,
+  },
+  public: {
+    tenants: '/api/v1/public/tenants',
+  },
+
+  /** Patient-service :8101 */
+  patients: {
+    base: '/api/v1/patients',
+    getAll: '/api/v1/patients/get-all-patients',
+    getById: (patientId: string) => `/api/v1/patients/get-patient/${patientId}`,
+    create: '/api/v1/patients/create-patient',
+    delete: (patientId: string) => `/api/v1/patients/delete-patient/${patientId}`,
+    getCount: '/api/v1/patients/get-patient-count',
+    newPatientsByMonth: '/api/v1/dashboard/new-patients-by-month',
+  },
+
+  /** Doctor-service :8102 */
+  doctors: {
+    base: '/api/v1/doctors',
+    getAll: '/api/v1/doctors',
+    getActive: '/api/v1/doctors/active',
+    getById: (doctorId: string) => `/api/v1/doctors/${doctorId}`,
+    updateStatus: (doctorId: string) => `/api/v1/doctors/${doctorId}/status`,
+    create: '/api/v1/doctors',
+  },
+
+  /** Therapist-service :8104 */
+  therapists: {
+    base: '/api/v1/therapists',
+    getAll: '/api/v1/therapists',
+    getById: (therapistId: string) => `/api/v1/therapists/${therapistId}`,
+    update: (therapistId: string) => `/api/v1/therapists/${therapistId}`,
+    updateStatus: (therapistId: string) =>
+      `/api/v1/therapists/${therapistId}/status`,
+    getByTherapies: '/api/v1/therapists/by-therapies',
+    create: '/api/v1/therapists',
+  },
+
+  /** Appointment-service :8103 */
+  appointments: {
+    treatmentCategories: {
+      getAll: '/api/v1/treatment-categories',
+      getById: (categoryId: string) =>
+        `/api/v1/treatment-categories/${categoryId}`,
+      create: '/api/v1/treatment-categories',
+    },
+    therapies: {
+      base: '/api/v1/therapies',
+      getAll: '/api/v1/therapies',
+      create: '/api/v1/therapies',
+      getById: (therapyId: string) => `/api/v1/therapies/${therapyId}`,
+      updateStatus: (therapyId: string) =>
+        `/api/v1/therapies/${therapyId}/status`,
+      getByCategoryId: (categoryId: string) =>
+        `/api/v1/therapies/category/${categoryId}`,
+    },
+    consultationTypes: {
+      base: '/api/v1/consultation-types',
+      getAll: '/api/v1/consultation-types',
+      getActive: '/api/v1/consultation-types/active',
+      getById: (id: string) => `/api/v1/consultation-types/${id}`,
+    },
+    treatmentPlanMasters: {
+      base: '/api/v1/treatment-plan-masters',
+      getAll: '/api/v1/treatment-plan-masters',
+      getActive: '/api/v1/treatment-plan-masters/active',
+      getById: (id: string) => `/api/v1/treatment-plan-masters/${id}`,
+    },
+    treatmentPlans: {
+      create: '/api/v1/treatment-plans',
+      getByPatientId: (patientId: string) => `/api/v1/treatment-plans/${patientId}`,
+    },
+    bookings: {
+      getAllPatients: '/api/v1/appointments/patients',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/appointments/patient/${patientId}`,
+      getByBookingId: (bookingId: string) =>
+        `/api/v1/appointments/${bookingId}`,
+      getByStatus: (bookingStatus: string) =>
+        `/api/v1/appointments/status/${bookingStatus}`,
+      getTodayByConsultationTypeId: (consultationTypeId: string) =>
+        `/api/v1/appointments/today/consultation-type/${consultationTypeId}`,
+      getTodayAll: '/api/v1/appointments/today',
+      getByDate: (registrationDate: string) =>
+        `/api/v1/appointments/date/${registrationDate}`,
+      getStats: '/api/v1/appointments/stats',
+      getCancelled: '/api/v1/appointments/cancelled',
+      getDoctorToday: (doctorId: string) =>
+        `/api/v1/appointments/doctor/${doctorId}/today`,
+      cancel: (bookingId: string) =>
+        `/api/v1/appointments/${bookingId}/cancel`,
+      reschedule: (bookingId: string) =>
+        `/api/v1/appointments/${bookingId}/reschedule`,
+      inConsultation: (bookingId: string) =>
+        `/api/v1/appointments/${bookingId}/in-consultation`,
+      complete: (bookingId: string) =>
+        `/api/v1/appointments/${bookingId}/complete`,
+      create: '/api/v1/appointments',
+    },
+    appointmentTherapies: {
+      getByPatientId: (patientId: string) =>
+        `/api/v1/appointment-therapies/${patientId}`,
+      getTherapistToday: (therapistId: string) =>
+        `/api/v1/appointment-therapies/therapist/${therapistId}/today`,
+      updateStatus: (appointmentTherapyId: string) =>
+        `/api/v1/appointment-therapies/${appointmentTherapyId}/status`,
+      create: '/api/v1/appointment-therapies',
+    },
+    schedule: {
+      todaysSchedule: '/api/v1/dashboard/todays-schedule',
+      patientTrends: '/api/v1/dashboard/patient-trends',
+    },
+    systemicExaminations: {
+      create: '/api/v1/systemic-examinations',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/systemic-examinations/${patientId}`,
+    },
+    physicalExaminations: {
+      create: '/api/v1/physical-examinations',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/physical-examinations/${patientId}`,
+    },
+    medicalHistories: {
+      create: '/api/v1/medical-histories',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/medical-histories/${patientId}`,
+    },
+    medicalAssessment: {
+      create: '/api/v1/medical-assessment',
+      createWithDocuments: '/api/v1/medical-assessment/with-documents',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/medical-assessment/${patientId}`,
+    },
+    lifestyleInformation: {
+      create: '/api/v1/lifestyle-information',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/lifestyle-information/${patientId}`,
+    },
+    ayurvedicAssessments: {
+      create: '/api/v1/ayurvedic-assessments',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/ayurvedic-assessments/${patientId}`,
+    },
+    doshas: {
+      getAll: '/api/v1/doshas',
+      getById: (doshaId: string) => `/api/v1/doshas/${doshaId}`,
+      create: '/api/v1/doshas',
+    },
+    treatments: {
+      base: '/api/v1/treatments',
+      getAll: '/api/v1/treatments',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/treatments/patient/${patientId}`,
+      update: (treatmentId: string) => `/api/v1/treatments/${treatmentId}`,
+      updateStatus: (treatmentId: string) =>
+        `/api/v1/treatments/${treatmentId}/status`,
+    },
+    followUps: {
+      base: '/api/v1/follow-ups',
+      getAll: '/api/v1/follow-ups',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/follow-ups/patient/${patientId}`,
+      updateStatus: (followUpId: string) =>
+        `/api/v1/follow-ups/${followUpId}/status`,
+      cancel: (followUpId: string) => `/api/v1/follow-ups/${followUpId}/cancel`,
+    },
+    prescriptions: {
+      base: '/api/v1/prescriptions',
+      getById: (prescriptionId: string) =>
+        `/api/v1/prescriptions/${prescriptionId}`,
+      update: (prescriptionId: string) =>
+        `/api/v1/prescriptions/${prescriptionId}`,
+      getByPatientId: (patientId: string) =>
+        `/api/v1/prescriptions/patient/${patientId}`,
+    },
+  },
+
+  /** Medicine & Dashboard-service :8108 */
+  medicines: {
+    base: '/api/v1/medicines',
+    getById: (id: string) => `/api/v1/medicines/${id}`,
+    deductStock: (id: string) => `/api/v1/medicines/${id}/stock/deduct`,
+    restoreStock: (id: string) => `/api/v1/medicines/${id}/stock/restore`,
+    stockSummary: '/api/v1/medicines/stock/summary',
+    stockByCategory: (category: string) =>
+      `/api/v1/medicines/stock/category/${encodeURIComponent(category)}`,
+    categories: '/api/v1/medicines/meta/categories',
+    names: '/api/v1/medicines/meta/names',
+    manufacturers: '/api/v1/medicines/meta/manufacturers',
+    lowStock: '/api/v1/medicines/low-stock',
+  },
+  dashboard: {
+    medicineStock: '/api/v1/dashboard/medicine-stock',
+    billingSummary: '/api/v1/dashboard/billing-summary',
+    newPatientsByMonth: '/api/v1/dashboard/new-patients-by-month',
+    patientTrends: '/api/v1/dashboard/patient-trends',
+  },
+
+  /** Billing-service :8109 */
+  billing: {
+    packageMasters: {
+      base: '/api/v1/package-masters',
+      getAll: '/api/v1/package-masters',
+      getActive: '/api/v1/package-masters/active',
+      getById: (id: string) => `/api/v1/package-masters/${id}`,
+    },
+    billings: '/api/v1/billings',
+    billingById: (billingId: string) => `/api/v1/billings/${billingId}`,
+    billingsByPatient: (patientId: string) =>
+      `/api/v1/billings/patient/${patientId}`,
+    generateInvoiceFromBilling: (billingId: string) =>
+      `/api/v1/billings/${billingId}/generate-invoice`,
+    patientBilling: (patientId: string) =>
+      `/api/v1/billing/patient/${patientId}`,
+    invoices: '/api/v1/invoices',
+    invoiceById: (invoiceId: string) => `/api/v1/invoices/${invoiceId}`,
+    invoicesByPatient: (patientId: string) =>
+      `/api/v1/invoices/patient/${patientId}`,
+    invoicePayment: (invoiceId: string) =>
+      `/api/v1/invoices/${invoiceId}/payments`,
+    invoiceRefund: (invoiceId: string) =>
+      `/api/v1/invoices/${invoiceId}/refunds`,
+    sales: '/api/v1/sales',
+    salesRevenueMonth: '/api/v1/sales/revenue/month',
+    packages: {
+      base: '/api/v1/packages',
+      getAll: '/api/v1/packages',
+      getByPatientId: (patientId: string) =>
+        `/api/v1/packages/patient/${patientId}`,
+      update: (packageId: string) => `/api/v1/packages/${packageId}`,
+      updateStatus: (packageId: string) =>
+        `/api/v1/packages/${packageId}/status`,
+    },
+  },
+
+  /** Notification-service :8110 */
+  notifications: {
+    base: '/api/v1/notifications',
+    email: '/api/v1/notifications/email',
+    unreadCount: '/api/v1/notifications/unread-count',
+    byId: (id: string) => `/api/v1/notifications/${id}`,
+    markRead: (id: string) => `/api/v1/notifications/${id}/read`,
+    markAllRead: '/api/v1/notifications/read-all',
+  },
+
+  /** Messaging (SMS / Email) — notification-service :8110 */
+  messaging: {
+    sms: '/api/v1/messages/sms',
+    email: '/api/v1/notifications/email',
+    history: '/api/v1/messages',
+  },
+
+  /** Activity-log-service :8107 */
+  activityLogs: {
+    base: '/api/v1/activity-logs',
+    byId: (id: string) => `/api/v1/activity-logs/${id}`,
+  },
+
+  /** Attendance-service :8106 */
+  attendances: {
+    base: '/api/v1/attendances',
+    checkIn: '/api/v1/attendances/check-in',
+    byId: (id: string) => `/api/v1/attendances/${id}`,
+    checkOut: (id: string) => `/api/v1/attendances/${id}/check-out`,
+    status: (id: string) => `/api/v1/attendances/${id}/status`,
+    byEmployee: (empId: string) => `/api/v1/attendances/employee/${empId}`,
+  },
+
+  /** File-upload-service :8105 */
+  documents: {
+    upload: '/api/v1/documents/upload',
+    byPatientId: (patientId: string) => `/api/v1/documents/${patientId}`,
+    download: (documentId: string) => `/api/v1/documents/${documentId}/download`,
+    delete: (documentId: string) => `/api/v1/documents/${documentId}`,
+  },
+
+  /** Payment-service :8112 */
+  payments: {
+    base: '/api/v1/payments',
+    initiate: '/api/v1/payments/initiate',
+    byTxn: (txnId: string) => `/api/v1/payments/by-txn/${txnId}`,
+    byId: (paymentId: string) => `/api/v1/payments/${paymentId}`,
+    refund: (paymentId: string) => `/api/v1/payments/${paymentId}/refund`,
+    links: '/api/v1/payments/links',
+    linksByInvoice: (invoiceId: string) =>
+      `/api/v1/payments/links/invoice/${invoiceId}`,
+    linkById: (id: string) => `/api/v1/payments/links/${id}`,
+    linkEmail: (id: string) => `/api/v1/payments/links/${id}/email`,
+    publicByToken: (token: string) => `/api/v1/payments/public/${token}`,
+    publicInitiate: (token: string) =>
+      `/api/v1/payments/public/${token}/initiate`,
+  },
+} as const;
