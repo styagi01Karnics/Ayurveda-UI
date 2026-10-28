@@ -88,6 +88,7 @@ type DeleteTarget =
   | { type: 'Doctor'; record: ClinicDoctorRecord }
   | { type: 'Therapy'; record: ClinicTherapyRecord }
   | { type: 'Therapist'; record: ClinicTherapistRecord }
+  | { type: 'Consultation'; record: ClinicConsultationTypeRecord }
   | null;
 
 function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
@@ -542,6 +543,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+           onDelete={(record) => setDeleteTarget({ type: 'Consultation', record })}
         />
 
         <TreatmentPlanMastersSection
@@ -642,7 +644,7 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-function SettingsActionButton({
+export function SettingsActionButton({
   label,
   onClick,
   disabled,
@@ -716,9 +718,9 @@ function TreatmentCategoriesSection({
       <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Treatment Categories" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <SettingsTableHead
               columns={['S No.', 'Category Name', 'Description', 'Action']}
             />
@@ -936,9 +938,9 @@ function DoctorsSection({
           />
         </div>
       </form>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[960px] text-left text-sm">
-          <thead>
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
+        <table className="w-full min-w-[900px] text-left text-sm">
+          <thead className='sticky top-0 z-10 bg-white'>
             <SettingsTableHead
               columns={[
                 'S No.',
@@ -1037,9 +1039,9 @@ function TherapySection({
       <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Therapy" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full min-w-[900px] text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <SettingsTableHead
               columns={[
                 'S No.',
@@ -1183,9 +1185,9 @@ function TherapistSection({
       <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Therapist" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <SettingsTableHead
               columns={['S No.', 'Name', 'Status', 'Assigned Therapies', 'Action']}
             />
