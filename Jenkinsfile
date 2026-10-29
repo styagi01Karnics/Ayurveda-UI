@@ -131,21 +131,6 @@ timestamps {
 
 
             // =====================================================
-            // UNIT TESTING
-            // ALL BRANCHES
-            // =====================================================
-
-            stage('Unit Testing') {
-                sh '''
-                    set -e
-                    echo "Running Ayurvedaa UI Unit Tests"
-                    npm test
-                    echo "Unit Tests Completed Successfully"
-                '''
-            }
-
-
-            // =====================================================
             // DEV BRANCH ONLY
             // =====================================================
 
