@@ -86,9 +86,11 @@ import type {
 
 type DeleteTarget =
   | { type: 'Doctor'; record: ClinicDoctorRecord }
+  | { type: 'Category'; record: ClinicTreatmentCategoryRecord }
   | { type: 'Therapy'; record: ClinicTherapyRecord }
   | { type: 'Therapist'; record: ClinicTherapistRecord }
   | { type: 'Consultation'; record: ClinicConsultationTypeRecord }
+
   | null;
 
 function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
@@ -405,6 +407,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Category', record })}
         />
 
         <DoctorsSection
@@ -694,9 +697,11 @@ function SettingsTableHead({ columns }: { columns: string[] }) {
 function TreatmentCategoriesSection({
   categories,
   onAdd,
+  onDelete
 }: {
   categories: ClinicTreatmentCategoryRecord[];
   onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
+   onDelete: (record: ClinicTreatmentCategoryRecord) => void;
 }) {
   const {
     register,
@@ -755,7 +760,13 @@ function TreatmentCategoriesSection({
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
                 <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
-                <td className="px-4 py-4 text-[#838A9A]">—</td>
+               <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${category.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(category)}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
