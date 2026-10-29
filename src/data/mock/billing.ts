@@ -75,33 +75,18 @@ export const BILLING_FILTER_OPTIONS = {
 
 export const PAYMENT_MODES = [
   {
-    id: 'upi' as const,
-    title: 'UPI',
-    description: 'Pay through UPI',
-    amount: 2072,
+    id: 'cash' as const,
+    title: 'Cash',
+    description: 'Collect cash in hand and mark invoice paid',
   },
   {
-    id: 'card' as const,
-    title: 'Debit/Credit Cards',
-    description: 'Pay via RuPay, Visa, Master Card',
-    amount: 2072,
+    id: 'online' as const,
+    title: 'Online Payment',
+    description: 'Send PayU payment link to the patient by email',
   },
   {
-    id: 'wallet' as const,
-    title: 'Wallets',
-    description: 'PhonePe, Airtel, PayPal & more',
-    amount: 2072,
-  },
-  {
-    id: 'partial' as const,
-    title: 'Partial Payment',
-    description: 'Pay ₹1572 on Completion',
-    amount: 500,
-  },
-  {
-    id: 'emi' as const,
-    title: 'EMI',
-    description: 'Pay via Credit/ Debit Card EMI',
-    amount: 2072,
+    id: 'qr' as const,
+    title: 'QR Payment',
+    description: 'Show shop QR for the patient to scan and pay',
   },
 ];

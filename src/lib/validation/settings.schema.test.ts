@@ -64,7 +64,7 @@ describe('settings.schema', () => {
       email: 'test@example.com',
       password: 'Password1',
       confirmPassword: 'Password1',
-      role: 'Admin',
+      tenantRoleId: '84c4eebe-1e08-4efb-8337-7240fbf4f153',
     });
     expect(result.success).toBe(true);
   });
@@ -77,7 +77,7 @@ describe('settings.schema', () => {
       email: 'test@example.com',
       password: 'Password1',
       confirmPassword: 'Password2',
-      role: 'Admin',
+      tenantRoleId: '84c4eebe-1e08-4efb-8337-7240fbf4f153',
     });
     expect(result.success).toBe(false);
   });
@@ -87,7 +87,7 @@ describe('settings.schema', () => {
       name: 'Super Admin',
       status: 'Active',
       accessLevel: 'Full Access',
-      permissions: ['Dashboard', 'Patients'],
+      permissions: ['DASHBOARD', 'PATIENTS'],
     });
     expect(result.success).toBe(true);
   });

@@ -407,7 +407,8 @@ export interface BillSummaryState {
   sgst: string;
 }
 
-export type PaymentModeId = 'upi' | 'card' | 'wallet' | 'partial' | 'emi';
+/** Invoice collection: cash in-hand, PayU online link, or shop QR scanner. */
+export type PaymentModeId = 'cash' | 'online' | 'qr';
 
 export interface DashboardStats {
   totalPatients: number;

@@ -5,8 +5,8 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
+import type { TenantRoleResponse } from '@/lib/api/roles';
 import {
-  USER_ROLE_OPTIONS,
   addUserSchema,
   type AddUserFormValues,
 } from '@/lib/validation/settings.schema';
@@ -14,10 +14,28 @@ import {
 interface AddUserModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: AddUserFormValues) => void;
+  onSubmit: (values: AddUserFormValues) => void | Promise<void>;
+  submitting?: boolean;
+  tenantRoles: TenantRoleResponse[];
 }
 
-export function AddUserModal({ open, onClose, onSubmit }: AddUserModalProps) {
+const emptyValues: AddUserFormValues = {
+  userId: '',
+  fullName: '',
+  contactNumber: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  tenantRoleId: '',
+};
+
+export function AddUserModal({
+  open,
+  onClose,
+  onSubmit,
+  submitting = false,
+  tenantRoles,
+}: AddUserModalProps) {
   const {
     register,
     handleSubmit,
@@ -25,28 +43,12 @@ export function AddUserModal({ open, onClose, onSubmit }: AddUserModalProps) {
     formState: { errors },
   } = useForm<AddUserFormValues>({
     resolver: zodResolver(addUserSchema),
-    defaultValues: {
-      userId: '',
-      fullName: '',
-      contactNumber: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      role: '',
-    },
+    defaultValues: emptyValues,
   });
 
   useEffect(() => {
     if (open) {
-      reset({
-        userId: '',
-        fullName: '',
-        contactNumber: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        role: '',
-      });
+      reset(emptyValues);
     }
   }, [open, reset]);
 
@@ -61,7 +63,11 @@ export function AddUserModal({ open, onClose, onSubmit }: AddUserModalProps) {
       onClose={handleClose}
       title="Add User"
       subtitle="Please fill out the details to add user"
-      footer={<Button onClick={handleSubmit(onSubmit)}>Confirm</Button>}
+      footer={
+        <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
+          {submitting ? 'Saving...' : 'Confirm'}
+        </Button>
+      }
     >
       <form className="grid gap-4 sm:grid-cols-2" noValidate>
         <Input
@@ -107,9 +113,12 @@ export function AddUserModal({ open, onClose, onSubmit }: AddUserModalProps) {
           <Select
             label="Role"
             placeholder="Role"
-            options={[...USER_ROLE_OPTIONS]}
-            error={errors.role?.message}
-            {...register('role')}
+            options={tenantRoles.map((role) => ({
+              value: role.id,
+              label: role.roleName,
+            }))}
+            error={errors.tenantRoleId?.message}
+            {...register('tenantRoleId')}
           />
         </div>
       </form>

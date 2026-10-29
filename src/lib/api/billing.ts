@@ -142,7 +142,8 @@ export interface InvoiceListItemDto {
 }
 
 export interface InvoicePaymentPayload {
-  amountPaid: number;
+  /** Omit with paymentMethod CASH to settle the full remaining balance. */
+  amountPaid?: number;
   paymentMethod: string;
   remarks?: string;
 }

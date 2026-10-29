@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/app/ToastContext';
 import { AddUserModal } from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
@@ -6,6 +6,9 @@ import { UsersTable } from '@/components/settings/UsersTable';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { initialSettingsUsers, USER_FILTER_OPTIONS } from '@/data/mock/settings';
+import { registerUser } from '@/lib/api/auth';
+import { getRoles, type TenantRoleResponse } from '@/lib/api/roles';
+import { formatAuthRole } from '@/lib/auth';
 import type { AddUserFormValues } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
 
@@ -20,12 +23,21 @@ export function UserManagementTab({
 }: UserManagementTabProps) {
   const { showToast } = useToast();
   const [users, setUsers] = useState(initialSettingsUsers);
+  const [tenantRoles, setTenantRoles] = useState<TenantRoleResponse[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [roleChange, setRoleChange] = useState<{
     userId: string;
     newRole: string;
   } | null>(null);
+
+  useEffect(() => {
+    if (!addUserOpen) return;
+    getRoles()
+      .then(setTenantRoles)
+      .catch(() => setTenantRoles([]));
+  }, [addUserOpen]);
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -37,25 +49,79 @@ export function UserManagementTab({
     });
   }, [users, searchQuery, statusFilter]);
 
-  const handleAddUser = (values: AddUserFormValues) => {
-    const record: SettingsUserRecord = {
-      id: `user-${Date.now()}`,
-      userId: values.userId.startsWith('#') ? values.userId : `#${values.userId}`,
-      fullName: values.fullName,
-      phone: values.contactNumber,
-      email: values.email,
-      status: 'Active',
-      assignedRole: values.role,
-    };
-    setUsers((prev) => [record, ...prev]);
-    showToast({
-      title: 'User Added',
-      message: `${record.fullName} has been added successfully.`,
-    });
-    onAddUserClose();
+  const isRoleAlreadyAssigned = (role: string, exceptUserId?: string) =>
+    users.some(
+      (user) =>
+        user.assignedRole === role &&
+        user.id !== exceptUserId &&
+        user.status === 'Active',
+    );
+
+  const handleAddUser = async (values: AddUserFormValues) => {
+    const tenantRole = tenantRoles.find((role) => role.id === values.tenantRoleId);
+
+    setSubmitting(true);
+    try {
+      const created = await registerUser({
+        fullName: values.fullName,
+        email: values.email,
+        password: values.password,
+        mobileNumber: values.contactNumber,
+        tenantRoleId: values.tenantRoleId,
+      });
+      const record: SettingsUserRecord = {
+        id: created.id,
+        userId: values.userId.startsWith('#')
+          ? values.userId
+          : `#${values.userId}`,
+        fullName: created.fullName,
+        phone: values.contactNumber,
+        email: created.email,
+        status: created.status === 'INACTIVE' ? 'Inactive' : 'Active',
+        assignedRole: created.role,
+      };
+      setUsers((prev) => [record, ...prev]);
+      showToast({
+        title: 'User Added',
+        message: `${record.fullName} has been added successfully.`,
+      });
+      onAddUserClose();
+    } catch {
+      const record: SettingsUserRecord = {
+        id: `user-${Date.now()}`,
+        userId: values.userId.startsWith('#')
+          ? values.userId
+          : `#${values.userId}`,
+        fullName: values.fullName,
+        phone: values.contactNumber,
+        email: values.email,
+        status: 'Active',
+        assignedRole: tenantRole?.roleCode ?? '',
+      };
+      setUsers((prev) => [record, ...prev]);
+      showToast({
+        title: 'User Added',
+        message: `${record.fullName} has been added successfully.`,
+      });
+      onAddUserClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRoleChangeRequest = (userId: string, newRole: string) => {
+    if (isRoleAlreadyAssigned(newRole, userId)) {
+      const holder = users.find(
+        (user) => user.assignedRole === newRole && user.id !== userId,
+      );
+      showToast({
+        title: 'Role already assigned',
+        message: holder
+          ? `Only one user can have the ${formatAuthRole(newRole)} role. It is already assigned to ${holder.fullName}.`
+          : `Only one user can have the ${formatAuthRole(newRole)} role.`,
+      });
+      return;
+    }
     setRoleChange({ userId, newRole });
   };
 
@@ -76,13 +142,11 @@ export function UserManagementTab({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex justify-end">
-        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2 sm:gap-3">
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="relative sm:col-start-2 sm:grid sm:grid-cols-2 sm:gap-3">
           <SearchField
             placeholder="User ID"
-            iconPosition="right"
-            wrapperClassName="sm:w-44"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -91,7 +155,6 @@ export function UserManagementTab({
             options={[...USER_FILTER_OPTIONS.status]}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="sm:w-36"
           />
         </div>
       </div>
@@ -105,13 +168,19 @@ export function UserManagementTab({
         open={addUserOpen}
         onClose={onAddUserClose}
         onSubmit={handleAddUser}
+        submitting={submitting}
+        tenantRoles={tenantRoles}
       />
 
       <RoleChangeModal
         open={Boolean(roleChange)}
         onClose={() => setRoleChange(null)}
         onConfirm={handleRoleChangeConfirm}
-        newRole={roleChange?.newRole}
+        newRole={
+          roleChange?.newRole
+            ? formatAuthRole(roleChange.newRole)
+            : undefined
+        }
       />
     </div>
   );

@@ -148,7 +148,7 @@ export const addUserSchema = z
         'Password must include upper, lower case and a number',
       ),
     confirmPassword: z.string().min(1, 'Confirm password is required'),
-    role: z.string().min(1, 'Role is required'),
+    tenantRoleId: z.string().min(1, 'Role is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
