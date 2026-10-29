@@ -139,13 +139,13 @@ timestamps {
 
                 sh '''
                     set -e
-
+            
                     echo "=========================================="
                     echo "Running Ayurvedaa UI Unit Tests"
                     echo "=========================================="
-
-                    CI=true npm test -- --watchAll=false
-
+            
+                    npm test -- --run
+            
                     echo "=========================================="
                     echo "Unit Tests Completed Successfully"
                     echo "=========================================="
