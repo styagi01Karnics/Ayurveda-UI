@@ -1,4 +1,5 @@
 import { forwardRef, type InputHTMLAttributes } from 'react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
 interface RupeeInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -13,9 +14,11 @@ export const RupeeInput = forwardRef<HTMLInputElement, RupeeInputProps>(
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label ? (
-          <label htmlFor={inputId} className="text-xs font-medium text-text-muted">
-            {label}
-          </label>
+          <FieldLabel
+            htmlFor={inputId}
+            label={label}
+            className="field-label"
+          />
         ) : null}
         <div className="relative">
           <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-muted">
@@ -27,7 +30,7 @@ export const RupeeInput = forwardRef<HTMLInputElement, RupeeInputProps>(
             type="text"
             inputMode="decimal"
             className={cn(
-              'w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-8 pr-4 text-sm text-brown placeholder:text-gray-400 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+              'w-full rounded-lg border border-[#EFF0F6] bg-white py-2 pl-8 pr-4 font-sans text-[12px] font-medium leading-6 tracking-normal text-[#422C23] placeholder:text-[#67554D]/70 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
               error && 'border-danger focus:border-danger focus:ring-danger/20',
               props.disabled && 'cursor-not-allowed bg-gray-50 text-text-muted',
               className,

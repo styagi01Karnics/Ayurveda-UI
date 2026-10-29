@@ -7,9 +7,10 @@ import {
   useState,
   type InputHTMLAttributes,
 } from 'react';
+import { FieldLabel } from '@/components/ui/FieldLabel';
 import { cn } from '@/lib/utils';
 
-export const DATE_INPUT_PLACEHOLDER = 'DD/MM/YYYY';
+export const DATE_INPUT_PLACEHOLDER = 'dd/mm/yyyy';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -40,6 +41,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const [filled, setFilled] = useState(() =>
       isDate ? Boolean(value ?? defaultValue) : true,
     );
+    const [isFocused, setIsFocused] = useState(false);
 
     const syncFilledFromDom = useCallback(() => {
       if (!isDate || !innerRef.current) return;
@@ -69,8 +71,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const labelClass =
       fieldVariant === 'auth'
-        ? 'text-xs font-medium text-brown'
-        : 'text-xs font-medium text-text-muted';
+        ? 'align-middle font-sans text-[13px] font-medium leading-none tracking-normal text-[#404040]'
+        : 'field-label';
 
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
       if (isDate) {
@@ -81,38 +83,42 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const inputElement = (
       <input
+        {...props}
         ref={setRefs}
         id={inputId}
         type={type}
-        value={value}
-        defaultValue={defaultValue}
         onChange={handleChange}
+        onFocus={() => setIsFocused(true)}
         onInput={isDate ? syncFilledFromDom : undefined}
         placeholder={isDate ? undefined : placeholder}
         className={cn(
-          'w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm text-brown placeholder:text-gray-400 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+          'w-full rounded-lg border border-[#EFF0F6] bg-white px-4 font-sans text-[12px] font-medium leading-6 tracking-normal text-[#422C23] placeholder:text-[#67554D]/70 focus:border-gold focus:outline-none focus:ring-2 focus:ring-gold/20',
+          fieldVariant === 'auth'
+            ? 'py-2.5 text-[13px] text-[#161616] placeholder:text-[#9a9a9a]'
+            : 'py-2',
           isDate && 'date-field',
-          isDate && !filled && 'date-field-empty',
+          isDate && !filled && !isFocused && 'date-field-empty',
           error && 'border-danger focus:border-danger focus:ring-danger/20',
           className,
         )}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : undefined}
-        {...props}
+        {...(value !== undefined ? { value } : {})}
+        {...(value === undefined && defaultValue !== undefined
+          ? { defaultValue }
+          : {})}
       />
     );
 
     return (
       <div className="flex w-full flex-col gap-1.5">
         {label && (
-          <label htmlFor={inputId} className={labelClass}>
-            {label}
-          </label>
+          <FieldLabel htmlFor={inputId} label={label} className={labelClass} />
         )}
         {isDate ? (
           <div className="relative">
             {inputElement}
-            {!filled && (
+            {!filled && !isFocused && (
               <span
                 className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-gray-400"
                 aria-hidden

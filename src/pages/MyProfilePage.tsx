@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
@@ -9,38 +9,101 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { useToast } from '@/app/ToastContext';
-import { defaultProfile } from '@/data/mock/profile';
 import { useAsyncData } from '@/hooks/useAsyncData';
-import { getMe, getTenant } from '@/lib/api/auth';
+import {
+  getMe,
+  getTenant,
+  getUserById,
+  updateMe,
+  type TenantResponse,
+  type UserResponse,
+} from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { getStoredUser, isHospitalAdmin } from '@/lib/auth';
+import { assets } from '@/lib/assets';
 import {
   CITIES_BY_STATE,
   CLINIC_TYPES,
   INDIAN_STATES,
 } from '@/lib/validation/signup.schema';
 import {
+  emptyProfileValues,
   profileSchema,
   type ProfileFormValues,
 } from '@/lib/validation/profile.schema';
+import { cn } from '@/lib/utils';
 
-const SPECIALIZATIONS = [
-  'Panchakarma & Detox',
-  'Herbal Medicine',
-  "Women's Health",
-  'Pain Management',
-  'General Ayurveda',
-] as const;
+function digitsPhone(value: string | null | undefined): string {
+  return (value ?? '').replace(/\D/g, '').slice(-10);
+}
+
+function textOrEmpty(value: string | null | undefined): string {
+  return (value ?? '').trim();
+}
+
+/** Map API clinicType enums / labels onto Select options when possible. */
+function normalizeClinicType(raw: string | null | undefined): string {
+  const value = textOrEmpty(raw);
+  if (!value) return '';
+
+  const upper = value.toUpperCase().replace(/[\s-]+/g, '_');
+  if (upper === 'HOSPITAL') return 'Hospital';
+  if (upper === 'CLINIC' || upper === 'AYURVEDIC_CLINIC' || upper.includes('AYURVED')) {
+    return 'Ayurvedic Clinic';
+  }
+  if (upper.includes('WELLNESS')) return 'Wellness Center';
+  if (upper.includes('PANCHAKARMA')) return 'Panchakarma Center';
+
+  const match = CLINIC_TYPES.find(
+    (option) => option.toLowerCase() === value.toLowerCase(),
+  );
+  return match ?? value;
+}
+
+function citiesForState(state: string, city: string): string[] {
+  const base = state && CITIES_BY_STATE[state] ? [...CITIES_BY_STATE[state]] : [];
+  if (city && !base.includes(city)) base.unshift(city);
+  return base;
+}
+
+function mapProfileFromApi(
+  user: UserResponse | null,
+  tenant: TenantResponse | null,
+): ProfileFormValues {
+  return {
+    clinicName: textOrEmpty(tenant?.clinicName || tenant?.name),
+    clinicType: normalizeClinicType(tenant?.clinicType),
+    state: textOrEmpty(tenant?.state),
+    city: textOrEmpty(tenant?.city),
+    pinCode: textOrEmpty(tenant?.pinCode),
+    addressLine1: textOrEmpty(tenant?.addressLine1 || tenant?.address),
+    addressLine2: textOrEmpty(tenant?.addressLine2 ?? ''),
+    registrationNumber: textOrEmpty(tenant?.registrationNumberGst ?? ''),
+    fullName: textOrEmpty(user?.fullName || tenant?.fullName),
+    email: textOrEmpty(user?.email || tenant?.email),
+    mobileNumber:
+      digitsPhone(user?.mobileNumber) ||
+      digitsPhone(tenant?.mobileNumber) ||
+      digitsPhone(tenant?.phone),
+  };
+}
 
 export function MyProfilePage() {
   const { showToast } = useToast();
   const [cityOptions, setCityOptions] = useState<string[]>([]);
+  const storedUser = getStoredUser();
+  const canEditClinic = isHospitalAdmin(storedUser);
 
   const { data, loading, error, reload } = useAsyncData(async () => {
+    const userId = getStoredUser()?.id;
     const [user, tenant] = await Promise.all([
-      getMe().catch(() => null),
+      userId
+        ? getUserById(userId).catch(() => getMe().catch(() => null))
+        : getMe().catch(() => null),
       getTenant().catch(() => null),
     ]);
     return { user, tenant };
-  }, { user: null, tenant: null });
+  }, { user: null as UserResponse | null, tenant: null as TenantResponse | null });
 
   const {
     register,
@@ -50,37 +113,61 @@ export function MyProfilePage() {
     formState: { errors, isSubmitting },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: defaultProfile,
+    defaultValues: emptyProfileValues,
   });
 
   const selectedState = watch('state');
+  const clinicTypeValue = watch('clinicType');
+  const cityValue = watch('city');
 
-  useEffect(() => {
-    if (selectedState && CITIES_BY_STATE[selectedState]) {
-      setCityOptions(CITIES_BY_STATE[selectedState]);
-    } else {
-      setCityOptions([]);
+  const clinicTypeOptions = useMemo(() => {
+    const options = [...CLINIC_TYPES] as string[];
+    if (clinicTypeValue && !options.includes(clinicTypeValue)) {
+      options.unshift(clinicTypeValue);
     }
+    return options;
+  }, [clinicTypeValue]);
+
+  const stateOptions = useMemo(() => {
+    const options = [...INDIAN_STATES] as string[];
+    if (selectedState && !options.includes(selectedState)) {
+      options.unshift(selectedState);
+    }
+    return options;
   }, [selectedState]);
 
   useEffect(() => {
+    setCityOptions(citiesForState(selectedState, cityValue));
+  }, [selectedState, cityValue]);
+
+  useEffect(() => {
     if (!data.user && !data.tenant) return;
-    reset({
-      ...defaultProfile,
-      clinicName: data.tenant?.name ?? defaultProfile.clinicName,
-      fullName: data.user?.fullName ?? defaultProfile.fullName,
-      email: data.user?.email ?? defaultProfile.email,
-      mobileNumber: data.tenant?.phone?.replace(/\D/g, '').slice(-10) ?? defaultProfile.mobileNumber,
-      addressLine1: data.tenant?.address ?? defaultProfile.addressLine1,
-    });
+    const mapped = mapProfileFromApi(data.user, data.tenant);
+    setCityOptions(citiesForState(mapped.state, mapped.city));
+    reset(mapped);
   }, [data.user, data.tenant, reset]);
 
-  const onSubmit = async (_values: ProfileFormValues) => {
-    showToast({
-      title: 'Profile Updated',
-      message: 'Profile changes are saved locally. Backend profile update API is not available yet.',
-      time: 'Just now',
-    });
+  const onSubmit = async (values: ProfileFormValues) => {
+    try {
+      if (storedUser?.id || data.user?.id) {
+        await updateMe({ fullName: values.fullName });
+      }
+      showToast({
+        title: 'Profile Updated',
+        message: canEditClinic
+          ? 'Your profile details have been saved.'
+          : 'Your contact details have been saved. Clinic information can only be edited by Admin.',
+        time: 'Just now',
+      });
+    } catch (err) {
+      showToast({
+        title: 'Update failed',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : 'Could not update profile. Please try again.',
+      });
+    }
   };
 
   return (
@@ -98,27 +185,40 @@ export function MyProfilePage() {
           <Card className="p-5 sm:p-6">
             <SectionHeader
               title="Clinic Information"
-              subtitle="Basic Information about your company"
+              subtitle={
+                canEditClinic
+                  ? 'Basic Information about your company'
+                  : 'View only — only Admin can edit clinic details'
+              }
             />
-            <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_220px]">
+            <div
+              className={cn(
+                'mt-4 grid gap-6 lg:grid-cols-[1fr_220px]',
+                !canEditClinic && 'opacity-95',
+              )}
+            >
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Clinic Name"
                   error={errors.clinicName?.message}
+                  readOnly={!canEditClinic}
+                  disabled={!canEditClinic}
                   {...register('clinicName')}
                 />
                 <Select
                   label="Clinic Type"
                   placeholder="Clinic Type"
-                  options={[...CLINIC_TYPES]}
+                  options={clinicTypeOptions}
                   error={errors.clinicType?.message}
+                  disabled={!canEditClinic}
                   {...register('clinicType')}
                 />
                 <Select
                   label="State"
                   placeholder="Select State"
-                  options={[...INDIAN_STATES]}
+                  options={stateOptions}
                   error={errors.state?.message}
+                  disabled={!canEditClinic}
                   {...register('state')}
                 />
                 <Select
@@ -126,32 +226,46 @@ export function MyProfilePage() {
                   placeholder="Select City"
                   options={cityOptions}
                   error={errors.city?.message}
-                  disabled={!selectedState}
+                  disabled={!canEditClinic || !selectedState}
                   {...register('city')}
                 />
                 <Input
                   label="PIN Code"
                   error={errors.pinCode?.message}
+                  readOnly={!canEditClinic}
+                  disabled={!canEditClinic}
                   {...register('pinCode')}
                 />
                 <Input
                   label="Address Line 1"
                   error={errors.addressLine1?.message}
+                  readOnly={!canEditClinic}
+                  disabled={!canEditClinic}
                   {...register('addressLine1')}
                 />
                 <Input
                   label="Address Line 2"
                   className="sm:col-span-2"
+                  readOnly={!canEditClinic}
+                  disabled={!canEditClinic}
                   {...register('addressLine2')}
                 />
                 <Input
                   label="Registration Number/ GST"
                   className="sm:col-span-2"
                   error={errors.registrationNumber?.message}
+                  readOnly={!canEditClinic}
+                  disabled={!canEditClinic}
                   {...register('registrationNumber')}
                 />
               </div>
-              <FileUpload label="Your Logo" editOnly onChange={() => undefined} />
+              <FileUpload
+                label="Your Logo"
+                editOnly
+                disabled
+                previewUrl={data.tenant?.logoUrl?.trim() || assets.brandLogo}
+                onChange={() => undefined}
+              />
             </div>
           </Card>
 
@@ -167,13 +281,6 @@ export function MyProfilePage() {
                   error={errors.fullName?.message}
                   {...register('fullName')}
                 />
-                <Select
-                  label="Specialization"
-                  placeholder="Specialization"
-                  options={[...SPECIALIZATIONS]}
-                  error={errors.specialization?.message}
-                  {...register('specialization')}
-                />
                 <Input
                   label="Email"
                   type="email"
@@ -185,14 +292,13 @@ export function MyProfilePage() {
                   error={errors.mobileNumber?.message}
                   {...register('mobileNumber')}
                 />
-                <Input
-                  label="Availability"
-                  className="sm:col-span-2"
-                  error={errors.availability?.message}
-                  {...register('availability')}
-                />
               </div>
-              <FileUpload label="Your Photo" editOnly onChange={() => undefined} />
+              <FileUpload
+                label="Your Photo"
+                editOnly
+                previewUrl={data.tenant?.photoUrl ?? undefined}
+                onChange={() => undefined}
+              />
             </div>
           </Card>
 

@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { usePageAction } from '@/app/PageActionContext';
+import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { DeleteMedicineModal } from '@/components/medicines/DeleteMedicineModal';
@@ -9,10 +8,12 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { SuccessDialog } from '@/components/ui/SuccessDialog';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   createMedicine,
   createMultipleMedicines,
@@ -50,7 +51,7 @@ export function MedicinesPage() {
     reload,
   } = useAsyncData(async () => {
     const [rows, apiCategories] = await Promise.all([
-      getAllMedicines(),
+      getAllMedicines({ page: 0, size: 100 }),
       getMedicineCategories(),
     ]);
 
@@ -59,24 +60,6 @@ export function MedicinesPage() {
       categoryOptions: mapMedicineCategoryOptions(apiCategories),
     };
   }, { medicines: [] as MedicineRecord[], categoryOptions: [] });
-
-  const headerAction = useMemo(
-    () => (
-      <Button
-        className="gap-1.5 px-4 py-2 text-sm"
-        onClick={() => {
-          setEditTarget(null);
-          setFormOpen(true);
-        }}
-      >
-        <AppIcon src={assets.icons.add} className="h-4 w-4" />
-        Add Medicine
-      </Button>
-    ),
-    [],
-  );
-
-  usePageAction(headerAction);
 
   const filteredMedicines = useMemo(() => {
     return data.medicines.filter((item) => {
@@ -88,6 +71,36 @@ export function MedicinesPage() {
       return matchesSearch && matchesCategory;
     });
   }, [data.medicines, searchQuery, categoryFilter]);
+
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredMedicines);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchQuery, categoryFilter, resetPage]);
+
+  const headerAction = useMemo(
+    () => (
+      <Button
+        className="h-9 gap-1.5 rounded-[10px] px-4 py-0 text-sm"
+        onClick={() => {
+          setEditTarget(null);
+          setFormOpen(true);
+        }}
+      >
+        <AppIcon src={assets.icons.add} className="h-4 w-4" />
+        Add Medicine
+      </Button>
+    ),
+    [],
+  );
 
   const buildPayload = (values: MedicineFormValues): CreateMedicinePayload => ({
     medicineName: values.name.trim(),
@@ -179,6 +192,7 @@ export function MedicinesPage() {
     <PageShell>
       <AsyncStatus loading={loading} error={error} onRetry={reload}>
         <ListPanel
+          actions={headerAction}
           filters={
             <>
               <FilterControl>
@@ -207,12 +221,20 @@ export function MedicinesPage() {
           >
             <MedicinesTable
               embedded
-              records={filteredMedicines}
+              records={pageItems}
               onEdit={(record) => {
                 setEditTarget(record);
                 setFormOpen(true);
               }}
               onDelete={setDeleteTarget}
+            />
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalElements={totalElements}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              disabled={loading}
             />
           </AsyncStatus>
         </ListPanel>

@@ -11,8 +11,10 @@ describe('settings.schema', () => {
   it('validates clinic doctor form', () => {
     const result = clinicDoctorSchema.safeParse({
       name: 'Dr. Shweta Arya',
-      specialization: 'BAMS',
+      specialization: 'Panchakarma',
+      qualification: ' BAMS ',
       status: 'Active',
+      mobileNumber: ' 9876543210 ',
       consultationFees: '500',
       followUpFees: '500',
       availabilityDays: ['weekdays'],
@@ -20,6 +22,25 @@ describe('settings.schema', () => {
       availabilityEndTime: '17:00',
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.qualification).toBe('BAMS');
+      expect(result.data.mobileNumber).toBe('9876543210');
+    }
+  });
+
+  it('allows clinic doctor without mobile number', () => {
+    const result = clinicDoctorSchema.safeParse({
+      name: 'Dr. Aarav Mehta',
+      specialization: 'BAMS',
+      status: 'Active',
+      mobileNumber: '',
+      consultationFees: '500',
+      followUpFees: '500',
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
+    });
+    expect(result.success).toBe(false);
   });
 
   it('rejects invalid clinic doctor fees', () => {
@@ -27,6 +48,7 @@ describe('settings.schema', () => {
       name: 'Dr. Test',
       specialization: 'BAMS',
       status: 'Active',
+      mobileNumber: '9876543210',
       consultationFees: 'abc',
       followUpFees: '500',
       availabilityDays: ['weekdays'],
@@ -58,26 +80,28 @@ describe('settings.schema', () => {
 
   it('validates add user with matching passwords', () => {
     const result = addUserSchema.safeParse({
-      userId: 'GN001',
+      tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
-      contactNumber: '9876543210',
+      mobileNumber: '9876543210',
       email: 'test@example.com',
       password: 'Password1',
       confirmPassword: 'Password1',
-      tenantRoleId: '84c4eebe-1e08-4efb-8337-7240fbf4f153',
+      role: 'ADMIN',
+      status: 'Active',
     });
     expect(result.success).toBe(true);
   });
 
   it('rejects mismatched passwords', () => {
     const result = addUserSchema.safeParse({
-      userId: 'GN001',
+      tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
-      contactNumber: '9876543210',
+      mobileNumber: '9876543210',
       email: 'test@example.com',
       password: 'Password1',
       confirmPassword: 'Password2',
-      tenantRoleId: '84c4eebe-1e08-4efb-8337-7240fbf4f153',
+      role: 'ADMIN',
+      status: 'Active',
     });
     expect(result.success).toBe(false);
   });

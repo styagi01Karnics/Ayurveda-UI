@@ -3,7 +3,8 @@ import { getInvoiceById, type InvoiceDto } from '@/lib/api/billing';
 import { getDoctorById } from '@/lib/api/doctors';
 import { mapInvoiceDtoToBillView } from '@/lib/api/mappers';
 import type { DoctorDto } from '@/lib/api/types';
-import { CLINIC_BRANDING } from '@/lib/clinicBranding';
+import { CLINIC_BRANDING, formatDoctorDegree } from '@/lib/clinicBranding';
+import { formatPersonName } from '@/lib/utils';
 import type { BillInvoiceView } from '@/types';
 
 export interface BillDoctorDetails {
@@ -14,21 +15,17 @@ export interface BillDoctorDetails {
 }
 
 function formatDoctorName(name: string): string {
-  const trimmed = name.trim();
+  const trimmed = formatPersonName(name.trim());
   if (!trimmed) return CLINIC_BRANDING.doctorName;
   return /^dr\.?\s/i.test(trimmed) ? trimmed : `Dr. ${trimmed}`;
 }
 
 function formatDoctorCredentials(doctor: DoctorDto): string {
-  const qualification = doctor.qualification?.trim();
-  const specialization = doctor.specialization?.trim();
-
-  if (qualification && specialization) {
-    return `${qualification} (${specialization})`;
-  }
-  if (qualification) return qualification;
-  if (specialization) return specialization;
-  return CLINIC_BRANDING.doctorCredentials;
+  return formatDoctorDegree(
+    doctor.qualification,
+    doctor.specialization,
+    doctor.degree,
+  );
 }
 
 export function mapDoctorDtoToBillDoctorDetails(
@@ -47,11 +44,13 @@ function doctorDetailsFromInvoiceDto(dto: InvoiceDto): BillDoctorDetails | null 
     doctorName?: string;
     doctorPhone?: string;
     doctorQualification?: string;
+    doctorDegree?: string;
     doctorSpecialization?: string;
     doctorAvailability?: string;
     assignedDoctorName?: string;
     assignedDoctorPhone?: string;
     assignedDoctorQualification?: string;
+    assignedDoctorDegree?: string;
   };
 
   const name =
@@ -61,15 +60,16 @@ function doctorDetailsFromInvoiceDto(dto: InvoiceDto): BillDoctorDetails | null 
   if (!name.trim()) return null;
 
   const qualification =
-    extended.doctorQualification ?? extended.doctorSpecialization ?? '';
+    extended.doctorDegree ??
+    extended.doctorQualification ??
+    extended.assignedDoctorDegree ??
+    extended.assignedDoctorQualification ??
+    '';
   const specialization = extended.doctorSpecialization ?? '';
 
   return {
     doctorName: formatDoctorName(name),
-    doctorCredentials:
-      qualification && specialization
-        ? `${qualification} (${specialization})`
-        : qualification || specialization || CLINIC_BRANDING.doctorCredentials,
+    doctorCredentials: formatDoctorDegree(qualification, specialization),
     workingHours:
       extended.doctorAvailability?.trim() || CLINIC_BRANDING.workingHours,
     doctorPhone:
@@ -110,10 +110,10 @@ export async function resolveBillDoctorDetails(
             doctorName: formatDoctorName(
               summary.name || summary.doctorName || latest.doctorName || '',
             ),
-            doctorCredentials:
-              summary.qualification ||
-              summary.specialization ||
-              CLINIC_BRANDING.doctorCredentials,
+            doctorCredentials: formatDoctorDegree(
+              summary.qualification,
+              summary.specialization,
+            ),
             workingHours: CLINIC_BRANDING.workingHours,
             doctorPhone:
               summary.mobileNumber || CLINIC_BRANDING.doctorPhone,

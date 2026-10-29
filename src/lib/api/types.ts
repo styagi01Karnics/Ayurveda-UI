@@ -64,6 +64,8 @@ export interface DoctorDto {
   mobileNumber?: string;
   email?: string;
   qualification?: string;
+  /** Alias used by some APIs for qualification / degree line. */
+  degree?: string;
   department?: string;
   consultationRoom?: string;
   consultationFees?: number;
@@ -82,14 +84,17 @@ export interface CreateDoctorPayload {
   consultationFees: number;
   followUpFees: number;
   availability: string;
-  // Legacy fields
-  doctorName?: string;
   mobileNumber?: string;
-  email?: string;
   qualification?: string;
+  email?: string;
+  // Legacy fields (not on create DTO — omit on POST)
+  doctorName?: string;
   department?: string;
   consultationRoom?: string;
 }
+
+/** Fields accepted on doctor update if/when the service exposes PUT. */
+export type UpdateDoctorPayload = CreateDoctorPayload;
 
 export interface TherapistDto {
   id: string;
@@ -102,7 +107,11 @@ export interface TherapistDto {
   qualification?: string;
   therapyRoom?: string;
   assignedTherapyIds?: string[];
-  assignedTherapies?: { id: string; name?: string | null }[];
+  assignedTherapies?: {
+    id: string;
+    name?: string | null;
+    therapyName?: string | null;
+  }[];
   status?: string;
   active?: boolean;
   createdAt?: string;
@@ -125,7 +134,8 @@ export interface CreateTherapistPayload {
 export interface TreatmentCategoryDto {
   id: string;
   categoryCode: string | null;
-  categoryName: string;
+  categoryName?: string;
+  name?: string;
   description: string;
   status?: string;
   active?: boolean;
@@ -238,6 +248,8 @@ export interface PatientAppointmentListItemDto {
   patientCode?: string;
   patientFullName: string;
   patientMobileNumber?: string;
+  patientEmail?: string;
+  email?: string;
   assignedDoctorId?: string;
   doctorName?: string;
   consultationTypes?: ConsultationTypeRef[] | string[];
@@ -623,6 +635,7 @@ export type FollowUpStatusApi =
 export interface FollowUpDto {
   id: string;
   patientId: string;
+  patientCode?: string | null;
   patientDisplayId?: string;
   patientName?: string;
   assignedDoctorId: string;

@@ -1,17 +1,37 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest, apiRequestPage, type PagedResult } from './client';
 import { apiEndpoints } from './endpoints';
 import type { CreateDoctorPayload, DoctorDto } from './types';
+import { DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
+import { toCreateDoctorPayload } from '@/lib/createDoctorPayload';
 
 const url = (path: string) => `${apiConfig.doctor}${path}`;
 
-export function getAllDoctors() {
-  return apiRequestList<DoctorDto>(url(apiEndpoints.doctors.getAll));
+export function getAllDoctorsPaged(
+  page = 0,
+  size = DEFAULT_PAGE_SIZE,
+): Promise<PagedResult<DoctorDto>> {
+  return apiRequestPage<DoctorDto>(
+    url(`${apiEndpoints.doctors.getAll}?page=${page}&size=${size}`),
+  );
+}
+
+export function getAllDoctors(page = 0, size = 100) {
+  return getAllDoctorsPaged(page, size).then((result) => result.content);
 }
 
 /** ACTIVE doctors only — use for appointment booking dropdowns. */
-export function getActiveDoctors() {
-  return apiRequestList<DoctorDto>(url(apiEndpoints.doctors.getActive));
+export function getActiveDoctorsPaged(
+  page = 0,
+  size = DEFAULT_PAGE_SIZE,
+): Promise<PagedResult<DoctorDto>> {
+  return apiRequestPage<DoctorDto>(
+    url(`${apiEndpoints.doctors.getActive}?page=${page}&size=${size}`),
+  );
+}
+
+export function getActiveDoctors(page = 0, size = 100) {
+  return getActiveDoctorsPaged(page, size).then((result) => result.content);
 }
 
 export function getDoctorById(doctorId: string) {
@@ -21,7 +41,7 @@ export function getDoctorById(doctorId: string) {
 export function createDoctor(payload: CreateDoctorPayload) {
   return apiRequest<DoctorDto>(url(apiEndpoints.doctors.create), {
     method: 'POST',
-    body: payload,
+    body: toCreateDoctorPayload(payload),
   });
 }
 

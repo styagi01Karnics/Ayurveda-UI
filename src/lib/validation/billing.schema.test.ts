@@ -50,18 +50,18 @@ describe('invoiceServiceStepSchema', () => {
 });
 
 describe('calculateInvoiceTotals', () => {
-  it('calculates subtotal tax and discount', () => {
+  it('calculates subtotal tax and discount with fixed 2.5% CGST/SGST', () => {
     const totals = calculateInvoiceTotals(
       [{ amount: 800, quantity: 1 }, { amount: 400, quantity: 2 }],
       400,
       true,
-      3,
-      3,
+      2.5,
+      2.5,
     );
     expect(totals.subtotal).toBe(1600);
-    expect(totals.cgst).toBe(48);
-    expect(totals.sgst).toBe(48);
-    expect(totals.total).toBe(1296);
+    expect(totals.cgst).toBe(40);
+    expect(totals.sgst).toBe(40);
+    expect(totals.total).toBe(1280);
   });
 
   it('keeps GST at two decimal places to match billing-service', () => {
@@ -69,11 +69,11 @@ describe('calculateInvoiceTotals', () => {
       [{ amount: 1520, quantity: 1 }],
       0,
       true,
-      3,
-      3,
+      2.5,
+      2.5,
     );
-    expect(totals.cgst).toBe(45.6);
-    expect(totals.sgst).toBe(45.6);
-    expect(totals.total).toBe(1611.2);
+    expect(totals.cgst).toBe(38);
+    expect(totals.sgst).toBe(38);
+    expect(totals.total).toBe(1596);
   });
 });

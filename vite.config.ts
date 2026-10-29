@@ -6,9 +6,12 @@ import path from 'node:path';
 
 function resolveBackendHost(raw: string): string {
   const trimmed = raw.replace(/\/+$/, '');
-  // Avoid Windows resolving localhost to IPv6 ::1 when services listen on 127.0.0.1
-  if (trimmed === 'http://localhost' || trimmed === 'https://localhost') {
-    return 'http://127.0.0.1';
+  if (
+    trimmed === 'http://localhost' ||
+    trimmed === 'https://localhost' ||
+    trimmed === 'http://127.0.0.1'
+  ) {
+    return 'http://45.195.229.15';
   }
   return trimmed;
 }
@@ -18,8 +21,7 @@ function resolveBackendHost(raw: string): string {
  * no `/appointment-api` prefix. Vite forwards to the correct service port.
  *
  * Override in `.env.development.local`:
- *   VITE_BACKEND_HOST=http://45.195.229.15   (remote staging)
- *   VITE_BACKEND_HOST=http://127.0.0.1         (local microservices)
+ *   VITE_BACKEND_HOST=http://45.195.229.15
  */
 function serviceProxy(backendHost: string, port: number) {
   return {
@@ -40,6 +42,16 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+      },
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router-dom'],
+            charts: ['recharts'],
+          },
+        },
       },
     },
     server: {
@@ -70,17 +82,18 @@ export default defineConfig(({ mode }) => {
         '/api/v1/ayurvedic-assessments': serviceProxy(backendHost, 8103),
         '/api/v1/dashboard/todays-schedule': serviceProxy(backendHost, 8103),
         '/api/v1/dashboard/patient-trends': serviceProxy(backendHost, 8103),
+        '/api/v1/dashboard/new-patients-by-month': serviceProxy(backendHost, 8101),
         '/api/v1/treatments': serviceProxy(backendHost, 8103),
         '/api/v1/follow-ups': serviceProxy(backendHost, 8103),
         '/api/v1/prescriptions': serviceProxy(backendHost, 8103),
 
         // Auth-service :8111
         '/api/v1/auth': serviceProxy(backendHost, 8111),
-        '/api/v1/tenants': serviceProxy(backendHost, 8111),
         '/api/v1/public': serviceProxy(backendHost, 8111),
-        '/api/v1/platform': serviceProxy(backendHost, 8111),
-        '/api/v1/roles': serviceProxy(backendHost, 8111),
+        '/api/v1/tenants': serviceProxy(backendHost, 8111),
         '/api/v1/ui-pages': serviceProxy(backendHost, 8111),
+        '/api/v1/roles': serviceProxy(backendHost, 8111),
+        '/api/v1/platform': serviceProxy(backendHost, 8111),
 
         // File-upload-service :8105
         '/api/v1/documents': serviceProxy(backendHost, 8105),
@@ -97,8 +110,9 @@ export default defineConfig(({ mode }) => {
         '/api/v1/medicines': serviceProxy(backendHost, 8108),
         '/api/v1/dashboard/medicine-stock': serviceProxy(backendHost, 8108),
 
-        // Billing-service :8109
+        // Billing-service :8109 — keep `/billings` before `/billing` (prefix match)
         '/api/v1/billings': serviceProxy(backendHost, 8109),
+        '/api/v1/billing': serviceProxy(backendHost, 8109),
         '/api/v1/invoices': serviceProxy(backendHost, 8109),
         '/api/v1/sales': serviceProxy(backendHost, 8109),
         '/api/v1/dashboard/billing-summary': serviceProxy(backendHost, 8109),
@@ -108,6 +122,10 @@ export default defineConfig(({ mode }) => {
         // Notification-service :8110
         '/api/v1/notifications': serviceProxy(backendHost, 8110),
         '/api/v1/messages': serviceProxy(backendHost, 8110),
+
+        // Payment-service :8112
+        '/api/v1/payments': serviceProxy(backendHost, 8112),
+        '/pay': serviceProxy(backendHost, 8112),
       },
     },
     test: {

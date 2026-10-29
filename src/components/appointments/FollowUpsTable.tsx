@@ -19,7 +19,7 @@ export function FollowUpsTable({
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
-              <th className="px-5 py-3 font-medium">UHID No.</th>
+              <th className="px-5 py-3 font-medium">Patient Code</th>
               <th className="px-5 py-3 font-medium">Patient</th>
               <th className="px-5 py-3 font-medium">Doctor</th>
               <th className="px-5 py-3 font-medium">Visit Type</th>
@@ -50,7 +50,7 @@ export function FollowUpsTable({
                   <Button
                     type="button"
                     variant="outline"
-                    className="px-3 py-1.5 text-xs"
+                    size="sm"
                     onClick={() => onReschedule(item)}
                     disabled={item.status === 'Cancelled'}
                   >
@@ -69,7 +69,7 @@ function FollowUpStatus({ status }: { status: FollowUpRecord['status'] }) {
   const colors: Record<FollowUpRecord['status'], string> = {
     Upcoming: 'text-gold',
     Missed: 'text-danger',
-    Completed: 'text-success',
+    Completed: 'text-[#2E7D32]',
     Cancelled: 'text-text-muted',
   };
   return <span className={cn('font-medium', colors[status])}>{status}</span>;

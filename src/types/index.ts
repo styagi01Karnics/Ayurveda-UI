@@ -89,6 +89,7 @@ export interface PatientMedicalAssessment {
 }
 
 export interface PatientTreatmentFollowUp {
+  id?: string;
   treatmentPlanId?: string;
   assignedTherapistId?: string;
   treatmentName: string;
@@ -158,6 +159,8 @@ export interface PatientInvoice {
   address: string;
   email: string;
   website: string;
+  /** Clinic Call/WhatsApp number for bill footer. */
+  clinicPhone?: string;
 }
 
 /** Populated from GET /api/v1/invoices/{invoiceId} for bill download modal. */
@@ -321,7 +324,12 @@ export interface MedicineRecord {
   lowStockAlertEnabled?: boolean;
 }
 
-export type BillingStatus = 'Pending' | 'Unpaid' | 'Ongoing' | 'Completed';
+export type BillingStatus =
+  | 'Pending'
+  | 'Unpaid'
+  | 'Partial'
+  | 'Ongoing'
+  | 'Completed';
 
 export interface BillingRecord {
   /** Invoice UUID for GET /api/v1/invoices/{id}, or billing draft UUID. */
@@ -407,8 +415,11 @@ export interface BillSummaryState {
   sgst: string;
 }
 
-/** Invoice collection: cash in-hand, PayU online link, or shop QR scanner. */
-export type PaymentModeId = 'cash' | 'online' | 'qr';
+/** Top-level billing collection channel on Generate Invoice. */
+export type PaymentChannelId = 'cash' | 'direct_upi' | 'via_payment';
+
+/** Sub-modes under “Via Payment” (PayU link / online). */
+export type PaymentModeId = 'upi' | 'card' | 'wallet' | 'partial' | 'emi';
 
 export interface DashboardStats {
   totalPatients: number;
@@ -419,6 +430,9 @@ export interface DashboardStats {
   totalAppointments: number;
   appointmentGrowth: number;
   appointmentsToday: number;
+  appointmentsConfirmed: number;
+  appointmentsCancelled: number;
+  appointmentsFollowUp: number;
   billingTotal: number;
   billsGenerated: number;
   pendingPayments: number;
@@ -444,6 +458,16 @@ export interface AuthUser {
   username?: string;
   tenantId?: string;
   tenantCode?: string;
+  schemaName?: string;
+  mobileNumber?: string;
+  tenantRoleId?: string;
+  tenantRoleCode?: string;
+  tenantRoleName?: string;
+  /** Raw API UserRole enum, e.g. SUPER_ADMIN */
+  apiRole?: string;
+  /** UiPageSeeder codes controlling sidebar + routes. Empty = full access. */
+  pageCodes?: string[];
+  status?: string;
   /** Hospital city from login tenant payload (optional). */
   city?: string;
 }
@@ -517,6 +541,14 @@ export interface ClinicPackageMasterRecord {
   status: ClinicStatus;
 }
 
+export interface ClinicDoshaRecord {
+  id: string;
+  name: string;
+  elements: string;
+  characteristics: string;
+  status: ClinicStatus;
+}
+
 export interface ClinicTherapistRecord {
   id: string;
   name: string;
@@ -534,6 +566,7 @@ export interface SettingsUserRecord {
   email: string;
   status: UserStatus;
   assignedRole: string;
+  tenantRoleId?: string;
 }
 
 export interface SettingsRoleRecord {
@@ -541,6 +574,7 @@ export interface SettingsRoleRecord {
   name: string;
   status: ClinicStatus;
   accessLevel: string;
+  description?: string;
   permissions: string[];
   userCount: number;
 }

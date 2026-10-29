@@ -43,7 +43,7 @@ export function BannerDisplay({
                 {banner.badge}
               </span>
             )}
-            <p className="font-serif text-xl font-semibold leading-snug text-brown sm:text-2xl">
+            <p className="font-sans text-xl font-semibold leading-snug text-brown sm:text-2xl">
               {banner.headline || 'Your headline appears here'}
             </p>
             {banner.subtext && (

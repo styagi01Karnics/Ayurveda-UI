@@ -74,7 +74,7 @@ export function TreatmentsTable({
                   {record.status === 'Scheduled' && onComplete ? (
                     <Button
                       type="button"
-                      className="bg-success px-3 py-1.5 text-xs hover:bg-success/90"
+                      size="sm"
                       disabled={completingId === record.id}
                       onClick={(event) => {
                         event.stopPropagation();
@@ -104,11 +104,11 @@ function TreatmentStatus({ status }: { status: TreatmentRecord['status'] }) {
 
   const colors: Record<TreatmentRecord['status'], string> = {
 
-    Scheduled: 'text-text-muted',
+    Scheduled: 'text-[#2E7D32]',
 
     Ongoing: 'text-gold',
 
-    Completed: 'text-success',
+    Completed: 'text-[#2E7D32]',
 
   };
 

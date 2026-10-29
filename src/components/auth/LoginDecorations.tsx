@@ -1,5 +1,6 @@
 import { assets } from '@/lib/assets';
 
+/** Corner botanicals — bundled PNGs (SVGs were dropping out). */
 export function LoginDecorations() {
   return (
     <>

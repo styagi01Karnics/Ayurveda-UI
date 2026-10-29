@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { usePageAction } from '@/app/PageActionContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { ClinicSettingsTab } from '@/components/settings/ClinicSettingsTab';
 import { RoleManagementTab } from '@/components/settings/RoleManagementTab';
@@ -22,7 +21,7 @@ export function SettingsPage() {
     if (activeTab === 'users') {
       return (
         <Button
-          className="gap-1.5 px-4 py-2 text-sm"
+          className="gap-1.5 px-4 py-2 text-sm mb-[2px]"
           onClick={() => setAddUserOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -44,13 +43,12 @@ export function SettingsPage() {
     return null;
   }, [activeTab]);
 
-  usePageAction(headerAction);
-
   return (
     <PageShell>
       <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
+        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#eadfc8]">
         <nav
-          className="grid grid-cols-2 border-b border-[#eadfc8] sm:grid-cols-4"
+          className="grid min-w-0 flex-1 grid-cols-2 sm:grid-cols-4"
           aria-label="Settings sections"
         >
           {SETTINGS_TABS.map((tab) => {
@@ -78,6 +76,8 @@ export function SettingsPage() {
             );
           })}
         </nav>
+        {headerAction}
+        </div>
 
         <div className="flex-1 pt-6">
           {activeTab === 'clinic' && <ClinicSettingsTab />}

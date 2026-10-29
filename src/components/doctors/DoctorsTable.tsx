@@ -12,15 +12,15 @@ export function DoctorsTable({ records, embedded }: DoctorsTableProps) {
     <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
-            <th className="w-[12%] px-4 py-3 font-medium">Doctor Code</th>
-            <th className="w-[16%] px-4 py-3 font-medium">Name</th>
-            <th className="w-[14%] px-4 py-3 font-medium">Specialization</th>
-            <th className="w-[12%] px-4 py-3 font-medium">Department</th>
-            <th className="w-[12%] px-4 py-3 font-medium">Qualification</th>
-            <th className="w-[12%] px-4 py-3 font-medium">Room</th>
-            <th className="w-[12%] px-4 py-3 font-medium">Contact</th>
-            <th className="w-[10%] px-4 py-3 font-medium">Status</th>
+          <tr className="screen-label border-b border-gray-100 bg-gray-50/50">
+            <th className="w-[12%] px-4 py-3">Doctor Code</th>
+            <th className="w-[16%] px-4 py-3">Name</th>
+            <th className="w-[14%] px-4 py-3">Specialization</th>
+            <th className="w-[12%] px-4 py-3">Department</th>
+            <th className="w-[12%] px-4 py-3">Qualification</th>
+            <th className="w-[12%] px-4 py-3">Room</th>
+            <th className="w-[12%] px-4 py-3">Contact</th>
+            <th className="w-[10%] px-4 py-3">Status</th>
           </tr>
         </thead>
         <tbody>

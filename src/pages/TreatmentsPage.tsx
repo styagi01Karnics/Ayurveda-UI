@@ -1,8 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
-
-import { usePageAction } from '@/app/PageActionContext';
 
 import { useToast } from '@/app/ToastContext';
 
@@ -22,6 +20,8 @@ import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 
 import { Input } from '@/components/ui/Input';
 
+import { Pagination } from '@/components/ui/Pagination';
+
 import { SearchField } from '@/components/ui/SearchField';
 
 import { Select } from '@/components/ui/Select';
@@ -29,6 +29,8 @@ import { Select } from '@/components/ui/Select';
 import { TREATMENT_FILTER_OPTIONS } from '@/data/mock/treatments';
 
 import { useAsyncData } from '@/hooks/useAsyncData';
+
+import { useClientPagination } from '@/hooks/useClientPagination';
 
 import { ApiError } from '@/lib/api/client';
 
@@ -45,6 +47,8 @@ import { mapTreatmentDtoToRecord } from '@/lib/api/mappers';
 import { getActiveTherapists } from '@/lib/api/therapists';
 
 import { assets } from '@/lib/assets';
+
+import { resolvePatientDisplayCode } from '@/lib/displayCodes';
 
 import type { BookTreatmentFormValues } from '@/lib/validation/patient.schema';
 import type { TreatmentRecord } from '@/types';
@@ -80,7 +84,7 @@ export function TreatmentsPage() {
     const [patients, therapists, treatments, treatmentPlans] = await Promise.all([
       getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
       getActiveTherapists().catch(() => []),
-      getAllTreatments().catch(() => []),
+      getAllTreatments(0, 100).catch(() => []),
       getActiveTreatmentPlanMasters().catch(() => []),
     ]);
 
@@ -110,13 +114,15 @@ export function TreatmentsPage() {
 
       lookupOptions: {
 
-        patients: patients.map((p) => ({
-
-          value: p.patientId,
-
-          label: p.patientFullName,
-
-        })),
+        patients: patients.map((p) => {
+          const code = resolvePatientDisplayCode(p).replace(/^#/, '');
+          return {
+            value: p.patientId,
+            label: `${code || '—'} — ${p.patientFullName}`,
+            patientId: code,
+            name: p.patientFullName,
+          };
+        }),
 
         therapists: therapists.map((t) => ({
           value: t.id,
@@ -188,6 +194,20 @@ export function TreatmentsPage() {
 
   }, [treatments, searchQuery, statusFilter, planFilter, dateFilter]);
 
+  const {
+    page,
+    setPage,
+    pageSize,
+    totalPages,
+    totalElements,
+    pageItems,
+    resetPage,
+  } = useClientPagination(filteredTreatments);
+
+  useEffect(() => {
+    resetPage();
+  }, [searchQuery, statusFilter, planFilter, dateFilter, resetPage]);
+
 
 
   const headerAction = useMemo(
@@ -196,7 +216,7 @@ export function TreatmentsPage() {
 
       <Button
 
-        className="gap-1.5 px-4 py-2 text-sm"
+        className="h-9 gap-1.5 px-4 py-0 text-sm"
 
         onClick={() => setBookOpen(true)}
 
@@ -216,7 +236,6 @@ export function TreatmentsPage() {
 
 
 
-  usePageAction(headerAction);
 
 
 
@@ -320,6 +339,7 @@ export function TreatmentsPage() {
     <PageShell>
 
       <ListPanel
+        actions={headerAction}
 
         filters={
 
@@ -409,7 +429,7 @@ export function TreatmentsPage() {
 
             embedded
 
-            records={filteredTreatments}
+            records={pageItems}
             onComplete={handleCompleteTreatment}
             completingId={completingId}
 
@@ -419,6 +439,14 @@ export function TreatmentsPage() {
 
             }
 
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalElements={totalElements}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            disabled={loading}
           />
 
         </AsyncStatus>

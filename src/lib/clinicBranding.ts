@@ -14,6 +14,23 @@ export const CLINIC_BRANDING = {
   notesDefault: '',
 } as const;
 
+/** Display line under doctor name: degree/qualification, e.g. "BAMS (Ayurvedic Physician)". */
+export function formatDoctorDegree(
+  qualification?: string | null,
+  specialization?: string | null,
+  degree?: string | null,
+  fallback: string = CLINIC_BRANDING.doctorCredentials,
+): string {
+  const q = (degree || qualification || '').trim();
+  const s = (specialization || '').trim();
+
+  if (q && s) {
+    if (s.toLowerCase().includes(q.toLowerCase())) return s;
+    return `${q} (${s})`;
+  }
+  return q || s || fallback;
+}
+
 export function formatBillDate(iso?: string | null): string {
   if (!iso) return '—';
   const date = new Date(iso);

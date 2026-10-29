@@ -1,4 +1,5 @@
 import { DataTableShell } from '@/components/ui/DataTableShell';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import type { AppointmentRecord, VisitType } from '@/types';
 
@@ -20,7 +21,7 @@ export function AppointmentsTable({
       <table className="w-full table-fixed text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
-              <th className="px-5 py-3 font-medium">UHID No.</th>
+              <th className="px-5 py-3 font-medium">Patient Code</th>
               <th className="px-5 py-3 font-medium">Patient</th>
               <th className="px-5 py-3 font-medium">Doctor</th>
               <th className="px-5 py-3 font-medium">Visit Type</th>
@@ -49,21 +50,23 @@ export function AppointmentsTable({
                 </td>
                 <td className="px-5 py-4">
                   {item.status === 'Scheduled' ? (
-                    <button
+                    <Button
                       type="button"
+                      variant="danger"
+                      size="sm"
                       onClick={() => onCancel(item.id)}
-                      className="rounded-lg border border-danger/30 bg-danger/10 px-4 py-1.5 text-xs font-semibold text-danger hover:bg-danger/15"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   ) : item.status === 'Cancelled' ? (
-                    <button
+                    <Button
                       type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => onReschedule(item.id)}
-                      className="rounded-lg border border-gold/30 bg-gold/10 px-4 py-1.5 text-xs font-semibold text-gold hover:bg-gold/15"
                     >
                       Reschedule
-                    </button>
+                    </Button>
                   ) : (
                     <span className="text-text-muted">—</span>
                   )}
@@ -86,8 +89,8 @@ function AppointmentStatus({
   status: AppointmentRecord['status'];
 }) {
   const colors = {
-    Scheduled: 'text-gold',
-    Completed: 'text-success',
+    Scheduled: 'text-[#EAB308]',
+    Completed: 'text-[#2E7D32]',
     Cancelled: 'text-danger',
   };
   return <span className={cn('font-medium', colors[status])}>{status}</span>;

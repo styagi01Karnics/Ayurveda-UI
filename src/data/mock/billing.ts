@@ -70,23 +70,58 @@ export const initialBillingRecords: BillingRecord[] = [
 ];
 
 export const BILLING_FILTER_OPTIONS = {
-  status: ['Pending', 'Unpaid', 'Ongoing', 'Completed'],
+  status: ['Pending', 'Unpaid', 'Partial', 'Ongoing', 'Completed'],
 } as const;
 
-export const PAYMENT_MODES = [
+/** Desk / online channel chosen before Via Payment sub-modes. */
+export const PAYMENT_CHANNELS = [
   {
     id: 'cash' as const,
     title: 'Cash',
-    description: 'Collect cash in hand and mark invoice paid',
+    description: 'Collect cash at the counter (marks invoice paid)',
   },
   {
-    id: 'online' as const,
-    title: 'Online Payment',
-    description: 'Send PayU payment link to the patient by email',
+    id: 'direct_upi' as const,
+    title: 'Direct UPI',
+    description: 'Create PayU QR / UPI payment link for the balance',
   },
   {
-    id: 'qr' as const,
-    title: 'QR Payment',
-    description: 'Show shop QR for the patient to scan and pay',
+    id: 'via_payment' as const,
+    title: 'Via Payment',
+    description: 'Email a PayU payment link to the patient',
+  },
+];
+
+/** Sub-modes shown when “Via Payment” is expanded. */
+export const PAYMENT_MODES = [
+  {
+    id: 'upi' as const,
+    title: 'UPI',
+    description: 'Pay through UPI',
+    amount: 2072,
+  },
+  {
+    id: 'card' as const,
+    title: 'Debit/Credit Cards',
+    description: 'Pay via RuPay, Visa, Master Card',
+    amount: 2072,
+  },
+  {
+    id: 'wallet' as const,
+    title: 'Wallets',
+    description: 'PhonePe, Airtel, PayPal & more',
+    amount: 2072,
+  },
+  {
+    id: 'partial' as const,
+    title: 'Partial Payment',
+    description: 'Pay ₹1572 on Completion',
+    amount: 500,
+  },
+  {
+    id: 'emi' as const,
+    title: 'EMI',
+    description: 'Pay via Credit/ Debit Card EMI',
+    amount: 2072,
   },
 ];

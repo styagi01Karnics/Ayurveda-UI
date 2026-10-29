@@ -1,8 +1,9 @@
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PatientSearchSelect } from '@/components/ui/PatientSearchSelect';
 import { Select } from '@/components/ui/Select';
 import {
   bookTreatmentSchema,
@@ -11,7 +12,12 @@ import {
 import { bookingDateInputProps } from '@/lib/bookingConstraints';
 
 export interface BookTreatmentLookupOptions {
-  patients: { value: string; label: string }[];
+  patients: {
+    value: string;
+    label: string;
+    patientId?: string;
+    name?: string;
+  }[];
   therapists: { value: string; label: string }[];
   treatmentPlans: { value: string; label: string }[];
 }
@@ -33,6 +39,7 @@ export function BookTreatmentModal({
 }: BookTreatmentModalProps) {
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -76,12 +83,19 @@ export function BookTreatmentModal({
     >
       <form className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Patient"
-            placeholder="Select patient"
-            options={lookupOptions.patients}
-            error={errors.patientId?.message}
-            {...register('patientId')}
+          <Controller
+            name="patientId"
+            control={control}
+            render={({ field }) => (
+              <PatientSearchSelect
+                label="Patient"
+                placeholder="Search by patient ID or name (min 4 characters)"
+                options={lookupOptions.patients}
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.patientId?.message}
+              />
+            )}
           />
           <Select
             label="Treatment Plan"

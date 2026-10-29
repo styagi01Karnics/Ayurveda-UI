@@ -12,32 +12,32 @@ export function DoctorScheduleStatCards({ stats }: DoctorScheduleStatCardsProps)
       title: 'Total Patients',
       value: stats.totalPatients,
       pills: [
-        { label: `${stats.completedPatients} Completed` },
-        { label: `${stats.ongoingPatients} Ongoing` },
+        { label: `${stats.completedPatients} Completed`, tone: 'success' as const },
+        { label: `${stats.ongoingPatients} Ongoing`, tone: 'muted' as const },
       ],
     },
     {
       title: 'Active Treatment Plans',
       value: stats.activeTreatmentPlans,
       pills: [
-        { label: `${stats.completedTreatmentPlans} Completed` },
-        { label: `${stats.ongoingTreatmentPlans} Ongoing` },
+        { label: `${stats.completedTreatmentPlans} Completed`, tone: 'success' as const },
+        { label: `${stats.ongoingTreatmentPlans} Ongoing`, tone: 'muted' as const },
       ],
     },
     {
       title: 'Completed Treatments',
       value: stats.completedTreatments,
       pills: [
-        { label: `${stats.consultationCount} Consultation` },
-        { label: `${stats.therapyCount} Therapy` },
+        { label: `${stats.consultationCount} Consultation`, tone: 'muted' as const },
+        { label: `${stats.therapyCount} Therapy`, tone: 'muted' as const },
       ],
     },
     {
       title: 'Follow Ups Due',
       value: stats.followUpsDue,
       pills: [
-        { label: `${stats.followUpsScheduled} Scheduled` },
-        { label: `${stats.followUpsPending} Pending` },
+        { label: `${stats.followUpsScheduled} Scheduled`, tone: 'success' as const },
+        { label: `${stats.followUpsPending} Pending`, tone: 'muted' as const },
       ],
     },
   ];
@@ -45,18 +45,22 @@ export function DoctorScheduleStatCards({ stats }: DoctorScheduleStatCardsProps)
   return (
     <div className="dash-grid">
       {cards.map((card) => (
-        <Card key={card.title}>
-          <p className="text-sm text-text-muted">{card.title}</p>
-          <p className="mt-1 text-3xl font-bold text-brown">{card.value}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+        <Card key={card.title} className="dashboard-card space-y-3 p-5">
+          <p className="font-sans text-[16px] font-semibold leading-5 tracking-normal text-[#838A9A]">
+            {card.title}
+          </p>
+          <p className="font-sans text-[22px] font-semibold leading-9 tracking-normal text-[#422C23]">
+            {card.value}
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
             {card.pills.map((pill) => (
               <span
                 key={pill.label}
                 className={cn(
-                  'rounded-full px-2.5 py-0.5 text-xs font-medium',
-                  pill.label.endsWith('Completed')
-                    ? 'bg-success/15 text-success'
-                    : 'bg-gold/15 text-gold',
+                  'rounded-full px-2.5 py-1 text-xs font-medium',
+                  pill.tone === 'success'
+                    ? 'bg-[#2E7D32]/10 text-[#2E7D32]'
+                    : 'bg-[#faf4e5] text-brown',
                 )}
               >
                 {pill.label}

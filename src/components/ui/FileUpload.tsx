@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
+import { Building2, CloudUpload, Pencil, Trash2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { assets } from '@/lib/assets';
 
 interface FileUploadProps {
   label: string;
@@ -9,6 +9,12 @@ interface FileUploadProps {
   error?: string;
   accept?: string;
   editOnly?: boolean;
+  /** Override the action link text (default: "Edit your {label}"). */
+  actionLabel?: string;
+  /** Remote image URL from API (logoUrl / photoUrl). */
+  previewUrl?: string | null;
+  /** When true, hide edit actions and block file changes. */
+  disabled?: boolean;
 }
 
 export function FileUpload({
@@ -18,13 +24,19 @@ export function FileUpload({
   error,
   accept = 'image/svg+xml,image/png,image/jpeg,image/gif',
   editOnly = false,
+  actionLabel,
+  previewUrl,
+  disabled = false,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
+  const displayPreview = preview || previewUrl || null;
+
   const handleFile = useCallback(
     (file: File | undefined) => {
+      if (disabled) return;
       if (preview) URL.revokeObjectURL(preview);
       if (file) {
         setPreview(URL.createObjectURL(file));
@@ -34,7 +46,7 @@ export function FileUpload({
         onChange(undefined);
       }
     },
-    [onChange, preview],
+    [disabled, onChange, preview],
   );
 
   const onDrop = (event: React.DragEvent) => {
@@ -45,39 +57,63 @@ export function FileUpload({
   };
 
   const shortLabel = label.replace(/^Your /, '');
-  const isPhoto = label.toLowerCase().includes('photo');
+  const linkLabel = actionLabel ?? `Edit your ${shortLabel}`;
 
   return (
-    <div className="flex h-full flex-col gap-2.5">
-      <p className="text-xs font-medium text-brown">{label}</p>
-      <div className="h-px w-full bg-[#DBDCDE]" />
+    <div className="flex flex-col gap-3">
+      <p className="text-sm font-semibold text-brown">{label}</p>
 
-      <div className="flex items-center gap-2.5">
-        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-[#F5E6A8]">
-          <img
-            src={preview ?? assets.auth.signupAvatar}
-            alt=""
-            className="h-full w-full object-cover"
-          />
-        </div>
-        <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex items-start gap-3">
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold/10">
+          {displayPreview ? (
+            <img src={displayPreview} alt="" className="h-full w-full object-cover" />
+          ) : label.toLowerCase().includes('logo') ? (
+            <Building2 className="h-7 w-7 text-gold" />
+          ) : (
+            <User className="h-7 w-7 text-gold" />
+          )}
           <button
             type="button"
-            className="text-left text-xs font-medium text-brown"
+            className="absolute -bottom-0.5 -right-0.5 rounded-full bg-gold p-1 text-white disabled:cursor-not-allowed disabled:opacity-50"
             onClick={() => inputRef.current?.click()}
+            aria-label={linkLabel}
+            disabled={disabled}
           >
-            Edit your {isPhoto ? 'photo' : shortLabel}
+            <Pencil className="h-3 w-3" />
           </button>
-          {!editOnly ? (
-            <div className="flex items-center gap-2 text-[11px] leading-none">
+        </div>
+
+        {editOnly ? (
+          disabled ? (
+            <p className="mt-4 text-xs text-text-muted">View only</p>
+          ) : (
+            <button
+              type="button"
+              className="mt-4 text-left text-xs font-medium text-gold hover:underline"
+              onClick={() => inputRef.current?.click()}
+            >
+              {linkLabel}
+            </button>
+          )
+        ) : (
+          <div className="flex flex-col gap-1 text-xs">
+            <button
+              type="button"
+              className="text-left font-medium text-gold hover:underline"
+              onClick={() => inputRef.current?.click()}
+            >
+              {linkLabel}
+            </button>
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="text-left text-[#737373] hover:text-danger"
+                className="flex items-center gap-1 text-left text-text-muted hover:text-danger"
                 onClick={() => {
                   handleFile(undefined);
                   if (inputRef.current) inputRef.current.value = '';
                 }}
               >
+                <Trash2 className="h-3 w-3" />
                 Delete
               </button>
               <button
@@ -88,8 +124,8 @@ export function FileUpload({
                 Update
               </button>
             </div>
-          ) : null}
-        </div>
+          </div>
+        )}
       </div>
 
       {!editOnly ? (
@@ -105,24 +141,18 @@ export function FileUpload({
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           className={cn(
-            'flex min-h-[168px] flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-[1.5px] border-dashed border-gold bg-transparent px-3 py-8 text-center transition-colors',
-            isDragging && 'bg-gold/5',
+            'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gold/50 bg-gold/5 px-4 py-6 text-center transition-colors hover:bg-gold/10',
+            isDragging && 'border-gold bg-gold/15',
             error && 'border-danger',
           )}
         >
-          <img
-            src={assets.auth.signupUploadIcon}
-            alt=""
-            className="mb-1 h-8 w-8 object-contain"
-          />
-          <p className="text-[12px] font-medium leading-tight text-gold">
-            Click to upload or drag and drop
+          <CloudUpload className="h-8 w-8 text-gold" />
+          <p className="text-sm text-brown">
+            <span className="font-medium text-gold">Click to upload</span> or drag
+            and drop
           </p>
-          <p className="text-[11px] font-medium leading-tight text-brown">
-            SVG, PNG, JPG or GIF
-          </p>
-          <p className="text-[11px] leading-tight text-brown">
-            (max, 800×400px)
+          <p className="text-xs text-text-muted">
+            SVG, PNG, JPG or GIF (max. 800x400px)
           </p>
           {value && <p className="text-xs text-success">{value.name}</p>}
         </div>
@@ -133,6 +163,7 @@ export function FileUpload({
         type="file"
         accept={accept}
         className="hidden"
+        disabled={disabled}
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
 

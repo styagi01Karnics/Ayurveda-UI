@@ -5,6 +5,9 @@ import { Eye, EyeOff } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { changePassword } from '@/lib/api/auth';
+import { ApiError } from '@/lib/api/client';
+import { getStoredToken, isMockAuthToken } from '@/lib/auth';
 import {
   changePasswordSchema,
   passwordRequirements,
@@ -56,6 +59,7 @@ export function ChangePasswordModal({
   onClose,
   onSuccess,
 }: ChangePasswordModalProps) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -67,13 +71,36 @@ export function ChangePasswordModal({
 
   const handleClose = () => {
     reset();
+    setSubmitError(null);
     onClose();
   };
 
-  const onSubmit = async () => {
-    await new Promise((r) => setTimeout(r, 600));
-    reset();
-    onSuccess();
+  const onSubmit = async (values: ChangePasswordFormValues) => {
+    setSubmitError(null);
+
+    if (isMockAuthToken(getStoredToken())) {
+      reset();
+      onSuccess();
+      return;
+    }
+
+    try {
+      await changePassword({
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword,
+      });
+      reset();
+      onSuccess();
+    } catch (err) {
+      setSubmitError(
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not change password. Please try again.',
+      );
+    }
   };
 
   return (
@@ -110,6 +137,12 @@ export function ChangePasswordModal({
           error={errors.confirmPassword?.message}
           registration={register('confirmPassword')}
         />
+
+        {submitError && (
+          <p className="text-sm text-danger" role="alert">
+            {submitError}
+          </p>
+        )}
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-1 pt-2">
           {passwordRequirements.map((req) => (

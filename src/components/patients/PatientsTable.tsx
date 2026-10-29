@@ -3,6 +3,7 @@ import { UploadCloud } from 'lucide-react';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Badge } from '@/components/ui/Badge';
 import { DataTableShell } from '@/components/ui/DataTableShell';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
 import type { Dosha, PatientRecord, PatientStatus, VisitType } from '@/types';
@@ -26,15 +27,15 @@ export function PatientsTable({
     <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-            <th className="w-[11%] px-3 py-3 font-medium">Patient ID</th>
-            <th className="w-[14%] px-3 py-3 font-medium">Patient</th>
-            <th className="w-[12%] px-3 py-3 font-medium">Doctor</th>
-            <th className="w-[11%] px-3 py-3 font-medium">Visit Type</th>
-            <th className="w-[14%] px-3 py-3 font-medium">Appointment Date</th>
-            <th className="w-[18%] px-3 py-3 font-medium">Dosha | Status</th>
-            <th className="w-[8%] px-3 py-3 font-medium">Bill</th>
-            <th className="w-[12%] px-3 py-3 font-medium">Report</th>
+          <tr className="screen-label border-b border-gray-100 bg-gray-50/80">
+            <th className="w-[11%] px-3 py-3">Patient Code</th>
+            <th className="w-[14%] px-3 py-3">Patient</th>
+            <th className="w-[12%] px-3 py-3">Doctor</th>
+            <th className="w-[11%] px-3 py-3">Visit Type</th>
+            <th className="w-[14%] px-3 py-3">Appointment Date</th>
+            <th className="w-[18%] px-3 py-3">Dosha | Status</th>
+            <th className="w-[8%] px-3 py-3">Bill</th>
+            <th className="w-[12%] px-3 py-3">Report</th>
           </tr>
         </thead>
         <tbody>
@@ -57,9 +58,11 @@ export function PatientsTable({
                     className="w-full text-left hover:text-gold"
                   >
                     <div className="truncate font-medium text-brown">{record.id}</div>
-                    <div className="truncate text-xs text-text-muted">
-                      {record.secondaryId}
-                    </div>
+                    {record.secondaryId ? (
+                      <div className="truncate text-xs text-text-muted">
+                        {record.secondaryId}
+                      </div>
+                    ) : null}
                   </button>
                 </td>
                 <td className="px-3 py-4">
@@ -87,17 +90,15 @@ export function PatientsTable({
                   </div>
                 </td>
                 <td className="px-3 py-4">
-                  <button
-                    type="button"
+                  <IconActionButton
                     onClick={(e) => {
                       e.stopPropagation();
                       onDownloadBill?.(record);
                     }}
-                    className="rounded-lg border border-gray-200 bg-sidebar p-2 text-gold hover:bg-gold/10"
                     aria-label={`Download bill for ${record.name}`}
                   >
                     <AppIcon src={assets.icons.download} className="h-4 w-4" />
-                  </button>
+                  </IconActionButton>
                 </td>
                 <td className="px-3 py-4">
                   <button
@@ -134,15 +135,17 @@ function DoshaBadge({ dosha }: { dosha: Dosha }) {
 }
 
 function StatusBadge({ status }: { status: PatientStatus }) {
-  const variant =
-    status === 'Completed'
-      ? 'success'
-      : status === 'Cancelled'
-        ? 'danger'
-        : status === 'Follow-Up'
-          ? 'gold'
-          : 'neutral';
-  return <Badge variant={variant}>{status}</Badge>;
+  const color =
+    status === 'Completed' || status === 'Scheduled'
+      ? 'text-[#2E7D32]'
+      : status === 'Cancelled' || status === 'Missed'
+        ? 'text-[#D64545]'
+        : status === 'Pending' ||
+            status === 'Follow-Up' ||
+            status === 'Upcoming'
+          ? 'text-[#EAB308]'
+          : 'text-text-muted';
+  return <span className={cn('text-xs font-semibold', color)}>{status}</span>;
 }
 
 export function PatientBreadcrumbs() {

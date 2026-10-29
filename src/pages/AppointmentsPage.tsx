@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { usePageAction } from '@/app/PageActionContext';
+import { useEffect, useMemo, useState } from 'react';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { AppointmentConfirmedModal } from '@/components/appointments/AppointmentConfirmedModal';
@@ -19,13 +18,15 @@ import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Button } from '@/components/ui/Button';
 import { FilterControl, ListPanel } from '@/components/ui/ListPanel';
 import { Input } from '@/components/ui/Input';
+import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
-import { Tabs } from '@/components/ui/Tabs';
+import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import {
   APPOINTMENT_FILTER_OPTIONS,
 } from '@/data/mock/appointments';
 import { useAsyncData } from '@/hooks/useAsyncData';
+import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   cancelAppointment,
   getAllTherapies,
@@ -54,8 +55,9 @@ import {
 } from '@/lib/api/mappers';
 import { getAllTherapists, mapTherapistSelectOptions } from '@/lib/api/therapists';
 import { assets } from '@/lib/assets';
+import { resolvePatientDisplayCode } from '@/lib/displayCodes';
 import { mapFollowUpToCalendarAppointment } from '@/lib/calendarUtils';
-import { cn } from '@/lib/utils';
+import { cn, formatPersonName } from '@/lib/utils';
 import type {
   CreatePatientValues,
   FollowUpFormValues,
@@ -101,12 +103,15 @@ export function AppointmentsPage() {
   const [localAppointments, setLocalAppointments] = useState<
     AppointmentRecord[]
   >([]);
+  const [recordsOverride, setRecordsOverride] = useState<
+    AppointmentRecord[] | null
+  >(null);
 
   const {
     data,
     loading,
     error,
-    reload,
+    reload: reloadAll,
   } = useAsyncData(async () => {
     const [doctors, therapists, categories, therapies, doshas, consultationTypes, appointments, patients, followUpDtos] =
       await Promise.all([
@@ -129,12 +134,12 @@ export function AppointmentsPage() {
     const lookupOptions: BookingLookupOptions = {
       doctors: doctors.map((d) => ({
         value: d.id,
-        label: d.name || d.doctorName || '—',
+        label: formatPersonName(d.name || d.doctorName) || '—',
       })),
       therapists: mapTherapistSelectOptions(therapists),
       categories: categories.map((c) => ({
         value: c.id,
-        label: c.categoryName,
+        label: (c.categoryName || c.name || c.categoryCode || '').trim() || c.id,
       })),
       therapies: therapies.map((t) => ({
         value: t.id,
@@ -149,10 +154,15 @@ export function AppointmentsPage() {
         value: type.id,
         label: type.name,
       })),
-      patients: patients.map((p) => ({
-        value: p.patientId,
-        label: p.patientFullName,
-      })),
+      patients: patients.map((p) => {
+        const code = resolvePatientDisplayCode(p).replace(/^#/, '');
+        return {
+          value: p.patientId,
+          label: `${code || '—'} — ${p.patientFullName}`,
+          patientId: code,
+          name: p.patientFullName,
+        };
+      }),
     };
 
     const followUpRecords = followUpDtos.map(mapFollowUpDtoToRecord);
@@ -173,13 +183,33 @@ export function AppointmentsPage() {
     followUpRecords: [] as FollowUpRecord[],
   });
 
+  const reload = () => {
+    setRecordsOverride(null);
+    setLocalAppointments([]);
+    reloadAll();
+  };
+
   const appointments = useMemo(() => {
+    const baseRecords = recordsOverride ?? data.records;
     const ids = new Set(localAppointments.map((a) => a.id));
     return [
       ...localAppointments,
-      ...data.records.filter((r) => !ids.has(r.id)),
+      ...baseRecords.filter((r) => !ids.has(r.id)),
     ];
-  }, [data.records, localAppointments]);
+  }, [data.records, localAppointments, recordsOverride]);
+
+  /** Refresh appointments list once (avoids reloading all masters). */
+  const refreshAppointmentsOnce = async () => {
+    const appointmentsList = await getAppointmentsByStatus('ALL');
+    const doctorsById = new Map(
+      (data.doctors.length ? data.doctors : []).map((d) => [d.id, d]),
+    );
+    const records = appointmentsList.map((item) =>
+      mapAppointmentToRecord(item, doctorsById),
+    );
+    setRecordsOverride(records);
+    setLocalAppointments([]);
+  };
 
   const followUps = data.followUpRecords;
   const followUpRescheduleDefaults = useMemo(
@@ -191,7 +221,7 @@ export function AppointmentsPage() {
               followUpRescheduleTarget.assignedDoctorId ?? '',
             visitTypeId: followUpRescheduleTarget.visitTypeId ?? '',
             schedulingOption:
-              followUpRescheduleTarget.schedulingOption ?? '7_DAYS',
+              followUpRescheduleTarget.schedulingOption ?? 'AFTER_7_DAYS',
             scheduleDate: followUpRescheduleTarget.dateCreated,
             scheduleTime: followUpRescheduleTarget.scheduleTime ?? '10:00',
             smsReminderEnabled:
@@ -206,7 +236,7 @@ export function AppointmentsPage() {
     () =>
       activeTab === 'appointments' ? (
         <Button
-          className="gap-1.5 px-4 py-2 text-sm"
+          className="h-9 gap-1.5 px-4 py-0 text-sm"
           onClick={() => setCreatePatientOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -214,7 +244,7 @@ export function AppointmentsPage() {
         </Button>
       ) : (
         <Button
-          className="gap-1.5 px-4 py-2 text-sm"
+          className="h-9 gap-1.5 px-4 py-0 text-sm"
           onClick={() => setFollowUpOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
@@ -223,8 +253,6 @@ export function AppointmentsPage() {
       ),
     [activeTab],
   );
-
-  usePageAction(headerAction);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((item) => {
@@ -256,16 +284,32 @@ export function AppointmentsPage() {
     });
   }, [followUps, patientIdQuery, statusFilter, visitTypeFilter, dateFilter]);
 
+  const appointmentsPaging = useClientPagination(filteredAppointments);
+  const followUpsPaging = useClientPagination(filteredFollowUps);
+
+  useEffect(() => {
+    appointmentsPaging.resetPage();
+    followUpsPaging.resetPage();
+  }, [
+    activeTab,
+    patientIdQuery,
+    statusFilter,
+    visitTypeFilter,
+    dateFilter,
+    appointmentsPaging.resetPage,
+    followUpsPaging.resetPage,
+  ]);
+
   const handleCancelRequest = (id: string) => {
     const item = appointments.find((a) => a.id === id);
     if (item) setCancelTarget(item);
   };
 
-  const handleCancelConfirm = async () => {
+  const handleCancelConfirm = async (reason: string) => {
     if (!cancelTarget || cancelling) return;
     setCancelling(true);
     try {
-      await cancelAppointment(cancelTarget.id);
+      await cancelAppointment(cancelTarget.id, reason);
       setLocalAppointments((prev) =>
         prev.filter((item) => item.id !== cancelTarget.id),
       );
@@ -353,8 +397,15 @@ export function AppointmentsPage() {
         data.doctors.find((d) => d.id === formData.assignedDoctor)?.doctorName ||
         formData.assignedDoctor;
 
+      const matchedPatient = data.lookupOptions.patients?.find(
+        (p) => p.value === result.patientId || p.value === formData.patientId,
+      );
       const patientCode =
-        formData.patientId ?? result.patientId.slice(0, 8);
+        matchedPatient?.patientId ||
+        resolvePatientDisplayCode({
+          patientId: formData.patientId,
+        }).replace(/^#/, '') ||
+        '—';
 
       const appointmentDate =
         formData.scheduleDate && formData.scheduleTime
@@ -378,8 +429,8 @@ export function AppointmentsPage() {
             `ap-${Date.now()}`,
         ),
         uhid: patientCode.startsWith('#') ? patientCode : `#${patientCode}`,
-        patient: formData.fullName,
-        doctor: doctorName || '—',
+        patient: formatPersonName(formData.fullName) || formData.fullName,
+        doctor: formatPersonName(doctorName) || '—',
         visitType: (firstTypeLabel.toUpperCase().includes('THERAPY')
           ? 'Therapy'
           : 'Consultation') as VisitType,
@@ -392,7 +443,7 @@ export function AppointmentsPage() {
       setLocalAppointments((prev) => [newAppointment, ...prev]);
       setCreatePatientOpen(false);
       setConfirmedOpen(true);
-      await reload();
+      await refreshAppointmentsOnce();
     } catch (err) {
       showToast({
         title: 'Error',
@@ -515,7 +566,7 @@ export function AppointmentsPage() {
   };
 
   const tabsNode = (
-    <Tabs
+    <UnderlineTabs
       tabs={[
         { id: 'appointments' as const, label: 'All Appointments' },
         { id: 'followUps' as const, label: 'All Follow Ups' },
@@ -525,47 +576,45 @@ export function AppointmentsPage() {
         setActiveTab(tab);
         setStatusFilter('');
       }}
+      variant="pill"
+      className="border-none"
     />
   );
 
   const viewToggleNode = (
-    <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
-      <button
-        type="button"
-        onClick={() => setViewMode('list')}
-        className={cn(
-          'rounded-md p-2 transition-colors',
-          viewMode === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50',
-        )}
-        aria-label="List view"
-        aria-pressed={viewMode === 'list'}
-      >
-        <AppIcon
-          src={assets.icons.listView}
-          className={cn(
-            'h-4 w-4',
-            viewMode === 'list' ? 'brightness-0' : 'opacity-40',
-          )}
-        />
-      </button>
-      <button
-        type="button"
-        onClick={() => setViewMode('calendar')}
-        className={cn(
-          'rounded-md p-2 transition-colors',
-          viewMode === 'calendar' ? 'bg-gray-100' : 'hover:bg-gray-50',
-        )}
-        aria-label="Calendar view"
-        aria-pressed={viewMode === 'calendar'}
-      >
-        <AppIcon
-          src={assets.icons.calendarView}
-          className={cn(
-            'h-4 w-4',
-            viewMode === 'calendar' ? 'brightness-0' : 'opacity-45',
-          )}
-        />
-      </button>
+    <div
+      className="flex items-center rounded-[16px] bg-white p-0.5 shadow-[0px_0px_3px_1px_#BE880B26]"
+      role="group"
+      aria-label="View mode"
+    >
+      {(['list', 'calendar'] as const).map((mode) => {
+        const selected = viewMode === mode;
+        const icon =
+          mode === 'list' ? assets.icons.listView : assets.icons.calendarView;
+        return (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setViewMode(mode)}
+            className={cn(
+              'flex h-8 w-8 items-center justify-center rounded-[16px] transition-colors',
+              selected && 'bg-[#BE880B] shadow-[0px_0px_3px_1px_#BE880B26]',
+            )}
+            aria-label={mode === 'list' ? 'List view' : 'Calendar view'}
+            aria-pressed={selected}
+          >
+            <img
+              src={icon}
+              alt=""
+              aria-hidden
+              className={cn(
+                'h-4 w-4 object-contain',
+                selected && 'brightness-0 invert',
+              )}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -574,12 +623,13 @@ export function AppointmentsPage() {
       <ListPanel
         tabs={tabsNode}
         toolbar={viewToggleNode}
+        actions={headerAction}
         filters={
           viewMode === 'list' ? (
             <>
               <FilterControl>
                 <SearchField
-                  placeholder="Patient ID"
+                  placeholder="Patient Code"
                   value={patientIdQuery}
                   onChange={(e) => setPatientIdQuery(e.target.value)}
                 />
@@ -626,9 +676,17 @@ export function AppointmentsPage() {
             >
               <AppointmentsTable
                 embedded
-                items={filteredAppointments}
+                items={appointmentsPaging.pageItems}
                 onCancel={handleCancelRequest}
                 onReschedule={handleRescheduleRequest}
+              />
+              <Pagination
+                page={appointmentsPaging.page}
+                totalPages={appointmentsPaging.totalPages}
+                totalElements={appointmentsPaging.totalElements}
+                pageSize={appointmentsPaging.pageSize}
+                onPageChange={appointmentsPaging.setPage}
+                disabled={loading}
               />
             </AsyncStatus>
           ) : (
@@ -641,8 +699,16 @@ export function AppointmentsPage() {
             >
               <FollowUpsTable
                 embedded
-                items={filteredFollowUps}
+                items={followUpsPaging.pageItems}
                 onReschedule={setFollowUpRescheduleTarget}
+              />
+              <Pagination
+                page={followUpsPaging.page}
+                totalPages={followUpsPaging.totalPages}
+                totalElements={followUpsPaging.totalElements}
+                pageSize={followUpsPaging.pageSize}
+                onPageChange={followUpsPaging.setPage}
+                disabled={loading}
               />
             </AsyncStatus>
           )

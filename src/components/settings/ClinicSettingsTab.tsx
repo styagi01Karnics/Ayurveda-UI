@@ -1,29 +1,35 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
 import { DoctorAvailabilityFields } from '@/components/settings/DoctorAvailabilityFields';
 import {
   ConsultationTypesSection,
+  DoshasSection,
   PackageMastersSection,
   TreatmentPlanMastersSection,
   mapConsultationTypeMasterToRecord,
+  mapDoshaToRecord,
   mapPackageMasterToRecord,
   mapTreatmentPlanMasterToRecord,
 } from '@/components/settings/MasterSettingsSections';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import {
+  createDosha,
   createTherapy,
   createTreatmentCategory,
   deleteTherapy,
+  getAllDoshas,
   getAllTherapies,
   getAllTreatmentCategories,
+  invalidateBookingDoshasCache,
   updateTherapyStatus,
 } from '@/lib/api/appointments';
 import { createConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
@@ -65,18 +71,28 @@ import {
 } from '@/lib/validation/settings.schema';
 import { cn, formatCurrency } from '@/lib/utils';
 import { formatDoctorAvailability } from '@/lib/doctorAvailability';
+import type { TherapistDto, TherapyDto, TreatmentCategoryDto } from '@/lib/api/types';
 import type {
+  ClinicConsultationTypeRecord,
   ClinicDoctorRecord,
+  ClinicDoshaRecord,
+  ClinicPackageMasterRecord,
   ClinicStatus,
   ClinicTherapistRecord,
   ClinicTherapyRecord,
   ClinicTreatmentCategoryRecord,
+  ClinicTreatmentPlanMasterRecord,
 } from '@/types';
 
 type DeleteTarget =
   | { type: 'Doctor'; record: ClinicDoctorRecord }
+  | { type: 'Category'; record: ClinicTreatmentCategoryRecord }
   | { type: 'Therapy'; record: ClinicTherapyRecord }
   | { type: 'Therapist'; record: ClinicTherapistRecord }
+  | { type: 'Consultation'; record: ClinicConsultationTypeRecord }
+  | { type: 'Treatment Plan Master'; record: ClinicTreatmentPlanMasterRecord }
+  | { type: 'Package Masters'; record: ClinicPackageMasterRecord }
+  | { type: 'Dosha Master'; record: ClinicDoshaRecord }
   | null;
 
 function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
@@ -85,6 +101,91 @@ function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
 
 function nextStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
   return status === 'Active' ? 'INACTIVE' : 'ACTIVE';
+}
+
+type ClinicSettingsData = {
+  doctors: ClinicDoctorRecord[];
+  therapists: ClinicTherapistRecord[];
+  therapies: ClinicTherapyRecord[];
+  categories: ClinicTreatmentCategoryRecord[];
+  categoryOptions: { value: string; label: string }[];
+  consultationTypes: ClinicConsultationTypeRecord[];
+  treatmentPlans: ClinicTreatmentPlanMasterRecord[];
+  packageMasters: ClinicPackageMasterRecord[];
+  doshas: ClinicDoshaRecord[];
+};
+
+const EMPTY_CLINIC_SETTINGS: ClinicSettingsData = {
+  doctors: [],
+  therapists: [],
+  therapies: [],
+  categories: [],
+  categoryOptions: [],
+  consultationTypes: [],
+  treatmentPlans: [],
+  packageMasters: [],
+  doshas: [],
+};
+
+function toCategoryOptions(categories: TreatmentCategoryDto[]) {
+  return categories
+    .filter((c) => c.id)
+    .map((c) => ({
+      value: c.id,
+      label: (c.categoryName || c.name || c.categoryCode || '').trim() || c.id,
+    }));
+}
+
+function mapClinicTherapies(
+  therapies: TherapyDto[],
+  categories: TreatmentCategoryDto[],
+) {
+  const categoriesById = new Map(categories.map((c) => [c.id, c]));
+  return therapies.map((therapy) =>
+    mapTherapyToClinicRecord(therapy, categoriesById),
+  );
+}
+
+function mapClinicTherapists(
+  therapists: TherapistDto[],
+  therapies: TherapyDto[],
+) {
+  const therapiesById = new Map(therapies.map((t) => [t.id, t]));
+  return therapists.map((t) => mapTherapistToClinicRecord(t, therapiesById));
+}
+
+async function loadClinicSettings(): Promise<ClinicSettingsData> {
+  const [
+    doctors,
+    therapists,
+    therapies,
+    categories,
+    consultationTypes,
+    treatmentPlans,
+    packageMasters,
+    doshas,
+  ] = await Promise.all([
+    getAllDoctors(),
+    getAllTherapists(),
+    getAllTherapies(),
+    getAllTreatmentCategories(),
+    getAllConsultationTypes().catch(() => []),
+    getAllTreatmentPlanMasters().catch(() => []),
+    getAllPackageMasters().catch(() => []),
+    getAllDoshas().catch(() => []),
+  ]);
+
+  return {
+    doctors: doctors.map(mapDoctorToClinicRecord),
+    therapists: mapClinicTherapists(therapists, therapies),
+    therapies: mapClinicTherapies(therapies, categories),
+    categories: categories.map(mapTreatmentCategoryToRecord),
+    categoryOptions: toCategoryOptions(categories),
+    consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
+    treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
+    packageMasters: packageMasters.map(mapPackageMasterToRecord),
+    doshas: doshas.map(mapDoshaToRecord),
+  };
 }
 
 function StatusToggle({
@@ -116,81 +217,116 @@ export function ClinicSettingsTab() {
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const { data, loading, error, reload } = useAsyncData(async () => {
-    const [
-      doctors,
-      therapists,
-      therapies,
-      categories,
-      consultationTypes,
-      treatmentPlans,
-      packageMasters,
-    ] = await Promise.all([
-      getAllDoctors(),
-      getAllTherapists(),
-      getAllTherapies(),
-      getAllTreatmentCategories(),
-      getAllConsultationTypes().catch(() => []),
-      getAllTreatmentPlanMasters().catch(() => []),
-      getAllPackageMasters().catch(() => []),
-    ]);
-
-    const categoriesById = new Map(categories.map((c) => [c.id, c]));
-    const therapiesById = new Map(therapies.map((t) => [t.id, t]));
-
-    return {
-      doctors: doctors.map(mapDoctorToClinicRecord),
-      therapists: therapists.map((t) =>
-        mapTherapistToClinicRecord(t, therapiesById),
-      ),
-      therapies: therapies.map((therapy) =>
-        mapTherapyToClinicRecord(therapy, categoriesById),
-      ),
-      categories: categories.map(mapTreatmentCategoryToRecord),
-      categoryOptions: categories.map((c) => ({
-        value: c.id,
-        label: c.categoryName,
-      })),
-      consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
-      treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
-      packageMasters: packageMasters.map(mapPackageMasterToRecord),
-    };
-  }, {
-    doctors: [] as ClinicDoctorRecord[],
-    therapists: [] as ClinicTherapistRecord[],
-    therapies: [] as ClinicTherapyRecord[],
-    categories: [] as ClinicTreatmentCategoryRecord[],
-    categoryOptions: [] as { value: string; label: string }[],
-    consultationTypes: [],
-    treatmentPlans: [],
-    packageMasters: [],
-  });
+  const { data, setData, loading, error, reload } = useAsyncData(
+    loadClinicSettings,
+    EMPTY_CLINIC_SETTINGS,
+  );
 
   const { doctors, therapies, therapists } = data;
+
+  const refreshDoctors = async () => {
+    const doctorsList = await getAllDoctors();
+    setData((prev) => ({
+      ...prev,
+      doctors: doctorsList.map(mapDoctorToClinicRecord),
+    }));
+  };
+
+  const refreshCategories = async () => {
+    const [categories, therapiesList] = await Promise.all([
+      getAllTreatmentCategories(),
+      getAllTherapies(),
+    ]);
+    setData((prev) => ({
+      ...prev,
+      categories: categories.map(mapTreatmentCategoryToRecord),
+      categoryOptions: toCategoryOptions(categories),
+      therapies: mapClinicTherapies(therapiesList, categories),
+    }));
+  };
+
+  const refreshTherapies = async () => {
+    const [therapiesList, categories, therapistsList] = await Promise.all([
+      getAllTherapies(),
+      getAllTreatmentCategories(),
+      getAllTherapists(),
+    ]);
+    setData((prev) => ({
+      ...prev,
+      therapies: mapClinicTherapies(therapiesList, categories),
+      categoryOptions: toCategoryOptions(categories),
+      therapists: mapClinicTherapists(therapistsList, therapiesList),
+    }));
+  };
+
+  const refreshTherapists = async () => {
+    const [therapistsList, therapiesList] = await Promise.all([
+      getAllTherapists(),
+      getAllTherapies(),
+    ]);
+    setData((prev) => ({
+      ...prev,
+      therapists: mapClinicTherapists(therapistsList, therapiesList),
+    }));
+  };
+
+  const refreshConsultationTypes = async () => {
+    const consultationTypes = await getAllConsultationTypes();
+    setData((prev) => ({
+      ...prev,
+      consultationTypes: consultationTypes.map(mapConsultationTypeMasterToRecord),
+    }));
+  };
+
+  const refreshTreatmentPlans = async () => {
+    const treatmentPlans = await getAllTreatmentPlanMasters();
+    setData((prev) => ({
+      ...prev,
+      treatmentPlans: treatmentPlans.map(mapTreatmentPlanMasterToRecord),
+    }));
+  };
+
+  const refreshPackageMasters = async () => {
+    const packageMasters = await getAllPackageMasters();
+    setData((prev) => ({
+      ...prev,
+      packageMasters: packageMasters.map(mapPackageMasterToRecord),
+    }));
+  };
+
+  const refreshDoshas = async () => {
+    const doshas = await getAllDoshas();
+    setData((prev) => ({
+      ...prev,
+      doshas: doshas.map(mapDoshaToRecord),
+    }));
+  };
 
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
     try {
       if (deleteTarget.type === 'Doctor') {
         await deleteDoctor(deleteTarget.record.id);
+        await refreshDoctors();
         showToast({
           title: 'Doctor has been deleted',
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       } else if (deleteTarget.type === 'Therapy') {
         await deleteTherapy(deleteTarget.record.id);
+        await refreshTherapies();
         showToast({
           title: 'Therapy has been deleted',
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       } else if (deleteTarget.type === 'Therapist') {
         await deleteTherapist(deleteTarget.record.id);
+        await refreshTherapists();
         showToast({
           title: 'Therapist has been deleted',
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       }
-      await reload();
     } catch (err) {
       showToast({
         title: 'Error deleting record',
@@ -205,7 +341,7 @@ export function ClinicSettingsTab() {
     setTogglingId(doctor.id);
     try {
       await updateDoctorStatus(doctor.id, nextStatus(doctor.status));
-      await reload();
+      await refreshDoctors();
     } catch (err) {
       showToast({
         title: 'Failed to update doctor status',
@@ -220,7 +356,7 @@ export function ClinicSettingsTab() {
     setTogglingId(therapy.id);
     try {
       await updateTherapyStatus(therapy.id, nextStatus(therapy.status));
-      await reload();
+      await refreshTherapies();
     } catch (err) {
       showToast({
         title: 'Failed to update therapy status',
@@ -235,7 +371,7 @@ export function ClinicSettingsTab() {
     setTogglingId(therapist.id);
     try {
       await updateTherapistStatus(therapist.id, nextStatus(therapist.status));
-      await reload();
+      await refreshTherapists();
     } catch (err) {
       showToast({
         title: 'Failed to update therapist status',
@@ -258,7 +394,7 @@ export function ClinicSettingsTab() {
                 description: values.description.trim(),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshCategories();
               showToast({
                 title: 'Category Added',
                 message: `${values.categoryName} has been added successfully.`,
@@ -273,6 +409,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Category', record })}
         />
 
         <DoctorsSection
@@ -284,8 +421,6 @@ export function ClinicSettingsTab() {
               await createDoctor({
                 name: values.name,
                 specialization: values.specialization,
-                qualification: values.qualification?.trim() || undefined,
-                mobileNumber: values.mobileNumber?.trim() || undefined,
                 status: toApiStatus(values.status),
                 consultationFees: Number(values.consultationFees),
                 followUpFees: Number(values.followUpFees),
@@ -294,8 +429,10 @@ export function ClinicSettingsTab() {
                   values.availabilityStartTime,
                   values.availabilityEndTime,
                 ),
+                mobileNumber: values.mobileNumber,
+                qualification: values.qualification ?? '',
               });
-              await reload();
+              await refreshDoctors();
               showToast({
                 title: 'Doctor Added',
                 message: `${values.name} has been added successfully.`,
@@ -337,7 +474,7 @@ export function ClinicSettingsTab() {
                 description: values.description,
               });
 
-              await reload();
+              await refreshTherapies();
               showToast({
                 title: 'Therapy Added',
                 message: `${values.name} has been added successfully.`,
@@ -370,7 +507,7 @@ export function ClinicSettingsTab() {
                 status: toApiStatus(values.status),
                 assignedTherapyIds: values.assignedTherapyIds,
               });
-              await reload();
+              await refreshTherapists();
               showToast({
                 title: 'Therapist Added',
                 message: `${values.name} has been added successfully.`,
@@ -396,7 +533,7 @@ export function ClinicSettingsTab() {
                 name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshConsultationTypes();
               showToast({
                 title: 'Consultation type added',
                 message: `${values.name} has been added successfully.`,
@@ -411,6 +548,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+           onDelete={(record) => setDeleteTarget({ type: 'Consultation', record })}
         />
 
         <TreatmentPlanMastersSection
@@ -421,7 +559,7 @@ export function ClinicSettingsTab() {
                 name: values.name.trim(),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshTreatmentPlans();
               showToast({
                 title: 'Treatment plan added',
                 message: `${values.name} has been added successfully.`,
@@ -436,6 +574,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Treatment Plan Master', record })}
         />
 
         <PackageMastersSection
@@ -447,7 +586,7 @@ export function ClinicSettingsTab() {
                 packagePrice: Number(values.packagePrice),
                 status: 'ACTIVE',
               });
-              await reload();
+              await refreshPackageMasters();
               showToast({
                 title: 'Package master added',
                 message: `${values.name} has been added successfully.`,
@@ -462,6 +601,36 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Package Masters', record })}
+        />
+
+        <DoshasSection
+          records={data.doshas}
+          onAdd={async (values) => {
+            try {
+              await createDosha({
+                name: values.name.trim(),
+                elements: values.elements.trim(),
+                characteristics: values.characteristics.trim(),
+                status: 'ACTIVE',
+              });
+              invalidateBookingDoshasCache();
+              await refreshDoshas();
+              showToast({
+                title: 'Dosha added',
+                message: `${values.name} has been added to Dosha Master.`,
+              });
+            } catch (err) {
+              showToast({
+                title: 'Failed to add dosha',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not create dosha.',
+              });
+            }
+          }}
+          onDelete={(record) => setDeleteTarget({ type: 'Dosha Master', record })}
         />
 
         <DeleteClinicItemModal
@@ -477,16 +646,67 @@ export function ClinicSettingsTab() {
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <h3 className="mb-4 text-base font-semibold text-brown">{title}</h3>
+    <h3 className="font-sans text-base font-semibold leading-tight tracking-normal text-[#422C23]">
+      {title}
+    </h3>
+  );
+}
+
+export function SettingsActionButton({
+  label,
+  onClick,
+  disabled,
+  variant = 'add',
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: 'add' | 'delete';
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      disabled={disabled}
+      aria-label={label}
+      className={cn(
+        'inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] transition-colors hover:bg-[#F5EBD3] disabled:opacity-60',
+        variant === 'delete' && 'hover:bg-danger/10 hover:text-danger',
+      )}
+    >
+      {variant === 'add' ? (
+        <Plus className="h-4 w-4" strokeWidth={2.25} />
+      ) : (
+        <Trash2 className="h-4 w-4" strokeWidth={2} />
+      )}
+    </button>
+  );
+}
+
+function SettingsTableHead({ columns }: { columns: string[] }) {
+  return (
+    <tr className="border-b border-[#EFF0F6] text-[12px] font-medium text-[#838A9A]">
+      {columns.map((column) => (
+        <th key={column} className="px-4 py-3 text-left font-medium">
+          {column}
+        </th>
+      ))}
+    </tr>
   );
 }
 
 function TreatmentCategoriesSection({
   categories,
   onAdd,
+  onDelete
 }: {
   categories: ClinicTreatmentCategoryRecord[];
   onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
+   onDelete: (record: ClinicTreatmentCategoryRecord) => void;
 }) {
   const {
     register,
@@ -504,22 +724,19 @@ function TreatmentCategoriesSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Treatment Categories" />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Category Name</th>
-              <th className="px-4 py-3 font-medium">Description</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className='sticky top-0 z-10 bg-white'>
+            <SettingsTableHead
+              columns={['S No.', 'Category Name', 'Description', 'Action']}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input
@@ -536,23 +753,25 @@ function TreatmentCategoriesSection({
                 />
               </td>
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
+                <SettingsActionButton
+                  label="Add category"
                   disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
-                  aria-label="Add category"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                  onClick={() => void handleSubmit(onSubmit)()}
+                />
               </td>
             </tr>
             {categories.map((category, index) => (
-              <tr key={category.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{category.name}</td>
-                <td className="px-4 py-4 text-brown">{category.description}</td>
-                <td className="px-4 py-4 text-text-muted">—</td>
+              <tr key={category.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
+                <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
+               <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${category.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(category)}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -561,6 +780,19 @@ function TreatmentCategoriesSection({
     </Card>
   );
 }
+
+const EMPTY_DOCTOR_FORM: ClinicDoctorFormValues = {
+  name: '',
+  specialization: '',
+  qualification: '',
+  mobileNumber: '',
+  status: 'Active',
+  consultationFees: '',
+  followUpFees: '',
+  availabilityDays: ['weekdays'],
+  availabilityStartTime: '09:00',
+  availabilityEndTime: '17:00',
+};
 
 function DoctorsSection({
   doctors,
@@ -577,6 +809,7 @@ function DoctorsSection({
 }) {
   const {
     register,
+    control,
     handleSubmit,
     reset,
     watch,
@@ -584,122 +817,173 @@ function DoctorsSection({
     formState: { errors, isSubmitting },
   } = useForm<ClinicDoctorFormValues>({
     resolver: zodResolver(clinicDoctorSchema),
-    defaultValues: {
-      name: '',
-      specialization: '',
-      qualification: '',
-      mobileNumber: '',
-      status: 'Active',
-      consultationFees: '',
-      followUpFees: '',
-      availabilityDays: ['weekdays'],
-      availabilityStartTime: '09:00',
-      availabilityEndTime: '17:00',
-    },
+    defaultValues: EMPTY_DOCTOR_FORM,
   });
 
   const availabilityDays = watch('availabilityDays') ?? [];
+  const { showToast } = useToast();
 
   const onSubmit = async (values: ClinicDoctorFormValues) => {
     await onAdd(values);
-    reset({
-      name: '',
-      specialization: '',
-      qualification: '',
-      mobileNumber: '',
-      status: 'Active',
-      consultationFees: '',
-      followUpFees: '',
-      availabilityDays: ['weekdays'],
-      availabilityStartTime: '09:00',
-      availabilityEndTime: '17:00',
+    reset(EMPTY_DOCTOR_FORM);
+  };
+
+  const onInvalid = () => {
+    showToast({
+      title: 'Cannot add doctor',
+      message:
+        'Please fill name, specialization, mobile, fees, and availability.',
     });
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Doctors" />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Specialization</th>
-              <th className="px-4 py-3 font-medium">Qualification</th>
-              <th className="px-4 py-3 font-medium">Mobile</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Consultation Fees</th>
-              <th className="px-4 py-3 font-medium">Follow Up Fees</th>
-              <th className="px-4 py-3 font-medium min-w-[220px]">Availability</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+      <form
+        className="border-b border-[#EFF0F6] px-5 py-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void handleSubmit(onSubmit, onInvalid)();
+        }}
+      >
+        <div className="grid w-full min-w-0 grid-cols-7 gap-2">
+          <div className="min-w-0">
+            <Input
+              label="Name"
+              placeholder="Name"
+              error={errors.name?.message}
+              {...register('name')}
+            />
+          </div>
+          <div className="min-w-0">
+            <Input
+              label="Specialisation"
+              placeholder="Specialisation"
+              error={errors.specialization?.message}
+              {...register('specialization')}
+            />
+          </div>
+          <div className="min-w-0">
+            <Controller
+              name="qualification"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Qualification"
+                  placeholder="Qualification"
+                  error={errors.qualification?.message}
+                  name={field.name}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
+            />
+          </div>
+          <div className="min-w-0">
+            <Controller
+              name="mobileNumber"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Mobile"
+                  placeholder="10-digit no."
+                  error={errors.mobileNumber?.message}
+                  name={field.name}
+                  value={field.value ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
+            />
+          </div>
+          <div className="min-w-0">
+            <Select
+              label="Status"
+              placeholder="Status"
+              options={[...CLINIC_STATUS_OPTIONS]}
+              error={errors.status?.message}
+              {...register('status')}
+            />
+          </div>
+          <div className="min-w-0">
+            <RupeeInput
+              label="Consultation"
+              placeholder="0"
+              error={errors.consultationFees?.message}
+              {...register('consultationFees')}
+            />
+          </div>
+          <div className="min-w-0">
+            <RupeeInput
+              label="Follow up"
+              placeholder="0"
+              error={errors.followUpFees?.message}
+              {...register('followUpFees')}
+            />
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <DoctorAvailabilityFields
+              selectedDays={availabilityDays}
+              onDaysChange={(days) =>
+                setValue('availabilityDays', days, { shouldValidate: true })
+              }
+              startTime={watch('availabilityStartTime') ?? '09:00'}
+              endTime={watch('availabilityEndTime') ?? '17:00'}
+              onStartTimeChange={(value) =>
+                setValue('availabilityStartTime', value, { shouldValidate: true })
+              }
+              onEndTimeChange={(value) =>
+                setValue('availabilityEndTime', value, { shouldValidate: true })
+              }
+              daysError={errors.availabilityDays?.message}
+              startTimeError={errors.availabilityStartTime?.message}
+              endTimeError={errors.availabilityEndTime?.message}
+            />
+          </div>
+          <SettingsActionButton
+            label="Add doctor"
+            disabled={isSubmitting}
+            onClick={() => void handleSubmit(onSubmit, onInvalid)()}
+          />
+        </div>
+      </form>
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
+        <table className="w-full min-w-[900px] text-left text-sm">
+          <thead className='sticky top-0 z-10 bg-white'>
+            <SettingsTableHead
+              columns={[
+                'S No.',
+                'Name',
+                'Specialization',
+                'Qualification',
+                'Mobile',
+                'Status',
+                'Consultation Fees',
+                'Follow Up Fees',
+                'Availability',
+                'Action',
+              ]}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
-              <td className="px-4 py-3" />
-              <td className="px-4 py-3">
-                <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input placeholder="Specialization" error={errors.specialization?.message} {...register('specialization')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input placeholder="Qualification" error={errors.qualification?.message} {...register('qualification')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input placeholder="Mobile" error={errors.mobileNumber?.message} {...register('mobileNumber')} />
-              </td>
-              <td className="px-4 py-3">
-                <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input placeholder="₹" error={errors.consultationFees?.message} {...register('consultationFees')} />
-              </td>
-              <td className="px-4 py-3">
-                <Input placeholder="₹" error={errors.followUpFees?.message} {...register('followUpFees')} />
-              </td>
-              <td className="px-4 py-3 align-top">
-                <DoctorAvailabilityFields
-                  compact
-                  selectedDays={availabilityDays}
-                  onDaysChange={(days) =>
-                    setValue('availabilityDays', days, { shouldValidate: true })
-                  }
-                  startTime={watch('availabilityStartTime') ?? '09:00'}
-                  endTime={watch('availabilityEndTime') ?? '17:00'}
-                  onStartTimeChange={(value) =>
-                    setValue('availabilityStartTime', value, { shouldValidate: true })
-                  }
-                  onEndTimeChange={(value) =>
-                    setValue('availabilityEndTime', value, { shouldValidate: true })
-                  }
-                  daysError={errors.availabilityDays?.message}
-                  startTimeError={errors.availabilityStartTime?.message}
-                  endTimeError={errors.availabilityEndTime?.message}
-                />
-              </td>
-              <td className="px-4 py-3 align-top">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
-                  disabled={isSubmitting}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
-                  aria-label="Add doctor"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </td>
-            </tr>
             {doctors.map((doctor, index) => (
-              <tr key={doctor.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{doctor.name}</td>
-                <td className="px-4 py-4 text-brown">{doctor.specialization}</td>
-                <td className="px-4 py-4 text-brown">{doctor.qualification || '—'}</td>
-                <td className="px-4 py-4 text-brown">{doctor.mobileNumber || '—'}</td>
+              <tr key={doctor.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{doctor.name}</td>
+                <td className="px-4 py-4 text-[#422C23]">{doctor.specialization}</td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {doctor.qualification || '—'}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {doctor.mobileNumber || '—'}
+                </td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={doctor.status}
@@ -707,18 +991,19 @@ function DoctorsSection({
                     onToggle={() => onToggleStatus(doctor)}
                   />
                 </td>
-                <td className="px-4 py-4 text-brown">{formatCurrency(doctor.consultationFees)}</td>
-                <td className="px-4 py-4 text-brown">{formatCurrency(doctor.followUpFees)}</td>
-                <td className="px-4 py-4 text-brown">{doctor.availability || '—'}</td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {formatCurrency(doctor.consultationFees)}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {formatCurrency(doctor.followUpFees)}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">{doctor.availability || '—'}</td>
                 <td className="px-4 py-4">
-                  <button
-                    type="button"
+                  <SettingsActionButton
+                    label={`Delete ${doctor.name}`}
+                    variant="delete"
                     onClick={() => onDelete(doctor)}
-                    className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${doctor.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </td>
               </tr>
             ))}
@@ -766,26 +1051,28 @@ function TherapySection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Therapy" />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Duration</th>
-              <th className="px-4 py-3 font-medium">Price</th>
-              <th className="px-4 py-3 font-medium">Description</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
+        <table className="w-full min-w-[900px] text-left text-sm">
+          <thead className='sticky top-0 z-10 bg-white'>
+            <SettingsTableHead
+              columns={[
+                'S No.',
+                'Name',
+                'Category',
+                'Status',
+                'Duration',
+                'Price',
+                'Description',
+                'Action',
+              ]}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
@@ -799,36 +1086,33 @@ function TherapySection({
                   {...register('category')}
                 />
               </td>
+              <td className="px-4 py-3 text-[12px] text-[#838A9A]">Active</td>
               <td className="px-4 py-3">
-                <Input placeholder="45" error={errors.duration?.message} {...register('duration')} />
+                <Input placeholder="45 min" error={errors.duration?.message} {...register('duration')} />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="₹" error={errors.price?.message} {...register('price')} />
+                <RupeeInput placeholder="0" error={errors.price?.message} {...register('price')} />
               </td>
               <td className="px-4 py-3">
-                <Input placeholder="Description" error={errors.description?.message} {...register('description')} />
+                <Input
+                  placeholder="Description"
+                  error={errors.description?.message}
+                  {...register('description')}
+                />
               </td>
-              <td className="px-4 py-3" />
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
+                <SettingsActionButton
+                  label="Add therapy"
                   disabled={isSubmitting || categoryOptions.length === 0}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark disabled:opacity-60"
-                  aria-label="Add therapy"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                  onClick={() => void handleSubmit(onSubmit)()}
+                />
               </td>
             </tr>
             {therapies.map((therapy, index) => (
-              <tr key={therapy.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{therapy.name}</td>
-                <td className="px-4 py-4 text-brown">{therapy.category}</td>
-                <td className="px-4 py-4 text-brown">{therapy.duration}</td>
-                <td className="px-4 py-4 text-brown">{formatCurrency(therapy.price)}</td>
-                <td className="px-4 py-4 text-brown">{therapy.description}</td>
+              <tr key={therapy.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{therapy.name}</td>
+                <td className="px-4 py-4 text-[#422C23]">{therapy.category}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={therapy.status}
@@ -836,15 +1120,15 @@ function TherapySection({
                     onToggle={() => onToggleStatus(therapy)}
                   />
                 </td>
+                <td className="px-4 py-4 text-[#422C23]">{therapy.duration}</td>
+                <td className="px-4 py-4 text-[#422C23]">{formatCurrency(therapy.price)}</td>
+                <td className="px-4 py-4 text-[#422C23]">{therapy.description}</td>
                 <td className="px-4 py-4">
-                  <button
-                    type="button"
+                  <SettingsActionButton
+                    label={`Delete ${therapy.name}`}
+                    variant="delete"
                     onClick={() => onDelete(therapy)}
-                    className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${therapy.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </td>
               </tr>
             ))}
@@ -913,58 +1197,70 @@ function TherapistSection({
   };
 
   return (
-    <Card className="min-w-0 overflow-hidden p-0">
-      <div className="border-b border-gray-100 px-5 py-4">
+    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
+      <div className="border-b border-[#EFF0F6] px-5 py-4">
         <SectionHeader title="Therapist" />
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-4 py-3 font-medium">S No.</th>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Assigned Therapies</th>
-              <th className="px-4 py-3 font-medium">Action</th>
-            </tr>
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
+        <table className="w-full min-w-[720px] text-left text-sm">
+          <thead className='sticky top-0 z-10 bg-white'>
+            <SettingsTableHead
+              columns={['S No.', 'Name', 'Status', 'Assigned Therapies', 'Action']}
+            />
           </thead>
           <tbody>
-            <tr className="border-b border-gray-50 bg-cream/30">
+            <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
                 <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
               </td>
               <td className="px-4 py-3">
-                <Select placeholder="Status" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
+                <Select
+                  placeholder="Status"
+                  options={[...CLINIC_STATUS_OPTIONS]}
+                  error={errors.status?.message}
+                  {...register('status')}
+                />
               </td>
               <td className="px-4 py-3">
                 <div className="space-y-2">
-                  <Select
-                    placeholder={therapyOptions.length ? 'Select therapy' : 'Add therapies first'}
-                    options={therapyOptions}
-                    disabled={therapyOptions.length === 0}
-                    onChange={(e) => {
-                      addTherapyTag(e.target.value);
-                      e.target.value = '';
-                    }}
-                  />
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex min-h-[40px] flex-wrap items-center gap-1.5 rounded-lg border border-[#EFF0F6] bg-white px-2.5 py-1.5">
                     {assignedTherapyIds.map((therapyId) => (
                       <span
                         key={therapyId}
-                        className="inline-flex items-center gap-1 rounded-full bg-cream px-2.5 py-1 text-xs text-brown"
+                        className="inline-flex items-center gap-1 rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2 py-0.5 text-[11px] font-medium text-[#422C23]"
                       >
                         {therapyLabel(therapyId)}
                         <button
                           type="button"
                           onClick={() => removeTherapyTag(therapyId)}
-                          className="text-text-muted hover:text-brown"
+                          className="text-[#838A9A] hover:text-[#422C23]"
                           aria-label={`Remove ${therapyLabel(therapyId)}`}
                         >
                           <X className="h-3 w-3" />
                         </button>
                       </span>
                     ))}
+                    <select
+                      className="min-w-[120px] flex-1 appearance-none border-none bg-transparent py-1 font-sans text-[12px] font-medium text-[#422C23] focus:outline-none"
+                      value=""
+                      disabled={therapyOptions.length === 0}
+                      onChange={(e) => {
+                        addTherapyTag(e.target.value);
+                        e.target.value = '';
+                      }}
+                    >
+                      <option value="">
+                        {therapyOptions.length ? 'Select therapy' : 'Add therapies first'}
+                      </option>
+                      {therapyOptions
+                        .filter((opt) => !assignedTherapyIds.includes(opt.value))
+                        .map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                    </select>
                   </div>
                   {errors.assignedTherapyIds?.message && (
                     <p className="text-xs text-danger">{errors.assignedTherapyIds.message}</p>
@@ -972,20 +1268,16 @@ function TherapistSection({
                 </div>
               </td>
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={handleSubmit(onSubmit)}
-                  className="rounded-lg bg-gold px-2.5 py-2 text-white hover:bg-gold-dark"
-                  aria-label="Add therapist"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                <SettingsActionButton
+                  label="Add therapist"
+                  onClick={() => void handleSubmit(onSubmit)()}
+                />
               </td>
             </tr>
             {therapists.map((therapist, index) => (
-              <tr key={therapist.id} className="border-b border-gray-50">
-                <td className="px-4 py-4 text-brown">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-brown">{therapist.name}</td>
+              <tr key={therapist.id} className="border-b border-[#EFF0F6]">
+                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">{therapist.name}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
                     status={therapist.status}
@@ -995,25 +1287,26 @@ function TherapistSection({
                 </td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-1.5">
-                    {therapist.assignedTherapies.map((therapy) => (
-                      <span
-                        key={therapy}
-                        className="rounded-full bg-cream px-2.5 py-1 text-xs text-brown"
-                      >
-                        {therapy}
-                      </span>
-                    ))}
+                    {therapist.assignedTherapies.length ? (
+                      therapist.assignedTherapies.map((therapy) => (
+                        <span
+                          key={therapy}
+                          className="rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2.5 py-1 text-[11px] font-medium text-[#422C23]"
+                        >
+                          {therapy}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-[#838A9A]">—</span>
+                    )}
                   </div>
                 </td>
                 <td className="px-4 py-4">
-                  <button
-                    type="button"
+                  <SettingsActionButton
+                    label={`Delete ${therapist.name}`}
+                    variant="delete"
                     onClick={() => onDelete(therapist)}
-                    className="rounded-lg border border-gray-200 bg-cream px-2.5 py-2 text-brown hover:bg-danger/10 hover:text-danger"
-                    aria-label={`Delete ${therapist.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  />
                 </td>
               </tr>
             ))}

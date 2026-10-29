@@ -7,6 +7,11 @@ export interface PaymentSuccessDetails {
   paymentTime: string;
   paymentMethod: string;
   senderName: string;
+  /** Online PayU link when invoice awaits remote payment. */
+  payUrl?: string;
+  title?: string;
+  recipientEmail?: string;
+  emailSent?: boolean;
 }
 
 interface PaymentSuccessModalProps {

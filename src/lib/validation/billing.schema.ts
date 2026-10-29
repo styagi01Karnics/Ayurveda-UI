@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const invoiceServiceStepSchema = z.object({
-  patientId: z.string().min(1, 'Patient ID is required'),
+  patientId: z.string().min(1, 'Patient Code is required'),
   fullName: z.string().min(1, 'Full name is required'),
   contactNumber: z
     .string()
@@ -89,6 +89,12 @@ export type InvoiceServiceStepValues = z.infer<typeof invoiceServiceStepSchema>;
 export type InvoiceMedicineItemValues = z.infer<typeof invoiceMedicineItemSchema>;
 export type InvoiceTherapyItemValues = z.infer<typeof invoiceTherapyItemSchema>;
 export type InvoiceSummaryValues = z.infer<typeof invoiceSummarySchema>;
+
+/** Fixed GST rates for invoice generation (medicines / billing). Not editable in UI. */
+export const FIXED_CGST_PERCENT = 2.5;
+export const FIXED_SGST_PERCENT = 2.5;
+export const FIXED_CGST_PERCENT_STR = String(FIXED_CGST_PERCENT);
+export const FIXED_SGST_PERCENT_STR = String(FIXED_SGST_PERCENT);
 
 export const VISIT_TYPE_OPTIONS = ['Consultation', 'Follow-up', 'Therapy'] as const;
 export const PACKAGE_TYPE_OPTIONS = ['Monthly', 'Quarterly', 'Annual'] as const;

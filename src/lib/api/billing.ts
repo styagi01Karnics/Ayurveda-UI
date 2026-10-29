@@ -1,14 +1,15 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest, apiRequestList, apiRequestPage } from './client';
 import { apiEndpoints } from './endpoints';
 
 const url = (path: string) => `${apiConfig.billing}${path}`;
 const ep = apiEndpoints.billing;
 const dash = apiEndpoints.dashboard;
 
-export type InvoiceStatus = 'UNPAID' | 'ONGOING' | 'COMPLETED';
+export type InvoiceStatus = 'UNPAID' | 'PARTIAL' | 'ONGOING' | 'COMPLETED';
 export type BillingDraftStatus = 'PENDING' | 'COMPLETED';
 export type BillingPeriod = 'WEEKLY' | 'MONTHLY' | 'YEARLY';
+/** Invoice visitType accepted by billing API. `OPD` is rejected (400). */
 export type VisitTypeApi =
   | 'CONSULTATION'
   | 'FOLLOW_UP'
@@ -38,6 +39,7 @@ export interface InvoiceTherapyItem {
   scheduleDate?: string;
   scheduleTime?: string;
   sessionDuration?: number;
+  /** Backend expects integer session count (e.g. 1). */
   sessionFrequency?: number;
 }
 
@@ -47,12 +49,13 @@ export interface CreateInvoicePayload {
   patientCode?: string;
   patientName: string;
   contactNumber: string;
+  patientEmail?: string;
   invoiceDate: string;
   visitType: VisitTypeApi;
   serviceFees: number;
   packageMasterId?: string | null;
   packageType?: string | null;
-  packageCharges?: number;
+  packageCharges?: number | null;
   medicines?: InvoiceMedicineItem[];
   therapies?: InvoiceTherapyItem[];
   discount?: number;
@@ -85,23 +88,26 @@ export interface InvoiceItemDto {
   scheduleDate?: string | null;
   scheduleTime?: string | null;
   sessionDuration?: number | null;
-  sessionFrequency?: number | null;
+  sessionFrequency?: string | number | null;
 }
 
 export interface InvoiceDto {
   id: string;
+  /** Invoice UUID (path param). Prefer `invoiceNumber` for UI display. */
   invoiceId: string;
+  invoiceNumber?: string | null;
   patientId: string;
   patientDisplayId?: string;
   formattedPatientId?: string;
   patientCode?: string;
   patientName: string;
   contactNumber?: string;
+  patientEmail?: string;
   invoiceDate: string;
   visitType?: VisitTypeApi | string;
   serviceFees?: number;
   packageType?: string | null;
-  packageCharges?: number;
+  packageCharges?: number | null;
   subtotal?: number;
   discount?: number;
   taxEnabled?: boolean;
@@ -128,8 +134,12 @@ export interface InvoiceDto {
 export interface InvoiceListItemDto {
   /** Invoice UUID — use for GET/DELETE /api/v1/invoices/{id} */
   id: string;
-  /** Human-readable invoice number, e.g. INV-1002 */
+  /**
+   * May be UUID or legacy display code depending on API version.
+   * Prefer `invoiceNumber` (e.g. GAN-DL-INV-00018) for UI.
+   */
   invoiceId: string;
+  invoiceNumber?: string | null;
   patientId: string;
   patientDisplayId?: string;
   patientCode?: string;
@@ -142,14 +152,17 @@ export interface InvoiceListItemDto {
 }
 
 export interface InvoicePaymentPayload {
-  /** Omit with paymentMethod CASH to settle the full remaining balance. */
-  amountPaid?: number;
+  amountPaid: number;
+  /** API doc field alias — some services expect `amount`. */
+  amount?: number;
   paymentMethod: string;
   remarks?: string;
 }
 
 export interface SalesRecordDto {
   invoiceId: string;
+  /** Business invoice code when API provides it separately from UUID `invoiceId`. */
+  invoiceNumber?: string | null;
   invoiceDate: string;
   treatmentCategory?: string | null;
   serviceType: string;
@@ -182,20 +195,37 @@ export interface BillingSummaryDto {
 export interface InvoicesQuery {
   patientId?: string;
   status?: InvoiceStatus;
+  page?: number;
+  size?: number;
 }
 
 export interface SalesQuery {
   serviceType?: string;
   dateCreated?: string;
+  page?: number;
+  size?: number;
 }
 
 export function getInvoices(query: InvoicesQuery = {}) {
   const params = new URLSearchParams();
   if (query.patientId) params.set('patientId', query.patientId);
   if (query.status) params.set('status', query.status);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequestList<InvoiceListItemDto>(
     url(`${ep.invoices}${qs ? `?${qs}` : ''}`),
+  );
+}
+
+export function getInvoicesPaged(query: InvoicesQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.patientId) params.set('patientId', query.patientId);
+  if (query.status) params.set('status', query.status);
+  params.set('page', String(query.page ?? 0));
+  params.set('size', String(query.size ?? 10));
+  return apiRequestPage<InvoiceListItemDto>(
+    url(`${ep.invoices}?${params.toString()}`),
   );
 }
 
@@ -219,6 +249,7 @@ export interface BillingServiceItemPayload {
   packageCharges?: number | null;
 }
 
+/** Doctor-side pending billing — services only (medicines go on generate-invoice). */
 export interface CreateBillingPayload {
   patientId: string;
   patientName: string;
@@ -234,7 +265,19 @@ export interface BillingServiceItemDto {
   packageMasterId?: string | null;
   packageName?: string | null;
   packageType?: string | null;
-  packageCharges?: number;
+  packageCharges?: number | null;
+}
+
+export interface BillingMedicineItemDto {
+  id?: string;
+  medicineId?: string;
+  medicineName?: string;
+  quantity?: number;
+  unitPrice?: number;
+  dosage?: string;
+  frequency?: string;
+  duration?: string;
+  notes?: string;
 }
 
 export interface BillingDto {
@@ -252,12 +295,15 @@ export interface BillingDto {
   invoiceNumber?: string | null;
   totalAmount?: number;
   services?: BillingServiceItemDto[];
+  medicines?: BillingMedicineItemDto[];
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface BillingsQuery {
   status?: BillingDraftStatus;
+  page?: number;
+  size?: number;
 }
 
 export function createBilling(payload: CreateBillingPayload) {
@@ -270,10 +316,20 @@ export function createBilling(payload: CreateBillingPayload) {
 export function getBillings(query: BillingsQuery = {}) {
   const params = new URLSearchParams();
   if (query.status) params.set('status', query.status);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequestList<BillingDto>(
     url(`${ep.billings}${qs ? `?${qs}` : ''}`),
   );
+}
+
+export function getBillingsPaged(query: BillingsQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.status) params.set('status', query.status);
+  params.set('page', String(query.page ?? 0));
+  params.set('size', String(query.size ?? 10));
+  return apiRequestPage<BillingDto>(url(`${ep.billings}?${params.toString()}`));
 }
 
 export function getBillingById(billingId: string) {
@@ -282,6 +338,34 @@ export function getBillingById(billingId: string) {
 
 export function getBillingsByPatient(patientId: string) {
   return apiRequestList<BillingDto>(url(ep.billingsByPatient(patientId)));
+}
+
+/** Aggregate patient billing: summary + invoices + packages. */
+export interface PatientBillingSummaryDto {
+  totalInvoices?: number;
+  totalAmount?: number;
+  paidAmount?: number;
+  leftAmount?: number;
+  pendingCount?: number;
+  collectedAmount?: number;
+}
+
+export interface PatientBillingAggregateDto {
+  summary?: PatientBillingSummaryDto;
+  invoices?: (InvoiceDto | InvoiceListItemDto)[];
+  packages?: import('./types').PatientPackageDto[];
+}
+
+export function getPatientBilling(
+  patientId: string,
+  status?: InvoiceStatus,
+) {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  const qs = params.toString();
+  return apiRequest<PatientBillingAggregateDto>(
+    url(`${ep.patientBilling(patientId)}${qs ? `?${qs}` : ''}`),
+  );
 }
 
 export function generateInvoiceFromBilling(
@@ -304,6 +388,18 @@ export function addInvoicePayment(
   });
 }
 
+export interface InvoiceRefundPayload {
+  amount: number;
+  remarks?: string;
+}
+
+export function refundInvoice(invoiceId: string, payload: InvoiceRefundPayload) {
+  return apiRequest<InvoiceDto>(url(ep.invoiceRefund(invoiceId)), {
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export function deleteInvoice(invoiceId: string) {
   return apiRequest<void>(url(ep.invoiceById(invoiceId)), {
     method: 'DELETE',
@@ -314,6 +410,8 @@ export function getSales(query: SalesQuery = {}) {
   const params = new URLSearchParams();
   if (query.serviceType) params.set('serviceType', query.serviceType);
   if (query.dateCreated) params.set('dateCreated', query.dateCreated);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   const qs = params.toString();
   return apiRequest<SalesResponseDto | SalesRecordDto[]>(
     url(`${ep.sales}${qs ? `?${qs}` : ''}`),

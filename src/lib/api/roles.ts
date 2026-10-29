@@ -133,8 +133,10 @@ export function createHospital(payload: CreateHospitalPayload) {
   });
 }
 
-export function getHospitals() {
-  return apiRequestList<PlatformHospitalDto>(url(ep.platform.hospitals));
+export function getHospitals(page = 0, size = 100) {
+  return apiRequestList<PlatformHospitalDto>(
+    url(`${ep.platform.hospitals}?page=${page}&size=${size}`),
+  );
 }
 
 export function getHospitalById(hospitalId: string) {
@@ -158,4 +160,70 @@ export function retryHospitalProvision(hospitalId: string) {
     url(ep.platform.hospitalRetryProvision(hospitalId)),
     { method: 'POST' },
   );
+}
+
+export interface HospitalMailPayload {
+  /** API field: hospital sending / From address (required). */
+  email?: string;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  /** Legacy alias some responses may still use. */
+  fromEmail?: string;
+  fromName?: string;
+  [key: string]: unknown;
+}
+
+export function getHospitalMail(hospitalId: string) {
+  return apiRequest<HospitalMailPayload>(
+    url(ep.platform.hospitalMail(hospitalId)),
+  );
+}
+
+export function updateHospitalMail(
+  hospitalId: string,
+  payload: HospitalMailPayload,
+) {
+  return apiRequest<HospitalMailPayload>(
+    url(ep.platform.hospitalMail(hospitalId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
+
+export function updateHospital(
+  hospitalId: string,
+  payload: Partial<CreateHospitalPayload>,
+) {
+  return apiRequest<PlatformHospitalDto>(
+    url(ep.platform.hospitalById(hospitalId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
+
+export function getHospitalAdmins(hospitalId: string) {
+  return apiRequestList<UserResponse>(
+    url(ep.platform.hospitalAdmins(hospitalId)),
+  );
+}
+
+export function createHospitalAdmin(
+  hospitalId: string,
+  payload: {
+    fullName: string;
+    email: string;
+    password: string;
+    mobileNumber?: string;
+  },
+) {
+  return apiRequest<UserResponse>(url(ep.platform.hospitalAdmins(hospitalId)), {
+    method: 'POST',
+    body: payload,
+  });
 }

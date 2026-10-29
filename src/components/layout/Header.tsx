@@ -1,17 +1,15 @@
-import type { ReactNode } from 'react';
-import { Bell } from 'lucide-react';
+import { ToastViewport } from '@/app/ToastContext';
+import { NotificationBell } from './NotificationBell';
 import { UserMenu } from './UserMenu';
 
 interface HeaderProps {
   title: string;
-  action?: ReactNode;
   onChangePassword: () => void;
   onLogout: () => void;
 }
 
 export function Header({
   title,
-  action,
   onChangePassword,
   onLogout,
 }: HeaderProps) {
@@ -22,16 +20,12 @@ export function Header({
       </h1>
 
       <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
-        {action}
-        <button
-          type="button"
-          className="rounded-lg p-2 text-brown-muted hover:bg-brown/5"
-          aria-label="Notifications"
-        >
-          <Bell className="h-5 w-5" strokeWidth={1.5} />
-        </button>
-
+        <NotificationBell />
         <UserMenu onChangePassword={onChangePassword} onLogout={onLogout} />
+      </div>
+
+      <div className="pointer-events-none absolute right-4 top-[calc(100%-4px)] z-50 sm:right-6">
+        <ToastViewport className="pointer-events-auto" />
       </div>
     </header>
   );

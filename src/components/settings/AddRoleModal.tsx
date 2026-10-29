@@ -1,24 +1,30 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
+import { Modal } from '@/components/ui/Modal';
 import {
-  CLINIC_STATUS_OPTIONS,
-  PERMISSION_MODULES,
+  PermissionSwitch,
+  PermissionToggleGrid,
+} from '@/components/settings/PermissionToggleGrid';
+import {
+  ALL_PAGE_CODES,
+  type PageCode,
+} from '@/lib/pagePermissions';
+import {
   roleSchema,
   type RoleFormValues,
 } from '@/lib/validation/settings.schema';
 import type { SettingsRoleRecord } from '@/types';
-import { cn } from '@/lib/utils';
 
 interface AddRoleModalProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (values: RoleFormValues) => void;
+  onSubmit: (values: RoleFormValues) => void | Promise<void>;
   role?: SettingsRoleRecord | null;
+  permissionModules?: readonly PageCode[];
+  submitting?: boolean;
 }
 
 export function AddRoleModal({
@@ -26,6 +32,8 @@ export function AddRoleModal({
   onClose,
   onSubmit,
   role,
+  permissionModules = ALL_PAGE_CODES,
+  submitting = false,
 }: AddRoleModalProps) {
   const {
     register,
@@ -38,43 +46,48 @@ export function AddRoleModal({
     resolver: zodResolver(roleSchema),
     defaultValues: {
       name: '',
+      description: '',
       status: 'Active',
       accessLevel: 'Full Access',
-      permissions: [],
+      permissions: [...permissionModules],
     },
   });
 
   const selectedPermissions = watch('permissions');
+  const status = watch('status');
 
   useEffect(() => {
+    if (!open) return;
     if (role) {
       reset({
         name: role.name,
+        description: role.description ?? '',
         status: role.status,
         accessLevel: role.accessLevel,
         permissions: role.permissions,
       });
-    } else {
-      reset({
-        name: '',
-        status: 'Active',
-        accessLevel: 'Full Access',
-        permissions: [],
-      });
+      return;
     }
-  }, [role, reset, open]);
+    reset({
+      name: '',
+      description: '',
+      status: 'Active',
+      accessLevel: 'Full Access',
+      permissions: [...permissionModules],
+    });
+  }, [role, reset, open, permissionModules]);
 
-  const togglePermission = (permission: string) => {
+  const togglePermission = (pageCode: string) => {
     const current = selectedPermissions ?? [];
-    if (current.includes(permission)) {
+    if (current.includes(pageCode)) {
       setValue(
         'permissions',
-        current.filter((p) => p !== permission),
+        current.filter((item) => item !== pageCode),
         { shouldValidate: true },
       );
-    } else {
-      setValue('permissions', [...current, permission], { shouldValidate: true });
+      return;
     }
+    setValue('permissions', [...current, pageCode], { shouldValidate: true });
   };
 
   const handleClose = () => {
@@ -86,63 +99,52 @@ export function AddRoleModal({
     <Modal
       open={open}
       onClose={handleClose}
+      size="lg"
       title={role ? 'Edit Role' : 'Add New Role'}
-      subtitle="Configure role permissions and access level"
+      subtitle="Please fill out the role details"
       footer={
-        <Button onClick={handleSubmit(onSubmit)}>
-          {role ? 'Save Changes' : 'Confirm'}
+        <Button onClick={handleSubmit(onSubmit)} disabled={submitting}>
+          {submitting ? 'Saving...' : role ? 'Save Changes' : 'Confirm'}
         </Button>
       }
     >
-      <form className="space-y-4" noValidate>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            label="Role Name"
-            placeholder="Role Name"
-            error={errors.name?.message}
-            {...register('name')}
-          />
-          <Select
-            label="Status"
-            options={[...CLINIC_STATUS_OPTIONS]}
-            error={errors.status?.message}
-            {...register('status')}
-          />
-        </div>
+      <form className="space-y-5" noValidate>
         <Input
-          label="Access Level"
-          placeholder="Access Level"
-          error={errors.accessLevel?.message}
-          {...register('accessLevel')}
+          label="Role"
+          placeholder="Role"
+          error={errors.name?.message}
+          {...register('name')}
         />
+        <Input
+          label="Role Description"
+          placeholder="Role Description"
+          error={errors.description?.message}
+          {...register('description')}
+        />
+
         <div>
-          <p className="mb-2 text-xs font-medium text-text-muted">Permissions</p>
-          <div className="flex flex-wrap gap-2">
-            {PERMISSION_MODULES.map((permission) => {
-              const isSelected = selectedPermissions?.includes(permission);
-              return (
-                <button
-                  key={permission}
-                  type="button"
-                  onClick={() => togglePermission(permission)}
-                  className={cn(
-                    'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
-                    isSelected
-                      ? 'bg-gold text-white'
-                      : 'bg-cream text-brown hover:bg-gold/10',
-                  )}
-                >
-                  {permission}
-                </button>
-              );
-            })}
-          </div>
-          {errors.permissions?.message && (
+          <p className="field-label mb-3">Permissions</p>
+          <PermissionToggleGrid
+            modules={permissionModules}
+            selected={selectedPermissions ?? []}
+            onToggle={togglePermission}
+          />
+          {errors.permissions?.message ? (
             <p className="mt-1.5 text-xs text-danger" role="alert">
               {errors.permissions.message}
             </p>
-          )}
+          ) : null}
         </div>
+
+        <PermissionSwitch
+          label="Status"
+          checked={status === 'Active'}
+          onChange={() =>
+            setValue('status', status === 'Active' ? 'Inactive' : 'Active', {
+              shouldValidate: true,
+            })
+          }
+        />
       </form>
     </Modal>
   );

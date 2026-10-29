@@ -19,6 +19,11 @@ const detailTabs: { id: PatientDetailTab; label: string }[] = [
   { id: 'billing', label: 'Billing & Membership' },
 ];
 
+const DETAIL_LABEL =
+  'align-middle font-sans text-[14px] font-medium leading-5 tracking-normal text-[#737373]';
+const DETAIL_VALUE =
+  'align-middle font-sans text-sm font-medium leading-3 tracking-normal text-[#404040]';
+
 export function PatientDetailHeader({
   patient,
   activeTab,
@@ -28,7 +33,7 @@ export function PatientDetailHeader({
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-text-muted">Patient ID</p>
+          <p className={DETAIL_LABEL}>Patient ID</p>
           <div className="mt-1 flex flex-wrap items-center gap-3">
             <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
             <Badge variant="gold" className="rounded-md px-3 py-1">
@@ -37,12 +42,14 @@ export function PatientDetailHeader({
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs text-text-muted">Dosha</p>
+          <p className={DETAIL_LABEL}>Dosha</p>
           <p className="text-xl font-bold text-gold">{patient.dosha}</p>
         </div>
       </div>
 
-      <UnderlineTabs tabs={detailTabs} activeTab={activeTab} onChange={onTabChange} />
+      <div className="border-t border-[#ebe4d8] pt-4">
+        <UnderlineTabs tabs={detailTabs} activeTab={activeTab} onChange={onTabChange} />
+      </div>
     </div>
   );
 }
@@ -51,9 +58,9 @@ function InfoGrid({ items }: { items: { label: string; value: string }[] }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
-        <div key={item.label}>
-          <p className="text-xs text-text-muted">{item.label}</p>
-          <p className="mt-0.5 text-sm font-medium text-brown">{item.value}</p>
+        <div key={item.label} className="flex flex-col gap-2">
+          <p className={DETAIL_LABEL}>{item.label}</p>
+          <p className={DETAIL_VALUE}>{item.value}</p>
         </div>
       ))}
     </div>
@@ -64,9 +71,9 @@ function InfoList({ items }: { items: { label: string; value: string }[] }) {
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.label} className="flex justify-between gap-4 text-sm">
-          <span className="text-text-muted">{item.label}</span>
-          <span className="text-right font-medium text-brown">{item.value}</span>
+        <div key={item.label} className="flex justify-between gap-4">
+          <span className={DETAIL_LABEL}>{item.label}</span>
+          <span className={`text-right ${DETAIL_VALUE}`}>{item.value}</span>
         </div>
       ))}
     </div>
@@ -81,8 +88,10 @@ function SectionBlock({
   children: React.ReactNode;
 }) {
   return (
-    <section>
-      <h3 className="mb-4 text-base font-bold text-brown">{title}</h3>
+    <section className="rounded-xl bg-[#FAF9F5] p-4">
+      <h3 className="mb-3 font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
+        {title}
+      </h3>
       {children}
     </section>
   );
@@ -92,7 +101,7 @@ export function PersonalInfoTab({ patient }: { patient: PatientDetail }) {
   const info = patient.personalInfo;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <SectionBlock title="Basic Information">
         <InfoGrid
           items={[
@@ -148,7 +157,7 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
   const m = patient.medicalAssessment;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <SectionBlock title="Ayurvedic Assessment">
         <InfoGrid
           items={[
@@ -183,18 +192,16 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
       </SectionBlock>
 
       <SectionBlock title="Medical History">
-        <div className="rounded-xl bg-gray-50 p-4">
-          <InfoList
-            items={[
-              { label: 'Present Medical Conditions', value: m.presentConditions },
-              { label: 'Past Medical Conditions', value: m.pastConditions },
-              { label: 'Past Surgeries', value: m.pastSurgeries },
-              { label: 'Current Medication', value: m.currentMedication },
-              { label: 'Allergies', value: m.allergies },
-              { label: 'Family History', value: m.familyHistory },
-            ]}
-          />
-        </div>
+        <InfoList
+          items={[
+            { label: 'Present Medical Conditions', value: m.presentConditions },
+            { label: 'Past Medical Conditions', value: m.pastConditions },
+            { label: 'Past Surgeries', value: m.pastSurgeries },
+            { label: 'Current Medication', value: m.currentMedication },
+            { label: 'Allergies', value: m.allergies },
+            { label: 'Family History', value: m.familyHistory },
+          ]}
+        />
       </SectionBlock>
 
       <SectionBlock title="Lifestyle">
@@ -259,7 +266,7 @@ function ReportRow({
   type: 'folder' | 'file';
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+    <div className="app-card flex items-center justify-between rounded-xl px-4 py-3">
       <div className="flex items-center gap-3">
         {type === 'folder' ? (
           <AppIcon src={assets.icons.folder} className="h-5 w-5" />
@@ -267,8 +274,8 @@ function ReportRow({
           <AppIcon src={assets.icons.pdf} className="h-5 w-5" />
         )}
         <div>
-          <p className="text-sm font-medium text-brown">{name}</p>
-          <p className="text-xs text-text-muted">{time}</p>
+          <p className={DETAIL_VALUE}>{name}</p>
+          <p className={DETAIL_LABEL}>{time}</p>
         </div>
       </div>
       <Badge variant="gold">{size}</Badge>
@@ -276,38 +283,53 @@ function ReportRow({
   );
 }
 
+function hasPlanValue(value?: string | number) {
+  if (value == null) return false;
+  const text = String(value).trim();
+  return text !== '' && text !== '—' && text !== '-';
+}
+
 export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
   const t = patient.treatmentFollowUp;
+  const hasActivePlan =
+    hasPlanValue(t.treatmentName) ||
+    hasPlanValue(t.startDate) ||
+    hasPlanValue(t.endDate) ||
+    hasPlanValue(t.assignedTherapist);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <SectionBlock title="Active Treatment Plan">
-        <div className="overflow-x-auto rounded-xl bg-gray-50">
-          <table className="w-full table-fixed text-sm">
-            <thead>
-              <tr className="text-xs text-text-muted">
-                <th className="px-4 py-3 text-left font-medium">Treatment Name</th>
-                <th className="px-4 py-3 text-left font-medium">Start / End Date</th>
-                <th className="px-4 py-3 text-left font-medium">Total Sessions</th>
-                <th className="px-4 py-3 text-left font-medium">Sessions Completed</th>
-                <th className="px-4 py-3 text-left font-medium">Remaining Sessions</th>
-                <th className="px-4 py-3 text-left font-medium">Assigned Therapist</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td className="px-4 py-3 font-medium text-brown">{t.treatmentName}</td>
-                <td className="px-4 py-3 text-brown">
-                  {t.startDate} - {t.endDate}
-                </td>
-                <td className="px-4 py-3 text-brown">{t.totalSessions}</td>
-                <td className="px-4 py-3 text-brown">{t.sessionsCompleted}</td>
-                <td className="px-4 py-3 text-brown">{t.remainingSessions}</td>
-                <td className="px-4 py-3 text-brown">{t.assignedTherapist}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {hasActivePlan ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Treatment Name</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Start / End Date</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Total Sessions</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Sessions Completed</th>
+                  <th className={`py-2 pr-4 text-left ${DETAIL_LABEL}`}>Remaining Sessions</th>
+                  <th className={`py-2 text-left ${DETAIL_LABEL}`}>Assigned Therapist</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.treatmentName}</td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>
+                    {t.startDate} - {t.endDate}
+                  </td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.totalSessions}</td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.sessionsCompleted}</td>
+                  <td className={`py-2 pr-4 ${DETAIL_VALUE}`}>{t.remainingSessions}</td>
+                  <td className={`py-2 ${DETAIL_VALUE}`}>{t.assignedTherapist}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className={DETAIL_VALUE}>No active treatment plan</p>
+        )}
       </SectionBlock>
 
       <SectionBlock title="Upcoming Follow up">
@@ -322,22 +344,28 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
 
       <SectionBlock title="Appointment History">
         <div className="overflow-x-auto">
-          <table className="w-full table-fixed text-sm">
+          <table className="w-full table-fixed">
             <thead>
-              <tr className="border-b border-gray-100 text-xs text-text-muted">
-                <th className="py-2 text-left font-medium">Visit Type</th>
-                <th className="py-2 text-left font-medium">Date</th>
-                <th className="py-2 text-left font-medium">Status</th>
-                <th className="py-2 text-left font-medium">Action</th>
+              <tr className="border-b border-gray-100">
+                <th className={`py-2 text-left ${DETAIL_LABEL}`}>Visit Type</th>
+                <th className={`py-2 text-left ${DETAIL_LABEL}`}>Date</th>
+                <th className={`py-2 text-left ${DETAIL_LABEL}`}>Status</th>
+                <th className={`py-2 text-left ${DETAIL_LABEL}`}>Action</th>
               </tr>
             </thead>
             <tbody>
               {t.appointmentHistory.map((row, i) => (
                 <tr key={i} className="border-b border-gray-50">
-                  <td className="py-3 font-medium text-gold">{row.visitType}</td>
-                  <td className="py-3 text-brown">{row.date}</td>
+                  <td className={`py-3 ${DETAIL_VALUE}`}>{row.visitType}</td>
+                  <td className={`py-3 ${DETAIL_VALUE}`}>{row.date}</td>
                   <td className="py-3">
-                    <Badge variant="success">{row.status}</Badge>
+                    {row.status === 'Completed' || row.status === 'Scheduled' ? (
+                      <span className="text-xs font-semibold text-[#2E7D32]">
+                        {row.status}
+                      </span>
+                    ) : (
+                      <Badge variant="success">{row.status}</Badge>
+                    )}
                   </td>
                   <td className="py-3">
                     <button type="button" className="text-sm font-medium text-gold underline">
@@ -364,7 +392,7 @@ export function BillingMembershipTab({
   const b = patient.billing;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {onDownloadBill && (
         <div className="flex justify-end">
           <Button
@@ -378,15 +406,13 @@ export function BillingMembershipTab({
         </div>
       )}
       <SectionBlock title="Billing & Membership">
-        <DataRow
-          headers={['Package Name', 'Validity', 'Status', 'Discount Applied']}
-          values={[
-            b.packageName,
-            b.validity,
-            b.membershipStatus,
-            `₹${b.discountApplied}`,
+        <InfoGrid
+          items={[
+            { label: 'Package Name', value: b.packageName || '—' },
+            { label: 'Validity', value: b.validity || '—' },
+            { label: 'Status', value: b.membershipStatus || '—' },
+            { label: 'Discount Applied', value: `₹${b.discountApplied}` },
           ]}
-          highlights={[3]}
         />
       </SectionBlock>
 
@@ -449,51 +475,6 @@ export function BillingMembershipTab({
           ]}
         />
       </SectionBlock>
-    </div>
-  );
-}
-
-function DataRow({
-  headers,
-  values,
-  highlights = [],
-}: {
-  headers: string[];
-  values: string[];
-  highlights?: number[];
-}) {
-  return (
-    <div className="overflow-x-auto rounded-xl bg-gray-50">
-      <table className="w-full text-sm">
-        <thead>
-          <tr>
-            {headers.map((h) => (
-              <th
-                key={h}
-                className="px-4 py-3 text-left text-xs font-medium text-text-muted"
-              >
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {values.map((v, i) => (
-              <td
-                key={i}
-                className={`px-4 py-3 font-medium ${highlights.includes(i) ? 'text-gold' : 'text-brown'}`}
-              >
-                {i === 2 && v === 'Completed' ? (
-                  <Badge variant="success">{v}</Badge>
-                ) : (
-                  v
-                )}
-              </td>
-            ))}
-          </tr>
-        </tbody>
-      </table>
     </div>
   );
 }

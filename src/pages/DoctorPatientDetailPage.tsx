@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { DoctorPatientBreadcrumbs } from '@/components/doctors/DoctorPatientBreadcrumbs';
 import {
@@ -29,6 +28,7 @@ import { getActiveTherapists, mapTherapistSelectOptions } from '@/lib/api/therap
 import { getActiveTreatmentPlanMasters } from '@/lib/api/treatmentPlanMasters';
 import { completeAppointment } from '@/lib/api/appointments';
 import { createPackage } from '@/lib/api/packages';
+import { createFollowUp } from '@/lib/api/followUps';
 import { loadPatientDetail } from '@/lib/api/loadPatientDetail';
 import {
   createBilling,
@@ -42,6 +42,11 @@ import {
   updatePrescription,
   type PrescriptionDto,
 } from '@/lib/api/prescriptions';
+import {
+  createTreatment,
+  updateTreatment,
+} from '@/lib/api/treatments';
+import { toFollowUpAppointmentDateIso } from '@/lib/followUpSchedule';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import {
   applyBillingFormToPatient,
@@ -99,23 +104,19 @@ function mapPrescriptionToForm(
       duration: row.duration ?? '',
       notes: row.notes ?? '',
     })),
-    therapies: (prescription.therapySuggestions ?? []).map((row) => ({
-      categoryId: row.therapyCategoryId ?? '',
-      therapyIds:
-        row.recommendedTherapyIds ??
-        row.recommendedTherapies
-          ?.map((therapy) => therapy.therapyId ?? therapy.id)
-          .filter((id): id is string => Boolean(id)) ??
-        [],
-    })),
-    setupRequired: prescription.nextFollowUp
-      ? prescription.nextFollowUp.setUpRequired
-        ? 'Yes'
-        : 'No'
-      : '',
-    followUpScheduling: prescription.nextFollowUp?.schedulingOption ?? '',
-    suggestions: prescription.nextFollowUp?.suggestions ?? '',
   };
+}
+
+function resolveFollowUpVisitTypeId(
+  patient: PatientDetail,
+  consultationTypes: { value: string; label: string }[],
+): string {
+  const followUpType = consultationTypes.find((type) =>
+    /follow/i.test(type.label),
+  );
+  if (followUpType?.value) return followUpType.value;
+  if (patient.consultationTypeIds?.[0]) return patient.consultationTypeIds[0];
+  return consultationTypes[0]?.value ?? '';
 }
 
 function scrollWorkflowToTop() {
@@ -203,21 +204,6 @@ export function DoctorPatientDetailPage() {
   const [unsavedOpen, setUnsavedOpen] = useState(false);
   const [pendingTab, setPendingTab] = useState<PatientDetailTab | null>(null);
   const [pendingAction, setPendingAction] = useState<'step' | 'tab' | null>(null);
-
-  const headerAction = useMemo(
-    () => (
-      <Button
-        className="gap-1.5 px-4 py-2 text-sm"
-        onClick={() => navigate('/appointments')}
-      >
-        <Plus className="h-4 w-4" />
-        Book Appointment
-      </Button>
-    ),
-    [navigate],
-  );
-
-  usePageAction(headerAction);
 
   useEffect(() => {
     if (loadedPatient) {
@@ -329,14 +315,86 @@ export function DoctorPatientDetailPage() {
         case 'medical':
           updated = applyMedicalFormToPatient(patient, values as DoctorMedicalTabValues);
           break;
-        case 'treatment':
-          updated =           applyTreatmentFormToPatient(
+        case 'treatment': {
+          const treatmentValues = values as DoctorTreatmentTabValues;
+          updated = applyTreatmentFormToPatient(
             patient,
-            values as DoctorTreatmentTabValues,
+            treatmentValues,
             masterOptions.therapists,
             masterOptions.doctors,
           );
+          try {
+            const treatmentPayload = {
+              treatmentPlanId: treatmentValues.treatmentPlanId,
+              startDate: treatmentValues.startDate,
+              endDate: treatmentValues.endDate,
+              totalSessions: Number(treatmentValues.totalSessions) || 0,
+              completedSessions: Number(treatmentValues.completedSessions) || 0,
+              assignedTherapistId: treatmentValues.assignedTherapistId,
+            };
+
+            const savedTreatment = patient.treatmentFollowUp.id
+              ? await updateTreatment(
+                  patient.treatmentFollowUp.id,
+                  treatmentPayload,
+                )
+              : await createTreatment({
+                  patientId: patient.detailId,
+                  ...treatmentPayload,
+                  treatmentStatus: 'SCHEDULED',
+                });
+
+            updated = {
+              ...updated,
+              treatmentFollowUp: {
+                ...updated.treatmentFollowUp,
+                id: savedTreatment.id,
+                treatmentPlanId: savedTreatment.treatmentPlanId,
+                treatmentName:
+                  savedTreatment.treatmentPlanName ||
+                  updated.treatmentFollowUp.treatmentName,
+                remainingSessions: savedTreatment.remainingSessions,
+              },
+            };
+
+            if (treatmentValues.setupRequired === 'Yes') {
+              const visitTypeId = resolveFollowUpVisitTypeId(
+                patient,
+                masterOptions.consultationTypes,
+              );
+              if (!visitTypeId) {
+                throw new Error(
+                  'A visit type is required to schedule the follow-up.',
+                );
+              }
+              const baseDate =
+                patient.personalInfo.registrationDate ||
+                patient.appointmentDate ||
+                treatmentValues.startDate;
+              await createFollowUp({
+                patientId: patient.detailId,
+                assignedDoctorId: treatmentValues.assignedDoctor || '',
+                sourceBookingId: patient.bookingId || undefined,
+                visitTypeId,
+                appointmentDate: toFollowUpAppointmentDateIso(
+                  baseDate,
+                  treatmentValues.followUpScheduling,
+                ),
+                schedulingOption:
+                  treatmentValues.followUpScheduling || 'AFTER_7_DAYS',
+                smsReminderEnabled: treatmentValues.autoSmsReminder,
+                status: 'UPCOMING',
+              });
+            }
+          } catch (err) {
+            showToast({
+              title: 'Treatment save failed',
+              message: resolveErrorMessage(err, UI_MESSAGES.error.saveFailed),
+            });
+            return false;
+          }
           break;
+        }
         case 'billing': {
           const billingValues = values as DoctorBillingTabValues;
           updated = applyBillingFormToPatient(patient, billingValues);
@@ -352,44 +410,9 @@ export function DoctorPatientDetailPage() {
                 discountApplied: Number(billingValues.discountApplied) || 0,
               });
             }
-
-            const draft = await createBilling({
-              patientId: patient.detailId,
-              patientName: patient.name,
-              contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
-              billingDate: new Date().toISOString().slice(0, 10),
-              services: billingValues.billingServices.map((row) => {
-                const packageMasterId =
-                  row.packageMasterId?.trim() ||
-                  (row.packageType?.trim()
-                    ? billingValues.packageMasterId?.trim()
-                    : '') ||
-                  null;
-                const packageType = row.packageType?.trim() || null;
-                const packageCharges = row.packageCharges?.trim()
-                  ? Number(row.packageCharges)
-                  : null;
-
-                return {
-                  serviceType: row.serviceType,
-                  serviceFees: Number(row.serviceFees) || 0,
-                  packageMasterId,
-                  packageType,
-                  packageCharges,
-                };
-              }),
-            });
-            updated = {
-              ...updated,
-              billing: {
-                ...updated.billing,
-                billingDraftId: draft.id,
-                billingDraftStatus: 'PENDING',
-              },
-            };
           } catch (err) {
             showToast({
-              title: 'Billing draft failed',
+              title: 'Package save failed',
               message: resolveErrorMessage(err, UI_MESSAGES.error.saveFailed),
             });
             return false;
@@ -403,12 +426,12 @@ export function DoctorPatientDetailPage() {
         title: 'Changes Saved',
         message:
           activeTab === 'billing'
-            ? 'Pending billing draft has been saved for reception.'
+            ? 'Billing details saved. Draft will be created after the prescription is generated.'
             : 'Patient details have been updated successfully.',
       });
       return true;
     },
-    [activeTab, patient, showToast, masterOptions.therapists, masterOptions.doctors],
+    [activeTab, patient, showToast, masterOptions],
   );
 
   const handleTabChange = (tab: PatientDetailTab) => {
@@ -539,26 +562,16 @@ export function DoctorPatientDetailPage() {
     setPrescriptionSubmitting(true);
     try {
       const catalogue = await getAllMedicines().catch(() => []);
-      const medicineNames = new Map(
-        catalogue.map((item) => [item.id, item.medicineName]),
-      );
+      const medicineById = new Map(catalogue.map((item) => [item.id, item]));
       const medicines = (prescriptionDraft.medicines ?? [])
         .filter((row) => row.medicineId)
         .map((row) => ({
           medicineId: row.medicineId as string,
-          medicineName: medicineNames.get(row.medicineId as string),
+          medicineName: medicineById.get(row.medicineId as string)?.medicineName,
           dosage: row.dosage ?? '',
           frequency: row.frequency ?? '',
           duration: row.duration ?? '',
           notes: row.notes,
-        }));
-      const therapySuggestions = (prescriptionDraft.therapies ?? [])
-        .filter(
-          (row) => Boolean(row.categoryId) && (row.therapyIds?.length ?? 0) > 0,
-        )
-        .map((row) => ({
-          therapyCategoryId: row.categoryId as string,
-          recommendedTherapyIds: row.therapyIds ?? [],
         }));
 
       const prescriptionPayload = {
@@ -566,17 +579,6 @@ export function DoctorPatientDetailPage() {
         appointmentBookingId,
         assignedDoctorId,
         medicines: medicines.length ? medicines : undefined,
-        therapySuggestions: therapySuggestions.length
-          ? therapySuggestions
-          : undefined,
-        nextFollowUp: {
-          setUpRequired: prescriptionDraft.setupRequired === 'Yes',
-          schedulingOption:
-            prescriptionDraft.setupRequired === 'Yes'
-              ? prescriptionDraft.followUpScheduling
-              : undefined,
-          suggestions: prescriptionDraft.suggestions,
-        },
         diagnosis: prescriptionDraft.diagnosis,
         notes: prescriptionDraft.notes,
       };
@@ -591,23 +593,89 @@ export function DoctorPatientDetailPage() {
           completionError = err;
         }
       }
+
+      let billingError: unknown = null;
+      let nextPatient = patient;
+      if (!existingPrescription && !patient.billing.billingDraftId) {
+        try {
+          const toBillingServiceType = (raw: string | undefined) => {
+            const upper = (raw || 'CONSULTATION')
+              .toUpperCase()
+              .replace(/[\s+-]+/g, '_');
+            if (upper.includes('THERAPY')) return 'THERAPY';
+            if (upper.includes('FOLLOW')) return 'FOLLOW_UP';
+            if (upper.includes('PACKAGE')) return 'PACKAGE';
+            // Doc: consultation (+ medicines) still uses CONSULTATION
+            return 'CONSULTATION';
+          };
+
+          const services = (
+            patient.billing.billingServices?.length
+              ? patient.billing.billingServices
+              : [
+                  {
+                    serviceType: patient.billing.serviceType || 'Consultation',
+                    serviceFees: patient.billing.serviceFees || 0,
+                    packageMasterId: patient.billing.packageMasterId,
+                    packageType: patient.billing.packageType,
+                    packageCharges: patient.billing.packageCharges,
+                  },
+                ]
+          ).map((row) => ({
+            serviceType: toBillingServiceType(row.serviceType),
+            serviceFees: Number(row.serviceFees) || 0,
+            packageMasterId: row.packageMasterId?.trim() || null,
+            packageType: row.packageType?.trim() || null,
+            packageCharges: row.packageCharges
+              ? Number(row.packageCharges)
+              : null,
+          }));
+
+          const draft = await createBilling({
+            patientId: patient.detailId,
+            patientName: patient.name,
+            contactNumber: patient.phone.replace(/\D/g, '').slice(-10),
+            billingDate: new Date().toISOString().slice(0, 10),
+            services,
+          });
+          nextPatient = {
+            ...patient,
+            billing: {
+              ...patient.billing,
+              billingDraftId: draft.id,
+              billingDraftStatus: 'PENDING',
+            },
+          };
+          setPatient(nextPatient);
+        } catch (err) {
+          billingError = err;
+        }
+      }
+
       const enriched = await getPrescriptionById(saved.id).catch(() => saved);
       setExistingPrescription(enriched);
       setSavedPrescription(enriched);
       showToast({
         title: completionError
           ? 'Prescription created'
-          : existingPrescription
-            ? 'Prescription Updated'
-            : 'Prescription Created',
+          : billingError
+            ? 'Prescription created'
+            : existingPrescription
+              ? 'Prescription Updated'
+              : 'Prescription Created',
         message: completionError
           ? `Prescription was saved, but the appointment could not be completed. ${resolveErrorMessage(
               completionError,
               'Please complete it from the Doctor tab.',
             )}`
-          : existingPrescription
-            ? 'Prescription changes have been saved successfully.'
-            : 'Prescription has been saved and the appointment is completed.',
+          : billingError
+            ? `Prescription was saved, but the billing draft failed. ${resolveErrorMessage(
+                billingError,
+                UI_MESSAGES.error.saveFailed,
+              )}`
+            : existingPrescription
+              ? 'Prescription changes have been saved successfully.'
+              : 'Prescription has been saved, billing draft created, and the appointment is completed.',
       });
     } catch (err) {
       showToast({
@@ -654,15 +722,28 @@ export function DoctorPatientDetailPage() {
 
               <Card className="p-5 sm:p-6">
         <div className="space-y-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-2xl font-bold text-brown">{patient.name}</h2>
-            <Badge variant="gold" className="rounded-md px-3 py-1">
-              {patient.treatmentStatus}
-            </Badge>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
+                Patient ID
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl font-bold text-brown">{patient.id}</h2>
+                <Badge variant="gold" className="rounded-md px-3 py-1">
+                  {patient.treatmentStatus}
+                </Badge>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
+                Dosha
+              </p>
+              <p className="text-xl font-bold text-gold">{patient.dosha || '—'}</p>
+            </div>
           </div>
 
           {workflowStep === 1 && (
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 border-t border-[#ebe4d8] pt-4">
               <UnderlineTabs
                 tabs={detailTabs}
                 activeTab={activeTab}
@@ -672,7 +753,14 @@ export function DoctorPatientDetailPage() {
               <button
                 type="button"
                 onClick={handleEditToggle}
-                className={`rounded-full border p-2 transition-colors ${isEditing ? 'border-gold bg-gold/10 text-gold' : 'border-gray-200 text-text-muted hover:border-gold hover:text-gold'}`}
+                className={`mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                  isEditing
+                    ? 'bg-gold text-white'
+                    : 'bg-[#FBF6E8] text-[#422C23]'
+                }`}
+                style={
+                  isEditing ? undefined : { border: '0.23px solid #BE880B' }
+                }
                 aria-label={isEditing ? 'Exit edit mode' : 'Edit patient details'}
               >
                 <Pencil className="h-4 w-4" />
@@ -680,7 +768,7 @@ export function DoctorPatientDetailPage() {
             </div>
           )}
 
-          <div className="mt-8">
+          <div className="mt-2">
             {workflowStep === 1 && !isEditing && (
               <DoctorPatientViewTab patient={patient} activeTab={activeTab} />
             )}

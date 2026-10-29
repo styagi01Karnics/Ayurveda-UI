@@ -1,5 +1,5 @@
 import { apiConfig } from './config';
-import { apiRequest } from './client';
+import { apiRequest, apiRequestList } from './client';
 import { apiEndpoints } from './endpoints';
 import { getDashboardBillingSummary } from './billing';
 
@@ -47,10 +47,16 @@ export interface TodaysScheduleDto {
 }
 
 export interface AppointmentStatsDto {
-  currentMonthAppointmentCount: number;
-  completedCount: number;
-  ongoingCount: number;
-  todayAppointmentCount: number;
+  currentMonthAppointmentCount?: number;
+  completedCount?: number;
+  ongoingCount?: number;
+  todayAppointmentCount?: number;
+  totalAppointments?: number;
+  scheduledCount?: number;
+  cancelledCount?: number;
+  inConsultationCount?: number;
+  rescheduledCount?: number;
+  [key: string]: unknown;
 }
 
 export function getDashboardMedicineStock(lowStockLimit = 5) {
@@ -69,6 +75,20 @@ export function getTodaysSchedule(doctorId?: string) {
 export function getAppointmentStats() {
   return apiRequest<AppointmentStatsDto>(
     appointmentUrl(apiEndpoints.appointments.bookings.getStats),
+  );
+}
+
+export interface PatientTrendPointDto {
+  month?: string;
+  monthLabel?: string;
+  newPatients?: number;
+  followUps?: number;
+  [key: string]: unknown;
+}
+
+export function getPatientTrends() {
+  return apiRequestList<PatientTrendPointDto>(
+    appointmentUrl(apiEndpoints.dashboard.patientTrends),
   );
 }
 

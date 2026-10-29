@@ -1,6 +1,7 @@
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
 import { DataTableShell } from '@/components/ui/DataTableShell';
+import { IconActionButton } from '@/components/ui/IconActionButton';
 import { assets } from '@/lib/assets';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { BillingRecord } from '@/types';
@@ -9,45 +10,67 @@ interface BillingTableProps {
   records: BillingRecord[];
   onDownload: (record: BillingRecord) => void;
   onStartInvoice?: (record: BillingRecord) => void;
+  onSendPaymentLink?: (record: BillingRecord) => void;
+  sendingPaymentLinkId?: string | null;
   embedded?: boolean;
+}
+
+function canSendPaymentLink(record: BillingRecord): boolean {
+  if (record.kind === 'billing-draft' || record.status === 'Pending') {
+    return false;
+  }
+  if (record.leftAmount <= 0) return false;
+  return (
+    record.status === 'Unpaid' ||
+    record.status === 'Partial' ||
+    record.status === 'Ongoing'
+  );
 }
 
 export function BillingTable({
   records,
   onDownload,
   onStartInvoice,
+  onSendPaymentLink,
+  sendingPaymentLinkId = null,
   embedded,
 }: BillingTableProps) {
   return (
     <DataTableShell embedded={embedded}>
       <table className="w-full table-fixed text-left text-sm">
-          <thead>
-            <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
-              <th className="px-5 py-3 font-medium">Invoice ID</th>
-              <th className="px-5 py-3 font-medium">Patient ID</th>
-              <th className="px-5 py-3 font-medium">Invoice Date</th>
-              <th className="px-5 py-3 font-medium">Total Amount</th>
-              <th className="px-5 py-3 font-medium">Paid Amount</th>
-              <th className="px-5 py-3 font-medium">Left Amount</th>
-              <th className="px-5 py-3 font-medium">Status</th>
-              <th className="px-5 py-3 font-medium">Action</th>
+        <thead>
+          <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
+            <th className="px-5 py-3 font-medium">Patient Code</th>
+            <th className="px-5 py-3 font-medium">Invoice Date</th>
+            <th className="px-5 py-3 font-medium">Total Amount</th>
+            <th className="px-5 py-3 font-medium">Paid Amount</th>
+            <th className="px-5 py-3 font-medium">Left Amount</th>
+            <th className="px-5 py-3 font-medium">Status</th>
+            <th className="px-5 py-3 font-medium">Payment Link</th>
+            <th className="px-5 py-3 font-medium">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.length === 0 ? (
+            <tr>
+              <td
+                colSpan={8}
+                className="px-5 py-12 text-center text-text-muted"
+              >
+                No billing records found matching your filters.
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {records.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-5 py-12 text-center text-text-muted">
-                  No billing records found matching your filters.
-                </td>
-              </tr>
-            ) : (
-              records.map((record) => {
-                const isDraft = record.kind === 'billing-draft' || record.status === 'Pending';
-                return (
-                <tr key={record.id} className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-5 py-4 font-medium text-brown">
-                    {record.invoiceId}
-                  </td>
+          ) : (
+            records.map((record) => {
+              const isDraft =
+                record.kind === 'billing-draft' || record.status === 'Pending';
+              const showSend = canSendPaymentLink(record);
+              const sending = sendingPaymentLinkId === record.id;
+              return (
+                <tr
+                  key={record.id}
+                  className="border-b border-gray-50 hover:bg-gray-50/50"
+                >
                   <td className="px-5 py-4">
                     <p className="font-medium text-brown">{record.patientId}</p>
                     {record.secondaryPatientId ? (
@@ -70,6 +93,21 @@ export function BillingTable({
                     <BillingStatus status={record.status} />
                   </td>
                   <td className="px-5 py-4">
+                    {showSend ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-2.5 py-1.5 text-xs"
+                        disabled={sending || !onSendPaymentLink}
+                        onClick={() => onSendPaymentLink?.(record)}
+                      >
+                        {sending ? 'Sending…' : 'Send link'}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4">
                     {isDraft ? (
                       <Button
                         type="button"
@@ -79,22 +117,23 @@ export function BillingTable({
                         Start Invoice
                       </Button>
                     ) : (
-                      <button
-                        type="button"
+                      <IconActionButton
                         onClick={() => onDownload(record)}
-                        className="rounded-lg border border-gray-200 bg-cream p-2 text-gold hover:bg-gold/10"
                         aria-label="Download bill"
                       >
-                        <AppIcon src={assets.icons.download} className="h-4 w-4" />
-                      </button>
+                        <AppIcon
+                          src={assets.icons.download}
+                          className="h-4 w-4"
+                        />
+                      </IconActionButton>
                     )}
                   </td>
                 </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+              );
+            })
+          )}
+        </tbody>
+      </table>
     </DataTableShell>
   );
 }
@@ -104,11 +143,12 @@ function BillingStatus({ status }: { status: BillingRecord['status'] }) {
     <span
       className={cn(
         'font-medium',
-        status === 'Pending' || status === 'Unpaid'
+        status === 'Pending' ||
+          status === 'Unpaid' ||
+          status === 'Partial' ||
+          status === 'Ongoing'
           ? 'text-gold'
-          : status === 'Ongoing'
-            ? 'text-gold'
-            : 'text-success',
+          : 'text-[#2E7D32]',
       )}
     >
       {status}

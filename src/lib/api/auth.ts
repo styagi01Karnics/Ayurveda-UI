@@ -27,9 +27,22 @@ export interface TenantResponse {
   id: string;
   tenantCode: string;
   name: string;
+  clinicName?: string;
+  clinicType?: string;
+  state?: string;
+  stateCode?: string;
+  city?: string;
+  pinCode?: string;
+  addressLine1?: string;
+  addressLine2?: string | null;
+  address?: string;
+  registrationNumberGst?: string | null;
+  logoUrl?: string | null;
+  fullName?: string;
+  mobileNumber?: string;
   email?: string;
   phone?: string;
-  address?: string;
+  photoUrl?: string | null;
   schemaName?: string;
   platform?: boolean;
   status: string;
@@ -96,8 +109,10 @@ export interface RegisterUserPayload {
   fullName: string;
   email: string;
   password: string;
-  mobileNumber: string;
-  tenantRoleId: string;
+  role: string;
+  tenantRoleId?: string;
+  username?: string;
+  mobileNumber?: string;
 }
 
 export interface UpdateUserPayload {
@@ -106,12 +121,23 @@ export interface UpdateUserPayload {
   role?: string;
   tenantRoleId?: string;
   status?: string;
+  mobileNumber?: string;
 }
 
 export function login(payload: LoginPayload) {
+  const body: LoginPayload = {
+    usernameOrEmail: payload.usernameOrEmail,
+    password: payload.password,
+  };
+  if (payload.tenantCode?.trim()) {
+    body.tenantCode = payload.tenantCode.trim();
+  }
+  if (payload.city?.trim()) {
+    body.city = payload.city.trim();
+  }
   return apiRequest<AuthTokenResponse>(url(ep.login), {
     method: 'POST',
-    body: payload,
+    body,
   });
 }
 
@@ -181,8 +207,10 @@ export function updateMe(payload: { fullName?: string }) {
   });
 }
 
-export function getUsers() {
-  return apiRequestList<UserResponse>(url(ep.users));
+export function getUsers(page = 0, size = 100) {
+  return apiRequestList<UserResponse>(
+    url(`${ep.users}?page=${page}&size=${size}`),
+  );
 }
 
 export function getUserById(userId: string) {
@@ -211,4 +239,20 @@ export function deleteUser(userId: string) {
 
 export function getTenant() {
   return apiRequest<TenantResponse>(url(ep.tenant));
+}
+
+export interface PublicTenantDto {
+  tenantCode: string;
+  name?: string;
+  clinicName?: string;
+  state?: string;
+  city?: string;
+  status?: string;
+}
+
+/** Public — active hospitals for login picker. */
+export function getPublicTenants() {
+  return apiRequestList<PublicTenantDto>(
+    `${apiConfig.auth}${apiEndpoints.public.tenants}`,
+  );
 }

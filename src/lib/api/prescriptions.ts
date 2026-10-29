@@ -31,7 +31,8 @@ export interface CreatePrescriptionPayload {
   assignedDoctorId: string;
   medicines?: CreatePrescriptionMedicinePayload[];
   therapySuggestions?: CreatePrescriptionTherapySuggestionPayload[];
-  nextFollowUp?: CreatePrescriptionNextFollowUpPayload;
+  /** Doc: array of follow-up setup objects. */
+  nextFollowUp?: CreatePrescriptionNextFollowUpPayload[];
   diagnosis?: string;
   notes?: string;
 }
@@ -70,6 +71,7 @@ export interface PrescriptionPatientDto {
   id?: string;
   displayId?: string;
   patientDisplayId?: string;
+  patientCode?: string;
   name?: string;
   fullName?: string;
   age?: string | number;
@@ -93,6 +95,8 @@ export interface PrescriptionConsultantDto {
   name?: string;
   specialization?: string;
   qualification?: string;
+  /** Alias for qualification when API returns degree. */
+  degree?: string;
   contactNumber?: string;
   mobileNumber?: string;
 }
@@ -106,7 +110,10 @@ export interface PrescriptionDto {
   notes?: string;
   medicines?: PrescriptionMedicineDto[];
   therapySuggestions?: PrescriptionTherapySuggestionDto[];
-  nextFollowUp?: PrescriptionNextFollowUpDto;
+  /** Doc returns an array; tolerate a single object from older payloads. */
+  nextFollowUp?:
+    | PrescriptionNextFollowUpDto
+    | PrescriptionNextFollowUpDto[];
   patient?: PrescriptionPatientDto;
   treatment?: PrescriptionTreatmentDto;
   consultant?: PrescriptionConsultantDto;

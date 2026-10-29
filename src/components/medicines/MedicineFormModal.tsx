@@ -38,13 +38,34 @@ const emptyValues: MedicineFormValues = {
 };
 
 function toInputDate(expiryDate: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) return expiryDate;
+  if (!expiryDate) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(expiryDate)) {
+    return expiryDate;
+  }
   if (expiryDate.includes('/')) {
     const [day, month, year] = expiryDate.split('/');
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
-  return expiryDate;
+  const months: Record<string, string> = {
+    Jan: '01', Feb: '02', Mar: '03', Apr: '04',
+    May: '05', Jun: '06', Jul: '07', Aug: '08',
+    Sep: '09', Oct: '10', Nov: '11', Dec: '12',
+  };
+
+  const match = expiryDate.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/);
+
+  if (match) {
+    const [, day, month, year] = match;
+    const monthNumber = months[month];
+
+    if (monthNumber) {
+      return `${year}-${monthNumber}-${day.padStart(2, '0')}`;
+    }
+  }
+
+  return '';
 }
+
 
 function FormSection({
   title,
@@ -173,6 +194,9 @@ export function MedicineFormModal({
     }
 
     if (medicine) {
+      console.log("medicine",medicine)
+       console.log('Original expiry date:', medicine.expiryDate);
+  console.log('Formatted expiry date:', toInputDate(medicine.expiryDate));
       reset({
         name: medicine.name,
         category: medicine.categoryCode,
@@ -220,7 +244,7 @@ export function MedicineFormModal({
     const validPending = pendingItems.filter(isMedicineFormComplete);
 
     if (currentComplete) {
-      const valid = await trigger();
+      const valid = await trigger(); 
       if (!valid) return;
     }
 

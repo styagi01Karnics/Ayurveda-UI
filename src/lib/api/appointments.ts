@@ -114,6 +114,8 @@ export interface AppointmentPatientsQuery {
   consultationTypeId?: string;
   doshaId?: string;
   doctorId?: string;
+  page?: number;
+  size?: number;
 }
 
 function buildAppointmentPatientsUrl(query: AppointmentPatientsQuery): string {
@@ -125,6 +127,8 @@ function buildAppointmentPatientsUrl(query: AppointmentPatientsQuery): string {
   }
   if (query.doshaId) params.set('doshaId', query.doshaId);
   if (query.doctorId) params.set('doctorId', query.doctorId);
+  if (query.page != null) params.set('page', String(query.page));
+  if (query.size != null) params.set('size', String(query.size));
   return `${url(ep.bookings.getAllPatients)}?${params.toString()}`;
 }
 
@@ -198,9 +202,10 @@ export function createAppointment(payload: CreateAppointmentPayload) {
   });
 }
 
-export function cancelAppointment(bookingId: string) {
+export function cancelAppointment(bookingId: string, reason: string) {
   return apiRequest<AppointmentDto>(url(ep.bookings.cancel(bookingId)), {
     method: 'PUT',
+    body: { reason },
   });
 }
 

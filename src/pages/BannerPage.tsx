@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { Plus, Sparkles } from 'lucide-react';
-import { usePageAction } from '@/app/PageActionContext';
 import { useToast } from '@/app/ToastContext';
 import { BannerCollection } from '@/components/banners/BannerCollection';
 import { BannerEditorPanel } from '@/components/banners/BannerEditorPanel';
@@ -35,8 +34,6 @@ export function BannerPage() {
     ),
     [],
   );
-
-  usePageAction(headerAction);
 
   const upsertBanner = (banner: ClinicBanner) => {
     const exists = banners.some((b) => b.id === banner.id);
@@ -141,7 +138,7 @@ export function BannerPage() {
           src={assets.scheduleDecor}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute -right-6 top-0 h-36 w-36 object-contain opacity-70 sm:h-44 sm:w-44"
+          className="pointer-events-none absolute -right-6 top-0 h-36 w-36 object-contain opacity-70 mix-blend-multiply sm:h-44 sm:w-44"
         />
         <div className="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-gold/10 blur-3xl" />
         <div className="relative max-w-2xl">
@@ -149,7 +146,7 @@ export function BannerPage() {
             <Sparkles className="h-3.5 w-3.5" />
             Banner Studio
           </span>
-          <h1 className="mt-4 font-serif text-3xl font-semibold leading-tight text-brown sm:text-4xl">
+          <h1 className="mt-4 font-sans text-3xl font-semibold leading-tight text-brown sm:text-4xl">
             Craft elegant clinic announcements
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-brown-muted sm:text-base">
@@ -162,9 +159,12 @@ export function BannerPage() {
       <div className="grid gap-6 xl:grid-cols-12">
         <div className="space-y-6 xl:col-span-5">
           <Card className="p-0">
-            <div className="border-b border-[#f0ebe3] px-5 py-4">
-              <h2 className="font-semibold text-brown">Your Banners</h2>
-              <p className="text-xs text-text-muted">{banners.length} saved designs</p>
+            <div className="flex items-start justify-between gap-3 border-b border-[#f0ebe3] px-5 py-4">
+              <div>
+                <h2 className="font-semibold text-brown">Your Banners</h2>
+                <p className="text-xs text-text-muted">{banners.length} saved designs</p>
+              </div>
+              {headerAction}
             </div>
             <div className="max-h-[420px] overflow-y-auto p-4">
               <BannerCollection

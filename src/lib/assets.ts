@@ -1,9 +1,8 @@
 /** Centralized static asset paths — public PNGs + Figma-export SVGs from src/assets */
 
+import appLogo from '@/assets/signup/logo.png';
 import sidebarBg from '@/assets/appointments/sidebar-bg.png';
 import avatar from '@/assets/appointments/avatar.png';
-import signupAvatar from '@/assets/signup/avatar.png';
-import signupUploadIcon from '@/assets/signup/upload-cloud.svg';
 import doctorReenaAvatar from '@/assets/appointments/doctor-reena.png';
 import patientRajAvatar from '@/assets/appointments/patient-raj.png';
 import searchIcon from '@/assets/appointments/search.svg';
@@ -24,12 +23,17 @@ import medicineCalendarIcon from '@/assets/medicines/medicine-calendar.svg';
 import folderIcon from '@/assets/appointments/book/icon-folder.svg';
 import pdfIcon from '@/assets/appointments/book/icon-pdf.svg';
 import checkmarkIcon from '@/assets/doctors/checkmark.svg';
+import scheduleDecorImg from '@/assets/dashboard/schedule-decor.png';
+import loginDecorTopRight from '@/assets/7591fc220fd4d8861e092b7d5e5997c8 2.png';
+import loginDecorBottomLeft from '@/assets/47384bbb6cb6c3b72f9f27676ca317b2 1.png';
 import { navIconSet, type NavIconKey } from '@/lib/nav-icons';
 
 export { navIconSet, type NavIconKey };
 
 export const assets = {
   brandLogo: '/assets/brand-logo.png',
+  karnicsLogo: '/assets/karnics-logo.svg',
+  appLogo,
   dosha: {
     vata: '/assets/vata.png',
     pitta: '/assets/pitta.png',
@@ -37,14 +41,13 @@ export const assets = {
   },
   auth: {
     loginBg: '/assets/LoginBG.svg',
-    loginDecorTopRight: '/assets/login-decor-right.png',
-    loginDecorBottomLeft: '/assets/login-decor-left.png',
+    loginDecorTopRight,
+    loginDecorBottomLeft,
     signupDecorBottomRight: '/assets/signup-decor-right.png',
-    signupAvatar,
-    signupUploadIcon,
   },
   sidebarBg,
-  scheduleDecor: '/assets/SceduleCorner.svg',
+  /** Mortar + herbs — Today's Schedule card (Figma) */
+  scheduleDecor: scheduleDecorImg,
   avatar,
   calendarEvent: {
     doctor: doctorReenaAvatar,

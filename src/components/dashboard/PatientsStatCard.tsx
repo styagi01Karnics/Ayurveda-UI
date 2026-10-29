@@ -1,7 +1,7 @@
+import type { ReactNode } from 'react';
 import { TrendingUp } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { DashDivider, PeriodDropdown } from '@/components/dashboard/DashboardPrimitives';
-import { PatientTrendsChart } from '@/components/dashboard/PatientTrendsChart';
 import type { BillingPeriod } from '@/lib/api/billing';
 import { cn, formatNumber } from '@/lib/utils';
 import type { DashboardStats } from '@/types';
@@ -10,8 +10,7 @@ interface PatientsStatCardProps {
   stats: DashboardStats;
   period: BillingPeriod;
   onPeriodChange: (period: BillingPeriod) => void;
-  chartData: { month: string; newPatients: number; followUps: number }[];
-  onExpandChart?: () => void;
+  footer?: ReactNode;
   className?: string;
 }
 
@@ -19,16 +18,16 @@ export function PatientsStatCard({
   stats,
   period,
   onPeriodChange,
-  chartData,
-  onExpandChart,
+  footer,
   className,
 }: PatientsStatCardProps) {
   const total = stats.totalPatients;
-  const activePct = total ? Math.round((stats.activePatients / total) * 100) : 0;
-  const inactivePct = total ? Math.round((stats.inactivePatients / total) * 100) : 0;
+  const activePct = total > 0 ? Math.round((stats.activePatients / total) * 100) : 0;
+  const inactivePct =
+    total > 0 ? Math.round((stats.inactivePatients / total) * 100) : 0;
 
   return (
-    <Card className={cn('dashboard-card flex h-full flex-col', className)}>
+    <Card className={cn('dashboard-card flex h-full min-h-0 flex-col', className)}>
       <div className="mb-3 flex items-start justify-between gap-3">
         <h3 className="text-[15px] font-medium text-text-muted">Total Patients</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
@@ -67,14 +66,12 @@ export function PatientsStatCard({
         </div>
       </div>
 
-      <DashDivider className="mb-4 mt-5" />
-
-      <PatientTrendsChart
-        data={chartData}
-        compact
-        onExpand={onExpandChart}
-        className="mt-1 flex min-h-0 flex-1 flex-col"
-      />
+      {footer ? (
+        <>
+          <DashDivider className="mb-4 mt-5 shrink-0" />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">{footer}</div>
+        </>
+      ) : null}
     </Card>
   );
 }

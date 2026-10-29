@@ -1,5 +1,5 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest, apiRequestList, apiRequestPage } from './client';
 import { apiEndpoints } from './endpoints';
 
 const url = (path: string) => `${apiConfig.activityLog}${path}`;
@@ -37,20 +37,34 @@ export interface CreateActivityLogPayload {
 }
 
 export interface ActivityLogsQuery {
-  page?: string;
+  page?: number;
+  size?: number;
+  /** @deprecated use numeric `page` */
+  pageName?: string;
   action?: ActivityActionApi;
   search?: string;
 }
 
 export function getActivityLogs(query: ActivityLogsQuery = {}) {
   const params = new URLSearchParams();
-  if (query.page) params.set('page', query.page);
+  if (query.page != null) params.set('page', String(query.page));
+  else if (query.pageName) params.set('page', query.pageName);
+  if (query.size != null) params.set('size', String(query.size));
   if (query.action) params.set('action', query.action);
   if (query.search) params.set('search', query.search);
   const qs = params.toString();
   return apiRequestList<ActivityLogDto>(
     url(`${ep.base}${qs ? `?${qs}` : ''}`),
   );
+}
+
+export function getActivityLogsPaged(query: ActivityLogsQuery = {}) {
+  const params = new URLSearchParams();
+  params.set('page', String(query.page ?? 0));
+  params.set('size', String(query.size ?? 10));
+  if (query.action) params.set('action', query.action);
+  if (query.search) params.set('search', query.search);
+  return apiRequestPage<ActivityLogDto>(url(`${ep.base}?${params.toString()}`));
 }
 
 export function getActivityLogById(id: string) {

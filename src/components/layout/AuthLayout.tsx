@@ -54,9 +54,9 @@ export function AuthLayout({
   }
 
   return (
-    <div className="paper-texture relative min-h-screen overflow-hidden px-4 py-8 sm:px-6 lg:px-10">
+    <div className="paper-texture relative min-h-svh overflow-x-hidden overflow-y-auto px-4 py-8 sm:px-6 lg:px-10">
       <div
-        className={`relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center gap-8 ${
+        className={`relative z-10 mx-auto flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center gap-8 ${
           aside ? 'max-w-6xl lg:flex-row lg:items-center lg:justify-between' : 'max-w-md'
         }`}
       >

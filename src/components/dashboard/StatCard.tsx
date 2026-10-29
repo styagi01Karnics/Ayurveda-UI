@@ -17,6 +17,11 @@ interface StatCardProps {
   onPeriodChange: (period: BillingPeriod) => void;
 }
 
+function gaugePercent(part: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.min(100, Math.round((part / total) * 100));
+}
+
 export function StatCard({
   title,
   stats,
@@ -26,27 +31,37 @@ export function StatCard({
 }: StatCardProps) {
   if (type === 'billing') {
     return (
-      <Card className="dashboard-card flex flex-col">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <h3 className="text-[15px] font-medium text-text-muted">{title}</h3>
+      <Card className="dashboard-card flex h-full min-h-0 flex-col p-3.5">
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <h3 className="dashboard-card-title">{title}</h3>
           <PeriodDropdown value={period} onChange={onPeriodChange} />
         </div>
-        <p className="text-[28px] font-bold leading-none text-brown">
+
+        <p className="font-sans text-[26px] font-bold leading-none tracking-tight text-[#422C23]">
           {formatCurrency(stats.billingTotal)}
         </p>
-        <span className="mt-3 inline-block w-fit rounded-full bg-[#f3e8d4] px-3 py-1 text-xs font-medium text-gold">
-          Total Bills Generated: {stats.billsGenerated}
+
+        <span className="mt-2 inline-flex w-fit items-center rounded-full bg-[#F5F0E4] px-2.5 py-1 font-sans text-[10px] font-medium leading-none tracking-normal text-[#404040]">
+          Total Bills Generated:{' '}
+          <span className="ml-1 font-sans text-[10px] font-medium leading-none tracking-normal text-[#BE880B]">
+            {stats.billsGenerated}
+          </span>
         </span>
-        <div className="mt-auto flex flex-col gap-3 pt-5">
-          <div>
-            <p className="text-xs text-text-muted">Pending Payments</p>
-            <p className="mt-0.5 text-[15px] font-semibold text-brown">
+
+        <div className="mt-2.5 flex min-h-0 flex-1 flex-col gap-2">
+          <div className="flex flex-1 flex-col justify-center rounded-xl bg-[#FDFBF7] px-3 py-2">
+            <p className="font-sans text-[12px] font-medium leading-4 tracking-normal text-[#BE880B]">
+              Pending Payments
+            </p>
+            <p className="mt-0.5 font-sans text-[14px] font-semibold leading-7 tracking-normal text-[#0A0A0A]">
               {formatCurrency(stats.pendingPayments)}
             </p>
           </div>
-          <div>
-            <p className="text-xs text-text-muted">Collected Payments</p>
-            <p className="mt-0.5 text-[15px] font-semibold text-brown">
+          <div className="flex flex-1 flex-col justify-center rounded-xl bg-[#FDFBF7] px-3 py-2">
+            <p className="font-sans text-[12px] font-medium leading-4 tracking-normal text-[#BE880B]">
+              Collected Payments
+            </p>
+            <p className="mt-0.5 font-sans text-[14px] font-semibold leading-7 tracking-normal text-[#0A0A0A]">
               {formatCurrency(stats.collectedPayments)}
             </p>
           </div>
@@ -56,47 +71,55 @@ export function StatCard({
   }
 
   const total = stats.totalAppointments;
-  const growth = stats.appointmentGrowth;
-  const today = stats.appointmentsToday;
+  const confirmed = stats.appointmentsConfirmed;
+  const cancelled = stats.appointmentsCancelled;
+  const followUp = stats.appointmentsFollowUp;
+  const gaugeTotal = Math.max(total, confirmed + cancelled + followUp, 1);
 
   return (
-    <Card className="dashboard-card flex flex-col">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <h3 className="text-[15px] font-medium text-text-muted">{title}</h3>
+    <Card className="dashboard-card flex h-full min-h-0 flex-col p-3.5">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <h3 className="dashboard-card-title">{title}</h3>
         <PeriodDropdown value={period} onChange={onPeriodChange} />
       </div>
+
       <div className="flex items-end gap-2">
-        <p className="text-[28px] font-bold leading-none text-brown">
+        <p className="font-sans text-[26px] font-bold leading-none tracking-tight text-[#422C23]">
           {formatNumber(total)}
         </p>
-        <span className="mb-0.5 flex items-center gap-0.5 text-sm font-medium text-success">
-          <TrendingUp className="h-4 w-4" />
-          {growth}%
+        <span className="mb-0.5 flex items-center gap-0.5 font-sans text-sm font-semibold text-[#2E7D32]">
+          <TrendingUp className="h-3.5 w-3.5" strokeWidth={2.5} />
+          {stats.appointmentGrowth > 0
+            ? `+${stats.appointmentGrowth}`
+            : stats.appointmentGrowth}
+          %
         </span>
       </div>
 
-      <p className="mt-2 text-sm font-medium text-gold">+{today} Today</p>
+      <p className="mt-1 font-sans text-sm font-medium text-[#BE880B]">
+        +{stats.appointmentsToday} Today
+      </p>
 
-      <DashDivider className="my-4" />
+      <DashDivider className="my-2.5" />
 
-      <div className="mt-auto flex justify-between gap-2 px-1">
+      <div className="mt-1 flex min-h-0 flex-1 items-end justify-between gap-1">
         <SemiCircleGauge
           label="Confirmed"
-          percent={60}
-          count={60}
-          stroke="#3d8f5a"
+          percent={gaugePercent(confirmed, gaugeTotal)}
+          count={confirmed}
+          stroke="#3D8B40"
         />
         <SemiCircleGauge
           label="Cancelled"
-          percent={60}
-          count={60}
-          stroke="#c94c4c"
+          percent={gaugePercent(cancelled, gaugeTotal)}
+          count={cancelled}
+          stroke="#E24B4A"
         />
         <SemiCircleGauge
           label="Follow-Up"
-          percent={60}
-          count={60}
-          stroke="#be880b"
+          percent={gaugePercent(followUp, gaugeTotal)}
+          count={followUp}
+          stroke="#E0A020"
         />
       </div>
     </Card>

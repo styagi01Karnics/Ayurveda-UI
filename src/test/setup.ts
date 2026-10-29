@@ -18,7 +18,11 @@ vi.mock('@/lib/api/patients', () => ({
     if (!found) throw new Error('Patient not found');
     return found;
   }),
-  getPatientCount: vi.fn(async () => 1000),
+  getPatientCount: vi.fn(async () => ({
+    totalPatients: 1000,
+    activePatients: 200,
+    inactivePatients: 800,
+  })),
   createPatient: vi.fn(async (payload: { fullName: string }) => ({
     id: 'new-patient-id',
     patientCode: 'PAT-TEST-0001',
@@ -128,6 +132,10 @@ vi.mock('@/lib/api/therapists', () => ({
     ...payload,
     status: 'ACTIVE',
     active: true,
+  })),
+  updateTherapist: vi.fn(async (id: string, payload: object) => ({
+    id,
+    ...payload,
   })),
   deleteTherapist: vi.fn(async () => undefined),
   getTherapistsByTherapyIds: vi.fn(async () =>
@@ -674,7 +682,7 @@ vi.mock('@/lib/api/followUps', () => ({
       doctorName: f.doctor,
       visitType: f.visitType.toUpperCase() === 'THERAPY' ? 'THERAPY' : 'CONSULTATION',
       appointmentDate: `${f.dateCreated}T10:30:00`,
-      schedulingOption: '7_DAYS',
+      schedulingOption: 'AFTER_7_DAYS',
       smsReminderEnabled: false,
       status:
         f.status === 'Missed'
@@ -761,11 +769,13 @@ vi.mock('@/lib/api/medicines', () => ({
   ),
   getMedicineCategories: vi.fn(async () => ['TABLET', 'SYRUP', 'POWDER', 'CAPSULE', 'OIL']),
   getMedicineById: vi.fn(),
-  createMedicine: vi.fn(async (payload: { medicineName: string }) => ({
-    id: `med-${Date.now()}`,
-    ...payload,
-    stockStatus: 'IN_STOCK',
-  })),
+  createMedicine: vi.fn(async (payload: { medicineName: string }) => [
+    {
+      id: `med-${Date.now()}`,
+      ...payload,
+      stockStatus: 'IN_STOCK',
+    },
+  ]),
   createMultipleMedicines: vi.fn(async (payload: object[]) =>
     payload.map((item, index) => ({
       id: `med-${Date.now()}-${index}`,
@@ -832,6 +842,15 @@ vi.mock('@/lib/api/auth', () => ({
     address: 'Mumbai',
     status: 'ACTIVE',
   })),
+  getPublicTenants: vi.fn(async () => [
+    {
+      tenantCode: 'GAN-DL',
+      clinicName: 'Ganesha Ayurveda',
+      city: 'New Delhi',
+      state: 'Delhi',
+      status: 'ACTIVE',
+    },
+  ]),
   getMe: vi.fn(async () => ({
     id: 'user-1',
     tenantId: 'tenant-1',
@@ -852,10 +871,37 @@ vi.mock('@/lib/api/auth', () => ({
     status: 'ACTIVE',
   })),
   getUsers: vi.fn(async () => []),
-  forgotPassword: vi.fn(),
+  forgotPassword: vi.fn(async () => undefined),
   resetPassword: vi.fn(),
+  changePassword: vi.fn(async () => undefined),
   validateToken: vi.fn(),
-  registerUser: vi.fn(),
+  registerUser: vi.fn(async () => {
+    throw new Error('registerUser unavailable in tests');
+  }),
+}));
+
+vi.mock('@/lib/api/roles', () => ({
+  getUiPages: vi.fn(async () => {
+    throw new Error('ui-pages unavailable in tests');
+  }),
+  getRoles: vi.fn(async () => {
+    throw new Error('roles unavailable in tests');
+  }),
+  getRoleById: vi.fn(),
+  createRole: vi.fn(async () => {
+    throw new Error('createRole unavailable in tests');
+  }),
+  updateRole: vi.fn(async () => {
+    throw new Error('updateRole unavailable in tests');
+  }),
+  deleteRole: vi.fn(),
+  bootstrapSuperAdmin: vi.fn(),
+  createHospital: vi.fn(),
+  getHospitals: vi.fn(async () => []),
+  updateHospitalStatus: vi.fn(),
+  retryHospitalProvision: vi.fn(),
+  getHospitalMail: vi.fn(async () => ({})),
+  updateHospitalMail: vi.fn(async () => ({})),
 }));
 
 vi.mock('@/lib/api/billing', () => ({

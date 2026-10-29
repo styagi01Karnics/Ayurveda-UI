@@ -2,7 +2,7 @@ const trimSlash = (url: string) => url.replace(/\/+$/, '');
 
 /**
  * Leave bases empty in local dev so requests are `/api/v1/...`
- * (Vite proxies to VITE_BACKEND_HOST — default localhost — no CORS).
+ * (Vite proxies to VITE_BACKEND_HOST — default http://45.195.229.15 — no CORS).
  *
  * For production absolute hosts, set e.g.
  * VITE_APPOINTMENT_API_URL=http://45.195.229.15:8103
@@ -24,4 +24,5 @@ export const apiConfig = {
   activityLog: resolveBase(import.meta.env.VITE_ACTIVITY_LOG_API_URL),
   attendance: resolveBase(import.meta.env.VITE_ATTENDANCE_API_URL),
   fileUpload: resolveBase(import.meta.env.VITE_FILE_UPLOAD_API_URL),
+  payment: resolveBase(import.meta.env.VITE_PAYMENT_API_URL),
 } as const;

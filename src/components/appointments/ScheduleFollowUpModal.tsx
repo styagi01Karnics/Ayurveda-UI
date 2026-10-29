@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PatientSearchSelect } from '@/components/ui/PatientSearchSelect';
 import { Select, type SelectOption } from '@/components/ui/Select';
 import {
   followUpSchema,
@@ -16,7 +17,9 @@ import {
 } from '@/lib/bookingConstraints';
 
 export interface FollowUpLookupOptions {
-  patients: SelectOption[];
+  patients: Array<
+    SelectOption | { value: string; label: string; patientId?: string; name?: string }
+  >;
   doctors: SelectOption[];
   visitTypes: SelectOption[];
 }
@@ -42,6 +45,7 @@ export function ScheduleFollowUpModal({
 }: ScheduleFollowUpModalProps) {
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -51,7 +55,7 @@ export function ScheduleFollowUpModal({
       patientId: '',
       assignedDoctorId: '',
       visitTypeId: '',
-      schedulingOption: '7_DAYS',
+      schedulingOption: 'AFTER_7_DAYS',
       scheduleDate: '',
       scheduleTime: '',
       smsReminderEnabled: false,
@@ -64,7 +68,7 @@ export function ScheduleFollowUpModal({
       patientId: initialValues?.patientId ?? '',
       assignedDoctorId: initialValues?.assignedDoctorId ?? '',
       visitTypeId: initialValues?.visitTypeId ?? '',
-      schedulingOption: initialValues?.schedulingOption ?? '7_DAYS',
+      schedulingOption: initialValues?.schedulingOption ?? 'AFTER_7_DAYS',
       scheduleDate: initialValues?.scheduleDate ?? '',
       scheduleTime: initialValues?.scheduleTime ?? '',
       smsReminderEnabled: initialValues?.smsReminderEnabled ?? false,
@@ -112,12 +116,36 @@ export function ScheduleFollowUpModal({
     >
       <form className="space-y-4" noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            label="Patient"
-            placeholder="Select patient"
-            options={lookupOptions.patients}
-            error={errors.patientId?.message}
-            {...register('patientId')}
+          <Controller
+            name="patientId"
+            control={control}
+            render={({ field }) => (
+              <PatientSearchSelect
+                label="Patient"
+                placeholder="Search by patient ID or name (min 4 characters)"
+                options={lookupOptions.patients.map((option) => {
+                  if (typeof option === 'string') {
+                    return { value: option, label: option };
+                  }
+                  return {
+                    value: option.value,
+                    label: option.label,
+                    patientId:
+                      'patientId' in option && option.patientId
+                        ? option.patientId
+                        : option.value,
+                    name:
+                      'name' in option && option.name
+                        ? option.name
+                        : option.label,
+                  };
+                })}
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.patientId?.message}
+                disabled={mode === 'reschedule' && Boolean(initialValues?.patientId)}
+              />
+            )}
           />
           <Select
             label="Doctor"

@@ -1,14 +1,32 @@
 import { z } from 'zod';
+import {
+  ALL_PAGE_CODES,
+  PAGE_CODE_LABELS,
+  type PageCode,
+} from '@/lib/pagePermissions';
 
 export const CLINIC_STATUS_OPTIONS = ['Active', 'Inactive'] as const;
 
-export const USER_ROLE_OPTIONS = [
-  'Super Admin',
-  'Admin',
-  'Doctor',
-  'Receptionist',
-  'Therapist',
+/** API UserRole enums for register-user (excludes SUPER_ADMIN). */
+export const USER_ROLE_API_VALUES = [
+  'ADMIN',
+  'MANAGER',
+  'RECEPTIONIST',
+  'DIETICIAN',
+  'DOCTOR',
+  'CHEMIST',
 ] as const;
+
+export type UserRoleApiValue = (typeof USER_ROLE_API_VALUES)[number];
+
+export const USER_ROLE_OPTIONS: { value: UserRoleApiValue; label: string }[] = [
+  { value: 'ADMIN', label: 'Admin' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'RECEPTIONIST', label: 'Receptionist' },
+  { value: 'DIETICIAN', label: 'Dietician' },
+  { value: 'DOCTOR', label: 'Doctor' },
+  { value: 'CHEMIST', label: 'Chemist' },
+];
 
 export const USER_STATUS_OPTIONS = ['Active', 'Inactive'] as const;
 
@@ -19,31 +37,21 @@ export const THERAPY_CATEGORY_OPTIONS = [
   'Detox',
 ] as const;
 
-export const PERMISSION_MODULES = [
-  'Dashboard',
-  'Patients',
-  'Doctors',
-  'Appointments',
-  'Treatments',
-  'Medicines',
-  'Sales',
-  'Activity Log',
-  'Billing',
-  'Settings',
-] as const;
+/** Page permission codes (DASHBOARD, PATIENTS, …) — not display labels. */
+export const PERMISSION_MODULES: readonly PageCode[] = ALL_PAGE_CODES;
+
+export { PAGE_CODE_LABELS };
 
 export const clinicDoctorSchema = z
   .object({
     name: z.string().min(1, 'Name is required'),
     specialization: z.string().min(1, 'Specialization is required'),
-    qualification: z.string().optional(),
+    qualification: z.string().trim().optional(),
     mobileNumber: z
       .string()
-      .optional()
-      .refine(
-        (value) => !value || /^\d{10}$/.test(value),
-        'Enter a valid 10-digit mobile number',
-      ),
+      .trim()
+      .min(1, 'Mobile number is required')
+      .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
     status: z.enum(CLINIC_STATUS_OPTIONS),
     consultationFees: z
       .string()
@@ -130,15 +138,29 @@ export type ClinicPackageMasterFormValues = z.infer<
   typeof clinicPackageMasterSchema
 >;
 
+export const clinicDoshaSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  elements: z.string().min(1, 'Elements are required'),
+  characteristics: z.string().min(1, 'Characteristics are required'),
+});
+
+export type ClinicDoshaFormValues = z.infer<typeof clinicDoshaSchema>;
+
+const userDetailFields = {
+  tenantRoleId: z.string().min(1, 'Role is required'),
+  fullName: z.string().min(1, 'Full name is required'),
+  mobileNumber: z
+    .string()
+    .min(1, 'Mobile number is required')
+    .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
+  email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+  role: z.string().min(1, 'Role is required'),
+  status: z.enum(USER_STATUS_OPTIONS),
+};
+
 export const addUserSchema = z
   .object({
-    userId: z.string().min(1, 'User ID is required'),
-    fullName: z.string().min(1, 'Full name is required'),
-    contactNumber: z
-      .string()
-      .min(1, 'Contact number is required')
-      .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
-    email: z.string().min(1, 'Email is required').email('Enter a valid email'),
+    ...userDetailFields,
     password: z
       .string()
       .min(1, 'Password is required')
@@ -148,7 +170,6 @@ export const addUserSchema = z
         'Password must include upper, lower case and a number',
       ),
     confirmPassword: z.string().min(1, 'Confirm password is required'),
-    tenantRoleId: z.string().min(1, 'Role is required'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -157,10 +178,15 @@ export const addUserSchema = z
 
 export type AddUserFormValues = z.infer<typeof addUserSchema>;
 
+export const editUserSchema = z.object(userDetailFields);
+
+export type EditUserFormValues = z.infer<typeof editUserSchema>;
+
 export const roleSchema = z.object({
   name: z.string().min(1, 'Role name is required'),
+  description: z.string().optional(),
   status: z.enum(CLINIC_STATUS_OPTIONS),
-  accessLevel: z.string().min(1, 'Access level is required'),
+  accessLevel: z.string().optional(),
   permissions: z.array(z.string()).min(1, 'Select at least one permission'),
 });
 

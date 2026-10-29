@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pencil, Users } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AddRoleModal } from '@/components/settings/AddRoleModal';
 import { initialSettingsRoles } from '@/data/mock/settings';
+import {
+  createRole,
+  getRoles,
+  getUiPages,
+  updateRole,
+  type TenantRoleResponse,
+} from '@/lib/api/roles';
+import {
+  ALL_PAGE_CODES,
+  type PageCode,
+} from '@/lib/pagePermissions';
 import type { RoleFormValues } from '@/lib/validation/settings.schema';
 import { cn } from '@/lib/utils';
 import type { SettingsRoleRecord } from '@/types';
@@ -12,13 +23,64 @@ interface RoleManagementTabProps {
   onAddRoleClose: () => void;
 }
 
+function accessLevelFor(pageCodes: string[]): string {
+  if (pageCodes.length >= ALL_PAGE_CODES.length) return 'Full Access';
+  if (pageCodes.length >= 5) return 'Limited Access';
+  return 'Clinical Access';
+}
+
+function mapApiRole(role: TenantRoleResponse): SettingsRoleRecord {
+  return {
+    id: role.id,
+    name: role.roleName,
+    status: role.active === false ? 'Inactive' : 'Active',
+    accessLevel: accessLevelFor(role.pageCodes ?? []),
+    description: role.description ?? '',
+    permissions: role.pageCodes ?? [],
+    userCount: role.userCount ?? 0,
+  };
+}
+
 export function RoleManagementTab({
   addRoleOpen,
   onAddRoleClose,
 }: RoleManagementTabProps) {
   const { showToast } = useToast();
-  const [roles, setRoles] = useState(initialSettingsRoles);
+  const [roles, setRoles] = useState<SettingsRoleRecord[]>(initialSettingsRoles);
+  const [permissionModules, setPermissionModules] =
+    useState<readonly PageCode[]>(ALL_PAGE_CODES);
   const [editTarget, setEditTarget] = useState<SettingsRoleRecord | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const [apiRoles, uiPages] = await Promise.all([
+          getRoles(),
+          getUiPages(),
+        ]);
+        if (cancelled) return;
+        setRoles(apiRoles.map(mapApiRole));
+        const codes = uiPages
+          .map((page) => page.pageCode)
+          .filter((code): code is PageCode =>
+            ALL_PAGE_CODES.includes(code as PageCode),
+          );
+        setPermissionModules(codes.length > 0 ? codes : ALL_PAGE_CODES);
+      } catch {
+        if (cancelled) return;
+        setRoles(initialSettingsRoles);
+        setPermissionModules(ALL_PAGE_CODES);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const modalOpen = addRoleOpen || Boolean(editTarget);
 
@@ -27,43 +89,80 @@ export function RoleManagementTab({
     onAddRoleClose();
   };
 
-  const handleSubmit = (values: RoleFormValues) => {
-    if (editTarget) {
-      setRoles((prev) =>
-        prev.map((role) =>
-          role.id === editTarget.id
-            ? {
-                ...role,
-                name: values.name,
-                status: values.status,
-                accessLevel: values.accessLevel,
-                permissions: values.permissions,
-              }
-            : role,
-        ),
-      );
-      showToast({
-        title: 'Role Updated',
-        message: `${values.name} has been updated successfully.`,
-      });
-    } else {
-      setRoles((prev) => [
-        ...prev,
-        {
-          id: `role-${Date.now()}`,
-          name: values.name,
-          status: values.status,
-          accessLevel: values.accessLevel,
-          permissions: values.permissions,
-          userCount: 0,
-        },
-      ]);
-      showToast({
-        title: 'Role Added',
-        message: `${values.name} has been created successfully.`,
-      });
+  const handleSubmit = async (values: RoleFormValues) => {
+    setSubmitting(true);
+    const active = values.status === 'Active';
+    const payload = {
+      roleName: values.name,
+      description: values.description?.trim() || undefined,
+      pageCodes: values.permissions,
+      active,
+    };
+
+    try {
+      if (editTarget) {
+        const updated = await updateRole(editTarget.id, payload);
+        setRoles((prev) =>
+          prev.map((role) =>
+            role.id === editTarget.id ? mapApiRole(updated) : role,
+          ),
+        );
+        showToast({
+          title: 'Role Updated',
+          message: `${values.name} has been updated successfully.`,
+        });
+      } else {
+        const created = await createRole(payload);
+        setRoles((prev) => [...prev, mapApiRole(created)]);
+        showToast({
+          title: 'Role Added',
+          message: `${values.name} has been created successfully.`,
+        });
+      }
+      handleCloseModal();
+    } catch {
+      // Local mock fallback when API is unavailable.
+      if (editTarget) {
+        setRoles((prev) =>
+          prev.map((role) =>
+            role.id === editTarget.id
+              ? {
+                  ...role,
+                  name: values.name,
+                  status: values.status,
+                  accessLevel: values.accessLevel ?? accessLevelFor(values.permissions),
+                  description: values.description,
+                  permissions: values.permissions,
+                }
+              : role,
+          ),
+        );
+        showToast({
+          title: 'Role Updated',
+          message: `${values.name} has been updated successfully.`,
+        });
+      } else {
+        setRoles((prev) => [
+          ...prev,
+          {
+            id: `role-${Date.now()}`,
+            name: values.name,
+            status: values.status,
+            accessLevel: values.accessLevel ?? accessLevelFor(values.permissions),
+            description: values.description,
+            permissions: values.permissions,
+            userCount: 0,
+          },
+        ]);
+        showToast({
+          title: 'Role Added',
+          message: `${values.name} has been created successfully.`,
+        });
+      }
+      handleCloseModal();
+    } finally {
+      setSubmitting(false);
     }
-    handleCloseModal();
   };
 
   return (
@@ -112,7 +211,9 @@ export function RoleManagementTab({
 
           <div className="mt-auto flex items-center gap-1.5 pt-5 text-xs text-text-muted">
             <Users className="h-4 w-4" />
-            <span>{role.userCount} users</span>
+            <span>
+              {role.userCount} {role.userCount === 1 ? 'user' : 'users'}
+            </span>
           </div>
         </article>
       ))}
@@ -122,6 +223,8 @@ export function RoleManagementTab({
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
         role={editTarget}
+        permissionModules={permissionModules}
+        submitting={submitting}
       />
     </div>
   );

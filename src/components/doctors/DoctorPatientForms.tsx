@@ -61,9 +61,11 @@ function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-gray-100 p-4">
+    <section className="rounded-xl bg-[#FAF9F5] p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-brown">{title}</h3>
+        <h3 className="font-sans text-[16px] font-medium leading-[150%] tracking-normal text-[#422C23]">
+          {title}
+        </h3>
         {onRemove && (
           <button
             type="button"
@@ -113,7 +115,7 @@ export function DoctorPersonalForm({
   }, [defaultValues, form]);
 
   return (
-    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="patient-detail-form space-y-4">
       <FormSection title="Basic Information">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Input label="Full Name" error={form.formState.errors.fullName?.message} {...form.register('fullName')} />
@@ -201,7 +203,7 @@ export function DoctorMedicalForm({
   const historyOptions = getMedicalHistoryOptions(patient.personalInfo.gender);
 
   return (
-    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="patient-detail-form space-y-4">
       <FormSection title="Ayurvedic Assessment">
         <div className="grid gap-4 sm:grid-cols-3">
           <Select label="Dosha Type" options={[...DOSHA_OPTIONS]} error={form.formState.errors.doshaType?.message} {...form.register('doshaType')} />
@@ -334,9 +336,9 @@ function ReportUploadSection({ patient }: { patient: PatientDetail }) {
       try {
         await uploadDocument(
           patient.detailId,
-          patient.bookingId,
           activeType,
           file,
+          patient.bookingId,
         );
         successCount += 1;
         setReports((prev) => [
@@ -457,7 +459,7 @@ export function DoctorTreatmentForm({
   }, [totalSessions, completedSessions, form]);
 
   return (
-    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="patient-detail-form space-y-4">
       <FormSection title="Active Treatment Plan">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Select label="Treatment Plan" options={masterOptions?.treatmentPlans ?? []} error={form.formState.errors.treatmentPlanId?.message} {...form.register('treatmentPlanId')} />
@@ -479,13 +481,21 @@ export function DoctorTreatmentForm({
       <FormSection title="Next Follow Up">
         <div className="grid gap-4 sm:grid-cols-3">
           <Select label="Set Up Required" options={[...YES_NO_OPTIONS]} error={form.formState.errors.setupRequired?.message} {...form.register('setupRequired')} />
-          <Select label="Follow-up Scheduling Options" options={[...FOLLOW_UP_OPTIONS]} error={form.formState.errors.followUpScheduling?.message} {...form.register('followUpScheduling')} />
+          <Select
+            label="Follow-up Scheduling Options"
+            placeholder="Select schedule"
+            options={[...FOLLOW_UP_OPTIONS]}
+            error={form.formState.errors.followUpScheduling?.message}
+            {...form.register('followUpScheduling')}
+            disabled={form.watch('setupRequired') !== 'Yes'}
+          />
           <Select
             label="Assigned Doctor"
             placeholder="Select doctor"
             options={masterOptions?.doctors ?? []}
             error={form.formState.errors.assignedDoctor?.message}
             {...form.register('assignedDoctor')}
+            disabled={form.watch('setupRequired') !== 'Yes'}
           />
         </div>
       </FormSection>
@@ -564,7 +574,7 @@ export function DoctorBillingForm({
   };
 
   return (
-    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={form.handleSubmit(onSubmit)} className="patient-detail-form space-y-4">
       <FormSection title="Billing & Membership">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Select
@@ -587,10 +597,10 @@ export function DoctorBillingForm({
 
       <FormSection title="Billing Details">
         <p className="mb-4 text-xs text-text-muted">
-          Saved as a pending billing draft. Reception will add medicines, therapies,
-          discount, and GST when generating the invoice.
+          Billing details are saved with the patient. The pending billing draft is
+          created for reception after the prescription is generated.
         </p>
-        <div className="space-y-6">
+        <div className="patient-detail-form space-y-4">
           {serviceFields.map((field, index) => (
             <div
               key={field.id}

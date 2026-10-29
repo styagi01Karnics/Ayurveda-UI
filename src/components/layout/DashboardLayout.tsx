@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { LogOut, Menu, X } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PageActionContext } from '@/app/PageActionContext';
@@ -28,6 +28,8 @@ const pageTitles: Record<string, string> = {
   '/communications': 'SMS & Email',
   '/settings': 'Settings',
   '/profile': 'My Profile',
+  '/platform/clinics': 'Clinics',
+  '/platform/hospitals': 'Clinics',
 };
 
 function getPageTitle(pathname: string): string {
@@ -35,6 +37,9 @@ function getPageTitle(pathname: string): string {
   if (pathname.startsWith('/doctors/patient/')) return 'Doctors';
   if (pathname.startsWith('/treatments/patient/')) return 'Treatments';
   if (pathname.startsWith('/billing/')) return 'Billing';
+  if (pathname.startsWith('/platform/clinics') || pathname.startsWith('/platform/hospitals')) {
+    return 'Clinics';
+  }
   return pageTitles[pathname] ?? 'Dashboard';
 }
 
@@ -46,7 +51,6 @@ function AppointmentAlertsListener() {
 export function DashboardLayout() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [headerAction, setHeaderAction] = useState<ReactNode>(null);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [passwordSuccessOpen, setPasswordSuccessOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -54,8 +58,8 @@ export function DashboardLayout() {
   const { pathname } = useLocation();
   const title = getPageTitle(pathname);
   const contextValue = useMemo(
-    () => ({ setHeaderAction }),
-    [setHeaderAction],
+    () => ({ setHeaderAction: () => {} }),
+    [],
   );
 
   const handleLogout = () => {
@@ -93,7 +97,6 @@ export function DashboardLayout() {
 
             <Header
               title={title}
-              action={headerAction}
               onChangePassword={() => setChangePasswordOpen(true)}
               onLogout={() => setLogoutOpen(true)}
             />

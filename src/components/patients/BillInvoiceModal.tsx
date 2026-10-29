@@ -104,7 +104,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
                     />
                   </div>
                   <div>
-                    <p className="font-serif text-base font-bold tracking-wide text-brown">
+                    <p className="font-sans text-base font-bold tracking-wide text-brown">
                       {invoice.clinicName}
                     </p>
                     <p className="mt-1 text-xs text-text-muted">
@@ -124,7 +124,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               <div className="grid gap-5 md:grid-cols-3">
                 <div className="space-y-1 text-xs">
                   <p>
-                    <span className="text-text-muted">Patient ID : </span>
+                    <span className="text-text-muted">Patient Code : </span>
                     <span className="font-semibold text-brown">{bill.patientId}</span>
                   </p>
                   <p>
@@ -137,7 +137,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
                   </p>
                 </div>
 
-                <div className="rounded-xl border-2 border-[#d9c4a0] bg-[#faf6ee] px-4 py-3 text-center text-xs">
+                <div className="rounded-xl border-2 border-[#d9c4a0] bg-[#FAF9F5] px-4 py-3 text-center text-xs">
                   <p>
                     <span className="text-text-muted">Invoice No. : </span>
                     <span className="font-semibold text-brown">{invoice.invoiceNo}</span>
@@ -168,7 +168,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               <div className="overflow-hidden rounded-xl border border-[#ece5da]">
                 <table className="w-full text-left text-sm">
                   <thead>
-                    <tr className="bg-[#faf6ee] text-xs font-semibold uppercase tracking-wide text-gold">
+                    <tr className="bg-[#FAF9F5] text-xs font-semibold uppercase tracking-wide text-gold">
                       <th className="px-4 py-3">Item Detail</th>
                       <th className="px-4 py-3">Description</th>
                       <th className="px-4 py-3 text-right">Amount</th>
@@ -209,7 +209,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               <div className="grid gap-6 md:grid-cols-[1fr_auto]">
                 <div>
                   <p className="text-sm font-semibold text-brown">Notes</p>
-                  <div className="mt-2 min-h-[72px] rounded-lg border border-[#ece5da] bg-[#faf8f4] px-3 py-2 text-xs text-text-muted">
+                  <div className="mt-2 min-h-[72px] rounded-lg border border-[#ece5da] bg-[#FAF9F5] px-3 py-2 text-xs text-text-muted">
                     {invoice.notes || '—'}
                   </div>
                 </div>
@@ -237,22 +237,32 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
               </div>
 
               <p className="text-center text-[10px] font-medium uppercase leading-relaxed tracking-wide text-gold">
-                {invoice.conditions}
+                For All Service Appointments
+                {invoice.clinicPhone
+                  ? ` · Call/WhatsApp: ${invoice.clinicPhone}`
+                  : ''}
+                {invoice.conditions ? ` · ${invoice.conditions}` : ''}
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-[#ece5da] pt-4 text-[11px] text-text-muted">
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" />
-                  {invoice.address}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 shrink-0" />
-                  {invoice.email}
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 shrink-0" />
-                  {invoice.website}
-                </span>
+                {invoice.address ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 shrink-0" />
+                    {invoice.address}
+                  </span>
+                ) : null}
+                {invoice.email ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 shrink-0" />
+                    {invoice.email}
+                  </span>
+                ) : null}
+                {invoice.website ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 shrink-0" />
+                    {invoice.website}
+                  </span>
+                ) : null}
               </div>
 
               <div className="flex justify-end gap-3 pt-2 print:hidden">

@@ -21,6 +21,7 @@ interface PatientTrendsChartProps {
   data: TrendPoint[];
   onExpand?: () => void;
   compact?: boolean;
+  embedded?: boolean;
   className?: string;
 }
 
@@ -46,8 +47,10 @@ export function PatientTrendsChart({
   data,
   onExpand,
   compact = false,
+  embedded = false,
   className,
 }: PatientTrendsChartProps) {
+  const tall = compact || embedded;
   const yMax = niceYMax(data);
   const ticks = yTicks(yMax);
   const chartData = data.map((point) => ({
@@ -80,12 +83,13 @@ export function PatientTrendsChart({
         )}
       </div>
 
-      <div className={cn('min-h-0 w-full', compact ? 'min-h-[220px] flex-1' : 'h-80')}>
+      <div className={cn('relative min-h-0 w-full', tall ? 'min-h-[220px] flex-1' : 'h-80')}>
+        <div className={tall ? 'absolute inset-0' : 'h-full'}>
         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
           <ComposedChart
             data={chartData}
             margin={{ top: 20, right: 4, left: 4, bottom: 0 }}
-            barCategoryGap={compact ? 2 : 6}
+            barCategoryGap={tall ? 2 : 6}
             barGap={1}
           >
             <defs>
@@ -128,7 +132,7 @@ export function PatientTrendsChart({
               dataKey="decor"
               fill="url(#patientDecorBar)"
               radius={[6, 6, 0, 0]}
-              barSize={compact ? 120 : 48}
+              barSize={tall ? 120 : 48}
               tooltipType="none"
               isAnimationActive={false}
             />
@@ -185,6 +189,7 @@ export function PatientTrendsChart({
             />
           </ComposedChart>
         </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );

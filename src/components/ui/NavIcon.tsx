@@ -15,7 +15,7 @@ function colorizeSvg(svg: string): string {
     .replace(/fill="#[^"]*"/gi, 'fill="currentColor"');
 }
 
-/** Sidebar nav icon — outline when inactive, filled when active (gold / brown). */
+/** Sidebar nav icon — outline when inactive, filled when active. */
 export function NavIcon({
   outline,
   filled,
