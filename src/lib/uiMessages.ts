@@ -55,7 +55,7 @@ export const UI_MESSAGES = {
     delete: 'Delete',
     logout: 'Confirm',
     logoutTitle: 'Log Out',
-    logoutMessage: 'Are you sure you want to log out your account',
+    logoutMessage: 'Are you sure you want to log out of your account',
     deleteTitle: 'Delete Item',
     deleteMessage: (item?: string) =>
       item

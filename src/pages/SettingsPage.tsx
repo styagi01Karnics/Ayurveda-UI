@@ -21,7 +21,7 @@ export function SettingsPage() {
     if (activeTab === 'users') {
       return (
         <Button
-          className="gap-1.5 px-4 py-2 text-sm"
+          className="gap-1.5 px-4 py-2 text-sm mb-[2px]"
           onClick={() => setAddUserOpen(true)}
         >
           <AppIcon src={assets.icons.add} className="h-4 w-4" />
