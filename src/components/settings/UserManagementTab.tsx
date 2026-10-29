@@ -154,21 +154,12 @@ export function UserManagementTab({
   };
 
   const handleSaveUser = async (values: UserFormValues) => {
-    if (isRoleAlreadyAssigned(values.role, editUser?.id)) {
-      showToast({
-        title: 'Role already assigned',
-        message: `Only one user can have the ${formatAuthRole(values.role)} role. Choose a different role.`,
-      });
-      return;
-    }
-
     setSubmitting(true);
     try {
       if (editUser) {
         const updated = await updateUser(editUser.id, {
           fullName: values.fullName,
           email: values.email,
-          role: values.role,
           tenantRoleId: values.tenantRoleId,
           mobileNumber: values.mobileNumber,
           status: values.status.toUpperCase(),
@@ -195,7 +186,6 @@ export function UserManagementTab({
         fullName: addValues.fullName,
         email: addValues.email,
         password: addValues.password,
-        role: addValues.role,
         tenantRoleId: addValues.tenantRoleId,
         mobileNumber: addValues.mobileNumber,
       });
