@@ -113,7 +113,6 @@ export function ConsultationTypesSection({
                     onClick={() => onDelete(record)}
                   />
                 </td>
-                {/* <td className="px-4 py-4 text-text-muted">—</td> */}
               </tr>
             ))}
           </tbody>
