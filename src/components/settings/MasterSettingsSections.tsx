@@ -212,9 +212,11 @@ onDelete
 export function PackageMastersSection({
   records,
   onAdd,
+  onDelete
 }: {
   records: ClinicPackageMasterRecord[];
   onAdd: (values: ClinicPackageMasterFormValues) => void | Promise<void>;
+  onDelete: (record: ClinicPackageMasterRecord) => void;
 }) {
   const {
     register,
@@ -289,7 +291,13 @@ export function PackageMastersSection({
                   {formatCurrency(record.packagePrice)}
                 </td>
                 <td className="px-4 py-4 text-brown">{record.status}</td>
-                <td className="px-4 py-4 text-text-muted">—</td>
+                 <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${record.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(record)}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -333,9 +341,11 @@ export function mapPackageMasterToRecord(
 export function DoshasSection({
   records,
   onAdd,
+  onDelete
 }: {
   records: ClinicDoshaRecord[];
   onAdd: (values: ClinicDoshaFormValues) => void | Promise<void>;
+  onDelete: (record: ClinicDoshaRecord) => void;
 }) {
   const {
     register,
@@ -431,7 +441,13 @@ export function DoshasSection({
                     {record.characteristics}
                   </td>
                   <td className="px-4 py-4 text-brown">{record.status}</td>
-                  <td className="px-4 py-4 text-text-muted">—</td>
+                   <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${record.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(record)}
+                  />
+                </td>
                 </tr>
               ))
             )}

@@ -91,7 +91,8 @@ type DeleteTarget =
   | { type: 'Therapist'; record: ClinicTherapistRecord }
   | { type: 'Consultation'; record: ClinicConsultationTypeRecord }
   | { type: 'Treatment Plan Master'; record: ClinicTreatmentPlanMasterRecord }
-
+  | { type: 'Package Masters'; record: ClinicPackageMasterRecord }
+  | { type: 'Dosha Master'; record: ClinicDoshaRecord }
   | null;
 
 function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
@@ -600,6 +601,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Package Masters', record })}
         />
 
         <DoshasSection
@@ -628,6 +630,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Dosha Master', record })}
         />
 
         <DeleteClinicItemModal
