@@ -50,7 +50,7 @@ describe('LoginPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'System Admin' }));
 
-    expect(screen.queryByText('Clinic')).not.toBeInTheDocument();
+    expect(screen.queryByText('Location')).not.toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('superadmin@gmail.com'),
     ).toBeInTheDocument();

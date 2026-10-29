@@ -13,8 +13,8 @@ export const MOCK_AUTH_TOKEN = 'mock-dev-token';
 
 /** Default credentials for local UI login (no API). */
 export const DUMMY_LOGIN_CREDENTIALS = {
-  emailOrUsername: 'admin@clinic.com',
-  password: 'Secret@123',
+  emailOrUsername: '',
+  password: '',
   tenantCode: 'GAN-DL',
 } as const;
 

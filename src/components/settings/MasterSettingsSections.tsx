@@ -21,6 +21,7 @@ import type {
   ClinicStatus,
   ClinicTreatmentPlanMasterRecord,
 } from '@/types';
+import { SettingsActionButton } from './ClinicSettingsTab';
 
 function SectionHeader({ title }: { title: string }) {
   return (
@@ -37,9 +38,11 @@ function masterStatusLabel(status?: string): ClinicStatus {
 export function ConsultationTypesSection({
   records,
   onAdd,
+  onDelete
 }: {
   records: ClinicConsultationTypeRecord[];
   onAdd: (values: ClinicConsultationTypeFormValues) => void | Promise<void>;
+  onDelete: (record: ClinicConsultationTypeRecord) => void;
 }) {
   const {
     register,
@@ -61,9 +64,9 @@ export function ConsultationTypesSection({
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Consultation Types" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full table-fixed text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
@@ -103,7 +106,14 @@ export function ConsultationTypesSection({
                 <td className="px-4 py-4 text-brown">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-brown">{record.name}</td>
                 <td className="px-4 py-4 text-brown">{record.status}</td>
-                <td className="px-4 py-4 text-text-muted">—</td>
+                 <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${record.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(record)}
+                  />
+                </td>
+                {/* <td className="px-4 py-4 text-text-muted">—</td> */}
               </tr>
             ))}
           </tbody>
@@ -140,9 +150,9 @@ export function TreatmentPlanMastersSection({
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Treatment Plan Master" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full table-fixed text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
@@ -219,9 +229,9 @@ export function PackageMastersSection({
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Package Masters" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full table-fixed text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
@@ -340,9 +350,9 @@ export function DoshasSection({
       <div className="border-b border-gray-100 px-5 py-4">
         <SectionHeader title="Dosha Master" />
       </div>
-      <div className="overflow-x-auto">
+      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full min-w-[720px] table-fixed text-left text-sm">
-          <thead>
+          <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="w-16 px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>

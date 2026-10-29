@@ -225,7 +225,7 @@ export function LoginPage() {
           {showClinicSelect ? (
             <Select
               fieldVariant="auth"
-              label="Clinic"
+              label="Location"
               placeholder={
                 tenantsLoading ? 'Loading clinics…' : 'Select clinic'
               }
