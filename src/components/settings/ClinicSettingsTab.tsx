@@ -90,6 +90,7 @@ type DeleteTarget =
   | { type: 'Therapy'; record: ClinicTherapyRecord }
   | { type: 'Therapist'; record: ClinicTherapistRecord }
   | { type: 'Consultation'; record: ClinicConsultationTypeRecord }
+  | { type: 'Treatment Plan Master'; record: ClinicTreatmentPlanMasterRecord }
 
   | null;
 
@@ -572,6 +573,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Treatment Plan Master', record })}
         />
 
         <PackageMastersSection

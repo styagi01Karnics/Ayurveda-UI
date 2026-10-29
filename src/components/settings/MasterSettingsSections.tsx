@@ -126,9 +126,11 @@ export function ConsultationTypesSection({
 export function TreatmentPlanMastersSection({
   records,
   onAdd,
+onDelete
 }: {
   records: ClinicTreatmentPlanMasterRecord[];
   onAdd: (values: ClinicTreatmentPlanMasterFormValues) => void | Promise<void>;
+   onDelete: (record: ClinicTreatmentPlanMasterRecord) => void;
 }) {
   const {
     register,
@@ -192,7 +194,13 @@ export function TreatmentPlanMastersSection({
                 <td className="px-4 py-4 text-brown">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-brown">{record.name}</td>
                 <td className="px-4 py-4 text-brown">{record.status}</td>
-                <td className="px-4 py-4 text-text-muted">—</td>
+                 <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${record.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(record)}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
