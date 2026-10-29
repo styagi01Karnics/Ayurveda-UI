@@ -136,19 +136,11 @@ timestamps {
             // =====================================================
 
             stage('Unit Testing') {
-
                 sh '''
                     set -e
-            
-                    echo "=========================================="
                     echo "Running Ayurvedaa UI Unit Tests"
-                    echo "=========================================="
-            
-                    npm test -- --run
-            
-                    echo "=========================================="
+                    npm test
                     echo "Unit Tests Completed Successfully"
-                    echo "=========================================="
                 '''
             }
 
