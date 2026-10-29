@@ -1,317 +1,429 @@
-pipeline {
+timestamps {
 
-    agent any
+    node {
 
-    options {
-        timestamps()
-        disableConcurrentBuilds()
-        skipDefaultCheckout(true)
+        properties([
+            buildDiscarder(logRotator(numToKeepStr: '3')),
+            disableConcurrentBuilds()
+        ])
 
-        buildDiscarder(
-            logRotator(
-                numToKeepStr: '3'
-            )
-        )
-    }
+        def sonarHome = tool 'SonarScanner'
 
-    environment {
-        APP_NAME = 'ayurvedaa-ui'
-        IMAGE_NAME = 'sunardock/ayurvedaa-ui'
+        env.APP_NAME = 'ayurvedaa-ui'
+        env.IMAGE_NAME = 'sunardock/ayurvedaa-ui'
+        env.DOCKER_ORG = 'sunardock'
 
-        APP_SERVER = '45.195.229.15'
-        DEPLOY_DIR = '/root/ayurvedaa-ui'
-        APP_PORT = '8100'
+        env.DEPLOY_SERVER = '45.195.229.15'
+        env.DEPLOY_PATH = '/root/ayurvedaa-ui'
+        env.APP_PORT = '8100'
 
-        DOCKER_CREDENTIALS = 'dockerhub-creds'
-        SSH_CREDENTIALS = 'new-server-ssh'
-    }
+        env.SONAR_HOME = sonarHome
 
-    stages {
+        def branchName = env.BRANCH_NAME ?: 'unknown'
 
-        // ==========================================================
-        // INITIALIZE
-        // ==========================================================
+        try {
 
-        stage('Initialize') {
-            steps {
-                script {
-                    env.SAFE_BRANCH = (env.BRANCH_NAME ?: 'unknown')
-                        .replaceAll('[^A-Za-z0-9_.-]', '-')
+            // =====================================================
+            // CHECKOUT SOURCE
+            // =====================================================
 
-                    env.IMAGE_TAG = "${env.SAFE_BRANCH}-${env.BUILD_NUMBER}"
+            stage('Checkout Source') {
 
-                    echo "============================================"
-                    echo "Ayurvedaa UI Multibranch Build"
-                    echo "============================================"
-                    echo "Branch      : ${env.BRANCH_NAME}"
-                    echo "Safe Branch : ${env.SAFE_BRANCH}"
-                    echo "Build       : ${env.BUILD_NUMBER}"
-                    echo "Image Tag   : ${env.IMAGE_TAG}"
-                    echo "Docker Image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-                    echo "============================================"
-                }
-            }
-        }
-
-        // ==========================================================
-        // CHECKOUT
-        // ==========================================================
-
-        stage('Checkout') {
-            steps {
-                echo '===== Checkout ====='
                 checkout scm
+
+                def branch = env.BRANCH_NAME ?: 'unknown'
+
+                env.SAFE_BRANCH = branch
+                    .replaceAll('[^a-zA-Z0-9_.-]', '-')
+                    .replaceAll('-+', '-')
+                    .replaceAll('^-|-$', '')
+                    .toLowerCase()
+
+                if (!env.SAFE_BRANCH) {
+                    env.SAFE_BRANCH = 'unknown'
+                }
+
+                env.IMAGE_TAG =
+                    "${env.SAFE_BRANCH}-${env.BUILD_NUMBER}"
+
+                echo "=========================================="
+                echo "Ayurvedaa UI Multibranch Pipeline"
+                echo "=========================================="
+                echo "Branch      : ${branchName}"
+                echo "Safe Branch : ${env.SAFE_BRANCH}"
+                echo "Build       : ${env.BUILD_NUMBER}"
+                echo "Image       : ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+                echo "=========================================="
             }
-        }
 
-        // ==========================================================
-        // ENVIRONMENT CHECK
-        // ==========================================================
 
-        stage('Environment Check') {
-            steps {
+            // =====================================================
+            // ENVIRONMENT CHECK
+            // ALL BRANCHES
+            // =====================================================
+
+            stage('Environment Check') {
+
                 sh '''
-                    echo "===== Environment Check ====="
+                    set -e
+
+                    echo "=========================================="
+                    echo "Environment Check"
+                    echo "=========================================="
 
                     node --version
                     npm --version
                     docker --version
                     git --version
+
+                    echo "=========================================="
                 '''
             }
-        }
 
-        // ==========================================================
-        // INSTALL DEPENDENCIES
-        // ==========================================================
 
-        stage('Install Dependencies') {
-            steps {
+            // =====================================================
+            // INSTALL DEPENDENCIES
+            // ALL BRANCHES
+            // =====================================================
+
+            stage('Install Dependencies') {
+
                 sh '''
-                    echo "===== Install Dependencies ====="
+                    set -e
+
+                    echo "=========================================="
+                    echo "Installing Dependencies"
+                    echo "=========================================="
+
                     npm ci
+
+                    echo "Dependencies installed successfully."
                 '''
             }
-        }
 
-        // ==========================================================
-        // BUILD REACT APPLICATION
-        // ==========================================================
 
-        stage('Build React Application') {
-            steps {
+            // =====================================================
+            // BUILD REACT APPLICATION
+            // ALL BRANCHES
+            // =====================================================
+
+            stage('Build React Application') {
+
                 sh '''
-                    echo "===== Build React Application ====="
+                    set -e
+
+                    echo "=========================================="
+                    echo "Building Ayurvedaa UI"
+                    echo "=========================================="
 
                     npm run build
 
-                    echo "===== Verify React Build ====="
+                    echo "=========================================="
+                    echo "Verifying React Build"
+                    echo "=========================================="
 
                     test -d dist
                     test -f dist/index.html
 
-                    echo "React build successful."
+                    echo "React build completed successfully."
                 '''
             }
-        }
 
-        // ==========================================================
-        // SONARQUBE ANALYSIS
-        // ==========================================================
 
-        stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
+            // =====================================================
+            // UNIT TESTING
+            // ALL BRANCHES
+            // =====================================================
+
+            stage('Unit Testing') {
+
+                sh '''
+                    set -e
+
+                    echo "=========================================="
+                    echo "Running Ayurvedaa UI Unit Tests"
+                    echo "=========================================="
+
+                    CI=true npm test -- --watchAll=false
+
+                    echo "=========================================="
+                    echo "Unit Tests Completed Successfully"
+                    echo "=========================================="
+                '''
+            }
+
+
+            // =====================================================
+            // DEV BRANCH ONLY
+            // =====================================================
+
+            if (branchName == 'dev') {
+
+                // =================================================
+                // SONARQUBE ANALYSIS
+                // =================================================
+
+                stage('SonarQube Analysis') {
+
+                    withSonarQubeEnv('SonarQube') {
+
+                        sh '''
+                            set -e
+
+                            echo "=========================================="
+                            echo "SonarQube Analysis: Ayurvedaa UI"
+                            echo "=========================================="
+
+                            "${SONAR_HOME}/bin/sonar-scanner" \
+                                -Dsonar.projectKey=ayurvedaa-ui \
+                                -Dsonar.projectName="Ayurvedaa UI" \
+                                -Dsonar.sources=src \
+                                -Dsonar.exclusions="node_modules/**,dist/**,build/**,coverage/**" \
+                                -Dsonar.sourceEncoding=UTF-8
+
+                            echo "SonarQube analysis completed."
+                        '''
+                    }
+                }
+
+
+                // =================================================
+                // VERIFY DEPLOYMENT FILES
+                // =================================================
+
+                stage('Verify Deployment Files') {
+
                     sh '''
                         set -e
 
-                        echo "===== SonarQube Analysis: Ayurvedaa UI ====="
+                        echo "=========================================="
+                        echo "Verifying Deployment Files"
+                        echo "=========================================="
 
-                        sonar-scanner \
-                            -Dsonar.projectKey=ayurvedaa-ui \
-                            -Dsonar.projectName="Ayurvedaa UI" \
-                            -Dsonar.sources=src \
-                            -Dsonar.exclusions="node_modules/**,dist/**,build/**,coverage/**" \
-                            -Dsonar.sourceEncoding=UTF-8
+                        test -f Dockerfile
+                        test -f nginx.conf
+                        test -f docker-compose.yml
 
-                        echo "SonarQube analysis completed."
+                        echo "Dockerfile found."
+                        echo "nginx.conf found."
+                        echo "docker-compose.yml found."
                     '''
                 }
-            }
-        }
-        
-        // ==========================================================
-        // VERIFY DEPLOYMENT FILES
-        // ==========================================================
 
-        stage('Verify Deployment Files') {
-            steps {
-                sh '''
-                    echo "===== Verify Deployment Files ====="
 
-                    test -f Dockerfile
-                    test -f nginx.conf
-                    test -f docker-compose.yml
+                // =================================================
+                // DOCKER LOGIN
+                // =================================================
 
-                    echo "Dockerfile found."
-                    echo "nginx.conf found."
-                    echo "docker-compose.yml found."
-                '''
-            }
-        }
+                stage('Docker Login') {
 
-        // ==========================================================
-        // DOCKER BUILD
-        // ==========================================================
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'dockerhub-creds',
+                            usernameVariable: 'DOCKER_USERNAME',
+                            passwordVariable: 'DOCKER_PASSWORD'
+                        )
+                    ]) {
 
-        stage('Docker Build') {
-            steps {
-                script {
-                    echo "===== Docker Build ====="
+                        sh '''
+                            set -e
 
-                    docker.build(
-                        "${IMAGE_NAME}:${IMAGE_TAG}"
-                    )
-                }
-            }
-        }
+                            echo "=========================================="
+                            echo "Docker Hub Login"
+                            echo "=========================================="
 
-        // ==========================================================
-        // DOCKER PUSH
-        // ==========================================================
+                            echo "$DOCKER_PASSWORD" |
+                                docker login \
+                                    --username "$DOCKER_USERNAME" \
+                                    --password-stdin
 
-        stage('Docker Push') {
-            steps {
-                script {
-                    echo "===== Docker Push ====="
-
-                    docker.withRegistry(
-                        'https://index.docker.io/v1/',
-                        "${DOCKER_CREDENTIALS}"
-                    ) {
-                        sh "docker push ${IMAGE_NAME}:${IMAGE_TAG}"
+                            echo "Docker Hub login successful."
+                        '''
                     }
                 }
-            }
-        }
 
-        // ==========================================================
-        // DEVOPS SERVER CLEANUP
-        // Keep ONLY the current UI image.
-        // Do not touch any other application images.
-        // ==========================================================
 
-        stage('DevOps Server Cleanup') {
-            steps {
-                sh '''
-                    echo "===== DevOps Server Cleanup ====="
+                // =================================================
+                // DOCKER BUILD
+                // =================================================
 
-                    CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+                stage('Docker Build') {
 
-                    echo "Current image to keep:"
-                    echo "$CURRENT_IMAGE"
-
-                    echo ""
-                    echo "===== UI Images Before Cleanup ====="
-
-                    docker images "$IMAGE_NAME"                         --format '{{.Repository}}:{{.Tag}}'
-
-                    echo ""
-                    echo "===== Removing Old UI Images ====="
-
-                    docker images "$IMAGE_NAME"                         --format '{{.Repository}}:{{.Tag}}' |
-                    while IFS= read -r IMAGE
-                    do
-                        [ -z "$IMAGE" ] && continue
-
-                        if [ "$IMAGE" = "$CURRENT_IMAGE" ]
-                        then
-                            echo "KEEPING: $IMAGE"
-                        else
-                            echo "REMOVING: $IMAGE"
-                            docker image rm "$IMAGE" || true
-                        fi
-                    done
-
-                    echo ""
-                    echo "===== Remaining UI Images ====="
-
-                    docker images "$IMAGE_NAME"
-                '''
-            }
-        }
-
-        // ==========================================================
-        // PREPARE APPLICATION SERVER
-        // ==========================================================
-
-        stage('Prepare Application Server') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: "${SSH_CREDENTIALS}",
-                        usernameVariable: 'SSH_USER',
-                        passwordVariable: 'SSH_PASSWORD'
-                    )
-                ]) {
                     sh '''
-                        echo "===== Prepare Application Server ====="
+                        set -e
 
-                        command -v sshpass >/dev/null 2>&1 || {
-                            echo "ERROR: sshpass is not installed on Jenkins server."
-                            exit 1
-                        }
+                        IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
-                        sshpass -p "$SSH_PASSWORD" ssh                             -o StrictHostKeyChecking=no                             "$SSH_USER@$APP_SERVER"                             "mkdir -p $DEPLOY_DIR"
+                        echo "=========================================="
+                        echo "Building Ayurvedaa UI Docker Image"
+                        echo "=========================================="
+
+                        echo "Image: $IMAGE"
+
+                        docker build -t "$IMAGE" .
+
+                        docker image inspect "$IMAGE" >/dev/null
+
+                        echo "Docker image built successfully."
                     '''
                 }
-            }
-        }
 
-        // ==========================================================
-        // COPY DOCKER COMPOSE
-        // ==========================================================
 
-        stage('Copy Docker Compose') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: "${SSH_CREDENTIALS}",
-                        usernameVariable: 'SSH_USER',
-                        passwordVariable: 'SSH_PASSWORD'
-                    )
-                ]) {
+                // =================================================
+                // DOCKER PUSH
+                // =================================================
+
+                stage('Docker Push') {
+
                     sh '''
-                        echo "===== Copy Docker Compose ====="
+                        set -e
 
-                        sshpass -p "$SSH_PASSWORD" scp                             -o StrictHostKeyChecking=no                             docker-compose.yml                             "$SSH_USER@$APP_SERVER:$DEPLOY_DIR/docker-compose.yml"
+                        IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+
+                        echo "=========================================="
+                        echo "Pushing Image to Docker Hub"
+                        echo "=========================================="
+
+                        docker push "$IMAGE"
+
+                        echo "Image pushed successfully: $IMAGE"
                     '''
                 }
-            }
-        }
 
-        // ==========================================================
-        // DEPLOY
-        //
-        // Persistent history:
-        // /root/ayurvedaa-ui/.ui-image-history
-        //
-        // The history stores:
-        //   line 1 = current deployment
-        //   line 2 = previous deployment
-        //   line 3 = previous-previous deployment
-        //
-        // Missing previous images are pulled from Docker Hub when
-        // possible. The current deployment is never blocked because
-        // an old image no longer exists in Docker Hub.
-        // ==========================================================
 
-        stage('Deploy to Application Server') {
-            steps {
-                script {
+                // =================================================
+                // JENKINS SERVER CLEANUP
+                //
+                // Keep only the current Ayurvedaa UI image.
+                // Do not touch other application images.
+                // No global image prune.
+                // =================================================
+
+                stage('Jenkins Docker Cleanup') {
+
+                    sh '''
+                        set -e
+
+                        CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+
+                        echo "=========================================="
+                        echo "Jenkins Docker Cleanup"
+                        echo "=========================================="
+
+                        echo "Keeping: $CURRENT_IMAGE"
+
+                        docker images "$IMAGE_NAME" \
+                            --format '{{.Repository}}:{{.Tag}}' |
+                        while IFS= read -r IMAGE
+                        do
+                            [ -z "$IMAGE" ] && continue
+
+                            if [ "$IMAGE" = "$CURRENT_IMAGE" ]; then
+                                echo "KEEPING: $IMAGE"
+                            else
+                                echo "REMOVING: $IMAGE"
+                                docker image rm "$IMAGE" || true
+                            fi
+                        done
+
+                        echo ""
+                        echo "Remaining Ayurvedaa UI images:"
+
+                        docker images "$IMAGE_NAME"
+
+                        echo "Jenkins cleanup completed."
+                    '''
+                }
+
+
+                // =================================================
+                // PREPARE APPLICATION SERVER
+                // =================================================
+
+                stage('Prepare Application Server') {
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'new-server-ssh',
+                            usernameVariable: 'SSH_USERNAME',
+                            passwordVariable: 'SSH_PASSWORD'
+                        )
+                    ]) {
+
+                        sh '''
+                            set -e
+
+                            echo "=========================================="
+                            echo "Preparing Application Server"
+                            echo "=========================================="
+
+                            command -v sshpass >/dev/null 2>&1 || {
+                                echo "ERROR: sshpass is not installed."
+                                exit 1
+                            }
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                "mkdir -p '$DEPLOY_PATH'"
+
+                            echo "Application directory verified."
+                        '''
+                    }
+                }
+
+
+                // =================================================
+                // COPY DOCKER COMPOSE
+                // =================================================
+
+                stage('Copy Docker Compose') {
+
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'new-server-ssh',
+                            usernameVariable: 'SSH_USERNAME',
+                            passwordVariable: 'SSH_PASSWORD'
+                        )
+                    ]) {
+
+                        sh '''
+                            set -e
+
+                            echo "=========================================="
+                            echo "Copying Docker Compose"
+                            echo "=========================================="
+
+                            sshpass -p "$SSH_PASSWORD" scp \
+                                -o StrictHostKeyChecking=no \
+                                docker-compose.yml \
+                                "$SSH_USERNAME@$DEPLOY_SERVER:$DEPLOY_PATH/docker-compose.yml"
+
+                            echo "Docker Compose copied successfully."
+                        '''
+                    }
+                }
+
+
+                // =================================================
+                // DEPLOYMENT SCRIPT
+                //
+                // History file:
+                // /root/ayurvedaa-ui/.ui-image-history
+                //
+                // Line 1: current deployment
+                // Line 2: previous deployment
+                // Line 3: previous-previous deployment
+                //
+                // Preserve previous images when available.
+                // Pull the new image before replacing the container.
+                // =================================================
+
+                stage('Deploy Application') {
+
                     def deployScript = '''#!/bin/bash
 
-set -e
+set -euo pipefail
 
 APP_DIR="$1"
 IMAGE_NAME="$2"
@@ -321,24 +433,27 @@ BUILD_NUMBER="$5"
 APP_NAME="$6"
 
 CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+
 HISTORY_FILE="${APP_DIR}/.ui-image-history"
 HISTORY_TMP="${APP_DIR}/.ui-image-history.tmp"
 CANDIDATE_FILE="${APP_DIR}/.ui-image-candidates.tmp"
 
-echo "============================================"
+echo "=========================================="
 echo "Ayurvedaa UI Deployment"
-echo "============================================"
+echo "=========================================="
+
 echo "Branch      : $BRANCH_NAME"
 echo "Build       : $BUILD_NUMBER"
 echo "Image       : $CURRENT_IMAGE"
 echo "Server      : 45.195.229.15"
 echo "Deploy Dir  : $APP_DIR"
-echo "============================================"
+
+echo "=========================================="
 
 exec 9>/var/lock/ayurvedaa-ui-deployment.lock
 
 if ! flock -n 9; then
-    echo "ERROR: Another Ayurvedaa UI deployment is already running."
+    echo "ERROR: Another Ayurvedaa UI deployment is running."
     exit 1
 fi
 
@@ -346,153 +461,158 @@ echo "Deployment lock acquired."
 
 cd "$APP_DIR"
 
-echo ""
-echo "===== Current UI Container ====="
+export IMAGE_NAME
+export IMAGE_TAG
 
-RUNNING_IMAGE=$(docker inspect "$APP_NAME"     --format='{{.Config.Image}}' 2>/dev/null || true)
-
-if [ -n "$RUNNING_IMAGE" ]; then
-    echo "Currently running image: $RUNNING_IMAGE"
-else
-    echo "No currently running UI container found."
-fi
+# Validate Compose configuration before changing containers.
 
 echo ""
-echo "===== Existing UI Image History ====="
+echo "===== Validate Compose Configuration ====="
 
-if [ -f "$HISTORY_FILE" ]; then
-    nl -ba "$HISTORY_FILE"
-else
-    echo "History file does not exist yet."
-fi
+docker compose config --quiet
+
+# Capture the currently running image.
+
+RUNNING_IMAGE=$(
+    docker inspect "$APP_NAME" \
+        --format='{{.Config.Image}}' 2>/dev/null || true
+)
+
+echo "Currently running image: ${RUNNING_IMAGE:-none}"
+
+# Create a list of previous UI images to preserve.
 
 rm -f "$CANDIDATE_FILE"
+touch "$CANDIDATE_FILE"
 
 add_candidate() {
-    IMAGE="$1"
+    local IMAGE="$1"
 
     [ -z "$IMAGE" ] && return 0
     [ "$IMAGE" = "$CURRENT_IMAGE" ] && return 0
 
-    if ! grep -Fxq "$IMAGE" "$CANDIDATE_FILE" 2>/dev/null; then
-        echo "$IMAGE" >> "$CANDIDATE_FILE"
+    # Never process images outside the Ayurvedaa UI repository.
+    case "$IMAGE" in
+        "$IMAGE_NAME":*) ;;
+        *) return 0 ;;
+    esac
+
+    if ! grep -Fxq "$IMAGE" "$CANDIDATE_FILE"; then
+        printf '%s\\n' "$IMAGE" >> "$CANDIDATE_FILE"
     fi
 }
 
-# Always preserve the currently running UI image first.
 add_candidate "$RUNNING_IMAGE"
 
-# Then preserve previously recorded deployments.
 if [ -f "$HISTORY_FILE" ]; then
-    while IFS= read -r IMAGE
+    while IFS= read -r IMAGE || [ -n "$IMAGE" ]
     do
         add_candidate "$IMAGE"
     done < "$HISTORY_FILE"
 fi
 
 echo ""
-echo "===== Previous UI Images To Preserve ====="
+echo "===== Previous Images ====="
 
-if [ -s "$CANDIDATE_FILE" ]; then
-    nl -ba "$CANDIDATE_FILE"
-else
-    echo "No previous UI images found."
-fi
+cat "$CANDIDATE_FILE" || true
+
+# Restore missing previous images if Docker Hub still has them.
 
 echo ""
-echo "===== Restoring Missing Previous Images ====="
+echo "===== Restoring Previous Images ====="
 
-if [ -s "$CANDIDATE_FILE" ]; then
-    while IFS= read -r IMAGE
-    do
-        [ -z "$IMAGE" ] && continue
+while IFS= read -r IMAGE
+do
+    [ -z "$IMAGE" ] && continue
 
-        if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-            echo "Already available: $IMAGE"
+    if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        echo "Already available: $IMAGE"
+    else
+        echo "Attempting to restore: $IMAGE"
+
+        if docker pull "$IMAGE"; then
+            echo "Restored: $IMAGE"
         else
-            echo "Not available locally. Trying Docker Hub: $IMAGE"
-
-            if docker pull "$IMAGE"; then
-                echo "Restored: $IMAGE"
-            else
-                echo "WARNING: $IMAGE is not available in Docker Hub."
-                echo "It will not be added to the new history."
-            fi
+            echo "WARNING: Previous image unavailable: $IMAGE"
         fi
-    done < "$CANDIDATE_FILE"
-fi
+    fi
+done < "$CANDIDATE_FILE"
 
-echo ""
-echo "===== Stopping Existing UI Deployment ====="
-
-docker compose down --remove-orphans
+# Pull the new image before replacing the running container.
 
 echo ""
 echo "===== Pulling Current UI Image ====="
 
-IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG" docker compose pull
+docker compose pull
+
+# Update the running service without bringing down the entire stack.
 
 echo ""
 echo "===== Starting Current UI Deployment ====="
 
-IMAGE_NAME="$IMAGE_NAME" IMAGE_TAG="$IMAGE_TAG"     docker compose up -d --remove-orphans
+docker compose up -d --remove-orphans
+
+# Verify the configured container image.
 
 echo ""
-echo "===== Verifying Current UI Container ====="
+echo "===== Verifying Deployment Image ====="
 
-DEPLOYED_IMAGE=$(docker inspect "$APP_NAME"     --format='{{.Config.Image}}' 2>/dev/null || true)
+DEPLOYED_IMAGE=$(
+    docker inspect "$APP_NAME" \
+        --format='{{.Config.Image}}' 2>/dev/null || true
+)
 
 if [ "$DEPLOYED_IMAGE" != "$CURRENT_IMAGE" ]; then
-    echo "ERROR: Expected $CURRENT_IMAGE"
-    echo "       but running container has: ${DEPLOYED_IMAGE:-none}"
+    echo "ERROR: Deployment image mismatch."
+    echo "Expected: $CURRENT_IMAGE"
+    echo "Actual  : ${DEPLOYED_IMAGE:-none}"
     exit 1
 fi
 
 echo "Running image confirmed: $DEPLOYED_IMAGE"
 
+# Update history only after the expected image is running.
+
 echo ""
-echo "===== Updating UI Image History ====="
+echo "===== Updating Image History ====="
 
 rm -f "$HISTORY_TMP"
 
-# Current deployment is always first.
-echo "$CURRENT_IMAGE" >> "$HISTORY_TMP"
+printf '%s\\n' "$CURRENT_IMAGE" > "$HISTORY_TMP"
 
-# Keep the first two previous images that actually exist.
-if [ -s "$CANDIDATE_FILE" ]; then
-    while IFS= read -r IMAGE
-    do
-        [ -z "$IMAGE" ] && continue
-        [ "$IMAGE" = "$CURRENT_IMAGE" ] && continue
+while IFS= read -r IMAGE
+do
+    [ -z "$IMAGE" ] && continue
+    [ "$IMAGE" = "$CURRENT_IMAGE" ] && continue
 
-        if docker image inspect "$IMAGE" >/dev/null 2>&1; then
-            if ! grep -Fxq "$IMAGE" "$HISTORY_TMP"; then
-                echo "$IMAGE" >> "$HISTORY_TMP"
-            fi
-        else
-            echo "Skipping unavailable image: $IMAGE"
+    if docker image inspect "$IMAGE" >/dev/null 2>&1; then
+        if ! grep -Fxq "$IMAGE" "$HISTORY_TMP"; then
+            printf '%s\\n' "$IMAGE" >> "$HISTORY_TMP"
         fi
+    else
+        echo "Skipping unavailable image: $IMAGE"
+    fi
 
-        if [ "$(wc -l < "$HISTORY_TMP")" -ge 3 ]; then
-            break
-        fi
-    done < "$CANDIDATE_FILE"
-fi
+    if [ "$(wc -l < "$HISTORY_TMP")" -ge 3 ]; then
+        break
+    fi
+done < "$CANDIDATE_FILE"
 
 mv "$HISTORY_TMP" "$HISTORY_FILE"
 rm -f "$CANDIDATE_FILE"
 
 echo ""
-echo "===== Final UI Image History ====="
+echo "===== Final Image History ====="
+
 nl -ba "$HISTORY_FILE"
 
 echo ""
-echo "===== New Containers ====="
+echo "===== Container Status ====="
+
 docker compose ps
 
 echo ""
-echo "===== Deployment Completed Successfully ====="
-
+echo "Ayurvedaa UI deployment completed."
 '''
 
                     writeFile(
@@ -504,122 +624,182 @@ echo "===== Deployment Completed Successfully ====="
 
                     withCredentials([
                         usernamePassword(
-                            credentialsId: "${SSH_CREDENTIALS}",
-                            usernameVariable: 'SSH_USER',
+                            credentialsId: 'new-server-ssh',
+                            usernameVariable: 'SSH_USERNAME',
                             passwordVariable: 'SSH_PASSWORD'
                         )
                     ]) {
+
                         sh '''
-                            sshpass -p "$SSH_PASSWORD" scp                                 -o StrictHostKeyChecking=no                                 deploy-ayurvedaa-ui.sh                                 "$SSH_USER@$APP_SERVER:/tmp/deploy-ayurvedaa-ui.sh"
+                            set -e
 
-                            sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 bash /tmp/deploy-ayurvedaa-ui.sh                                 "$DEPLOY_DIR"                                 "$IMAGE_NAME"                                 "$IMAGE_TAG"                                 "$BRANCH_NAME"                                 "$BUILD_NUMBER"                                 "$APP_NAME"
+                            sshpass -p "$SSH_PASSWORD" scp \
+                                -o StrictHostKeyChecking=no \
+                                deploy-ayurvedaa-ui.sh \
+                                "$SSH_USERNAME@$DEPLOY_SERVER:/tmp/deploy-ayurvedaa-ui.sh"
 
-                            sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 rm -f /tmp/deploy-ayurvedaa-ui.sh
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                bash /tmp/deploy-ayurvedaa-ui.sh \
+                                "$DEPLOY_PATH" \
+                                "$IMAGE_NAME" \
+                                "$IMAGE_TAG" \
+                                "$BRANCH_NAME" \
+                                "$BUILD_NUMBER" \
+                                "$APP_NAME"
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                rm -f /tmp/deploy-ayurvedaa-ui.sh
                         '''
                     }
 
                     sh 'rm -f deploy-ayurvedaa-ui.sh'
                 }
-            }
-        }
 
-        // ==========================================================
-        // CONTAINER VERIFICATION
-        // ==========================================================
 
-        stage('Container Verification') {
-            steps {
-                withCredentials([
-                    usernamePassword(
-                        credentialsId: "${SSH_CREDENTIALS}",
-                        usernameVariable: 'SSH_USER',
-                        passwordVariable: 'SSH_PASSWORD'
-                    )
-                ]) {
-                    sh '''
-                        echo "===== Container Verification ====="
+                // =================================================
+                // CONTAINER VERIFICATION
+                // =================================================
 
-                        sleep 10
+                stage('Container Verification') {
 
-                        echo "===== Docker Compose Status ====="
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'new-server-ssh',
+                            usernameVariable: 'SSH_USERNAME',
+                            passwordVariable: 'SSH_PASSWORD'
+                        )
+                    ]) {
 
-                        sshpass -p "$SSH_PASSWORD" ssh                             -o StrictHostKeyChecking=no                             "$SSH_USER@$APP_SERVER"                             "cd $DEPLOY_DIR && docker compose ps"
+                        sh '''
+                            set -e
 
-                        echo "===== Nginx Configuration Test ====="
+                            echo "=========================================="
+                            echo "Container Verification"
+                            echo "=========================================="
 
-                        sshpass -p "$SSH_PASSWORD" ssh                             -o StrictHostKeyChecking=no                             "$SSH_USER@$APP_SERVER"                             "docker exec $APP_NAME nginx -t"
+                            sleep 10
 
-                        echo "===== HTTP Verification ====="
+                            echo ""
+                            echo "===== Docker Compose Status ====="
 
-                        sshpass -p "$SSH_PASSWORD" ssh                             -o StrictHostKeyChecking=no                             "$SSH_USER@$APP_SERVER"                             "curl -f http://127.0.0.1:$APP_PORT/"
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                "cd '$DEPLOY_PATH' && docker compose ps"
 
-                        echo ""
-                        echo "Ayurvedaa UI deployment verified successfully."
-                    '''
+                            echo ""
+                            echo "===== Verify Nginx Configuration ====="
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                "docker exec '$APP_NAME' nginx -t"
+
+                            echo ""
+                            echo "===== HTTP Verification ====="
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                "curl -f http://127.0.0.1:$APP_PORT/"
+
+                            echo ""
+                            echo "Ayurvedaa UI verification completed successfully."
+                        '''
+                    }
                 }
-            }
-        }
 
-        // ==========================================================
-        // APPLICATION SERVER CLEANUP
-        //
-        // Keep exactly the images recorded in history.
-        // Normally this is current + previous 2.
-        //
-        // ONLY sunardock/ayurvedaa-ui images are touched.
-        // No global docker image prune is used.
-        // ==========================================================
 
-        stage('Application Server Cleanup') {
-            steps {
-                script {
+                // =================================================
+                // APPLICATION SERVER IMAGE CLEANUP
+                //
+                // Keep current + previous 2 images.
+                // Only Ayurvedaa UI images are touched.
+                // No global image prune.
+                // =================================================
+
+                stage('Application Server Docker Cleanup') {
+
                     def cleanupScript = '''#!/bin/bash
 
-set -e
+set -euo pipefail
 
 APP_DIR="/root/ayurvedaa-ui"
 IMAGE_NAME="sunardock/ayurvedaa-ui"
 APP_NAME="ayurvedaa-ui"
+
 HISTORY_FILE="${APP_DIR}/.ui-image-history"
 
-echo "============================================"
+echo "=========================================="
 echo "Ayurvedaa UI Image Cleanup"
-echo "============================================"
+echo "=========================================="
+
+# Do not remove images if history is missing or invalid.
 
 if [ ! -f "$HISTORY_FILE" ]; then
-    echo "ERROR: UI image history file is missing."
-    echo "No UI images will be removed."
+    echo "ERROR: Image history is missing."
+    echo "No images will be removed."
     exit 1
 fi
 
-RUNNING_IMAGE=$(docker inspect "$APP_NAME"     --format='{{.Config.Image}}' 2>/dev/null || true)
+RUNNING_IMAGE=$(
+    docker inspect "$APP_NAME" \
+        --format='{{.Config.Image}}' 2>/dev/null || true
+)
 
 if [ -z "$RUNNING_IMAGE" ]; then
-    echo "ERROR: Ayurvedaa UI container is not running."
-    echo "No UI images will be removed."
+    echo "ERROR: Ayurvedaa UI container is missing."
+    echo "No images will be removed."
     exit 1
 fi
 
-echo "Running UI image: $RUNNING_IMAGE"
-
 if ! grep -Fxq "$RUNNING_IMAGE" "$HISTORY_FILE"; then
-    echo "ERROR: Running image is not present in history."
-    echo "No UI images will be removed."
+    echo "ERROR: Running image is not in history."
+    echo "No images will be removed."
+    exit 1
+fi
+
+# Validate every history entry before removing any images.
+
+while IFS= read -r IMAGE || [ -n "$IMAGE" ]
+do
+    case "$IMAGE" in
+        "$IMAGE_NAME":*) ;;
+        *)
+            echo "ERROR: Invalid image in history: $IMAGE"
+            echo "No images will be removed."
+            exit 1
+            ;;
+    esac
+done < "$HISTORY_FILE"
+
+HISTORY_COUNT=$(wc -l < "$HISTORY_FILE")
+
+if [ "$HISTORY_COUNT" -gt 3 ]; then
+    echo "ERROR: History contains more than three entries."
+    echo "No images will be removed."
     exit 1
 fi
 
 echo ""
-echo "===== UI Image History ====="
+echo "===== Images To Preserve ====="
+
 nl -ba "$HISTORY_FILE"
 
 echo ""
-echo "===== UI Images Before Cleanup ====="
-docker images "$IMAGE_NAME" --format '{{.Repository}}:{{.Tag}}'
+echo "===== Images Before Cleanup ====="
+
+docker images "$IMAGE_NAME"
 
 echo ""
-echo "===== Removing UI Images Not In History ====="
+echo "===== Removing Old UI Images ====="
 
-docker images "$IMAGE_NAME" --format '{{.Repository}}:{{.Tag}}' |
+docker images "$IMAGE_NAME" \
+    --format '{{.Repository}}:{{.Tag}}' |
 while IFS= read -r IMAGE
 do
     [ -z "$IMAGE" ] && continue
@@ -633,16 +813,17 @@ do
 done
 
 echo ""
-echo "===== Final UI Images ====="
+echo "===== Final Ayurvedaa UI Images ====="
+
 docker images "$IMAGE_NAME"
 
 echo ""
-echo "===== Final UI Image History ====="
+echo "===== Final Image History ====="
+
 nl -ba "$HISTORY_FILE"
 
 echo ""
-echo "Application Server UI Cleanup Completed."
-
+echo "Ayurvedaa UI image cleanup completed."
 '''
 
                     writeFile(
@@ -654,65 +835,109 @@ echo "Application Server UI Cleanup Completed."
 
                     withCredentials([
                         usernamePassword(
-                            credentialsId: "${SSH_CREDENTIALS}",
-                            usernameVariable: 'SSH_USER',
+                            credentialsId: 'new-server-ssh',
+                            usernameVariable: 'SSH_USERNAME',
                             passwordVariable: 'SSH_PASSWORD'
                         )
                     ]) {
+
                         sh '''
-                            sshpass -p "$SSH_PASSWORD" scp                                 -o StrictHostKeyChecking=no                                 cleanup-ayurvedaa-ui.sh                                 "$SSH_USER@$APP_SERVER:/tmp/cleanup-ayurvedaa-ui.sh"
+                            set -e
 
-                            sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 bash /tmp/cleanup-ayurvedaa-ui.sh
+                            sshpass -p "$SSH_PASSWORD" scp \
+                                -o StrictHostKeyChecking=no \
+                                cleanup-ayurvedaa-ui.sh \
+                                "$SSH_USERNAME@$DEPLOY_SERVER:/tmp/cleanup-ayurvedaa-ui.sh"
 
-                            sshpass -p "$SSH_PASSWORD" ssh                                 -o StrictHostKeyChecking=no                                 "$SSH_USER@$APP_SERVER"                                 rm -f /tmp/cleanup-ayurvedaa-ui.sh
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                bash /tmp/cleanup-ayurvedaa-ui.sh
+
+                            sshpass -p "$SSH_PASSWORD" ssh \
+                                -o StrictHostKeyChecking=no \
+                                "$SSH_USERNAME@$DEPLOY_SERVER" \
+                                rm -f /tmp/cleanup-ayurvedaa-ui.sh
                         '''
                     }
 
                     sh 'rm -f cleanup-ayurvedaa-ui.sh'
                 }
+
+
+            } else {
+
+                // ================================================
+                // NON-DEV BRANCH
+                // ================================================
+
+                echo "=========================================="
+                echo "NON-DEV BRANCH"
+                echo "=========================================="
+
+                echo "Branch: ${branchName}"
+                echo "React build completed."
+                echo "Unit testing completed."
+
+                echo "No SonarQube analysis."
+                echo "No Docker build."
+                echo "No Docker push."
+                echo "No deployment."
+                echo "No Docker image cleanup."
+
+                echo "Pipeline stopping after Unit Testing."
+
+                echo "=========================================="
             }
-        }
-    }
 
-    // ==========================================================
-    // POST ACTIONS
-    // ==========================================================
 
-    post {
+            // =====================================================
+            // PIPELINE SUCCESS
+            // =====================================================
 
-        success {
-            echo """
-============================================
-AYURVEDAA UI DEPLOYMENT SUCCESSFUL
-============================================
+            echo "=========================================="
+            echo "PIPELINE EXECUTED SUCCESSFULLY"
+            echo "=========================================="
 
-Branch       : ${env.BRANCH_NAME}
-Build        : ${env.BUILD_NUMBER}
-Docker Image : ${env.IMAGE_NAME}:${env.IMAGE_TAG}
-Server       : ${env.APP_SERVER}
-Port         : ${env.APP_PORT}
+            echo "Branch      : ${branchName}"
+            echo "Safe Branch : ${env.SAFE_BRANCH}"
+            echo "Build       : ${env.BUILD_NUMBER}"
 
-============================================
-"""
-        }
+            if (branchName == 'dev') {
+                echo "Docker Image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
+                echo "Deploy Server: ${env.DEPLOY_SERVER}"
+                echo "Application Port: ${env.APP_PORT}"
+            } else {
+                echo "Deployment: Skipped (non-dev branch)"
+            }
 
-        failure {
-            echo """
-============================================
-AYURVEDAA UI DEPLOYMENT FAILED
-============================================
+            echo "=========================================="
 
-Branch : ${env.BRANCH_NAME}
-Build  : ${env.BUILD_NUMBER}
 
-Check the failed Jenkins stage.
+        } catch (err) {
 
-============================================
-"""
-        }
+            echo "=========================================="
+            echo "PIPELINE FAILED"
+            echo "=========================================="
 
-        always {
+            echo "Branch: ${branchName}"
+            echo "Build : ${env.BUILD_NUMBER}"
+            echo "Check Jenkins Console Output."
+
+            echo "=========================================="
+
+            currentBuild.result = 'FAILURE'
+
+            throw err
+
+        } finally {
+
+            if (branchName == 'dev') {
+                sh 'docker logout || true'
+            }
+
             echo "Cleaning Jenkins workspace..."
+
             cleanWs()
         }
     }
