@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -14,13 +14,14 @@ import {
   mapAuthTokenToSession,
   setAuthSession,
 } from '@/lib/auth';
-import { setStoredClinicLocation } from '@/lib/clinicLocations';
+import { CLINIC_LOCATIONS, setStoredClinicLocation } from '@/lib/clinicLocations';
 import {
   loginSchema,
   type LoginFormValues,
   type LoginMode,
 } from '@/lib/validation/login.schema';
-
+import { Select } from '@/components/ui/Select';
+import { getPublicTenants, type PublicTenantDto } from '@/lib/api/auth';
 const PLATFORM_LOGIN_PATH = '/platform/login';
 
 export function LoginPage() {
@@ -34,7 +35,8 @@ export function LoginPage() {
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotNotice, setForgotNotice] = useState<string | null>(null);
   const [forgotTenantCode, setForgotTenantCode] = useState('');
-
+  const [tenantsLoading, setTenantsLoading] = useState(true);
+  const [tenants, setTenants] = useState<PublicTenantDto[]>([]);
   const {
     register,
     handleSubmit,
@@ -47,22 +49,78 @@ export function LoginPage() {
       mode: 'all',
       emailOrUsername: DUMMY_LOGIN_CREDENTIALS.emailOrUsername,
       password: DUMMY_LOGIN_CREDENTIALS.password,
+      locationId: CLINIC_LOCATIONS[0].value,
     },
   });
 
+  const selectedTenantCode = watch('tenantCode');
+  const showClinicSelect = loginMode === 'all' && tenants.length > 1;
   useEffect(() => {
     setValue('mode', loginMode);
     setSubmitError(null);
   }, [loginMode, setValue]);
+
+  useEffect(() => {
+    let active = true;
+    setTenantsLoading(true);
+    getPublicTenants()
+      .then((list) => {
+        if (!active) return;
+        setTenants(list);
+        const preferred =
+          list.find((t) => t.tenantCode === DUMMY_LOGIN_CREDENTIALS.tenantCode) ??
+          list[0];
+        if (preferred?.tenantCode) {
+          setValue('tenantCode', preferred.tenantCode);
+          setValue(
+            'locationId',
+            preferred.city?.trim() ||
+            preferred.state?.trim() ||
+            preferred.tenantCode,
+          );
+        }
+      })
+      .catch(() => {
+        if (active) setTenants([]);
+      })
+      .finally(() => {
+        if (active) setTenantsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [setValue]);
+
+  const hospitalOptions = useMemo(() => {
+    if (tenants.length === 0) {
+      return [
+        {
+          value: DUMMY_LOGIN_CREDENTIALS.tenantCode,
+          label: DUMMY_LOGIN_CREDENTIALS.tenantCode,
+        },
+      ];
+    }
+    return tenants.map((tenant) => {
+      const name = tenant.clinicName || tenant.name || tenant.tenantCode;
+      const place = [tenant.city, tenant.state].filter(Boolean).join(', ');
+      return {
+        value: tenant.tenantCode,
+        label: place ? `${name} — ${place}` : name,
+      };
+    });
+  }, [tenants]);
 
   const onSubmit = async (values: LoginFormValues) => {
     setSubmitError(null);
     setForgotNotice(null);
     const usernameOrEmail = values.emailOrUsername.trim();
     const isHospitalLogin = values.mode === 'all';
-
+ const tenantCode = isHospitalLogin
+      ? values.tenantCode?.trim() || undefined
+      : undefined;
     try {
       const response = await login({
+        tenantCode,
         usernameOrEmail,
         password: values.password,
       });
@@ -155,7 +213,7 @@ export function LoginPage() {
           />
 
           <div className="space-y-3.5">
-            {loginMode === 'all' ? (
+            {/* {loginMode === 'all' ? (
               <Input
                 fieldVariant="auth"
                 name="forgotClinicCode"
@@ -165,7 +223,20 @@ export function LoginPage() {
                 onChange={(e) => setForgotTenantCode(e.target.value)}
                 autoComplete="organization"
               />
-            ) : null}
+            ) : null} */}
+
+              <Select
+                fieldVariant="auth"
+                label="Location"
+                placeholder={
+                  tenantsLoading ? 'Loading clinics…' : 'Select clinic'
+                }
+                options={hospitalOptions}
+                error={errors.tenantCode?.message}
+                disabled={tenantsLoading && tenants.length === 0}
+                {...register('tenantCode')}
+              />
+
             <Input
               fieldVariant="auth"
               label="Password"
