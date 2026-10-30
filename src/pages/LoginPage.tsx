@@ -34,7 +34,6 @@ export function LoginPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotNotice, setForgotNotice] = useState<string | null>(null);
-  const [forgotTenantCode, setForgotTenantCode] = useState('');
   const [tenantsLoading, setTenantsLoading] = useState(true);
   const [tenants, setTenants] = useState<PublicTenantDto[]>([]);
   const {
@@ -53,8 +52,6 @@ export function LoginPage() {
     },
   });
 
-  const selectedTenantCode = watch('tenantCode');
-  const showClinicSelect = loginMode === 'all' && tenants.length > 1;
   useEffect(() => {
     setValue('mode', loginMode);
     setSubmitError(null);
@@ -146,13 +143,13 @@ export function LoginPage() {
     setSubmitError(null);
     setForgotNotice(null);
     const email = watch('emailOrUsername')?.trim();
-    const clinicCode = forgotTenantCode.trim();
+    const clinicCode = watch('tenantCode')?.trim();
     if (!email) {
       setSubmitError('Enter your email address first.');
       return;
     }
     if (loginMode === 'all' && !clinicCode) {
-      setSubmitError('Enter your clinic code to reset your password.');
+      setSubmitError('Select your clinic location to reset your password.');
       return;
     }
     setForgotBusy(true);
@@ -213,18 +210,7 @@ export function LoginPage() {
           />
 
           <div className="space-y-3.5">
-            {/* {loginMode === 'all' ? (
-              <Input
-                fieldVariant="auth"
-                name="forgotClinicCode"
-                label="Clinic code"
-                placeholder="e.g. PRO-KA"
-                value={forgotTenantCode}
-                onChange={(e) => setForgotTenantCode(e.target.value)}
-                autoComplete="organization"
-              />
-            ) : null} */}
-
+            {loginMode === 'all' ? (
               <Select
                 fieldVariant="auth"
                 label="Location"
@@ -236,6 +222,7 @@ export function LoginPage() {
                 disabled={tenantsLoading && tenants.length === 0}
                 {...register('tenantCode')}
               />
+            ) : null}
 
             <Input
               fieldVariant="auth"

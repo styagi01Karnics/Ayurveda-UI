@@ -3,19 +3,13 @@ import { IconActionButton } from '@/components/ui/IconActionButton';
 import { Select } from '@/components/ui/Select';
 import { formatAuthRole } from '@/lib/auth';
 import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
-import { cn, formatPersonName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
 
 interface UsersTableProps {
   records: SettingsUserRecord[];
   onRoleChange: (userId: string, newRole: string) => void;
   onEdit: (user: SettingsUserRecord) => void;
-}
-
-function formatDisplayUserId(userId: string): string {
-  const trimmed = userId.trim();
-  if (!trimmed || trimmed === '—') return '—';
-  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
 }
 
 function formatDisplayPhone(phone: string): string {
@@ -52,12 +46,9 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
             records.map((record) => (
               <tr key={record.id} className="border-b border-[#EFF0F6]">
                 <td className="px-5 py-4 font-medium text-[#422C23]">
-                  {formatDisplayUserId(record.fullName)}
+                  {record.fullName}
                 </td>
                 <td className="px-5 py-4">
-                  {/* <p className="font-medium text-[#422C23]">
-                    {formatPersonName(record.fullName) || record.fullName}
-                  </p> */}
                   <p className="mt-0.5 text-xs text-[#67554D]">
                     {formatDisplayPhone(record.phone)}
                   </p>
