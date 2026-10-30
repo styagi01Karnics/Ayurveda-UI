@@ -275,7 +275,7 @@ export function UserManagementTab({
       <div className="flex justify-end">
         <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2 sm:gap-3">
           <SearchField
-            placeholder="User ID"
+            placeholder="User Name"
             iconPosition="right"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

@@ -33,8 +33,8 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
       <table className="w-full min-w-[900px] text-left text-sm">
         <thead>
           <tr className="border-b border-[#EFF0F6] text-[12px] font-medium text-[#838A9A]">
-            <th className="px-5 py-3.5 font-medium">User ID</th>
-            <th className="px-5 py-3.5 font-medium">Name / Phone Number</th>
+            <th className="px-5 py-3.5 font-medium">User Name</th>
+            <th className="px-5 py-3.5 font-medium">Phone Number</th>
             <th className="px-5 py-3.5 font-medium">Email</th>
             <th className="px-5 py-3.5 font-medium">Status</th>
             <th className="px-5 py-3.5 font-medium">Assigned Role</th>
@@ -52,12 +52,12 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
             records.map((record) => (
               <tr key={record.id} className="border-b border-[#EFF0F6]">
                 <td className="px-5 py-4 font-medium text-[#422C23]">
-                  {formatDisplayUserId(record.userId)}
+                  {formatDisplayUserId(record.fullName)}
                 </td>
                 <td className="px-5 py-4">
-                  <p className="font-medium text-[#422C23]">
+                  {/* <p className="font-medium text-[#422C23]">
                     {formatPersonName(record.fullName) || record.fullName}
-                  </p>
+                  </p> */}
                   <p className="mt-0.5 text-xs text-[#67554D]">
                     {formatDisplayPhone(record.phone)}
                   </p>
