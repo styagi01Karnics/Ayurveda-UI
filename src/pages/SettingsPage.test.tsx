@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PageActionContext } from '@/app/PageActionContext';
 import { ToastProvider } from '@/app/ToastContext';
+import { getUsers } from '@/lib/api/auth';
 import { SettingsPage } from '@/pages/SettingsPage';
 
 function renderSettings() {
@@ -37,10 +38,21 @@ describe('SettingsPage', () => {
 
   it('shows user management table', async () => {
     const user = userEvent.setup();
+    vi.mocked(getUsers).mockResolvedValueOnce([
+      {
+        id: 'user-2',
+        tenantId: 'tenant-1',
+        tenantCode: 'GAN',
+        username: 'admin',
+        email: 'admin@test.com',
+        fullName: 'Rahul Sharma',
+        role: 'TENANT_ADMIN',
+        status: 'ACTIVE',
+      },
+    ]);
     renderSettings();
     await user.click(screen.getByText('User Management'));
-    expect(screen.getByText('Rahul Sharma')).toBeInTheDocument();
-    expect(screen.getByText('#GN458652')).toBeInTheDocument();
+    expect(await screen.findByText('Rahul Sharma')).toBeInTheDocument();
   });
 
   it('shows role management cards', async () => {

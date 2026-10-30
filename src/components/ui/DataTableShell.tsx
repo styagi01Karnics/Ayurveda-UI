@@ -27,7 +27,7 @@ export function DataTableShell({
   }
 
   return (
-    <Card className={cn('w-full min-w-0 overflow-hidden p-0', className)}>
+    <Card className={cn('w-full min-w-0 overflow-x-auto p-0', className)}>
       {children}
     </Card>
   );

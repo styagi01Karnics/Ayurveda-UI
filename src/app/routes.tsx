@@ -34,6 +34,7 @@ export function AppRoutes() {
       <Routes>
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/platform/login" element={<LoginPage />} />
           <Route
             path="/platform/bootstrap"
             element={<BootstrapSuperAdminPage />}

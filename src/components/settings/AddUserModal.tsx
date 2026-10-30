@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import {
-  USER_ROLE_OPTIONS,
   addUserSchema,
   editUserSchema,
   type AddUserFormValues,
@@ -55,7 +54,6 @@ export function AddUserModal({
       email: '',
       password: '',
       confirmPassword: '',
-      role: '',
       status: 'Active',
     },
   });
@@ -68,7 +66,6 @@ export function AddUserModal({
         fullName: user.fullName === '—' ? '' : user.fullName,
         mobileNumber: user.phone.replace(/\D/g, '').slice(-10),
         email: user.email === '—' ? '' : user.email,
-        role: user.assignedRole,
         status: user.status,
       });
       return;
@@ -80,7 +77,6 @@ export function AddUserModal({
       email: '',
       password: '',
       confirmPassword: '',
-      role: '',
       status: 'Active',
     });
   }, [open, user, reset]);
@@ -155,15 +151,6 @@ export function AddUserModal({
             />
           </>
         ) : null}
-        <div className="sm:col-span-2">
-          <Select
-            label="Role"
-            placeholder="Role"
-            options={[...USER_ROLE_OPTIONS]}
-            error={'role' in errors ? errors.role?.message : undefined}
-            {...register('role')}
-          />
-        </div>
       </form>
     </Modal>
   );

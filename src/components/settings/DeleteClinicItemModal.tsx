@@ -5,7 +5,7 @@ interface DeleteClinicItemModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  itemType: 'Doctor' | 'Therapy' | 'Therapist' | 'Consultation';
+  itemType: 'Doctor' | 'Therapy' | 'Therapist' | 'Consultation' | 'Category' | 'Treatment Plan Master' | 'Package Masters' | 'Dosha Master';
 }
 
 export function DeleteClinicItemModal({

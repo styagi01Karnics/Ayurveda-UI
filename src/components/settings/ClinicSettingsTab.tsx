@@ -86,9 +86,13 @@ import type {
 
 type DeleteTarget =
   | { type: 'Doctor'; record: ClinicDoctorRecord }
+  | { type: 'Category'; record: ClinicTreatmentCategoryRecord }
   | { type: 'Therapy'; record: ClinicTherapyRecord }
   | { type: 'Therapist'; record: ClinicTherapistRecord }
   | { type: 'Consultation'; record: ClinicConsultationTypeRecord }
+  | { type: 'Treatment Plan Master'; record: ClinicTreatmentPlanMasterRecord }
+  | { type: 'Package Masters'; record: ClinicPackageMasterRecord }
+  | { type: 'Dosha Master'; record: ClinicDoshaRecord }
   | null;
 
 function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
@@ -405,6 +409,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Category', record })}
         />
 
         <DoctorsSection
@@ -569,6 +574,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Treatment Plan Master', record })}
         />
 
         <PackageMastersSection
@@ -595,6 +601,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Package Masters', record })}
         />
 
         <DoshasSection
@@ -623,6 +630,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
+          onDelete={(record) => setDeleteTarget({ type: 'Dosha Master', record })}
         />
 
         <DeleteClinicItemModal
@@ -694,9 +702,11 @@ function SettingsTableHead({ columns }: { columns: string[] }) {
 function TreatmentCategoriesSection({
   categories,
   onAdd,
+  onDelete
 }: {
   categories: ClinicTreatmentCategoryRecord[];
   onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
+   onDelete: (record: ClinicTreatmentCategoryRecord) => void;
 }) {
   const {
     register,
@@ -755,7 +765,13 @@ function TreatmentCategoriesSection({
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
                 <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
-                <td className="px-4 py-4 text-[#838A9A]">—</td>
+               <td className="px-4 py-4">
+                  <SettingsActionButton
+                    label={`Delete ${category.name}`}
+                    variant="delete"
+                    onClick={() => onDelete(category)}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -832,7 +848,7 @@ function DoctorsSection({
           void handleSubmit(onSubmit, onInvalid)();
         }}
       >
-        <div className="grid w-full min-w-0 grid-cols-7 gap-2">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <div className="min-w-0">
             <Input
               label="Name"

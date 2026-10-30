@@ -16,7 +16,7 @@ export function FollowUpsTable({
 }: FollowUpsTableProps) {
   return (
     <DataTableShell embedded={embedded}>
-      <table className="w-full table-fixed text-left text-sm">
+      <table className="w-full min-w-[800px] text-left text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50/50 text-xs text-text-muted">
               <th className="px-5 py-3 font-medium">Patient Code</th>

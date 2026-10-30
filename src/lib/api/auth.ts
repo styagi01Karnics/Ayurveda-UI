@@ -109,10 +109,10 @@ export interface RegisterUserPayload {
   fullName: string;
   email: string;
   password: string;
-  role: string;
-  tenantRoleId?: string;
+  role?: string;
+  tenantRoleId: string;
   username?: string;
-  mobileNumber?: string;
+  mobileNumber: string;
 }
 
 export interface UpdateUserPayload {

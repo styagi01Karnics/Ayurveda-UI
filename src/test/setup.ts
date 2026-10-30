@@ -909,6 +909,7 @@ vi.mock('@/lib/api/billing', () => ({
     {
       id: 'd565b93d-f8ef-43e1-9ca0-3d29fcab750d',
       invoiceId: 'INV-1024',
+      invoiceNumber: 'INV-1024',
       patientId: '37944397',
       patientDisplayId: 'PT458652',
       patientCode: 'GAN2025-0129',

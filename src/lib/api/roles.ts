@@ -88,6 +88,8 @@ export interface CreateHospitalPayload {
   password: string;
   confirmPassword: string;
   logoUrl?: string;
+  photoUrl?: string;
+  registrationNumberGst?: string;
 }
 
 export interface PlatformHospitalDto {
@@ -204,6 +206,13 @@ export function updateHospital(
       method: 'PUT',
       body: payload,
     },
+  );
+}
+
+export function deleteHospital(hospitalId: string) {
+  return apiRequest<PlatformHospitalDto>(
+    url(ep.platform.hospitalById(hospitalId)),
+    { method: 'DELETE' },
   );
 }
 

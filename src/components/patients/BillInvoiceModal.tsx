@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Mail, MapPin, Phone, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { getClinicLogoUrl } from '@/lib/auth';
 import { loadBillInvoiceView } from '@/lib/api/loadBillInvoice';
 import { assets } from '@/lib/assets';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
@@ -98,7 +99,7 @@ export function BillInvoiceModal({ open, onClose, invoiceId }: BillInvoiceModalP
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold">
                     <img
-                      src={assets.brandLogo}
+                      src={getClinicLogoUrl() || assets.brandLogo}
                       alt=""
                       className="h-9 w-9 object-contain"
                     />

@@ -26,11 +26,8 @@ export const loginSchema = z.discriminatedUnion('mode', [
   }),
   z.object({
     mode: z.literal('all'),
-    tenantCode: z
-      .string()
-      .min(1, 'Hospital is required')
-      .transform((value) => value.trim()),
-    locationId: z.string().min(1, 'Location is required'),
+    tenantCode: z.string().optional(),
+    locationId: z.string().optional(),
     ...credentials,
   }),
 ]);

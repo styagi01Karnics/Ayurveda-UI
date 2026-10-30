@@ -154,7 +154,6 @@ const userDetailFields = {
     .min(1, 'Mobile number is required')
     .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
-  role: z.string().min(1, 'Role is required'),
   status: z.enum(USER_STATUS_OPTIONS),
 };
 

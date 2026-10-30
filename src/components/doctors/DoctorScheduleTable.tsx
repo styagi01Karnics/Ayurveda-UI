@@ -20,7 +20,7 @@ export function DoctorScheduleTable({
 }: DoctorScheduleTableProps) {
   return (
     <DataTableShell embedded={embedded}>
-      <table className="w-full table-fixed text-left text-sm">
+      <table className="w-full min-w-[800px] text-left text-sm">
           <thead>
             <tr className="screen-label border-b border-[#e0d6c8] bg-[#faf7f2]/80">
               <th className="px-5 py-3">Time</th>
