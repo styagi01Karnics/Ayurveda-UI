@@ -16,6 +16,8 @@ export interface ToastItem {
   message: string;
   time?: string;
   variant?: ToastVariant;
+  /** Defaults to true; set false to hide the ✕ button. */
+  dismissible?: boolean;
 }
 
 interface ToastContextValue {
@@ -91,14 +93,16 @@ export function ToastViewport({ className }: { className?: string }) {
                 </p>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={() => ctx.dismiss(toast.id)}
-              className="shrink-0 rounded-md p-0.5 text-[#838A9A] hover:bg-[#F5F0E4] hover:text-[#422C23]"
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            {toast.dismissible === false ? null : (
+              <button
+                type="button"
+                onClick={() => ctx.dismiss(toast.id)}
+                className="shrink-0 rounded-md p-0.5 text-[#838A9A] hover:bg-[#F5F0E4] hover:text-[#422C23]"
+                aria-label="Dismiss"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         );
       })}

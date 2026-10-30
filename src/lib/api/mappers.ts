@@ -1277,7 +1277,7 @@ export function mapInvoiceToBillingRecord(
       invoiceId: invoice.invoiceId,
     }),
     patientId: displayId,
-    secondaryPatientId: '',
+    secondaryPatientId: invoice.patientCode?.trim() ?? '',
     patientUuid: invoice.patientId,
     invoiceDate: formatInvoiceDate(invoice.invoiceDate),
     totalAmount: invoice.totalAmount ?? 0,

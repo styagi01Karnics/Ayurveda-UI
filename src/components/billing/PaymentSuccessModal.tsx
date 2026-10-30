@@ -12,6 +12,8 @@ export interface PaymentSuccessDetails {
   title?: string;
   recipientEmail?: string;
   emailSent?: boolean;
+  /** 'link' shows a sent payment link, not a received payment. */
+  variant?: 'payment' | 'link';
 }
 
 interface PaymentSuccessModalProps {
@@ -77,11 +79,38 @@ export function PaymentSuccessModal({
 }: PaymentSuccessModalProps) {
   if (!open || !payment) return null;
 
+  if (payment.variant === 'link') {
+    return (
+      <SuccessDialog
+        open={open}
+        onClose={onClose}
+        title={payment.title ?? 'Payment Link Sent'}
+        halo
+        showCloseButton
+        className="max-w-[420px] px-8 py-10"
+      >
+        <p className="mt-3 text-[32px] font-bold leading-none text-brown">
+          {formatCurrency(payment.amount)}
+        </p>
+        <div className="mt-7 space-y-3.5 text-left text-sm">
+          <DetailRow label="Patient Name" value={payment.senderName} />
+          <DetailRow label="Invoice" value={payment.refNumber} />
+          <DetailRow label="Email ID" value={payment.recipientEmail || '—'} />
+          <DetailRow
+            label="Email Status"
+            value={payment.emailSent ? 'Sent' : 'Not sent'}
+            strong
+          />
+        </div>
+      </SuccessDialog>
+    );
+  }
+
   return (
     <SuccessDialog
       open={open}
       onClose={onClose}
-      title="Payment Success!"
+      title={payment.title ?? 'Payment Success!'}
       halo
       className="max-w-[420px] px-8 py-10"
     >
