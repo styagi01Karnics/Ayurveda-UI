@@ -7,14 +7,17 @@ import { Card } from '@/components/ui/Card';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { Input } from '@/components/ui/Input';
 import { LoadingState } from '@/components/ui/LoadingState';
+import { Modal } from '@/components/ui/Modal';
 import { Pagination } from '@/components/ui/Pagination';
 import { Select } from '@/components/ui/Select';
 import { ApiError } from '@/lib/api/client';
 import {
   createHospital,
+  deleteHospital,
   getHospitalMail,
   getHospitals,
   retryHospitalProvision,
+  updateHospital,
   updateHospitalMail,
   updateHospitalStatus,
   type HospitalMailPayload,
@@ -40,6 +43,7 @@ const emptyForm: OnboardHospitalFormValues = {
   pinCode: '',
   addressLine1: '',
   addressLine2: '',
+  registrationNumber: '',
   logoUrl: '',
   fullName: '',
   mobileNumber: '',
@@ -58,9 +62,23 @@ export function PlatformHospitalsPage() {
     schemaName?: string;
     adminEmail?: string;
   } | null>(null);
-  const [showForm, setShowForm] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editHospital, setEditHospital] = useState<PlatformHospitalDto | null>(
+    null,
+  );
+  const [editForm, setEditForm] = useState({
+    clinicName: '',
+    state: '',
+    city: '',
+    addressLine1: '',
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | undefined>();
   const [logoFileError, setLogoFileError] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | undefined>();
+  const [photoFileError, setPhotoFileError] = useState<string | null>(null);
   const [configHospital, setConfigHospital] =
     useState<PlatformHospitalDto | null>(null);
   const [configLoading, setConfigLoading] = useState(false);
@@ -117,12 +135,28 @@ export function PlatformHospitalsPage() {
     setValue('city', '');
   }, [selectedState, setValue]);
 
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setSubmitError(null);
+    reset(emptyForm);
+    setLogoFile(undefined);
+    setLogoFileError(null);
+    setPhotoFile(undefined);
+    setPhotoFileError(null);
+  };
+
   const onSubmit = async (values: OnboardHospitalFormValues) => {
+    setSubmitError(null);
+    if (!logoFile && !values.logoUrl?.trim()) {
+      setLogoFileError('Clinic logo is required');
+      return;
+    }
     try {
       let logoUrl = values.logoUrl?.trim() || undefined;
       if (logoFile) {
         logoUrl = await fileToDataUrl(logoFile);
       }
+      const photoUrl = photoFile ? await fileToDataUrl(photoFile) : undefined;
 
       const result = await createHospital({
         clinicName: values.clinicName.trim(),
@@ -132,7 +166,9 @@ export function PlatformHospitalsPage() {
         pinCode: values.pinCode.trim(),
         addressLine1: values.addressLine1.trim(),
         addressLine2: values.addressLine2?.trim() || undefined,
+        registrationNumberGst: values.registrationNumber.trim(),
         logoUrl,
+        photoUrl,
         fullName: values.fullName.trim(),
         mobileNumber: values.mobileNumber.trim(),
         email: values.email.trim(),
@@ -150,10 +186,7 @@ export function PlatformHospitalsPage() {
         schemaName,
         adminEmail: result.admin?.email ?? values.email.trim(),
       });
-      reset(emptyForm);
-      setLogoFile(undefined);
-      setLogoFileError(null);
-      setShowForm(false);
+      closeAddModal();
       await loadHospitals();
       showToast({
         title: 'Clinic onboarded',
@@ -162,13 +195,12 @@ export function PlatformHospitalsPage() {
           : 'Clinic and admin were created successfully.',
       });
     } catch (err) {
-      showToast({
-        title: 'Onboard failed',
-        message:
-          err instanceof ApiError
-            ? err.message
-            : 'Could not create clinic. Please try again.',
-      });
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : 'Could not create clinic. Please try again.';
+      setSubmitError(message);
+      showToast({ title: 'Onboard failed', message });
     }
   };
 
@@ -185,6 +217,69 @@ export function PlatformHospitalsPage() {
         title: 'Update failed',
         message:
           err instanceof ApiError ? err.message : 'Could not update status.',
+      });
+    }
+  };
+
+  const openEditHospital = (hospital: PlatformHospitalDto) => {
+    setEditHospital(hospital);
+    setEditForm({
+      clinicName: hospital.clinicName ?? hospital.name ?? '',
+      state: hospital.state ?? '',
+      city: hospital.city ?? '',
+      addressLine1: hospital.address ?? '',
+    });
+    setEditError(null);
+  };
+
+  const saveEditHospital = async () => {
+    if (!editHospital) return;
+    if (!editForm.clinicName.trim()) {
+      setEditError('Clinic name is required.');
+      return;
+    }
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await updateHospital(editHospital.id, {
+        clinicName: editForm.clinicName.trim(),
+        state: editForm.state.trim(),
+        city: editForm.city.trim(),
+        addressLine1: editForm.addressLine1.trim(),
+      });
+      setEditHospital(null);
+      await loadHospitals();
+      showToast({ title: 'Tenant updated', message: 'Changes saved.' });
+    } catch (err) {
+      setEditError(
+        err instanceof ApiError ? err.message : 'Could not update tenant.',
+      );
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDelete = async (hospital: PlatformHospitalDto) => {
+    const name = hospital.clinicName ?? hospital.name ?? hospital.tenantCode;
+    if (
+      !window.confirm(
+        `Delete ${name}? The clinic and all its users will be set to INACTIVE. Data is kept.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await deleteHospital(hospital.id);
+      await loadHospitals();
+      showToast({
+        title: 'Tenant deleted',
+        message: `${name} and its users are now INACTIVE.`,
+      });
+    } catch (err) {
+      showToast({
+        title: 'Delete failed',
+        message:
+          err instanceof ApiError ? err.message : 'Could not delete tenant.',
       });
     }
   };
@@ -306,8 +401,8 @@ export function PlatformHospitalsPage() {
             clinic login.
           </p>
         </div>
-        <Button type="button" onClick={() => setShowForm((v) => !v)}>
-          {showForm ? 'Hide form' : 'Onboard clinic'}
+        <Button type="button" onClick={() => setShowAddModal(true)}>
+          Add tenant
         </Button>
       </div>
 
@@ -337,13 +432,81 @@ export function PlatformHospitalsPage() {
         </Card>
       ) : null}
 
-      {showForm ? (
-        <Card className="p-5 sm:p-6">
-          <h2 className="mb-1 text-lg font-bold text-brown">
-            Onboard clinic + admin
-          </h2>
+      <Modal
+        open={editHospital !== null}
+        onClose={() => setEditHospital(null)}
+        title="Edit tenant"
+        subtitle={editHospital?.tenantCode ? `Tenant code ${editHospital.tenantCode}` : undefined}
+        size="lg"
+      >
+        <form
+          className="space-y-4"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            void saveEditHospital();
+          }}
+        >
+          <Input
+            label="Clinic name"
+            value={editForm.clinicName}
+            onChange={(e) =>
+              setEditForm((f) => ({ ...f, clinicName: e.target.value }))
+            }
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              label="State"
+              value={editForm.state}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, state: e.target.value }))
+              }
+            />
+            <Input
+              label="City"
+              value={editForm.city}
+              onChange={(e) =>
+                setEditForm((f) => ({ ...f, city: e.target.value }))
+              }
+            />
+          </div>
+          <Input
+            label="Address"
+            value={editForm.addressLine1}
+            onChange={(e) =>
+              setEditForm((f) => ({ ...f, addressLine1: e.target.value }))
+            }
+          />
+          {editError ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+            >
+              {editError}
+            </div>
+          ) : null}
+          <div className="flex justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditHospital(null)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={editSaving}>
+              {editSaving ? 'Saving…' : 'Save changes'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
-
+      <Modal
+        open={showAddModal}
+        onClose={closeAddModal}
+        title="Add tenant"
+        subtitle="Onboard a clinic and its admin, then share the tenant code for clinic login."
+        size="2xl"
+      >
           <form
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-8"
@@ -406,7 +569,13 @@ export function PlatformHospitalsPage() {
                     />
                   </div>
                   <Input
-                    label="Logo URL (optional)"
+                    label="Registration number / GST"
+                    placeholder="Registration Number/ GST"
+                    error={errors.registrationNumber?.message}
+                    {...register('registrationNumber')}
+                  />
+                  <Input
+                    label="Logo URL"
                     placeholder="https://cdn.example.com/logo.png"
                     error={errors.logoUrl?.message}
                     {...register('logoUrl')}
@@ -455,6 +624,7 @@ export function PlatformHospitalsPage() {
               <h3 className="mb-4 text-sm font-semibold text-brown">
                 Clinic admin
               </h3>
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_200px] lg:items-start">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
                   label="Full name"
@@ -489,7 +659,45 @@ export function PlatformHospitalsPage() {
                   {...register('confirmPassword')}
                 />
               </div>
+              <FileUpload
+                label="Admin Photo"
+                editOnly
+                actionLabel="Upload admin photo"
+                value={photoFile}
+                error={photoFileError ?? undefined}
+                onChange={(file) => {
+                  setPhotoFileError(null);
+                  if (
+                    file &&
+                    !['image/svg+xml', 'image/png', 'image/jpeg', 'image/gif', 'image/webp'].includes(
+                      file.type,
+                    )
+                  ) {
+                    setPhotoFileError('Photo must be SVG, PNG, JPG, WEBP or GIF');
+                    setPhotoFile(undefined);
+                    return;
+                  }
+                  if (file && file.size > 5 * 1024 * 1024) {
+                    setPhotoFileError('File must be under 5MB');
+                    setPhotoFile(undefined);
+                    return;
+                  }
+                  setPhotoFile(file);
+                }}
+              />
+              </div>
             </section>
+
+
+            {submitError ? (
+              <div
+                role="alert"
+                className="rounded-lg border border-danger/30 bg-danger/5 px-4 py-3 text-sm text-danger"
+              >
+                <p className="font-semibold">Clinic could not be created</p>
+                <p className="mt-1">{submitError}</p>
+              </div>
+            ) : null}
 
             <div className="flex justify-end border-t border-[#f0ebe3] pt-5">
               <Button type="submit" disabled={isSubmitting}>
@@ -497,8 +705,7 @@ export function PlatformHospitalsPage() {
               </Button>
             </div>
           </form>
-        </Card>
-      ) : null}
+      </Modal>
 
       <Card className="overflow-hidden p-0">
         <div className="border-b border-gray-100 px-5 py-4">
@@ -519,7 +726,7 @@ export function PlatformHospitalsPage() {
           </div>
         ) : hospitals.length === 0 ? (
           <p className="px-5 py-8 text-sm text-text-muted">
-            No clinics yet. Use the form above to onboard the first one.
+            No clinics yet. Click Add tenant to onboard the first one.
           </p>
         ) : (
           <div className="overflow-x-auto">
@@ -559,9 +766,25 @@ export function PlatformHospitalsPage() {
                             type="button"
                             variant="outline"
                             className="px-2.5 py-1 text-xs"
+                            onClick={() => openEditHospital(hospital)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="px-2.5 py-1 text-xs"
                             onClick={() => void openHospitalConfig(hospital)}
                           >
                             Mail
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50"
+                            onClick={() => void handleDelete(hospital)}
+                          >
+                            Delete
                           </Button>
                           {status === 'FAILED' ? (
                             <Button

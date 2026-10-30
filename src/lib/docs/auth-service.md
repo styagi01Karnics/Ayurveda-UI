@@ -26,7 +26,7 @@ Content-Type: application/json
 ```json
 {
   "fullName": "Platform Admin",
-  "email": "superadmin@gmail.com",
+  "email": "<super-admin-email>",
   "password": "SecurePass1"
 }
 ```
@@ -38,7 +38,7 @@ Content-Type: application/json
   "message": "Success",
   "data": {
     "id": "…",
-    "email": "superadmin@gmail.com",
+    "email": "<super-admin-email>",
     "fullName": "Platform Admin",
     "role": "SUPER_ADMIN",
     "status": "ACTIVE"
@@ -56,7 +56,7 @@ POST http://localhost:8111/api/v1/auth/login
 
 ```json
 {
-  "usernameOrEmail": "superadmin@gmail.com",
+  "usernameOrEmail": "<super-admin-email>",
   "password": "SecurePass1"
 }
 ```

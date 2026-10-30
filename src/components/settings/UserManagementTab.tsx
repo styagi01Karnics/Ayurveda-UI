@@ -26,6 +26,18 @@ import { formatAuthRole } from '@/lib/auth';
 import { formatPersonName } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
 
+/** Includes backend per-field validation messages when present. */
+function userErrorMessage(err: ApiError): string {
+  const data = (err.body as { data?: unknown } | null)?.data;
+  if (data && typeof data === 'object') {
+    const fields = Object.values(data as Record<string, unknown>).filter(
+      (v): v is string => typeof v === 'string' && v.trim() !== '',
+    );
+    if (fields.length > 0) return fields.join(' ');
+  }
+  return err.message;
+}
+
 interface UserManagementTabProps {
   addUserOpen: boolean;
   onAddUserClose: () => void;
@@ -209,7 +221,7 @@ export function UserManagementTab({
         title: editUser ? 'Could not update user' : 'Could not add user',
         message:
           err instanceof ApiError
-            ? err.message
+            ? userErrorMessage(err)
             : 'Please try again.',
       });
     } finally {

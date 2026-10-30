@@ -10,8 +10,6 @@ export interface PatientDto {
   id: string;
   patientDisplayId?: string;
   patientCode: string;
-  firstName?: string;
-  lastName?: string;
   fullName: string;
   gender: string;
   dateOfBirth: string;

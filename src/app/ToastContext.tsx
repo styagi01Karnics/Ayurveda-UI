@@ -81,9 +81,16 @@ export function ToastViewport({ className }: { className?: string }) {
                 strokeWidth={2}
               />
             )}
-            <p className="min-w-0 flex-1 font-sans text-sm font-medium leading-5 text-[#422C23]">
-              {toast.title}
-            </p>
+            <div className="min-w-0 flex-1">
+              <p className="font-sans text-sm font-medium leading-5 text-[#422C23]">
+                {toast.title}
+              </p>
+              {toast.message ? (
+                <p className="mt-0.5 font-sans text-xs leading-4 text-[#6B5B52]">
+                  {toast.message}
+                </p>
+              ) : null}
+            </div>
             <button
               type="button"
               onClick={() => ctx.dismiss(toast.id)}

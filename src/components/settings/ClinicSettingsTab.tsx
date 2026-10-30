@@ -848,7 +848,7 @@ function DoctorsSection({
           void handleSubmit(onSubmit, onInvalid)();
         }}
       >
-        <div className="grid w-full min-w-0 grid-cols-7 gap-2">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
           <div className="min-w-0">
             <Input
               label="Name"

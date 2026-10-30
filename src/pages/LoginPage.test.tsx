@@ -15,7 +15,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('LoginPage', () => {
-  it('renders Figma login fields and role tabs by default', async () => {
+  it('renders tenant login fields without role tabs or sign-up links', async () => {
     render(
       <MemoryRouter>
         <LoginPage />
@@ -23,38 +23,34 @@ describe('LoginPage', () => {
     );
 
     expect(screen.getByText('Welcome back!')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'System Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Users' })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'System Admin' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByPlaceholderText('Enter your username or email address'),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Sign Up' })).toHaveAttribute(
-      'href',
-      '/signup',
-    );
+    expect(screen.queryByRole('link', { name: 'Sign Up' })).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('GANESHA AYURVEDAA')).toBeInTheDocument();
     });
   });
 
-  it('hides clinic field on System Admin tab', async () => {
-    const user = userEvent.setup();
+  it('renders the super admin page with Karnics branding and no clinic field', async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/platform/login']}>
         <LoginPage />
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'System Admin' }));
-
-    expect(screen.queryByText('Location')).not.toBeInTheDocument();
+    expect(screen.getByText('KARNICS TECHNOLOGY')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Clinic code')).not.toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('superadmin@gmail.com'),
+      screen.getByPlaceholderText('Enter your email address'),
     ).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Sign in to your clinic' })).not.toBeInTheDocument();
   });
 
   it('shows validation errors for empty submit', async () => {
@@ -75,20 +71,6 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('Username or email is required')).toBeInTheDocument();
     expect(screen.getByText('Password is required')).toBeInTheDocument();
-  });
-
-  it('logs in with dummy credentials and navigates to dashboard', async () => {
-    const user = userEvent.setup();
-    mockNavigate.mockClear();
-    render(
-      <MemoryRouter>
-        <LoginPage />
-      </MemoryRouter>,
-    );
-
-    await user.click(screen.getByRole('button', { name: 'Login' }));
-
-    expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 
   it('does not show Create Super Admin on the login card', () => {

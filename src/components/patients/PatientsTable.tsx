@@ -25,7 +25,7 @@ export function PatientsTable({
 }: PatientsTableProps) {
   return (
     <DataTableShell embedded={embedded}>
-      <table className="w-full table-fixed text-left text-sm">
+      <table className="w-full min-w-[960px] text-left text-sm">
         <thead>
           <tr className="screen-label border-b border-gray-100 bg-gray-50/80">
             <th className="w-[11%] px-3 py-3">Patient Code</th>
