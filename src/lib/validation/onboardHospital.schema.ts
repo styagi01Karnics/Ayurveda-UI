@@ -19,6 +19,9 @@ export const onboardHospitalSchema = z
       .regex(/^\d{6}$/, 'PIN code must be 6 digits'),
     addressLine1: z.string().min(1, 'Address line 1 is required'),
     addressLine2: z.string().optional(),
+    registrationNumber: z
+      .string()
+      .min(1, 'Registration number or GST is required'),
     logoUrl: z
       .string()
       .optional()

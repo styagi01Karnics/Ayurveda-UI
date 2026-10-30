@@ -26,6 +26,18 @@ import { formatAuthRole } from '@/lib/auth';
 import { formatPersonName } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
 
+/** Includes backend per-field validation messages when present. */
+function userErrorMessage(err: ApiError): string {
+  const data = (err.body as { data?: unknown } | null)?.data;
+  if (data && typeof data === 'object') {
+    const fields = Object.values(data as Record<string, unknown>).filter(
+      (v): v is string => typeof v === 'string' && v.trim() !== '',
+    );
+    if (fields.length > 0) return fields.join(' ');
+  }
+  return err.message;
+}
+
 interface UserManagementTabProps {
   addUserOpen: boolean;
   onAddUserClose: () => void;
@@ -154,21 +166,12 @@ export function UserManagementTab({
   };
 
   const handleSaveUser = async (values: UserFormValues) => {
-    if (isRoleAlreadyAssigned(values.role, editUser?.id)) {
-      showToast({
-        title: 'Role already assigned',
-        message: `Only one user can have the ${formatAuthRole(values.role)} role. Choose a different role.`,
-      });
-      return;
-    }
-
     setSubmitting(true);
     try {
       if (editUser) {
         const updated = await updateUser(editUser.id, {
           fullName: values.fullName,
           email: values.email,
-          role: values.role,
           tenantRoleId: values.tenantRoleId,
           mobileNumber: values.mobileNumber,
           status: values.status.toUpperCase(),
@@ -195,7 +198,6 @@ export function UserManagementTab({
         fullName: addValues.fullName,
         email: addValues.email,
         password: addValues.password,
-        role: addValues.role,
         tenantRoleId: addValues.tenantRoleId,
         mobileNumber: addValues.mobileNumber,
       });
@@ -219,7 +221,7 @@ export function UserManagementTab({
         title: editUser ? 'Could not update user' : 'Could not add user',
         message:
           err instanceof ApiError
-            ? err.message
+            ? userErrorMessage(err)
             : 'Please try again.',
       });
     } finally {

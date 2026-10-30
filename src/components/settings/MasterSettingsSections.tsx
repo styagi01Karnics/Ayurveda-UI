@@ -65,7 +65,7 @@ export function ConsultationTypesSection({
         <SectionHeader title="Consultation Types" />
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full min-w-[480px] text-left text-sm">
           <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
@@ -152,7 +152,7 @@ onDelete
         <SectionHeader title="Treatment Plan Master" />
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full min-w-[480px] text-left text-sm">
           <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
@@ -239,7 +239,7 @@ export function PackageMastersSection({
         <SectionHeader title="Package Masters" />
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-        <table className="w-full table-fixed text-left text-sm">
+        <table className="w-full min-w-[400px] text-left text-sm">
           <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="px-4 py-3 font-medium">S No.</th>
@@ -368,7 +368,7 @@ export function DoshasSection({
         <SectionHeader title="Dosha Master" />
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-        <table className="w-full min-w-[720px] table-fixed text-left text-sm">
+        <table className="w-full min-w-[720px] text-left text-sm">
           <thead className='sticky top-0 z-10 bg-white'>
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="w-16 px-4 py-3 font-medium">S No.</th>

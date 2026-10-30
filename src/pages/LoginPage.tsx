@@ -1,48 +1,42 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { BrandHeader } from '@/components/auth/BrandHeader';
 import { DoshaDiagram } from '@/components/auth/DoshaDiagram';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { Tabs } from '@/components/ui/Tabs';
-import { getPublicTenants, forgotPassword, login, type PublicTenantDto } from '@/lib/api/auth';
+import { forgotPassword, login } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 import {
   DUMMY_LOGIN_CREDENTIALS,
   mapAuthTokenToSession,
   setAuthSession,
 } from '@/lib/auth';
-import {
-  CLINIC_LOCATIONS,
-  setStoredClinicLocation,
-} from '@/lib/clinicLocations';
+import { CLINIC_LOCATIONS, setStoredClinicLocation } from '@/lib/clinicLocations';
 import {
   loginSchema,
   type LoginFormValues,
   type LoginMode,
 } from '@/lib/validation/login.schema';
-
-const LOGIN_TABS: { id: LoginMode; label: string }[] = [
-  { id: 'superAdmin', label: 'System Admin' },
-  { id: 'all', label: 'Users' },
-];
+import { Select } from '@/components/ui/Select';
+import { getPublicTenants, type PublicTenantDto } from '@/lib/api/auth';
+const PLATFORM_LOGIN_PATH = '/platform/login';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const notice =
     (location.state as { notice?: string } | null)?.notice ?? null;
-  const [loginMode, setLoginMode] = useState<LoginMode>('all');
+  const isPlatformLogin = location.pathname === PLATFORM_LOGIN_PATH;
+  const loginMode: LoginMode = isPlatformLogin ? 'superAdmin' : 'all';
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [tenants, setTenants] = useState<PublicTenantDto[]>([]);
-  const [tenantsLoading, setTenantsLoading] = useState(true);
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotNotice, setForgotNotice] = useState<string | null>(null);
-
+  const [forgotTenantCode, setForgotTenantCode] = useState('');
+  const [tenantsLoading, setTenantsLoading] = useState(true);
+  const [tenants, setTenants] = useState<PublicTenantDto[]>([]);
   const {
     register,
     handleSubmit,
@@ -53,7 +47,6 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
     defaultValues: {
       mode: 'all',
-      tenantCode: DUMMY_LOGIN_CREDENTIALS.tenantCode,
       emailOrUsername: DUMMY_LOGIN_CREDENTIALS.emailOrUsername,
       password: DUMMY_LOGIN_CREDENTIALS.password,
       locationId: CLINIC_LOCATIONS[0].value,
@@ -62,7 +55,6 @@ export function LoginPage() {
 
   const selectedTenantCode = watch('tenantCode');
   const showClinicSelect = loginMode === 'all' && tenants.length > 1;
-
   useEffect(() => {
     setValue('mode', loginMode);
     setSubmitError(null);
@@ -83,8 +75,8 @@ export function LoginPage() {
           setValue(
             'locationId',
             preferred.city?.trim() ||
-              preferred.state?.trim() ||
-              preferred.tenantCode,
+            preferred.state?.trim() ||
+            preferred.tenantCode,
           );
         }
       })
@@ -98,16 +90,6 @@ export function LoginPage() {
       active = false;
     };
   }, [setValue]);
-
-  useEffect(() => {
-    if (loginMode !== 'all' || !selectedTenantCode) return;
-    const match = tenants.find((t) => t.tenantCode === selectedTenantCode);
-    if (!match) return;
-    setValue(
-      'locationId',
-      match.city?.trim() || match.state?.trim() || match.tenantCode,
-    );
-  }, [loginMode, selectedTenantCode, tenants, setValue]);
 
   const hospitalOptions = useMemo(() => {
     if (tenants.length === 0) {
@@ -133,10 +115,9 @@ export function LoginPage() {
     setForgotNotice(null);
     const usernameOrEmail = values.emailOrUsername.trim();
     const isHospitalLogin = values.mode === 'all';
-    const tenantCode = isHospitalLogin
+ const tenantCode = isHospitalLogin
       ? values.tenantCode?.trim() || undefined
       : undefined;
-
     try {
       const response = await login({
         tenantCode,
@@ -145,8 +126,11 @@ export function LoginPage() {
       });
       const session = mapAuthTokenToSession(response);
       setAuthSession(session.token, session.user, session.tenant);
-      if (isHospitalLogin && values.locationId) {
-        setStoredClinicLocation(values.locationId);
+      if (isHospitalLogin) {
+        const tenant = response.tenant;
+        const clinicLocation =
+          tenant?.city?.trim() || tenant?.state?.trim() || tenant?.tenantCode;
+        if (clinicLocation) setStoredClinicLocation(clinicLocation);
       }
       navigate('/dashboard');
     } catch (error) {
@@ -162,18 +146,20 @@ export function LoginPage() {
     setSubmitError(null);
     setForgotNotice(null);
     const email = watch('emailOrUsername')?.trim();
+    const clinicCode = forgotTenantCode.trim();
     if (!email) {
       setSubmitError('Enter your email address first.');
+      return;
+    }
+    if (loginMode === 'all' && !clinicCode) {
+      setSubmitError('Enter your clinic code to reset your password.');
       return;
     }
     setForgotBusy(true);
     try {
       await forgotPassword({
         usernameOrEmail: email,
-        tenantCode:
-          loginMode === 'all'
-            ? watch('tenantCode')?.trim() || undefined
-            : undefined,
+        tenantCode: loginMode === 'all' ? clinicCode : undefined,
       });
       setForgotNotice(
         'If an account exists for that email, a reset link has been sent.',
@@ -207,34 +193,8 @@ export function LoginPage() {
           ) : null}
         </div>
 
-        <Tabs
-          variant="switch"
-          tabs={LOGIN_TABS}
-          activeTab={loginMode}
-          onChange={setLoginMode}
-          className="mb-4"
-        />
-
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
           <input type="hidden" {...register('mode')} />
-          <input type="hidden" {...register('locationId')} />
-          {loginMode === 'all' && !showClinicSelect ? (
-            <input type="hidden" {...register('tenantCode')} />
-          ) : null}
-
-          {showClinicSelect ? (
-            <Select
-              fieldVariant="auth"
-              label="Location"
-              placeholder={
-                tenantsLoading ? 'Loading clinics…' : 'Select clinic'
-              }
-              options={hospitalOptions}
-              error={errors.tenantCode?.message}
-              disabled={tenantsLoading && tenants.length === 0}
-              {...register('tenantCode')}
-            />
-          ) : null}
 
           <Input
             fieldVariant="auth"
@@ -245,14 +205,38 @@ export function LoginPage() {
             }
             placeholder={
               loginMode === 'superAdmin'
-                ? 'superadmin@gmail.com'
+                ? 'Enter your email address'
                 : 'Enter your username or email address'
             }
             error={errors.emailOrUsername?.message}
             {...register('emailOrUsername')}
           />
 
-          <div>
+          <div className="space-y-3.5">
+            {/* {loginMode === 'all' ? (
+              <Input
+                fieldVariant="auth"
+                name="forgotClinicCode"
+                label="Clinic code"
+                placeholder="e.g. PRO-KA"
+                value={forgotTenantCode}
+                onChange={(e) => setForgotTenantCode(e.target.value)}
+                autoComplete="organization"
+              />
+            ) : null} */}
+
+              <Select
+                fieldVariant="auth"
+                label="Location"
+                placeholder={
+                  tenantsLoading ? 'Loading clinics…' : 'Select clinic'
+                }
+                options={hospitalOptions}
+                error={errors.tenantCode?.message}
+                disabled={tenantsLoading && tenants.length === 0}
+                {...register('tenantCode')}
+              />
+
             <Input
               fieldVariant="auth"
               label="Password"
@@ -261,7 +245,7 @@ export function LoginPage() {
               error={errors.password?.message}
               {...register('password')}
             />
-            <div className="mt-2 text-right">
+            <div className="-mt-1.5 text-right">
               <button
                 type="button"
                 disabled={forgotBusy}
@@ -294,16 +278,6 @@ export function LoginPage() {
             Login
           </Button>
         </form>
-
-        <p className="mt-4 text-center font-sans text-[13px] text-text-muted">
-          Don&apos;t have an account?{' '}
-          <Link
-            to="/signup"
-            className="font-semibold text-[#BE880B] hover:underline"
-          >
-            Sign Up
-          </Link>
-        </p>
       </div>
     </AuthLayout>
   );

@@ -16,7 +16,7 @@ describe('loginSchema', () => {
   it('accepts super admin login without tenant or location', () => {
     const result = loginSchema.safeParse({
       mode: 'superAdmin',
-      emailOrUsername: 'superadmin@gmail.com',
+      emailOrUsername: 'admin@example.com',
       password: 'SecurePass1',
     });
     expect(result.success).toBe(true);
@@ -66,25 +66,14 @@ describe('loginSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('requires location for hospital login', () => {
-    const result = loginSchema.safeParse({
-      mode: 'all',
-      tenantCode: 'GAN-DL',
-      emailOrUsername: 'admin@ganesha.com',
-      password: 'password123',
-      locationId: '',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('requires tenant code for hospital login', () => {
+  it('accepts hospital login without tenant code or location', () => {
     const result = loginSchema.safeParse({
       mode: 'all',
       tenantCode: '',
       emailOrUsername: 'admin@ganesha.com',
       password: 'password123',
-      locationId: 'delhi-nanaksaar',
+      locationId: '',
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 });

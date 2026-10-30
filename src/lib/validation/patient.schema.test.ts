@@ -12,13 +12,19 @@ const masters = [
   { id: 'ct-category', name: 'CATEGORY' },
 ];
 
+const futureIsoDate = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+})();
+
 const validStep1 = {
   fullName: 'Khushi Shroff',
   gender: 'Female',
   dateOfBirth: '1995-05-15',
   mobileNumber: '9876543210',
   consultationTypeIds: ['ct-consultation'],
-  registrationDate: '2026-10-20',
+  registrationDate: futureIsoDate,
   assignedDoctor: 'doc-1',
 };
 
@@ -121,7 +127,7 @@ describe('followUpSchema', () => {
       assignedDoctorId: 'doc-1',
       visitTypeId: 'ct-consultation',
       schedulingOption: 'AFTER_7_DAYS',
-      scheduleDate: '2026-10-20',
+      scheduleDate: futureIsoDate,
       scheduleTime: '10:30',
     });
     expect(result.success).toBe(true);

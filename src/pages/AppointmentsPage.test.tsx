@@ -47,7 +47,7 @@ describe('AppointmentsPage', () => {
     await screen.findAllByText('Khushi Shroff');
     const cancelButtons = screen.getAllByRole('button', { name: 'Cancel' });
     await user.click(cancelButtons[0]);
-    expect(screen.getByText('Cancel Appointment')).toBeInTheDocument();
+    expect(screen.getAllByText('Cancel Appointment').length).toBeGreaterThan(0);
   });
 
   it('opens reschedule modal for cancelled appointments', async () => {

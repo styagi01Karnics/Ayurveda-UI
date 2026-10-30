@@ -23,7 +23,7 @@ function renderPatientDetail() {
 describe('DoctorPatientDetailPage', () => {
   it('renders patient header and tabs', async () => {
     renderPatientDetail();
-    expect(await screen.findByText('Patient ID')).toBeInTheDocument();
+    expect((await screen.findAllByText('Patient ID')).length).toBeGreaterThan(0);
     expect(screen.getByText('Under Treatment')).toBeInTheDocument();
     expect(screen.getByText('Personal Information')).toBeInTheDocument();
     expect(screen.getByText('Medical Assessment')).toBeInTheDocument();

@@ -66,7 +66,7 @@ export function DoctorAvailabilityFields({
             );
           })}
         </div>
-        <div className="flex items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2">
           <div className="w-[138px] shrink-0">
             <Input
               label="From"

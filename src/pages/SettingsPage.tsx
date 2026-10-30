@@ -48,7 +48,7 @@ export function SettingsPage() {
       <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#eadfc8]">
         <nav
-          className="grid min-w-0 flex-1 grid-cols-2 sm:grid-cols-4"
+          className="flex w-full min-w-0 gap-6 overflow-x-auto whitespace-nowrap sm:flex-1 sm:grid sm:w-auto sm:grid-cols-4 sm:gap-0"
           aria-label="Settings sections"
         >
           {SETTINGS_TABS.map((tab) => {

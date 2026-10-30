@@ -91,7 +91,7 @@ export function BootstrapSuperAdminPage() {
             fieldVariant="auth"
             label="Email"
             type="email"
-            placeholder="superadmin@gmail.com"
+            placeholder="Enter super admin email"
             error={errors.email?.message}
             {...register('email')}
           />

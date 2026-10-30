@@ -3,7 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { BillInvoiceModal } from '@/components/patients/BillInvoiceModal';
-import { BillingTable } from '@/components/billing/BillingTable';
+import {
+  BillingTable,
+  canSendPaymentLink,
+} from '@/components/billing/BillingTable';
+import {
+  PaymentLinkConfirmModal,
+} from '@/components/billing/PaymentLinkConfirmModal';
 import {
   PaymentSuccessModal,
   type PaymentSuccessDetails,
@@ -32,11 +38,31 @@ import {
 } from '@/lib/api/mappers';
 import { ApiError } from '@/lib/api/client';
 import { getAllPatients, getPatientById } from '@/lib/api/patients';
-import { sendInvoicePaymentLink } from '@/lib/api/payments';
+import {
+  latestPaymentLinkByInvoice,
+  listAllPaymentLinks,
+  sendInvoicePaymentLink,
+  type PaymentLinkDto,
+} from '@/lib/api/payments';
 import { formatPatientCode } from '@/lib/displayCodes';
 import type { BillingRecord } from '@/types';
 
 type BillingTab = 'invoices' | 'pending';
+type LinkFilter = 'all' | 'send' | 'cannot';
+
+interface PendingPaymentLink {
+  invoiceId: string;
+  invoiceRef: string;
+  /** Left balance; the maximum that can be requested. */
+  balance: number;
+  /** Raw amount typed in the confirm modal. */
+  amountInput: string;
+  firstName: string;
+  email: string;
+  phone: string;
+  senderName: string;
+  patientId: string;
+}
 
 function toApiInvoiceStatus(status: string): InvoiceStatus | undefined {
   if (!status) return undefined;
@@ -54,12 +80,16 @@ export function BillingPage() {
   const [activeTab, setActiveTab] = useState<BillingTab>('invoices');
   const [patientIdQuery, setPatientIdQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [linkFilter, setLinkFilter] = useState<LinkFilter>('all');
   const [billInvoiceId, setBillInvoiceId] = useState<string | null>(null);
   const [sendingPaymentLinkId, setSendingPaymentLinkId] = useState<
     string | null
   >(null);
   const [paymentLinkDetails, setPaymentLinkDetails] =
     useState<PaymentSuccessDetails | null>(null);
+  const [pendingPaymentLink, setPendingPaymentLink] =
+    useState<PendingPaymentLink | null>(null);
+  const [confirmingPaymentLink, setConfirmingPaymentLink] = useState(false);
 
   const { data: records, loading, error, reload } = useAsyncData(
     async () => {
@@ -96,6 +126,17 @@ export function BillingPage() {
     [activeTab, statusFilter],
   );
 
+  const { data: paymentLinks, reload: reloadPaymentLinks } = useAsyncData(
+    () => listAllPaymentLinks().catch(() => [] as PaymentLinkDto[]),
+    [] as PaymentLinkDto[],
+    [],
+  );
+
+  const linkByInvoice = useMemo(
+    () => latestPaymentLinkByInvoice(paymentLinks),
+    [paymentLinks],
+  );
+
   const headerAction = useMemo(
     () => (
       <Button
@@ -119,9 +160,16 @@ export function BillingPage() {
           .includes(patientIdQuery.toLowerCase());
       const matchesStatus =
         activeTab === 'pending' || !statusFilter || item.status === statusFilter;
-      return matchesId && matchesStatus;
+      const hasLink = linkByInvoice.has(item.id);
+      const matchesLink =
+        activeTab === 'pending' ||
+        linkFilter === 'all' ||
+        (linkFilter === 'send'
+          ? hasLink
+          : canSendPaymentLink(item) && !hasLink);
+      return matchesId && matchesStatus && matchesLink;
     });
-  }, [records, patientIdQuery, statusFilter, activeTab]);
+  }, [records, patientIdQuery, statusFilter, linkFilter, activeTab, linkByInvoice]);
 
   const {
     page,
@@ -188,35 +236,77 @@ export function BillingPage() {
         return;
       }
 
-      const result = await sendInvoicePaymentLink({
+      setPendingPaymentLink({
         invoiceId: invoice.id,
-        amount: due,
+        invoiceRef: invoice.invoiceNumber || invoice.invoiceId || record.invoiceId,
+        balance: due,
+        amountInput: String(due),
         firstName,
         email,
         phone: phone.slice(-10),
+        senderName: invoice.patientName || patient?.fullName || 'Patient',
+        patientId: record.patientId,
+      });
+    } catch (err) {
+      showToast({
+        title: 'Could not send link',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Payment link request failed.',
+      });
+    } finally {
+      setSendingPaymentLinkId(null);
+    }
+  };
+
+  const handleConfirmPaymentLink = async () => {
+    const pending = pendingPaymentLink;
+    if (!pending) return;
+    const amount = Number(pending.amountInput);
+    if (
+      !Number.isFinite(amount) ||
+      amount <= 0 ||
+      amount > pending.balance
+    ) {
+      showToast({
+        title: 'Invalid amount',
+        message: 'Enter an amount between 1 and the remaining balance.',
+      });
+      return;
+    }
+    setConfirmingPaymentLink(true);
+    try {
+      const result = await sendInvoicePaymentLink({
+        invoiceId: pending.invoiceId,
+        amount,
+        firstName: pending.firstName,
+        email: pending.email,
+        phone: pending.phone,
         sendEmail: true,
         upiQr: false,
       });
 
+      setPendingPaymentLink(null);
+      void reloadPaymentLinks();
       setPaymentLinkDetails({
-        amount: result.link.amount ?? due,
-        refNumber:
-          invoice.invoiceNumber || invoice.invoiceId || record.invoiceId,
+        variant: 'link',
+        amount: result.link.amount ?? amount,
+        refNumber: pending.invoiceRef,
         paymentTime: new Date().toLocaleString('en-IN'),
         paymentMethod: 'Online',
-        senderName: invoice.patientName || patient?.fullName || 'Patient',
+        senderName: pending.senderName,
         payUrl: result.payUrl,
-        recipientEmail: result.link.email || email,
+        recipientEmail: result.link.email || pending.email,
         emailSent: result.emailSent,
-        title: result.resent
-          ? 'Payment link resent'
-          : result.emailSent
-            ? 'Payment link emailed'
-            : 'Payment link created',
+        title: 'Payment Link Sent',
       });
 
       showToast({
         title: result.resent ? 'Link resent' : 'Payment link',
+        dismissible: false,
         message: result.emailSent
           ? 'Payment link emailed to the patient. Open or copy it from the dialog.'
           : result.payUrl
@@ -234,7 +324,7 @@ export function BillingPage() {
               : 'Payment link request failed.',
       });
     } finally {
-      setSendingPaymentLinkId(null);
+      setConfirmingPaymentLink(false);
     }
   };
 
@@ -243,25 +333,39 @@ export function BillingPage() {
       <ListPanel
         actions={headerAction}
         tabs={
-          <UnderlineTabs
-            variant="pill"
-            tabs={[
-              { id: 'invoices' as const, label: 'Invoices' },
-              { id: 'pending' as const, label: 'Pending' },
-            ]}
-            activeTab={activeTab}
-            onChange={(tab) => {
-              setActiveTab(tab);
-              setStatusFilter('');
-            }}
-            className="border-none"
-          />
+          <div className="flex flex-col gap-3">
+            <UnderlineTabs
+              variant="pill"
+              tabs={[
+                { id: 'invoices' as const, label: 'Invoice Generated' },
+                { id: 'pending' as const, label: 'Invoice Pending' },
+              ]}
+              activeTab={activeTab}
+              onChange={(tab) => {
+                setActiveTab(tab);
+                setStatusFilter('');
+                setLinkFilter('all');
+              }}
+              className="border-none"
+            />
+            {activeTab === 'invoices' ? (
+              <UnderlineTabs
+                tabs={[
+                  { id: 'all' as const, label: 'All' },
+                  { id: 'send' as const, label: 'Send Payment Link' },
+                  { id: 'cannot' as const, label: "Can't Send Payment Link" },
+                ]}
+                activeTab={linkFilter}
+                onChange={setLinkFilter}
+              />
+            ) : null}
+          </div>
         }
         filters={
           <>
             <FilterControl>
               <SearchField
-                placeholder="Patient Code"
+                placeholder="Patient ID"
                 value={patientIdQuery}
                 onChange={(e) => setPatientIdQuery(e.target.value)}
               />
@@ -295,6 +399,7 @@ export function BillingPage() {
             onStartInvoice={handleStartInvoice}
             onSendPaymentLink={(record) => void handleSendPaymentLink(record)}
             sendingPaymentLinkId={sendingPaymentLinkId}
+            linkByInvoice={linkByInvoice}
           />
           <Pagination
             page={page}
@@ -311,6 +416,30 @@ export function BillingPage() {
         open={Boolean(billInvoiceId)}
         invoiceId={billInvoiceId}
         onClose={() => setBillInvoiceId(null)}
+      />
+
+      <PaymentLinkConfirmModal
+        open={Boolean(pendingPaymentLink)}
+        submitting={confirmingPaymentLink}
+        maxAmount={pendingPaymentLink?.balance ?? 0}
+        amountInput={pendingPaymentLink?.amountInput ?? ''}
+        onAmountChange={(value) =>
+          setPendingPaymentLink((prev) =>
+            prev ? { ...prev, amountInput: value } : prev,
+          )
+        }
+        details={
+          pendingPaymentLink
+            ? {
+                patientName: pendingPaymentLink.senderName,
+                patientId: pendingPaymentLink.patientId,
+                phone: `+91 ${pendingPaymentLink.phone}`,
+                email: pendingPaymentLink.email,
+              }
+            : null
+        }
+        onCancel={() => setPendingPaymentLink(null)}
+        onConfirm={() => void handleConfirmPaymentLink()}
       />
 
       <PaymentSuccessModal

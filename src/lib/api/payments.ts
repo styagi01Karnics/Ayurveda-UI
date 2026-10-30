@@ -1,5 +1,5 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList, ApiError } from './client';
+import { apiRequest, apiRequestList, apiRequestPage, ApiError } from './client';
 import { apiEndpoints } from './endpoints';
 
 const url = (path: string) => `${apiConfig.payment}${path}`;
@@ -138,6 +138,38 @@ export async function getPaymentLinksByInvoice(invoiceId: string) {
   }
 }
 
+const LINK_PAGE_SIZE = 100;
+const LINK_MAX_PAGES = 20;
+
+/**
+ * GET /api/v1/payments/links — all payment links, newest first.
+ * Pages through the list (capped) so billing can show status per invoice.
+ */
+export async function listAllPaymentLinks(): Promise<PaymentLinkDto[]> {
+  const rows: PaymentLinkDto[] = [];
+  for (let page = 0; page < LINK_MAX_PAGES; page += 1) {
+    const result = await apiRequestPage<PaymentLinkDto>(
+      `${url(ep.links)}?page=${page}&size=${LINK_PAGE_SIZE}`,
+    );
+    rows.push(...result.content);
+    if (page + 1 >= result.totalPages || result.content.length === 0) break;
+  }
+  return rows;
+}
+
+/** Latest link per invoice id. Relies on the API's newest-first ordering. */
+export function latestPaymentLinkByInvoice(
+  links: PaymentLinkDto[],
+): Map<string, PaymentLinkDto> {
+  const map = new Map<string, PaymentLinkDto>();
+  for (const link of links) {
+    if (link.invoiceId && !map.has(link.invoiceId)) {
+      map.set(link.invoiceId, link);
+    }
+  }
+  return map;
+}
+
 export function getPaymentLinkById(id: string) {
   return apiRequest<PaymentLinkDto>(url(ep.linkById(id)));
 }
@@ -177,8 +209,8 @@ export async function sendInvoicePaymentLink(
     () => [] as PaymentLinkDto[],
   );
   const openLink = existing.find((row) => {
-    const status = String(row.status ?? 'OPEN').toUpperCase();
-    return Boolean(row.id) && (status === 'OPEN' || status === '');
+    const status = String(row.status ?? 'SHARED').toUpperCase();
+    return Boolean(row.id) && (status === 'SHARED' || status === 'OPEN');
   });
 
   if (openLink?.id) {

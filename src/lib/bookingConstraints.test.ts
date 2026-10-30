@@ -15,10 +15,14 @@ describe('bookingConstraints', () => {
   });
 
   it('rejects dates before today', () => {
-    const today = getTodayIsoDate(new Date('2026-08-17T12:00:00'));
-    expect(isBookingDateOnOrAfterToday('2026-08-16')).toBe(false);
-    expect(isBookingDateOnOrAfterToday(today)).toBe(true);
-    expect(isBookingDateOnOrAfterToday('2026-08-18')).toBe(true);
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    expect(isBookingDateOnOrAfterToday(getTodayIsoDate(yesterday))).toBe(false);
+    expect(isBookingDateOnOrAfterToday(getTodayIsoDate(now))).toBe(true);
+    expect(isBookingDateOnOrAfterToday(getTodayIsoDate(tomorrow))).toBe(true);
   });
 
   it('allows booking times only between 10:00 and 19:00', () => {
