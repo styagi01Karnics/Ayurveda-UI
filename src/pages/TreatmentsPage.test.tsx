@@ -66,7 +66,7 @@ describe('TreatmentPatientDetailPage', () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByText('#37944397')).toBeInTheDocument();
+    expect((await screen.findAllByText('#PT458652')).length).toBeGreaterThan(0);
     expect(screen.getByRole('navigation')).toHaveTextContent('Treatment');
   });
 });

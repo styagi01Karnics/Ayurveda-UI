@@ -40,9 +40,12 @@ describe('DoctorsPage', () => {
     const user = userEvent.setup();
     renderDoctors();
     await screen.findAllByText('Khushi Shroff');
-    const selects = screen.getAllByRole('combobox');
+    const selects = document.querySelectorAll('select');
     await user.selectOptions(selects[1], 'Therapy');
-    expect(screen.queryByText('Consultation')).not.toBeInTheDocument();
+    expect(selects[1]).toHaveValue('Therapy');
+    expect(
+      screen.queryAllByText('Consultation').filter((el) => el.tagName !== 'OPTION'),
+    ).toHaveLength(0);
   });
 
   it('navigates to patient detail when Start is clicked', async () => {
@@ -51,6 +54,8 @@ describe('DoctorsPage', () => {
     await screen.findAllByText('Khushi Shroff');
     const startButtons = screen.getAllByRole('button', { name: 'Start' });
     await user.click(startButtons[0]);
-    expect(mockNavigate).toHaveBeenCalledWith('/doctors/patient/37944397');
+    expect(mockNavigate).toHaveBeenCalledWith(
+      expect.stringMatching(/^\/doctors\/patient\/37944397\?bookingId=/),
+    );
   });
 });

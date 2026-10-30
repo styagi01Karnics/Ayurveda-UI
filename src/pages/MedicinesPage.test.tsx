@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { PageActionContext } from '@/app/PageActionContext';
-import { ToastProvider } from '@/app/ToastContext';
+import { ToastProvider, ToastViewport } from '@/app/ToastContext';
 import { MedicinesPage } from '@/pages/MedicinesPage';
 
 function renderMedicines() {
@@ -48,13 +48,15 @@ describe('BillingPage', () => {
     const { BillingPage } = await import('@/pages/BillingPage');
     render(
       <MemoryRouter>
-        <PageActionContext.Provider value={{ setHeaderAction: () => {} }}>
-          <BillingPage />
-        </PageActionContext.Provider>
+        <ToastProvider>
+          <PageActionContext.Provider value={{ setHeaderAction: () => {} }}>
+            <BillingPage />
+          </PageActionContext.Provider>
+        </ToastProvider>
       </MemoryRouter>,
     );
-    expect((await screen.findAllByText('INV-1024')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('#PT458652')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Completed')).length).toBeGreaterThan(0);
   });
 });
 
@@ -69,30 +71,24 @@ describe('GenerateInvoicePage', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { name: 'Generate Invoice' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Service Type' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Medicine' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Therapy' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Summary' })).toBeInTheDocument();
+    expect(screen.getByText('Invoice Type')).toBeInTheDocument();
+    expect(screen.getByText('Patient Details')).toBeInTheDocument();
   });
 
-  it('requires patient details before leaving the first tab', async () => {
+  it('requires patient details before continuing to payment', async () => {
     const user = userEvent.setup();
     const { GenerateInvoicePage } = await import('@/pages/GenerateInvoicePage');
     render(
       <MemoryRouter>
         <ToastProvider>
           <GenerateInvoicePage />
+          <ToastViewport />
         </ToastProvider>
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Next' }));
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
-    expect(screen.queryByText('+ Add More Medicine')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Continue to Payment' }));
     expect(await screen.findByText('Patient details required')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Therapy' }));
-    expect(screen.queryByText('Therapy Treatment')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 });
+
