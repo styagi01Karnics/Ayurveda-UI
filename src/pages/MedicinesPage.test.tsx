@@ -56,7 +56,9 @@ describe('BillingPage', () => {
       </MemoryRouter>,
     );
     expect((await screen.findAllByText('#PT458652')).length).toBeGreaterThan(0);
-    expect((await screen.findAllByText('Completed')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('INV-1024')).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Invoice Generated' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Invoice Pending' })).toBeInTheDocument();
   });
 });
 

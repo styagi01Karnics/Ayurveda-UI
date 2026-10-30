@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { X } from 'lucide-react';
 import { assets } from '@/lib/assets';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +11,8 @@ interface SuccessDialogProps {
   children?: ReactNode;
   halo?: boolean;
   className?: string;
+  /** Shows a ✕ button in the top-right corner. */
+  showCloseButton?: boolean;
 }
 
 export function SuccessDialog({
@@ -20,6 +23,7 @@ export function SuccessDialog({
   children,
   halo = false,
   className,
+  showCloseButton = false,
 }: SuccessDialogProps) {
   if (!open) return null;
 
@@ -40,6 +44,16 @@ export function SuccessDialog({
         aria-modal="true"
         aria-labelledby="success-dialog-title"
       >
+        {showCloseButton ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-md p-1 text-[#838A9A] hover:bg-[#F5F0E4] hover:text-[#422C23]"
+            aria-label="Close"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        ) : null}
         <div
           className={cn(
             'mx-auto flex items-center justify-center',
