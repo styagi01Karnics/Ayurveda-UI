@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import {  useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/Input';
 import { RupeeInput } from '@/components/ui/RupeeInput';
 import { Select } from '@/components/ui/Select';
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
-import { DoctorAvailabilityFields } from '@/components/settings/DoctorAvailabilityFields';
 import {
   ConsultationTypesSection,
   DoshasSection,
@@ -40,10 +39,8 @@ import {
   getAllTreatmentPlanMasters,
 } from '@/lib/api/treatmentPlanMasters';
 import {
-  createDoctor,
   deleteDoctor,
   getAllDoctors,
-  updateDoctorStatus,
 } from '@/lib/api/doctors';
 import {
   mapDoctorToClinicRecord,
@@ -61,7 +58,6 @@ import {
 import {
   CLINIC_STATUS_OPTIONS,
   clinicCategorySchema,
-  clinicDoctorSchema,
   clinicTherapistSchema,
   clinicTherapySchema,
   type ClinicCategoryFormValues,
@@ -70,7 +66,6 @@ import {
   type ClinicTherapyFormValues,
 } from '@/lib/validation/settings.schema';
 import { cn, formatCurrency } from '@/lib/utils';
-import { formatDoctorAvailability } from '@/lib/doctorAvailability';
 import type { TherapistDto, TherapyDto, TreatmentCategoryDto } from '@/lib/api/types';
 import type {
   ClinicConsultationTypeRecord,
@@ -188,7 +183,7 @@ async function loadClinicSettings(): Promise<ClinicSettingsData> {
   };
 }
 
-function StatusToggle({
+export function StatusToggle({
   status,
   onToggle,
   disabled,
@@ -222,7 +217,7 @@ export function ClinicSettingsTab() {
     EMPTY_CLINIC_SETTINGS,
   );
 
-  const { doctors, therapies, therapists } = data;
+  const { therapies, therapists } = data;
 
   const refreshDoctors = async () => {
     const doctorsList = await getAllDoctors();
@@ -337,20 +332,20 @@ export function ClinicSettingsTab() {
     }
   };
 
-  const handleToggleDoctorStatus = async (doctor: ClinicDoctorRecord) => {
-    setTogglingId(doctor.id);
-    try {
-      await updateDoctorStatus(doctor.id, nextStatus(doctor.status));
-      await refreshDoctors();
-    } catch (err) {
-      showToast({
-        title: 'Failed to update doctor status',
-        message: err instanceof ApiError ? err.message : 'Could not update status.',
-      });
-    } finally {
-      setTogglingId(null);
-    }
-  };
+  // const handleToggleDoctorStatus = async (doctor: ClinicDoctorRecord) => {
+  //   setTogglingId(doctor.id);
+  //   try {
+  //     await updateDoctorStatus(doctor.id, nextStatus(doctor.status));
+  //     await refreshDoctors();
+  //   } catch (err) {
+  //     showToast({
+  //       title: 'Failed to update doctor status',
+  //       message: err instanceof ApiError ? err.message : 'Could not update status.',
+  //     });
+  //   } finally {
+  //     setTogglingId(null);
+  //   }
+  // };
 
   const handleToggleTherapyStatus = async (therapy: ClinicTherapyRecord) => {
     setTogglingId(therapy.id);
@@ -410,44 +405,6 @@ export function ClinicSettingsTab() {
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Category', record })}
-        />
-
-        <DoctorsSection
-          doctors={doctors}
-          togglingId={togglingId}
-          onToggleStatus={handleToggleDoctorStatus}
-          onAdd={async (values) => {
-            try {
-              await createDoctor({
-                name: values.name,
-                specialization: values.specialization,
-                status: toApiStatus(values.status),
-                consultationFees: Number(values.consultationFees),
-                followUpFees: Number(values.followUpFees),
-                availability: formatDoctorAvailability(
-                  values.availabilityDays,
-                  values.availabilityStartTime,
-                  values.availabilityEndTime,
-                ),
-                mobileNumber: values.mobileNumber,
-                qualification: values.qualification ?? '',
-              });
-              await refreshDoctors();
-              showToast({
-                title: 'Doctor Added',
-                message: `${values.name} has been added successfully.`,
-              });
-            } catch (err) {
-              showToast({
-                title: 'Failed to add doctor',
-                message:
-                  err instanceof ApiError
-                    ? err.message
-                    : 'Could not create doctor.',
-              });
-            }
-          }}
-          onDelete={(record) => setDeleteTarget({ type: 'Doctor', record })}
         />
 
         <TherapySection
@@ -644,7 +601,7 @@ export function ClinicSettingsTab() {
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
+export function SectionHeader({ title }: { title: string }) {
   return (
     <h3 className="font-sans text-base font-semibold leading-tight tracking-normal text-[#422C23]">
       {title}
@@ -687,7 +644,7 @@ export function SettingsActionButton({
   );
 }
 
-function SettingsTableHead({ columns }: { columns: string[] }) {
+export function SettingsTableHead({ columns }: { columns: string[] }) {
   return (
     <tr className="border-b border-[#EFF0F6] text-[12px] font-medium text-[#838A9A]">
       {columns.map((column) => (
@@ -770,239 +727,6 @@ function TreatmentCategoriesSection({
                     label={`Delete ${category.name}`}
                     variant="delete"
                     onClick={() => onDelete(category)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
-}
-
-const EMPTY_DOCTOR_FORM: ClinicDoctorFormValues = {
-  name: '',
-  specialization: '',
-  qualification: '',
-  mobileNumber: '',
-  status: 'Active',
-  consultationFees: '',
-  followUpFees: '',
-  availabilityDays: ['weekdays'],
-  availabilityStartTime: '09:00',
-  availabilityEndTime: '17:00',
-};
-
-function DoctorsSection({
-  doctors,
-  togglingId,
-  onToggleStatus,
-  onAdd,
-  onDelete,
-}: {
-  doctors: ClinicDoctorRecord[];
-  togglingId: string | null;
-  onToggleStatus: (record: ClinicDoctorRecord) => void | Promise<void>;
-  onAdd: (values: ClinicDoctorFormValues) => void | Promise<void>;
-  onDelete: (record: ClinicDoctorRecord) => void;
-}) {
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<ClinicDoctorFormValues>({
-    resolver: zodResolver(clinicDoctorSchema),
-    defaultValues: EMPTY_DOCTOR_FORM,
-  });
-
-  const availabilityDays = watch('availabilityDays') ?? [];
-  const { showToast } = useToast();
-
-  const onSubmit = async (values: ClinicDoctorFormValues) => {
-    await onAdd(values);
-    reset(EMPTY_DOCTOR_FORM);
-  };
-
-  const onInvalid = () => {
-    showToast({
-      title: 'Cannot add doctor',
-      message:
-        'Please fill name, specialization, mobile, fees, and availability.',
-    });
-  };
-
-  return (
-    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
-      <div className="border-b border-[#EFF0F6] px-5 py-4">
-        <SectionHeader title="Doctors" />
-      </div>
-      <form
-        className="border-b border-[#EFF0F6] px-5 py-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void handleSubmit(onSubmit, onInvalid)();
-        }}
-      >
-        <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          <div className="min-w-0">
-            <Input
-              label="Name"
-              placeholder="Name"
-              error={errors.name?.message}
-              {...register('name')}
-            />
-          </div>
-          <div className="min-w-0">
-            <Input
-              label="Specialisation"
-              placeholder="Specialisation"
-              error={errors.specialization?.message}
-              {...register('specialization')}
-            />
-          </div>
-          <div className="min-w-0">
-            <Controller
-              name="qualification"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  label="Qualification"
-                  placeholder="Qualification"
-                  error={errors.qualification?.message}
-                  name={field.name}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  ref={field.ref}
-                />
-              )}
-            />
-          </div>
-          <div className="min-w-0">
-            <Controller
-              name="mobileNumber"
-              control={control}
-              render={({ field }) => (
-                <Input
-                  label="Mobile"
-                  placeholder="10-digit no."
-                  error={errors.mobileNumber?.message}
-                  name={field.name}
-                  value={field.value ?? ''}
-                  onChange={field.onChange}
-                  onBlur={field.onBlur}
-                  ref={field.ref}
-                />
-              )}
-            />
-          </div>
-          <div className="min-w-0">
-            <Select
-              label="Status"
-              placeholder="Status"
-              options={[...CLINIC_STATUS_OPTIONS]}
-              error={errors.status?.message}
-              {...register('status')}
-            />
-          </div>
-          <div className="min-w-0">
-            <RupeeInput
-              label="Consultation"
-              placeholder="0"
-              error={errors.consultationFees?.message}
-              {...register('consultationFees')}
-            />
-          </div>
-          <div className="min-w-0">
-            <RupeeInput
-              label="Follow up"
-              placeholder="0"
-              error={errors.followUpFees?.message}
-              {...register('followUpFees')}
-            />
-          </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <DoctorAvailabilityFields
-              selectedDays={availabilityDays}
-              onDaysChange={(days) =>
-                setValue('availabilityDays', days, { shouldValidate: true })
-              }
-              startTime={watch('availabilityStartTime') ?? '09:00'}
-              endTime={watch('availabilityEndTime') ?? '17:00'}
-              onStartTimeChange={(value) =>
-                setValue('availabilityStartTime', value, { shouldValidate: true })
-              }
-              onEndTimeChange={(value) =>
-                setValue('availabilityEndTime', value, { shouldValidate: true })
-              }
-              daysError={errors.availabilityDays?.message}
-              startTimeError={errors.availabilityStartTime?.message}
-              endTimeError={errors.availabilityEndTime?.message}
-            />
-          </div>
-          <SettingsActionButton
-            label="Add doctor"
-            disabled={isSubmitting}
-            onClick={() => void handleSubmit(onSubmit, onInvalid)()}
-          />
-        </div>
-      </form>
-      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-        <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
-            <SettingsTableHead
-              columns={[
-                'S No.',
-                'Name',
-                'Specialization',
-                'Qualification',
-                'Mobile',
-                'Status',
-                'Consultation Fees',
-                'Follow Up Fees',
-                'Availability',
-                'Action',
-              ]}
-            />
-          </thead>
-          <tbody>
-            {doctors.map((doctor, index) => (
-              <tr key={doctor.id} className="border-b border-[#EFF0F6]">
-                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-[#422C23]">{doctor.name}</td>
-                <td className="px-4 py-4 text-[#422C23]">{doctor.specialization}</td>
-                <td className="px-4 py-4 text-[#422C23]">
-                  {doctor.qualification || '—'}
-                </td>
-                <td className="px-4 py-4 text-[#422C23]">
-                  {doctor.mobileNumber || '—'}
-                </td>
-                <td className="px-4 py-4">
-                  <StatusToggle
-                    status={doctor.status}
-                    disabled={togglingId === doctor.id}
-                    onToggle={() => onToggleStatus(doctor)}
-                  />
-                </td>
-                <td className="px-4 py-4 text-[#422C23]">
-                  {formatCurrency(doctor.consultationFees)}
-                </td>
-                <td className="px-4 py-4 text-[#422C23]">
-                  {formatCurrency(doctor.followUpFees)}
-                </td>
-                <td className="px-4 py-4 text-[#422C23]">{doctor.availability || '—'}</td>
-                <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${doctor.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(doctor)}
                   />
                 </td>
               </tr>

@@ -489,7 +489,7 @@ export interface SignupFormData {
   confirmPassword: string;
 }
 
-export type SettingsTab = 'clinic' | 'users' | 'roles' | 'system';
+export type SettingsTab = 'clinic' | 'users' | 'roles' | 'docter' | 'therapist';
 
 export type ClinicStatus = 'Active' | 'Inactive';
 

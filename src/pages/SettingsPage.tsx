@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { ClinicSettingsTab } from '@/components/settings/ClinicSettingsTab';
 import { RoleManagementTab } from '@/components/settings/RoleManagementTab';
-import { SystemPreferenceTab } from '@/components/settings/SystemPreferenceTab';
 import { UserManagementTab } from '@/components/settings/UserManagementTab';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +10,8 @@ import { assets } from '@/lib/assets';
 import { SETTINGS_TABS } from '@/data/mock/settings';
 import { cn } from '@/lib/utils';
 import type { SettingsTab } from '@/types';
+import { DocterManagementTab } from '@/components/settings/DocterManagementTab';
+import { TherapistManagementTab } from '@/components/settings/TherapistManagementTab';
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('clinic');
@@ -47,36 +48,36 @@ export function SettingsPage() {
     <PageShell>
       <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#eadfc8]">
-        <nav
-          className="flex w-full min-w-0 gap-6 overflow-x-auto whitespace-nowrap sm:flex-1 sm:grid sm:w-auto sm:grid-cols-4 sm:gap-0"
-          aria-label="Settings sections"
-        >
-          {SETTINGS_TABS.map((tab) => {
-            const isCurrent = tab.id === activeTab;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id)}
-                aria-current={isCurrent ? 'page' : undefined}
-                className="flex justify-start"
-              >
-                <span
-                  className={cn(
-                    'relative pb-3 text-sm font-medium transition-colors',
-                    isCurrent ? 'text-gold' : 'text-brown',
-                  )}
+          <nav
+            className="flex w-full min-w-0 gap-6 whitespace-nowrap sm:flex-1 sm:grid sm:w-auto sm:grid-cols-5 sm:gap-0"
+            aria-label="Settings sections"
+          >
+            {SETTINGS_TABS.map((tab) => {
+              const isCurrent = tab.id === activeTab;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={isCurrent ? 'page' : undefined}
+                  className="flex justify-start"
                 >
-                  {tab.label}
-                  {isCurrent ? (
-                    <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gold" />
-                  ) : null}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-        {headerAction}
+                  <span
+                    className={cn(
+                      'relative pb-3 text-sm font-medium transition-colors',
+                      isCurrent ? 'text-gold' : 'text-brown',
+                    )}
+                  >
+                    {tab.label}
+                    {isCurrent ? (
+                      <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-gold" />
+                    ) : null}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+          {headerAction}
         </div>
 
         <div className="flex-1 pt-6">
@@ -93,7 +94,10 @@ export function SettingsPage() {
               onAddRoleClose={() => setAddRoleOpen(false)}
             />
           )}
-          {activeTab === 'system' && <SystemPreferenceTab />}
+          {activeTab === 'docter' && (
+            <DocterManagementTab />
+          )}
+          {activeTab === 'therapist' && <TherapistManagementTab />}
         </div>
       </Card>
     </PageShell>

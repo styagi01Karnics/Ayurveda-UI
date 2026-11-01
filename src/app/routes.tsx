@@ -27,6 +27,7 @@ import { TreatmentPatientDetailPage } from '@/pages/TreatmentPatientDetailPage';
 import { TreatmentsPage } from '@/pages/TreatmentsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { SignupPage } from '@/pages/SignupPage';
+import { SystemPreferenceTab } from '@/components/settings/SystemPreferenceTab';
 
 export function AppRoutes() {
   return (
@@ -54,7 +55,9 @@ export function AppRoutes() {
             />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/profile" element={<MyProfilePage />} />
+            <Route path="/setting" element={<SystemPreferenceTab />} />
             <Route path="/treatments" element={<TreatmentsPage />} />
+
             <Route
               path="/treatments/patient/:patientId"
               element={<TreatmentPatientDetailPage />}

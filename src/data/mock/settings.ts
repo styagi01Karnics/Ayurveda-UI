@@ -139,5 +139,6 @@ export const SETTINGS_TABS = [
   { id: 'clinic' as const, label: 'Clinic Settings' },
   { id: 'users' as const, label: 'User Management' },
   { id: 'roles' as const, label: 'Role Management' },
-  { id: 'system' as const, label: 'System Preference' },
+  { id: 'docter' as const, label: 'Docter Management' },
+  { id: 'therapist' as const, label: 'Therapist Management' },
 ];
