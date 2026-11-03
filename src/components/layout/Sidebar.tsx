@@ -99,7 +99,7 @@ const navItems: {
     requiresSettings: true,
     lucide: 'message',
   },
-  { to: '/settings', label: 'Settings', pageCode: 'SETTINGS', icon: 'settings' },
+  { to: '/settings', label: 'Configuration', pageCode: 'SETTINGS', icon: 'settings' },
   {
     to: PLATFORM_CLINICS_PATH,
     label: 'Clinics',

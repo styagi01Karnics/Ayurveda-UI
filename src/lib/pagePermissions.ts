@@ -27,8 +27,8 @@ export const PAGE_CODE_LABELS: Record<PageCode, string> = {
   MEDICINES: 'Medicines',
   SALES: 'Sales',
   ACTIVITY_LOG: 'Activity Log',
-  BILLING: 'Billing',
-  SETTINGS: 'Settings',
+  BILLING: 'Billings',
+  SETTINGS: 'Configuration',
 };
 
 /** Map a path to its pageCode (longest prefix wins). */

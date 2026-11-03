@@ -29,3 +29,9 @@ export function createConsultationType(
     body: payload,
   });
 }
+
+export function deleteConsultationType(id: string) {
+  return apiRequest<ConsultationTypeMasterDto>(url(ep.getById(id)), {
+    method: 'DELETE',
+  });
+}

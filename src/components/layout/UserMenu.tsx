@@ -78,6 +78,13 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
                 onChangePassword();
               }}
             />
+             <MenuItem
+              icon={<User className="h-4 w-4" />}
+              label="System Settings"
+              onClick={() => setOpen(false)}
+              as={Link}
+              to="/setting"
+            />
           </div>
         )}
       </div>

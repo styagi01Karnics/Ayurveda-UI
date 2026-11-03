@@ -11,7 +11,7 @@ import path from 'node:path';
  * Override in `.env.development.local`:
  * VITE_API_GATEWAY_URL=http://localhost:8113
  */
-const DEFAULT_GATEWAY_URL = 'http://localhost:8113';
+const DEFAULT_GATEWAY_URL = 'http://45.195.229.15:8100/';
 
 function gatewayProxy(gatewayUrl: string) {
   return {

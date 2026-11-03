@@ -47,6 +47,12 @@ export function createTreatmentCategory(
   });
 }
 
+export function deleteCategory(categoryId: string) {
+  return apiRequest<void>(url(ep.treatmentCategories.getById(categoryId)), {
+    method: 'DELETE',
+  });
+}
+
 // ── Therapies ────────────────────────────────────────────────────────────────
 
 export function getAllTherapies(status: 'ACTIVE' | 'INACTIVE' = 'ACTIVE') {
@@ -323,6 +329,12 @@ export function invalidateBookingDoshasCache() {
 
 export function getDoshaById(doshaId: string) {
   return apiRequest<DoshaDto>(url(ep.doshas.getById(doshaId)));
+}
+
+export function deleteDosha(doshaId: string) {
+  return apiRequest<DoshaDto>(url(ep.doshas.getById(doshaId)), {
+    method: 'DELETE',
+  });
 }
 
 export function createDosha(payload: CreateDoshaPayload) {

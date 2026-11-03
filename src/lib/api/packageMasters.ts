@@ -21,6 +21,12 @@ export function getPackageMasterById(id: string) {
   return apiRequest<PackageMasterDto>(url(ep.getById(id)));
 }
 
+export function deletePackageMasters(id: string) {
+  return apiRequest<PackageMasterDto>(url(ep.getById(id)), {
+    method: 'DELETE',
+  });
+}
+
 export function createPackageMaster(payload: CreatePackageMasterPayload) {
   return apiRequest<PackageMasterDto>(url(ep.base), {
     method: 'POST',
