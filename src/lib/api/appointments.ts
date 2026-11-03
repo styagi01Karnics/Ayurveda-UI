@@ -331,6 +331,12 @@ export function getDoshaById(doshaId: string) {
   return apiRequest<DoshaDto>(url(ep.doshas.getById(doshaId)));
 }
 
+export function deleteDosha(doshaId: string) {
+  return apiRequest<DoshaDto>(url(ep.doshas.getById(doshaId)), {
+    method: 'DELETE',
+  });
+}
+
 export function createDosha(payload: CreateDoshaPayload) {
   return apiRequest<DoshaDto>(url(ep.doshas.create), {
     method: 'POST',

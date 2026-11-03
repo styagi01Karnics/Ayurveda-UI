@@ -25,6 +25,7 @@ import {
   createTherapy,
   createTreatmentCategory,
   deleteCategory,
+  deleteDosha,
   deleteTherapy,
   getAllDoshas,
   getAllTherapies,
@@ -34,9 +35,10 @@ import {
 } from '@/lib/api/appointments';
 import { createConsultationType, deleteConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
-import { createPackageMaster, getAllPackageMasters } from '@/lib/api/packageMasters';
+import { createPackageMaster, deletePackageMasters, getAllPackageMasters } from '@/lib/api/packageMasters';
 import {
   createTreatmentPlanMaster,
+  deleteTreatmentPlanMaster,
   getAllTreatmentPlanMasters,
 } from '@/lib/api/treatmentPlanMasters';
 import {
@@ -51,18 +53,14 @@ import {
   parseSessionNumber,
 } from '@/lib/api/mappers';
 import {
-  createTherapist,
   deleteTherapist,
   getAllTherapists,
-  updateTherapistStatus,
+  // updateTherapistStatus,
 } from '@/lib/api/therapists';
 import {
-  CLINIC_STATUS_OPTIONS,
   clinicCategorySchema,
-  clinicTherapistSchema,
   clinicTherapySchema,
   type ClinicCategoryFormValues,
-  type ClinicTherapistFormValues,
   type ClinicTherapyFormValues,
 } from '@/lib/validation/settings.schema';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -90,9 +88,9 @@ type DeleteTarget =
   | { type: 'Dosha Master'; record: ClinicDoshaRecord }
   | null;
 
-function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
-  return status === 'Active' ? 'ACTIVE' : 'INACTIVE';
-}
+// function toApiStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
+//   return status === 'Active' ? 'ACTIVE' : 'INACTIVE';
+// }
 
 function nextStatus(status: ClinicStatus): 'ACTIVE' | 'INACTIVE' {
   return status === 'Active' ? 'INACTIVE' : 'ACTIVE';
@@ -217,7 +215,7 @@ export function ClinicSettingsTab() {
     EMPTY_CLINIC_SETTINGS,
   );
 
-  const { therapies, therapists } = data;
+  const { therapies } = data;
 
   const refreshDoctors = async () => {
     const doctorsList = await getAllDoctors();
@@ -322,22 +320,46 @@ export function ClinicSettingsTab() {
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       }
-       else if(deleteTarget.type === 'Category'){
-          await deleteCategory(deleteTarget.record.id);
-          await refreshCategories();
-          showToast({
-            title : 'Category has been deleted',
-            message:`${deleteTarget.record.id} was removed from the database`
-          });
-        }
-        else if(deleteTarget.type === 'Consultation'){
-          await deleteConsultationType(deleteTarget.record.id);
-          await refreshCategories();
-          showToast({
-            title : 'Category has been deleted',
-            message:`${deleteTarget.record.id} was removed from the database`
-          });
-        }
+      else if (deleteTarget.type === 'Category') {
+        await deleteCategory(deleteTarget.record.id);
+        await refreshCategories();
+        showToast({
+          title: 'Category has been deleted',
+          message: `${deleteTarget.record.id} was removed from the database`
+        });
+      }
+      else if (deleteTarget.type === 'Consultation') {
+        await deleteConsultationType(deleteTarget.record.id);
+        await refreshConsultationTypes();
+        showToast({
+          title: 'Category has been deleted',
+          message: `${deleteTarget.record.id} was removed from the database`
+        });
+      }
+      else if (deleteTarget.type === 'Treatment Plan Master') {
+        await deleteTreatmentPlanMaster(deleteTarget.record.id);
+        await refreshTreatmentPlans();
+        showToast({
+          title: 'Treatment Plan Master has been deleted',
+          message: `${deleteTarget.record.id} was removed from the database`
+        });
+      }
+      else if (deleteTarget.type === 'Package Masters') {
+        await deletePackageMasters(deleteTarget.record.id);
+        await refreshPackageMasters();
+        showToast({
+          title: 'Package Masters has been deleted',
+          message: `${deleteTarget.record.id} was removed from the database`
+        });
+      }
+       else if (deleteTarget.type === 'Dosha Master') {
+        await deleteDosha(deleteTarget.record.id);
+        await refreshDoshas();
+        showToast({
+          title: 'Dosha has been deleted',
+          message: `${deleteTarget.record.id} was removed from the database`
+        });
+      }
     } catch (err) {
       showToast({
         title: 'Error deleting record',
@@ -856,180 +878,3 @@ function TherapySection({
   );
 }
 
-function TherapistSection({
-  therapists,
-  therapyOptions,
-  togglingId,
-  onToggleStatus,
-  onAdd,
-  onDelete,
-}: {
-  therapists: ClinicTherapistRecord[];
-  therapyOptions: { value: string; label: string }[];
-  togglingId: string | null;
-  onToggleStatus: (record: ClinicTherapistRecord) => void | Promise<void>;
-  onAdd: (values: ClinicTherapistFormValues) => void | Promise<void>;
-  onDelete: (record: ClinicTherapistRecord) => void;
-}) {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    setValue,
-    formState: { errors },
-  } = useForm<ClinicTherapistFormValues>({
-    resolver: zodResolver(clinicTherapistSchema),
-    defaultValues: {
-      name: '',
-      status: 'Active',
-      assignedTherapyIds: [],
-    },
-  });
-
-  const assignedTherapyIds = watch('assignedTherapyIds') ?? [];
-
-  const addTherapyTag = (therapyId: string) => {
-    if (!therapyId || assignedTherapyIds.includes(therapyId)) return;
-    setValue('assignedTherapyIds', [...assignedTherapyIds, therapyId], {
-      shouldValidate: true,
-    });
-  };
-
-  const removeTherapyTag = (therapyId: string) => {
-    setValue(
-      'assignedTherapyIds',
-      assignedTherapyIds.filter((id) => id !== therapyId),
-      { shouldValidate: true },
-    );
-  };
-
-  const therapyLabel = (therapyId: string) =>
-    therapyOptions.find((option) => option.value === therapyId)?.label ??
-    therapyId;
-
-  const onSubmit = async (values: ClinicTherapistFormValues) => {
-    await onAdd(values);
-    reset();
-  };
-
-  return (
-    <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
-      <div className="border-b border-[#EFF0F6] px-5 py-4">
-        <SectionHeader title="Therapist" />
-      </div>
-      <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
-            <SettingsTableHead
-              columns={['S No.', 'Name', 'Status', 'Assigned Therapies', 'Action']}
-            />
-          </thead>
-          <tbody>
-            <tr className="border-b border-[#EFF0F6]">
-              <td className="px-4 py-3" />
-              <td className="px-4 py-3">
-                <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
-              </td>
-              <td className="px-4 py-3">
-                <Select
-                  placeholder="Status"
-                  options={[...CLINIC_STATUS_OPTIONS]}
-                  error={errors.status?.message}
-                  {...register('status')}
-                />
-              </td>
-              <td className="px-4 py-3">
-                <div className="space-y-2">
-                  <div className="flex min-h-[40px] flex-wrap items-center gap-1.5 rounded-lg border border-[#EFF0F6] bg-white px-2.5 py-1.5">
-                    {assignedTherapyIds.map((therapyId) => (
-                      <span
-                        key={therapyId}
-                        className="inline-flex items-center gap-1 rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2 py-0.5 text-[11px] font-medium text-[#422C23]"
-                      >
-                        {therapyLabel(therapyId)}
-                        <button
-                          type="button"
-                          onClick={() => removeTherapyTag(therapyId)}
-                          className="text-[#838A9A] hover:text-[#422C23]"
-                          aria-label={`Remove ${therapyLabel(therapyId)}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </span>
-                    ))}
-                    <select
-                      className="min-w-[120px] flex-1 appearance-none border-none bg-transparent py-1 font-sans text-[12px] font-medium text-[#422C23] focus:outline-none"
-                      value=""
-                      disabled={therapyOptions.length === 0}
-                      onChange={(e) => {
-                        addTherapyTag(e.target.value);
-                        e.target.value = '';
-                      }}
-                    >
-                      <option value="">
-                        {therapyOptions.length ? 'Select therapy' : 'Add therapies first'}
-                      </option>
-                      {therapyOptions
-                        .filter((opt) => !assignedTherapyIds.includes(opt.value))
-                        .map((opt) => (
-                          <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
-                  {errors.assignedTherapyIds?.message && (
-                    <p className="text-xs text-danger">{errors.assignedTherapyIds.message}</p>
-                  )}
-                </div>
-              </td>
-              <td className="px-4 py-3">
-                <SettingsActionButton
-                  label="Add therapist"
-                  onClick={() => void handleSubmit(onSubmit)()}
-                />
-              </td>
-            </tr>
-            {therapists.map((therapist, index) => (
-              <tr key={therapist.id} className="border-b border-[#EFF0F6]">
-                <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-[#422C23]">{therapist.name}</td>
-                <td className="px-4 py-4">
-                  <StatusToggle
-                    status={therapist.status}
-                    disabled={togglingId === therapist.id}
-                    onToggle={() => onToggleStatus(therapist)}
-                  />
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex flex-wrap gap-1.5">
-                    {therapist.assignedTherapies.length ? (
-                      therapist.assignedTherapies.map((therapy) => (
-                        <span
-                          key={therapy}
-                          className="rounded-md border border-[#EFF0F6] bg-[#F7F7F8] px-2.5 py-1 text-[11px] font-medium text-[#422C23]"
-                        >
-                          {therapy}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-[#838A9A]">—</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${therapist.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(therapist)}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
-}

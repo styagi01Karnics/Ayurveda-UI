@@ -21,6 +21,12 @@ export function getTreatmentPlanMasterById(id: string) {
   return apiRequest<TreatmentPlanMasterDto>(url(ep.getById(id)));
 }
 
+export function deleteTreatmentPlanMaster(id: string) {
+  return apiRequest<TreatmentPlanMasterDto>(url(ep.getById(id)), {
+    method: 'DELETE',
+  });
+}
+
 export function createTreatmentPlanMaster(
   payload: CreateTreatmentPlanMasterPayload,
 ) {
