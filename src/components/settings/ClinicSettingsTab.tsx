@@ -24,6 +24,7 @@ import {
   createDosha,
   createTherapy,
   createTreatmentCategory,
+  deleteCategory,
   deleteTherapy,
   getAllDoshas,
   getAllTherapies,
@@ -31,7 +32,7 @@ import {
   invalidateBookingDoshasCache,
   updateTherapyStatus,
 } from '@/lib/api/appointments';
-import { createConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
+import { createConsultationType, deleteConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
 import { createPackageMaster, getAllPackageMasters } from '@/lib/api/packageMasters';
 import {
@@ -321,6 +322,22 @@ export function ClinicSettingsTab() {
           message: `${deleteTarget.record.name} was removed from the database.`,
         });
       }
+       else if(deleteTarget.type === 'Category'){
+          await deleteCategory(deleteTarget.record.id);
+          await refreshCategories();
+          showToast({
+            title : 'Category has been deleted',
+            message:`${deleteTarget.record.id} was removed from the database`
+          });
+        }
+        else if(deleteTarget.type === 'Consultation'){
+          await deleteConsultationType(deleteTarget.record.id);
+          await refreshCategories();
+          showToast({
+            title : 'Category has been deleted',
+            message:`${deleteTarget.record.id} was removed from the database`
+          });
+        }
     } catch (err) {
       showToast({
         title: 'Error deleting record',
@@ -361,20 +378,20 @@ export function ClinicSettingsTab() {
     }
   };
 
-  const handleToggleTherapistStatus = async (therapist: ClinicTherapistRecord) => {
-    setTogglingId(therapist.id);
-    try {
-      await updateTherapistStatus(therapist.id, nextStatus(therapist.status));
-      await refreshTherapists();
-    } catch (err) {
-      showToast({
-        title: 'Failed to update therapist status',
-        message: err instanceof ApiError ? err.message : 'Could not update status.',
-      });
-    } finally {
-      setTogglingId(null);
-    }
-  };
+  // const handleToggleTherapistStatus = async (therapist: ClinicTherapistRecord) => {
+  //   setTogglingId(therapist.id);
+  //   try {
+  //     await updateTherapistStatus(therapist.id, nextStatus(therapist.status));
+  //     await refreshTherapists();
+  //   } catch (err) {
+  //     showToast({
+  //       title: 'Failed to update therapist status',
+  //       message: err instanceof ApiError ? err.message : 'Could not update status.',
+  //     });
+  //   } finally {
+  //     setTogglingId(null);
+  //   }
+  // };
 
   return (
     <AsyncStatus loading={loading} error={error} onRetry={reload}>
@@ -454,39 +471,6 @@ export function ClinicSettingsTab() {
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
-        />
-
-        <TherapistSection
-          therapists={therapists}
-          therapyOptions={therapies.map((therapy) => ({
-            value: therapy.id,
-            label: therapy.name,
-          }))}
-          togglingId={togglingId}
-          onToggleStatus={handleToggleTherapistStatus}
-          onAdd={async (values) => {
-            try {
-              await createTherapist({
-                name: values.name,
-                status: toApiStatus(values.status),
-                assignedTherapyIds: values.assignedTherapyIds,
-              });
-              await refreshTherapists();
-              showToast({
-                title: 'Therapist Added',
-                message: `${values.name} has been added successfully.`,
-              });
-            } catch (err) {
-              showToast({
-                title: 'Failed to add therapist',
-                message:
-                  err instanceof ApiError
-                    ? err.message
-                    : 'Could not create therapist.',
-              });
-            }
-          }}
-          onDelete={(record) => setDeleteTarget({ type: 'Therapist', record })}
         />
 
         <ConsultationTypesSection

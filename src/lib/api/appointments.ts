@@ -47,6 +47,12 @@ export function createTreatmentCategory(
   });
 }
 
+export function deleteCategory(categoryId: string) {
+  return apiRequest<void>(url(ep.treatmentCategories.getById(categoryId)), {
+    method: 'DELETE',
+  });
+}
+
 // ── Therapies ────────────────────────────────────────────────────────────────
 
 export function getAllTherapies(status: 'ACTIVE' | 'INACTIVE' = 'ACTIVE') {
