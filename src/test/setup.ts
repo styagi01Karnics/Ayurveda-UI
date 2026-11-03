@@ -168,6 +168,7 @@ vi.mock('@/lib/api/appointments', () => ({
     categoryCode: null,
     ...payload,
   })),
+  deleteCategory: vi.fn(async () => undefined),
   getAllTherapies: vi.fn(async () =>
     initialClinicTherapies.map((t) => ({
       id: t.id,
@@ -539,6 +540,8 @@ vi.mock('@/lib/api/appointments', () => ({
   ]),
   getDoshaById: vi.fn(),
   createDosha: vi.fn(),
+  deleteDosha: vi.fn(async () => undefined),
+  invalidateBookingDoshasCache: vi.fn(),
   createMedicalAssessment: vi.fn(async () => ({ patientId: '37944397' })),
   createMedicalAssessmentWithDocuments: vi.fn(async () => ({
     patientId: '37944397',
@@ -719,6 +722,7 @@ vi.mock('@/lib/api/consultationTypes', () => ({
   ]),
   getConsultationTypeById: vi.fn(),
   createConsultationType: vi.fn(),
+  deleteConsultationType: vi.fn(async () => undefined),
 }));
 
 vi.mock('@/lib/api/treatmentPlanMasters', () => ({
@@ -730,6 +734,7 @@ vi.mock('@/lib/api/treatmentPlanMasters', () => ({
   ]),
   getTreatmentPlanMasterById: vi.fn(),
   createTreatmentPlanMaster: vi.fn(),
+  deleteTreatmentPlanMaster: vi.fn(async () => undefined),
 }));
 
 vi.mock('@/lib/api/packageMasters', () => ({
@@ -741,6 +746,7 @@ vi.mock('@/lib/api/packageMasters', () => ({
   ]),
   getPackageMasterById: vi.fn(),
   createPackageMaster: vi.fn(),
+  deletePackageMasters: vi.fn(async () => undefined),
 }));
 
 vi.mock('@/lib/api/medicines', () => ({
@@ -1149,5 +1155,6 @@ vi.mock('@/lib/api/dashboard', async (importOriginal) => {
 });
 
 beforeEach(() => {
+  window.scrollTo = vi.fn();
   vi.clearAllMocks();
 });

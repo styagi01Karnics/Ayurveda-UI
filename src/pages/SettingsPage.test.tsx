@@ -20,20 +20,21 @@ function renderSettings() {
 }
 
 describe('SettingsPage', () => {
-  it('renders settings tabs', () => {
+  it('renders settings tabs', async () => {
     renderSettings();
     expect(screen.getByText('Clinic Settings')).toBeInTheDocument();
     expect(screen.getByText('User Management')).toBeInTheDocument();
     expect(screen.getByText('Role Management')).toBeInTheDocument();
-    expect(screen.getByText('System Preference')).toBeInTheDocument();
+    expect(screen.getByText('Doctor Management')).toBeInTheDocument();
+    expect(screen.getByText('Therapist Management')).toBeInTheDocument();
+    expect(await screen.findByText('Treatment Categories')).toBeInTheDocument();
   });
 
-  it('renders clinic doctors section by default', async () => {
+  it('renders clinic treatment categories and therapy sections by default', async () => {
     renderSettings();
-    expect(await screen.findByText('Doctors')).toBeInTheDocument();
-    expect(await screen.findByText('Dr. Shweta Arya')).toBeInTheDocument();
-    expect(screen.getByText('Therapy')).toBeInTheDocument();
-    expect(screen.getAllByText('Therapist').length).toBeGreaterThan(0);
+    expect(await screen.findByText('Treatment Categories')).toBeInTheDocument();
+    expect(await screen.findByText('Therapy')).toBeInTheDocument();
+    expect(screen.getAllByText('Panchakarma').length).toBeGreaterThan(0);
   });
 
   it('shows user management table', async () => {
@@ -51,6 +52,7 @@ describe('SettingsPage', () => {
       },
     ]);
     renderSettings();
+    await screen.findByText('Treatment Categories');
     await user.click(screen.getByText('User Management'));
     expect(await screen.findByText('Rahul Sharma')).toBeInTheDocument();
   });
@@ -58,23 +60,26 @@ describe('SettingsPage', () => {
   it('shows role management cards', async () => {
     const user = userEvent.setup();
     renderSettings();
+    await screen.findByText('Treatment Categories');
     await user.click(screen.getByText('Role Management'));
     expect(screen.getAllByText('Super Admin').length).toBeGreaterThan(0);
     expect(screen.getByText('Full Access')).toBeInTheDocument();
   });
 
-  it('shows system preference toggles', async () => {
+  it('shows doctor management tab', async () => {
     const user = userEvent.setup();
     renderSettings();
-    await user.click(screen.getByText('System Preference'));
-    expect(screen.getByText('Appointment Settings')).toBeInTheDocument();
-    expect(screen.getByText('Billing Settings')).toBeInTheDocument();
-    expect(screen.getByRole('switch', { name: 'SMS' })).toBeInTheDocument();
+    await screen.findByText('Treatment Categories');
+    await user.click(screen.getByText('Doctor Management'));
+    expect(await screen.findByText('Doctors')).toBeInTheDocument();
+    expect(await screen.findByText('Dr. Shweta Arya')).toBeInTheDocument();
   });
 
   it('shows delete confirmation for therapist', async () => {
     const user = userEvent.setup();
     renderSettings();
+    await screen.findByText('Treatment Categories');
+    await user.click(screen.getByText('Therapist Management'));
     await screen.findAllByText('Dr. Narendra Jain');
     const deleteButtons = screen.getAllByLabelText('Delete Dr. Narendra Jain');
     await user.click(deleteButtons[0]);

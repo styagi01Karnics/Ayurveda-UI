@@ -27,7 +27,7 @@ describe('LoginPage', () => {
       screen.queryByRole('button', { name: 'System Admin' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText('Enter your username or email address'),
+      screen.getByPlaceholderText('Username or email address'),
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Login' })).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('LoginPage', () => {
     );
 
     const emailInput = screen.getByPlaceholderText(
-      'Enter your username or email address',
+      'Username or email address',
     );
     const passwordInput = screen.getByPlaceholderText('Password');
     await user.clear(emailInput);
