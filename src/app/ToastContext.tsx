@@ -63,14 +63,17 @@ export function ToastViewport({ className }: { className?: string }) {
   if (!ctx || ctx.toasts.length === 0) return null;
 
   return (
-    <div className={cn('flex w-[min(100%,22rem)] flex-col gap-2', className)}>
+    <div className={cn(
+    'fixed right-5 top-5 z-[9999] flex w-[min(100%,22rem)] flex-col gap-2',
+    className
+  )}>
       {ctx.toasts.map((toast) => {
         const isError = toast.variant === 'error';
         return (
           <div
             key={toast.id}
             className="flex items-center gap-3 rounded-2xl border border-[#E8E0D4] bg-white px-4 py-3 shadow-[0_4px_18px_rgba(66,44,35,0.1)]"
-            role="status"
+           role={isError ? 'alert' : 'status'}
           >
             {isError ? (
               <CircleAlert

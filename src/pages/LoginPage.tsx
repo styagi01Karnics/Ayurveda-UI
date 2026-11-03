@@ -112,7 +112,7 @@ export function LoginPage() {
     setForgotNotice(null);
     const usernameOrEmail = values.emailOrUsername.trim();
     const isHospitalLogin = values.mode === 'all';
- const tenantCode = isHospitalLogin
+    const tenantCode = isHospitalLogin
       ? values.tenantCode?.trim() || undefined
       : undefined;
     try {
@@ -192,37 +192,37 @@ export function LoginPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5" noValidate>
           <input type="hidden" {...register('mode')} />
-
+          {loginMode === 'all' ? (
+            <Select
+              fieldVariant="auth"
+              label="Location"
+              placeholder={
+                tenantsLoading ? 'Loading clinics…' : 'Select clinic'
+              }
+              options={hospitalOptions}
+              error={errors.tenantCode?.message}
+              disabled={tenantsLoading && tenants.length === 0}
+              {...register('tenantCode')}
+            />
+          ) : null}
           <Input
             fieldVariant="auth"
             label={
               loginMode === 'superAdmin'
                 ? 'Email address'
-                : 'Enter your username or email address'
+                : 'Username or email address'
             }
             placeholder={
               loginMode === 'superAdmin'
                 ? 'Enter your email address'
-                : 'Enter your username or email address'
+                : 'Username or email address'
             }
             error={errors.emailOrUsername?.message}
             {...register('emailOrUsername')}
           />
 
           <div className="space-y-3.5">
-            {loginMode === 'all' ? (
-              <Select
-                fieldVariant="auth"
-                label="Location"
-                placeholder={
-                  tenantsLoading ? 'Loading clinics…' : 'Select clinic'
-                }
-                options={hospitalOptions}
-                error={errors.tenantCode?.message}
-                disabled={tenantsLoading && tenants.length === 0}
-                {...register('tenantCode')}
-              />
-            ) : null}
+
 
             <Input
               fieldVariant="auth"

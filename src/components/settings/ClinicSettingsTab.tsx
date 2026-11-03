@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import {  useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2, X } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
@@ -61,7 +61,6 @@ import {
   clinicTherapistSchema,
   clinicTherapySchema,
   type ClinicCategoryFormValues,
-  type ClinicDoctorFormValues,
   type ClinicTherapistFormValues,
   type ClinicTherapyFormValues,
 } from '@/lib/validation/settings.schema';
@@ -389,19 +388,27 @@ export function ClinicSettingsTab() {
                 description: values.description.trim(),
                 status: 'ACTIVE',
               });
+
               await refreshCategories();
+
               showToast({
                 title: 'Category Added',
                 message: `${values.categoryName} has been added successfully.`,
               });
+
+              return true;
             } catch (err) {
+              console.error('Create category failed:', err);
+
               showToast({
                 title: 'Failed to add category',
                 message:
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create treatment category.',
+                variant: 'error',
               });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Category', record })}
@@ -505,7 +512,7 @@ export function ClinicSettingsTab() {
               });
             }
           }}
-           onDelete={(record) => setDeleteTarget({ type: 'Consultation', record })}
+          onDelete={(record) => setDeleteTarget({ type: 'Consultation', record })}
         />
 
         <TreatmentPlanMastersSection
@@ -662,8 +669,9 @@ function TreatmentCategoriesSection({
   onDelete
 }: {
   categories: ClinicTreatmentCategoryRecord[];
-  onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
-   onDelete: (record: ClinicTreatmentCategoryRecord) => void;
+  // onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
+  onAdd: (values: ClinicCategoryFormValues) => Promise<boolean>;
+  onDelete: (record: ClinicTreatmentCategoryRecord) => void;
 }) {
   const {
     register,
@@ -676,8 +684,9 @@ function TreatmentCategoriesSection({
   });
 
   const onSubmit = async (values: ClinicCategoryFormValues) => {
-    await onAdd(values);
-    reset();
+    const success = await onAdd(values);
+
+    if (success) reset();
   };
 
   return (
@@ -722,7 +731,7 @@ function TreatmentCategoriesSection({
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
                 <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
                 <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
-               <td className="px-4 py-4">
+                <td className="px-4 py-4">
                   <SettingsActionButton
                     label={`Delete ${category.name}`}
                     variant="delete"
