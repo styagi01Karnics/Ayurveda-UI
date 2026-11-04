@@ -5,6 +5,7 @@ import { Toggle } from '@/components/ui/Toggle';
 import { defaultSystemPreferences } from '@/data/mock/settings';
 import { cn } from '@/lib/utils';
 import type { SystemPreferences } from '@/types';
+import { Link } from 'react-router-dom';
 
 export function SystemPreferenceTab() {
   const { showToast } = useToast();
@@ -22,6 +23,13 @@ export function SystemPreferenceTab() {
 
   return (
     <div className="space-y-8">
+       <nav className="text-sm text-text-muted">
+              <Link to="/dashboard" className="hover:text-gold">
+               Back
+              </Link>
+              <span className="mx-2">/</span>
+        <span className="text-brown">System Settings</span>
+            </nav>
       <PreferenceSection title="Appointment Settings" columns="sm:grid-cols-3">
         <Toggle
           label="SMS"
