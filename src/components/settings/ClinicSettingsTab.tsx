@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2} from 'lucide-react';
+import { Pencil, Plus, Trash2} from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
@@ -631,7 +631,7 @@ export function SettingsActionButton({
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  variant?: 'add' | 'delete';
+  variant?: 'add' | 'delete' | 'edit'; // Added 'edit' to the types
 }) {
   return (
     <button
@@ -643,16 +643,16 @@ export function SettingsActionButton({
       }}
       disabled={disabled}
       aria-label={label}
+      title={label} // Added title so users see what the button does on hover
       className={cn(
         'inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] transition-colors hover:bg-[#F5EBD3] disabled:opacity-60',
         variant === 'delete' && 'hover:bg-danger/10 hover:text-danger',
+        variant === 'edit' && 'hover:bg-[#EAE0C8]' // Optional: slightly different hover state for edit if desired, or you can remove this line to keep the default hover
       )}
     >
-      {variant === 'add' ? (
-        <Plus className="h-4 w-4" strokeWidth={2.25} />
-      ) : (
-        <Trash2 className="h-4 w-4" strokeWidth={2} />
-      )}
+      {variant === 'add' && <Plus className="h-4 w-4" strokeWidth={2.25} />}
+      {variant === 'delete' && <Trash2 className="h-4 w-4" strokeWidth={2} />}
+      {variant === 'edit' && <Pencil className="h-4 w-4" strokeWidth={2} />}
     </button>
   );
 }

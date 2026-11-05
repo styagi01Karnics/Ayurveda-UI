@@ -45,6 +45,13 @@ export function createDoctor(payload: CreateDoctorPayload) {
   });
 }
 
+export function updateDoctor(doctorId: string, payload: CreateDoctorPayload) {
+  return apiRequest<DoctorDto>(url(apiEndpoints.doctors.getById(doctorId)), {
+    method: 'PUT',
+    body: toCreateDoctorPayload(payload),
+  });
+}
+
 export function deleteDoctor(doctorId: string) {
   return apiRequest<void>(url(apiEndpoints.doctors.getById(doctorId)), {
     method: 'DELETE',
