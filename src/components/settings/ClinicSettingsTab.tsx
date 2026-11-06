@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Pencil, Plus, Trash2} from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
@@ -33,6 +33,7 @@ import {
   invalidateBookingDoshasCache,
   updateTherapyStatus,
   updateTreatmentCategory,
+  updateTherapy
 } from '@/lib/api/appointments';
 import { createConsultationType, deleteConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
@@ -484,46 +485,78 @@ export function ClinicSettingsTab() {
         />
 
         <TherapySection
-          therapies={therapies}
-          categoryOptions={data.categoryOptions}
-          togglingId={togglingId}
-          onToggleStatus={handleToggleTherapyStatus}
-          onAdd={async (values) => {
-            try {
-              if (!values.category) {
-                showToast({
-                  title: 'Category required',
-                  message: 'Add a treatment category before creating therapies.',
-                });
-                return;
-              }
+  therapies={therapies}
+  categoryOptions={data.categoryOptions}
+  togglingId={togglingId}
+  onToggleStatus={handleToggleTherapyStatus}
+  onAdd={async (values) => {
+    try {
+      if (!values.category) {
+        showToast({
+          title: 'Category required',
+          message: 'Add a treatment category before creating therapies.',
+        });
+        return false;
+      }
 
-              await createTherapy({
-                name: values.name,
-                categoryId: values.category,
-                status: 'ACTIVE',
-                durationMinutes: parseSessionNumber(values.duration) || 45,
-                price: Number(values.price),
-                description: values.description,
-              });
+      await createTherapy({
+        name: values.name,
+        categoryId: values.category,
+        status: 'ACTIVE',
+        durationMinutes: parseSessionNumber(values.duration) || 45,
+        price: Number(values.price),
+        description: values.description,
+      });
 
-              await refreshTherapies();
-              showToast({
-                title: 'Therapy Added',
-                message: `${values.name} has been added successfully.`,
-              });
-            } catch (err) {
-              showToast({
-                title: 'Failed to add therapy',
-                message:
-                  err instanceof ApiError
-                    ? err.message
-                    : 'Could not create therapy.',
-              });
-            }
-          }}
-          onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
-        />
+      await refreshTherapies();
+      showToast({
+        title: 'Therapy Added',
+        message: `${values.name} has been added successfully.`,
+      });
+      return true;
+    } catch (err) {
+      showToast({
+        title: 'Failed to add therapy',
+        message:
+          err instanceof ApiError ? err.message : 'Could not create therapy.',
+        variant: 'error',
+      });
+      return false;
+    }
+  }}
+  onUpdate={async (id, values) => {
+    try {
+      await updateTherapy(id, {
+        name: values.name,
+        categoryId: values.category,
+        status: 'ACTIVE',
+        durationMinutes: parseSessionNumber(values.duration) || 45,
+        price: Number(values.price),
+        description: values.description,
+      });
+
+      await refreshTherapies();
+
+      showToast({
+        title: 'Therapy Updated',
+        message: `${values.name} has been updated successfully.`,
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Update therapy failed:', err);
+
+      showToast({
+        title: 'Failed to update therapy',
+        message:
+          err instanceof ApiError ? err.message : 'Could not update therapy.',
+        variant: 'error',
+      });
+      return false;
+    }
+  }}
+  onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
+/>
 
         <ConsultationTypesSection
           records={data.consultationTypes}
@@ -844,13 +877,15 @@ function TherapySection({
   onToggleStatus,
   onAdd,
   onDelete,
+  onUpdate,
 }: {
   therapies: ClinicTherapyRecord[];
   categoryOptions: { value: string; label: string }[];
   togglingId: string | null;
   onToggleStatus: (record: ClinicTherapyRecord) => void | Promise<void>;
-  onAdd: (values: ClinicTherapyFormValues) => void | Promise<void>;
+  onAdd: (values: ClinicTherapyFormValues) => Promise<boolean> | void;
   onDelete: (record: ClinicTherapyRecord) => void;
+  onUpdate: (id: string, values: ClinicTherapyFormValues) => Promise<boolean>;
 }) {
   const {
     register,
@@ -868,9 +903,47 @@ function TherapySection({
     },
   });
 
+  const [editingTherapy, setEditingTherapy] =
+    useState<ClinicTherapyRecord | null>(null);
+
+  const handleCancelEdit = () => {
+    setEditingTherapy(null);
+    reset({
+      name: '',
+      category: '',
+      duration: '',
+      price: '',
+      description: '',
+    });
+  };
+
   const onSubmit = async (values: ClinicTherapyFormValues) => {
-    await onAdd(values);
-    reset();
+    let success = false;
+    if (editingTherapy) {
+      success = await onUpdate(editingTherapy.id, values);
+    } else {
+      const res = await onAdd(values);
+      success = res !== false;
+    }
+
+    if (success) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleEditClick = (therapy: ClinicTherapyRecord) => {
+    setEditingTherapy(therapy);
+    reset({
+      name: therapy.name,
+      // If therapy.categoryId exists, use it; otherwise match option by category name
+      category:
+        (therapy as any).categoryId ||
+        categoryOptions.find((opt) => opt.label === therapy.category)?.value ||
+        '',
+      duration: therapy.duration?.toString() || '',
+      price: therapy.price?.toString() || '',
+      description: therapy.description || '',
+    });
   };
 
   return (
@@ -880,7 +953,7 @@ function TherapySection({
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
+          <thead className="sticky top-0 z-10 bg-white">
             <SettingsTableHead
               columns={[
                 'S No.',
@@ -895,14 +968,21 @@ function TherapySection({
             />
           </thead>
           <tbody>
+            {/* Input Row: Add or Edit */}
             <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
-                <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
+                <Input
+                  placeholder="Name"
+                  error={errors.name?.message}
+                  {...register('name')}
+                />
               </td>
               <td className="px-4 py-3">
                 <Select
-                  placeholder={categoryOptions.length ? 'Category' : 'Add category first'}
+                  placeholder={
+                    categoryOptions.length ? 'Category' : 'Add category first'
+                  }
                   options={categoryOptions}
                   disabled={categoryOptions.length === 0}
                   error={errors.category?.message}
@@ -911,10 +991,18 @@ function TherapySection({
               </td>
               <td className="px-4 py-3 text-[12px] text-[#838A9A]">Active</td>
               <td className="px-4 py-3">
-                <Input placeholder="45 min" error={errors.duration?.message} {...register('duration')} />
+                <Input
+                  placeholder="45 min"
+                  error={errors.duration?.message}
+                  {...register('duration')}
+                />
               </td>
               <td className="px-4 py-3">
-                <RupeeInput placeholder="0" error={errors.price?.message} {...register('price')} />
+                <RupeeInput
+                  placeholder="0"
+                  error={errors.price?.message}
+                  {...register('price')}
+                />
               </td>
               <td className="px-4 py-3">
                 <Input
@@ -924,17 +1012,35 @@ function TherapySection({
                 />
               </td>
               <td className="px-4 py-3">
-                <SettingsActionButton
-                  label="Add therapy"
-                  disabled={isSubmitting || categoryOptions.length === 0}
-                  onClick={() => void handleSubmit(onSubmit)()}
-                />
+                <div className="flex items-center gap-2">
+                  {editingTherapy && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmit(onSubmit)()}
+                    className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {editingTherapy ? 'Save' : 'Add'}
+                  </button>
+                </div>
               </td>
             </tr>
+
+            {/* Therapy Records */}
             {therapies.map((therapy, index) => (
               <tr key={therapy.id} className="border-b border-[#EFF0F6]">
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-[#422C23]">{therapy.name}</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">
+                  {therapy.name}
+                </td>
                 <td className="px-4 py-4 text-[#422C23]">{therapy.category}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
@@ -944,14 +1050,25 @@ function TherapySection({
                   />
                 </td>
                 <td className="px-4 py-4 text-[#422C23]">{therapy.duration}</td>
-                <td className="px-4 py-4 text-[#422C23]">{formatCurrency(therapy.price)}</td>
-                <td className="px-4 py-4 text-[#422C23]">{therapy.description}</td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {formatCurrency(therapy.price)}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {therapy.description}
+                </td>
                 <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${therapy.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(therapy)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <SettingsActionButton
+                      label={`Edit ${therapy.name}`}
+                      variant="edit"
+                      onClick={() => handleEditClick(therapy)}
+                    />
+                    <SettingsActionButton
+                      label={`Delete ${therapy.name}`}
+                      variant="delete"
+                      onClick={() => onDelete(therapy)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
