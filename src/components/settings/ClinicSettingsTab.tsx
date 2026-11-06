@@ -38,7 +38,7 @@ import {
 } from '@/lib/api/appointments';
 import { createConsultationType, deleteConsultationType, getAllConsultationTypes, updateConsultationType } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
-import { createPackageMaster, deletePackageMasters, getAllPackageMasters } from '@/lib/api/packageMasters';
+import { createPackageMaster, deletePackageMasters, getAllPackageMasters, updatePackageMaster } from '@/lib/api/packageMasters';
 import {
   createTreatmentPlanMaster,
   deleteTreatmentPlanMaster,
@@ -329,7 +329,7 @@ export function ClinicSettingsTab() {
         await refreshCategories();
         showToast({
           title: 'Category has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Consultation') {
@@ -337,7 +337,7 @@ export function ClinicSettingsTab() {
         await refreshConsultationTypes();
         showToast({
           title: 'Category has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Treatment Plan Master') {
@@ -345,7 +345,7 @@ export function ClinicSettingsTab() {
         await refreshTreatmentPlans();
         showToast({
           title: 'Treatment Plan Master has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Package Masters') {
@@ -353,7 +353,7 @@ export function ClinicSettingsTab() {
         await refreshPackageMasters();
         showToast({
           title: 'Package Masters has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Dosha Master') {
@@ -361,7 +361,7 @@ export function ClinicSettingsTab() {
         await refreshDoshas();
         showToast({
           title: 'Dosha has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
     } catch (err) {
@@ -684,14 +684,43 @@ export function ClinicSettingsTab() {
                 title: 'Package master added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
-                title: 'Failed to add package',
+                title: 'Failed to add package master',
                 message:
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create package master.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updatePackageMaster(id, {
+                name: values.name.trim(),
+                packagePrice: Number(values.packagePrice),
+                status: 'ACTIVE',
+              });
+              await refreshPackageMasters();
+              showToast({
+                title: 'Package master updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update package master failed:', err);
+              showToast({
+                title: 'Failed to update package master',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update package master.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Package Masters', record })}
