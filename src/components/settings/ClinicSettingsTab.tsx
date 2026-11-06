@@ -35,7 +35,7 @@ import {
   updateTreatmentCategory,
   updateTherapy
 } from '@/lib/api/appointments';
-import { createConsultationType, deleteConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
+import { createConsultationType, deleteConsultationType, getAllConsultationTypes, updateConsultationType } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
 import { createPackageMaster, deletePackageMasters, getAllPackageMasters } from '@/lib/api/packageMasters';
 import {
@@ -485,78 +485,78 @@ export function ClinicSettingsTab() {
         />
 
         <TherapySection
-  therapies={therapies}
-  categoryOptions={data.categoryOptions}
-  togglingId={togglingId}
-  onToggleStatus={handleToggleTherapyStatus}
-  onAdd={async (values) => {
-    try {
-      if (!values.category) {
-        showToast({
-          title: 'Category required',
-          message: 'Add a treatment category before creating therapies.',
-        });
-        return false;
-      }
+          therapies={therapies}
+          categoryOptions={data.categoryOptions}
+          togglingId={togglingId}
+          onToggleStatus={handleToggleTherapyStatus}
+          onAdd={async (values) => {
+            try {
+              if (!values.category) {
+                showToast({
+                  title: 'Category required',
+                  message: 'Add a treatment category before creating therapies.',
+                });
+                return false;
+              }
 
-      await createTherapy({
-        name: values.name,
-        categoryId: values.category,
-        status: 'ACTIVE',
-        durationMinutes: parseSessionNumber(values.duration) || 45,
-        price: Number(values.price),
-        description: values.description,
-      });
+              await createTherapy({
+                name: values.name,
+                categoryId: values.category,
+                status: 'ACTIVE',
+                durationMinutes: parseSessionNumber(values.duration) || 45,
+                price: Number(values.price),
+                description: values.description,
+              });
 
-      await refreshTherapies();
-      showToast({
-        title: 'Therapy Added',
-        message: `${values.name} has been added successfully.`,
-      });
-      return true;
-    } catch (err) {
-      showToast({
-        title: 'Failed to add therapy',
-        message:
-          err instanceof ApiError ? err.message : 'Could not create therapy.',
-        variant: 'error',
-      });
-      return false;
-    }
-  }}
-  onUpdate={async (id, values) => {
-    try {
-      await updateTherapy(id, {
-        name: values.name,
-        categoryId: values.category,
-        status: 'ACTIVE',
-        durationMinutes: parseSessionNumber(values.duration) || 45,
-        price: Number(values.price),
-        description: values.description,
-      });
+              await refreshTherapies();
+              showToast({
+                title: 'Therapy Added',
+                message: `${values.name} has been added successfully.`,
+              });
+              return true;
+            } catch (err) {
+              showToast({
+                title: 'Failed to add therapy',
+                message:
+                  err instanceof ApiError ? err.message : 'Could not create therapy.',
+                variant: 'error',
+              });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateTherapy(id, {
+                name: values.name,
+                categoryId: values.category,
+                status: 'ACTIVE',
+                durationMinutes: parseSessionNumber(values.duration) || 45,
+                price: Number(values.price),
+                description: values.description,
+              });
 
-      await refreshTherapies();
+              await refreshTherapies();
 
-      showToast({
-        title: 'Therapy Updated',
-        message: `${values.name} has been updated successfully.`,
-      });
+              showToast({
+                title: 'Therapy Updated',
+                message: `${values.name} has been updated successfully.`,
+              });
 
-      return true;
-    } catch (err) {
-      console.error('Update therapy failed:', err);
+              return true;
+            } catch (err) {
+              console.error('Update therapy failed:', err);
 
-      showToast({
-        title: 'Failed to update therapy',
-        message:
-          err instanceof ApiError ? err.message : 'Could not update therapy.',
-        variant: 'error',
-      });
-      return false;
-    }
-  }}
-  onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
-/>
+              showToast({
+                title: 'Failed to update therapy',
+                message:
+                  err instanceof ApiError ? err.message : 'Could not update therapy.',
+                variant: 'error',
+              });
+              return false;
+            }
+          }}
+          onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
+        />
 
         <ConsultationTypesSection
           records={data.consultationTypes}
@@ -571,6 +571,7 @@ export function ClinicSettingsTab() {
                 title: 'Consultation type added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add consultation type',
@@ -578,7 +579,34 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create consultation type.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateConsultationType(id, {
+                name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
+                status: 'ACTIVE',
+              });
+              await refreshConsultationTypes();
+              showToast({
+                title: 'Consultation type updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update consultation type failed:', err);
+              showToast({
+                title: 'Failed to update consultation type',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update consultation type.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Consultation', record })}
