@@ -42,6 +42,7 @@ import {
   createTreatmentPlanMaster,
   deleteTreatmentPlanMaster,
   getAllTreatmentPlanMasters,
+  updateTreatmentPlanMaster,
 } from '@/lib/api/treatmentPlanMasters';
 import {
   deleteDoctor,
@@ -625,6 +626,7 @@ export function ClinicSettingsTab() {
                 title: 'Treatment plan added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add treatment plan',
@@ -632,10 +634,39 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create treatment plan.',
+                variant: 'error',
               });
+              return false;
             }
           }}
-          onDelete={(record) => setDeleteTarget({ type: 'Treatment Plan Master', record })}
+          onUpdate={async (id, values) => {
+            try {
+              await updateTreatmentPlanMaster(id, {
+                name: values.name.trim(),
+                status: 'ACTIVE',
+              });
+              await refreshTreatmentPlans();
+              showToast({
+                title: 'Treatment plan updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update treatment plan failed:', err);
+              showToast({
+                title: 'Failed to update treatment plan',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update treatment plan.',
+                variant: 'error',
+              });
+              return false;
+            }
+          }}
+          onDelete={(record) =>
+            setDeleteTarget({ type: 'Treatment Plan Master', record })
+          }
         />
 
         <PackageMastersSection
