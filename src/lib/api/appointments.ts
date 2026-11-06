@@ -52,6 +52,18 @@ export function deleteCategory(categoryId: string) {
     method: 'DELETE',
   });
 }
+export function updateTreatmentCategory(
+  categoryId: string,
+  payload: CreateTreatmentCategoryPayload,
+) {
+  return apiRequest<TreatmentCategoryDto>(
+    url(ep.treatmentCategories.getById(categoryId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
 
 // ── Therapies ────────────────────────────────────────────────────────────────
 
@@ -344,6 +356,15 @@ export function createDosha(payload: CreateDoshaPayload) {
   });
 }
 
+export function updateDoshaMaster(
+  id: string,
+  payload: Partial<CreateDoshaPayload>,
+) {
+  return apiRequest<DoshaDto>(url(ep.doshas.getById(id)), {
+    method: 'PUT',
+    body: payload,
+  });
+}
 // ── Schedule ─────────────────────────────────────────────────────────────────
 
 export function getTodaysSchedule() {

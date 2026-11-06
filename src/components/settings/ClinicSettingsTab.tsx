@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2} from 'lucide-react';
+import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/app/ToastContext';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
 import { Card } from '@/components/ui/Card';
@@ -32,14 +32,18 @@ import {
   getAllTreatmentCategories,
   invalidateBookingDoshasCache,
   updateTherapyStatus,
+  updateTreatmentCategory,
+  updateTherapy,
+  updateDoshaMaster
 } from '@/lib/api/appointments';
-import { createConsultationType, deleteConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
+import { createConsultationType, deleteConsultationType, getAllConsultationTypes, updateConsultationType } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
-import { createPackageMaster, deletePackageMasters, getAllPackageMasters } from '@/lib/api/packageMasters';
+import { createPackageMaster, deletePackageMasters, getAllPackageMasters, updatePackageMaster } from '@/lib/api/packageMasters';
 import {
   createTreatmentPlanMaster,
   deleteTreatmentPlanMaster,
   getAllTreatmentPlanMasters,
+  updateTreatmentPlanMaster,
 } from '@/lib/api/treatmentPlanMasters';
 import {
   deleteDoctor,
@@ -325,7 +329,7 @@ export function ClinicSettingsTab() {
         await refreshCategories();
         showToast({
           title: 'Category has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Consultation') {
@@ -333,7 +337,7 @@ export function ClinicSettingsTab() {
         await refreshConsultationTypes();
         showToast({
           title: 'Category has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Treatment Plan Master') {
@@ -341,7 +345,7 @@ export function ClinicSettingsTab() {
         await refreshTreatmentPlans();
         showToast({
           title: 'Treatment Plan Master has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
       else if (deleteTarget.type === 'Package Masters') {
@@ -349,15 +353,15 @@ export function ClinicSettingsTab() {
         await refreshPackageMasters();
         showToast({
           title: 'Package Masters has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
-       else if (deleteTarget.type === 'Dosha Master') {
+      else if (deleteTarget.type === 'Dosha Master') {
         await deleteDosha(deleteTarget.record.id);
         await refreshDoshas();
         showToast({
           title: 'Dosha has been deleted',
-          message: `${deleteTarget.record.id} was removed from the database`
+          message: `${deleteTarget.record.name} was removed from the database`
         });
       }
     } catch (err) {
@@ -450,6 +454,35 @@ export function ClinicSettingsTab() {
               return false;
             }
           }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateTreatmentCategory(id, {
+                categoryName: values.categoryName.trim(),
+                description: values.description.trim(),
+              });
+
+              await refreshCategories();
+
+              showToast({
+                title: 'Category Updated',
+                message: `${values.categoryName} has been updated successfully.`,
+              });
+
+              return true;
+            } catch (err) {
+              console.error('Update category failed:', err);
+
+              showToast({
+                title: 'Failed to update category',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update treatment category.',
+                variant: 'error',
+              });
+              return false;
+            }
+          }}
           onDelete={(record) => setDeleteTarget({ type: 'Category', record })}
         />
 
@@ -465,7 +498,7 @@ export function ClinicSettingsTab() {
                   title: 'Category required',
                   message: 'Add a treatment category before creating therapies.',
                 });
-                return;
+                return false;
               }
 
               await createTherapy({
@@ -482,14 +515,46 @@ export function ClinicSettingsTab() {
                 title: 'Therapy Added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add therapy',
                 message:
-                  err instanceof ApiError
-                    ? err.message
-                    : 'Could not create therapy.',
+                  err instanceof ApiError ? err.message : 'Could not create therapy.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateTherapy(id, {
+                name: values.name,
+                categoryId: values.category,
+                status: 'ACTIVE',
+                durationMinutes: parseSessionNumber(values.duration) || 45,
+                price: Number(values.price),
+                description: values.description,
+              });
+
+              await refreshTherapies();
+
+              showToast({
+                title: 'Therapy Updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+
+              return true;
+            } catch (err) {
+              console.error('Update therapy failed:', err);
+
+              showToast({
+                title: 'Failed to update therapy',
+                message:
+                  err instanceof ApiError ? err.message : 'Could not update therapy.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Therapy', record })}
@@ -508,6 +573,7 @@ export function ClinicSettingsTab() {
                 title: 'Consultation type added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add consultation type',
@@ -515,7 +581,34 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create consultation type.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateConsultationType(id, {
+                name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
+                status: 'ACTIVE',
+              });
+              await refreshConsultationTypes();
+              showToast({
+                title: 'Consultation type updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update consultation type failed:', err);
+              showToast({
+                title: 'Failed to update consultation type',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update consultation type.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Consultation', record })}
@@ -534,6 +627,7 @@ export function ClinicSettingsTab() {
                 title: 'Treatment plan added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add treatment plan',
@@ -541,10 +635,39 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create treatment plan.',
+                variant: 'error',
               });
+              return false;
             }
           }}
-          onDelete={(record) => setDeleteTarget({ type: 'Treatment Plan Master', record })}
+          onUpdate={async (id, values) => {
+            try {
+              await updateTreatmentPlanMaster(id, {
+                name: values.name.trim(),
+                status: 'ACTIVE',
+              });
+              await refreshTreatmentPlans();
+              showToast({
+                title: 'Treatment plan updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update treatment plan failed:', err);
+              showToast({
+                title: 'Failed to update treatment plan',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update treatment plan.',
+                variant: 'error',
+              });
+              return false;
+            }
+          }}
+          onDelete={(record) =>
+            setDeleteTarget({ type: 'Treatment Plan Master', record })
+          }
         />
 
         <PackageMastersSection
@@ -561,14 +684,43 @@ export function ClinicSettingsTab() {
                 title: 'Package master added',
                 message: `${values.name} has been added successfully.`,
               });
+              return true;
             } catch (err) {
               showToast({
-                title: 'Failed to add package',
+                title: 'Failed to add package master',
                 message:
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create package master.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updatePackageMaster(id, {
+                name: values.name.trim(),
+                packagePrice: Number(values.packagePrice),
+                status: 'ACTIVE',
+              });
+              await refreshPackageMasters();
+              showToast({
+                title: 'Package master updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update package master failed:', err);
+              showToast({
+                title: 'Failed to update package master',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update package master.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Package Masters', record })}
@@ -590,6 +742,7 @@ export function ClinicSettingsTab() {
                 title: 'Dosha added',
                 message: `${values.name} has been added to Dosha Master.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add dosha',
@@ -597,7 +750,37 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create dosha.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateDoshaMaster(id, {
+                name: values.name.trim(),
+                elements: values.elements.trim(),
+                characteristics: values.characteristics.trim(),
+                status: 'ACTIVE',
+              });
+              invalidateBookingDoshasCache();
+              await refreshDoshas();
+              showToast({
+                title: 'Dosha updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update dosha failed:', err);
+              showToast({
+                title: 'Failed to update dosha',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update dosha.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Dosha Master', record })}
@@ -631,7 +814,7 @@ export function SettingsActionButton({
   label: string;
   onClick: () => void;
   disabled?: boolean;
-  variant?: 'add' | 'delete';
+  variant?: 'add' | 'delete' | 'edit'; // Added 'edit' to the types
 }) {
   return (
     <button
@@ -643,16 +826,16 @@ export function SettingsActionButton({
       }}
       disabled={disabled}
       aria-label={label}
+      title={label} // Added title so users see what the button does on hover
       className={cn(
         'inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] transition-colors hover:bg-[#F5EBD3] disabled:opacity-60',
         variant === 'delete' && 'hover:bg-danger/10 hover:text-danger',
+        variant === 'edit' && 'hover:bg-[#EAE0C8]' // Optional: slightly different hover state for edit if desired, or you can remove this line to keep the default hover
       )}
     >
-      {variant === 'add' ? (
-        <Plus className="h-4 w-4" strokeWidth={2.25} />
-      ) : (
-        <Trash2 className="h-4 w-4" strokeWidth={2} />
-      )}
+      {variant === 'add' && <Plus className="h-4 w-4" strokeWidth={2.25} />}
+      {variant === 'delete' && <Trash2 className="h-4 w-4" strokeWidth={2} />}
+      {variant === 'edit' && <Pencil className="h-4 w-4" strokeWidth={2} />}
     </button>
   );
 }
@@ -669,14 +852,15 @@ export function SettingsTableHead({ columns }: { columns: string[] }) {
   );
 }
 
-function TreatmentCategoriesSection({
+export function TreatmentCategoriesSection({
   categories,
   onAdd,
-  onDelete
+  onUpdate,
+  onDelete,
 }: {
   categories: ClinicTreatmentCategoryRecord[];
-  // onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
   onAdd: (values: ClinicCategoryFormValues) => Promise<boolean>;
+  onUpdate: (id: string, values: ClinicCategoryFormValues) => Promise<boolean>;
   onDelete: (record: ClinicTreatmentCategoryRecord) => void;
 }) {
   const {
@@ -689,10 +873,35 @@ function TreatmentCategoriesSection({
     defaultValues: { categoryName: '', description: '' },
   });
 
-  const onSubmit = async (values: ClinicCategoryFormValues) => {
-    const success = await onAdd(values);
+  const [editingCategory, setEditingCategory] =
+    useState<ClinicTreatmentCategoryRecord | null>(null);
 
-    if (success) reset();
+  const onSubmit = async (values: ClinicCategoryFormValues) => {
+    let success = false;
+
+    if (editingCategory) {
+      success = await onUpdate(editingCategory.id, values);
+    } else {
+      success = await onAdd(values);
+    }
+
+    if (success) {
+      reset({ categoryName: '', description: '' });
+      setEditingCategory(null);
+    }
+  };
+
+  const handleEditClick = (category: ClinicTreatmentCategoryRecord) => {
+    setEditingCategory(category);
+    reset({
+      categoryName: category.name,
+      description: category.description || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategory(null);
+    reset({ categoryName: '', description: '' });
   };
 
   return (
@@ -702,12 +911,13 @@ function TreatmentCategoriesSection({
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
+          <thead className="sticky top-0 z-10 bg-white">
             <SettingsTableHead
               columns={['S No.', 'Category Name', 'Description', 'Action']}
             />
           </thead>
           <tbody>
+            {/* Input Row: Used for both Adding and Editing */}
             <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -725,24 +935,51 @@ function TreatmentCategoriesSection({
                 />
               </td>
               <td className="px-4 py-3">
-                <SettingsActionButton
-                  label="Add category"
-                  disabled={isSubmitting}
-                  onClick={() => void handleSubmit(onSubmit)()}
-                />
+                <div className="flex items-center gap-2">
+                  {editingCategory && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmit(onSubmit)()}
+                    className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {editingCategory ? 'Save' : 'Add'}
+                  </button>
+                </div>
               </td>
             </tr>
+
+            {/* List Rows */}
             {categories.map((category, index) => (
               <tr key={category.id} className="border-b border-[#EFF0F6]">
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
-                <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">
+                  {category.name}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {category.description}
+                </td>
                 <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${category.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(category)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <SettingsActionButton
+                      label={`Edit ${category.name}`}
+                      variant="edit"
+                      onClick={() => handleEditClick(category)}
+                    />
+                    <SettingsActionButton
+                      label={`Delete ${category.name}`}
+                      variant="delete"
+                      onClick={() => onDelete(category)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}
@@ -760,13 +997,15 @@ function TherapySection({
   onToggleStatus,
   onAdd,
   onDelete,
+  onUpdate,
 }: {
   therapies: ClinicTherapyRecord[];
   categoryOptions: { value: string; label: string }[];
   togglingId: string | null;
   onToggleStatus: (record: ClinicTherapyRecord) => void | Promise<void>;
-  onAdd: (values: ClinicTherapyFormValues) => void | Promise<void>;
+  onAdd: (values: ClinicTherapyFormValues) => Promise<boolean> | void;
   onDelete: (record: ClinicTherapyRecord) => void;
+  onUpdate: (id: string, values: ClinicTherapyFormValues) => Promise<boolean>;
 }) {
   const {
     register,
@@ -784,9 +1023,47 @@ function TherapySection({
     },
   });
 
+  const [editingTherapy, setEditingTherapy] =
+    useState<ClinicTherapyRecord | null>(null);
+
+  const handleCancelEdit = () => {
+    setEditingTherapy(null);
+    reset({
+      name: '',
+      category: '',
+      duration: '',
+      price: '',
+      description: '',
+    });
+  };
+
   const onSubmit = async (values: ClinicTherapyFormValues) => {
-    await onAdd(values);
-    reset();
+    let success = false;
+    if (editingTherapy) {
+      success = await onUpdate(editingTherapy.id, values);
+    } else {
+      const res = await onAdd(values);
+      success = res !== false;
+    }
+
+    if (success) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleEditClick = (therapy: ClinicTherapyRecord) => {
+    setEditingTherapy(therapy);
+    reset({
+      name: therapy.name,
+      // If therapy.categoryId exists, use it; otherwise match option by category name
+      category:
+        (therapy as any).categoryId ||
+        categoryOptions.find((opt) => opt.label === therapy.category)?.value ||
+        '',
+      duration: therapy.duration?.toString() || '',
+      price: therapy.price?.toString() || '',
+      description: therapy.description || '',
+    });
   };
 
   return (
@@ -796,7 +1073,7 @@ function TherapySection({
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full min-w-[900px] text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
+          <thead className="sticky top-0 z-10 bg-white">
             <SettingsTableHead
               columns={[
                 'S No.',
@@ -811,14 +1088,21 @@ function TherapySection({
             />
           </thead>
           <tbody>
+            {/* Input Row: Add or Edit */}
             <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
-                <Input placeholder="Name" error={errors.name?.message} {...register('name')} />
+                <Input
+                  placeholder="Name"
+                  error={errors.name?.message}
+                  {...register('name')}
+                />
               </td>
               <td className="px-4 py-3">
                 <Select
-                  placeholder={categoryOptions.length ? 'Category' : 'Add category first'}
+                  placeholder={
+                    categoryOptions.length ? 'Category' : 'Add category first'
+                  }
                   options={categoryOptions}
                   disabled={categoryOptions.length === 0}
                   error={errors.category?.message}
@@ -827,10 +1111,18 @@ function TherapySection({
               </td>
               <td className="px-4 py-3 text-[12px] text-[#838A9A]">Active</td>
               <td className="px-4 py-3">
-                <Input placeholder="45 min" error={errors.duration?.message} {...register('duration')} />
+                <Input
+                  placeholder="45 min"
+                  error={errors.duration?.message}
+                  {...register('duration')}
+                />
               </td>
               <td className="px-4 py-3">
-                <RupeeInput placeholder="0" error={errors.price?.message} {...register('price')} />
+                <RupeeInput
+                  placeholder="0"
+                  error={errors.price?.message}
+                  {...register('price')}
+                />
               </td>
               <td className="px-4 py-3">
                 <Input
@@ -840,17 +1132,35 @@ function TherapySection({
                 />
               </td>
               <td className="px-4 py-3">
-                <SettingsActionButton
-                  label="Add therapy"
-                  disabled={isSubmitting || categoryOptions.length === 0}
-                  onClick={() => void handleSubmit(onSubmit)()}
-                />
+                <div className="flex items-center gap-2">
+                  {editingTherapy && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmit(onSubmit)()}
+                    className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {editingTherapy ? 'Save' : 'Add'}
+                  </button>
+                </div>
               </td>
             </tr>
+
+            {/* Therapy Records */}
             {therapies.map((therapy, index) => (
               <tr key={therapy.id} className="border-b border-[#EFF0F6]">
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-[#422C23]">{therapy.name}</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">
+                  {therapy.name}
+                </td>
                 <td className="px-4 py-4 text-[#422C23]">{therapy.category}</td>
                 <td className="px-4 py-4">
                   <StatusToggle
@@ -860,14 +1170,25 @@ function TherapySection({
                   />
                 </td>
                 <td className="px-4 py-4 text-[#422C23]">{therapy.duration}</td>
-                <td className="px-4 py-4 text-[#422C23]">{formatCurrency(therapy.price)}</td>
-                <td className="px-4 py-4 text-[#422C23]">{therapy.description}</td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {formatCurrency(therapy.price)}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {therapy.description}
+                </td>
                 <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${therapy.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(therapy)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <SettingsActionButton
+                      label={`Edit ${therapy.name}`}
+                      variant="edit"
+                      onClick={() => handleEditClick(therapy)}
+                    />
+                    <SettingsActionButton
+                      label={`Delete ${therapy.name}`}
+                      variant="delete"
+                      onClick={() => onDelete(therapy)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

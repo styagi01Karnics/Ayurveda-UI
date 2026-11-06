@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +12,6 @@ import { DoctorAvailabilityFields } from '@/components/settings/DoctorAvailabili
 import { DeleteClinicItemModal } from '@/components/settings/DeleteClinicItemModal';
 
 import {
-  SectionHeader,
   SettingsActionButton,
   SettingsTableHead,
   StatusToggle,
@@ -24,6 +22,7 @@ import {
   deleteDoctor,
   getAllDoctors,
   updateDoctorStatus,
+  updateDoctor,
 } from '@/lib/api/doctors';
 
 import { mapDoctorToClinicRecord } from '@/lib/api/mappers';
@@ -63,8 +62,8 @@ export function DocterManagementTab() {
   const { showToast } = useToast();
 
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] =
-    useState<ClinicDoctorRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ClinicDoctorRecord | null>(null);
+  const [editingDoctor, setEditingDoctor] = useState<ClinicDoctorRecord | null>(null);
 
   const {
     data: doctors,
@@ -100,9 +99,33 @@ export function DocterManagementTab() {
     setDoctors(response.map(mapDoctorToClinicRecord));
   };
 
+  const handleEditClick = (doctor: ClinicDoctorRecord) => {
+    setEditingDoctor(doctor);
+
+    reset({
+      name: doctor.name,
+      specialization: doctor.specialization,
+      qualification: doctor.qualification || '',
+      mobileNumber: doctor.mobileNumber || '',
+      status: doctor.status,
+      consultationFees: doctor.consultationFees.toString(),
+      followUpFees: doctor.followUpFees.toString(),
+      availabilityDays: ['weekdays'],
+      availabilityStartTime: '09:00',
+      availabilityEndTime: '17:00',
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDoctor(null);
+    reset(EMPTY_DOCTOR_FORM);
+  };
+
   const onSubmit = async (values: ClinicDoctorFormValues) => {
     try {
-      await createDoctor({
+      const payload = {
         name: values.name,
         specialization: values.specialization,
         status: toApiStatus(values.status),
@@ -115,35 +138,43 @@ export function DocterManagementTab() {
         ),
         mobileNumber: values.mobileNumber,
         qualification: values.qualification ?? '',
-      });
+      };
+
+      if (editingDoctor) {
+        await updateDoctor(editingDoctor.id, payload);
+        showToast({
+          title: 'Doctor Updated',
+          message: `${values.name}'s profile has been updated.`,
+        });
+      } else {
+        await createDoctor(payload);
+        showToast({
+          title: 'Doctor Added',
+          message: `${values.name} has been added successfully.`,
+        });
+      }
 
       await refreshDoctors();
+      setEditingDoctor(null);
       reset(EMPTY_DOCTOR_FORM);
 
-      showToast({
-        title: 'Doctor Added',
-        message: `${values.name} has been added successfully.`,
-      });
     } catch (err) {
       showToast({
-        title: 'Failed to add doctor',
-        message:
-          err instanceof ApiError ? err.message : 'Could not create doctor.',
+        title: editingDoctor ? 'Failed to update doctor' : 'Failed to add doctor',
+        message: err instanceof ApiError ? err.message : 'An error occurred.',
       });
     }
   };
 
   const handleToggleStatus = async (doctor: ClinicDoctorRecord) => {
     setTogglingId(doctor.id);
-
     try {
       await updateDoctorStatus(doctor.id, nextStatus(doctor.status));
       await refreshDoctors();
     } catch (err) {
       showToast({
         title: 'Failed to update doctor status',
-        message:
-          err instanceof ApiError ? err.message : 'Could not update status.',
+        message: err instanceof ApiError ? err.message : 'Could not update status.',
       });
     } finally {
       setTogglingId(null);
@@ -152,22 +183,17 @@ export function DocterManagementTab() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-
     try {
       await deleteDoctor(deleteTarget.id);
       await refreshDoctors();
-
       showToast({
-        title: 'Doctor has been deleted',
-        message: `${deleteTarget.name} was removed from the database.`,
+        title: 'Doctor deleted',
+        message: `${deleteTarget.name} was removed.`,
       });
     } catch (err) {
       showToast({
         title: 'Error deleting record',
-        message:
-          err instanceof ApiError
-            ? err.message
-            : 'An unknown error occurred.',
+        message: err instanceof ApiError ? err.message : 'An unknown error occurred.',
       });
     } finally {
       setDeleteTarget(null);
@@ -176,221 +202,198 @@ export function DocterManagementTab() {
 
   const onInvalid = () => {
     showToast({
-      title: 'Cannot add doctor',
-      message:
-        'Please fill name, specialization, mobile, fees, and availability.',
+      title: 'Cannot save doctor',
+      message: 'Please fill name, specialization, mobile, fees, and availability.',
     });
   };
 
   return (
     <AsyncStatus loading={loading} error={error} onRetry={reload}>
-      <Card className="settings-card min-w-0 overflow-hidden p-0 shadow-none">
-        <div className="border-b border-[#EFF0F6] px-5 py-4">
-          <SectionHeader title="Doctors" />
+      <div className="flex flex-col gap-6 p-4">
+        {/* Top Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#422C23]">Doctors</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              Manage doctor profiles, consultation fees and availability.
+            </p>
+          </div>
+          <SettingsActionButton
+            label="+ Add doctor"
+            onClick={handleCancelEdit}
+          />
         </div>
 
-        <form
-          className="border-b border-[#EFF0F6] px-5 py-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void handleSubmit(onSubmit, onInvalid)();
-          }}
-        >
-          <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-            <div className="min-w-0">
-              <Input
-                label="Name"
-                placeholder="Name"
-                error={errors.name?.message}
-                {...register('name')}
-              />
+        {/* Doctor Details Form Card */}
+        <Card className="settings-card p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-[#422C23]">
+                {editingDoctor ? 'Edit Doctor Details' : 'Doctor details'}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Enter the doctor's profile and fee information.
+              </p>
             </div>
-
-            <div className="min-w-0">
-              <Input
-                label="Specialisation"
-                placeholder="Specialisation"
-                error={errors.specialization?.message}
-                {...register('specialization')}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <Controller
-                name="qualification"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    label="Qualification"
-                    placeholder="Qualification"
-                    error={errors.qualification?.message}
-                    name={field.name}
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                  />
-                )}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <Controller
-                name="mobileNumber"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    label="Mobile"
-                    placeholder="10-digit no."
-                    error={errors.mobileNumber?.message}
-                    name={field.name}
-                    value={field.value ?? ''}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                  />
-                )}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <Select
-                label="Status"
-                placeholder="Status"
-                options={[...CLINIC_STATUS_OPTIONS]}
-                error={errors.status?.message}
-                {...register('status')}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <RupeeInput
-                label="Consultation"
-                placeholder="0"
-                error={errors.consultationFees?.message}
-                {...register('consultationFees')}
-              />
-            </div>
-
-            <div className="min-w-0">
-              <RupeeInput
-                label="Follow up"
-                placeholder="0"
-                error={errors.followUpFees?.message}
-                {...register('followUpFees')}
-              />
-            </div>
+            {editingDoctor && (
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+                Editing: {editingDoctor.name}
+              </span>
+            )}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-            <div className="min-w-0 flex-1">
+          <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit, onInvalid)(); }}>
+            <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="min-w-0">
+                <Input label="Full name" placeholder="e.g. Dr. Arman" error={errors.name?.message} {...register('name')} />
+              </div>
+
+              <div className="min-w-0">
+                <Input label="Specialisation" placeholder="Select specialisation" error={errors.specialization?.message} {...register('specialization')} />
+              </div>
+
+              <div className="min-w-0">
+                <Controller
+                  name="qualification"
+                  control={control}
+                  render={({ field }) => (
+                    <Input label="Qualification" placeholder="e.g. BAMS, MD" error={errors.qualification?.message} {...field} value={field.value ?? ''} />
+                  )}
+                />
+              </div>
+
+              <div className="min-w-0">
+                <Controller
+                  name="mobileNumber"
+                  control={control}
+                  render={({ field }) => (
+                    <Input label="Mobile number" placeholder="+91 98765 43210" error={errors.mobileNumber?.message} {...field} value={field.value ?? ''} />
+                  )}
+                />
+              </div>
+
+              <div className="min-w-0">
+                <Select label="Status" placeholder="Active" options={[...CLINIC_STATUS_OPTIONS]} error={errors.status?.message} {...register('status')} />
+              </div>
+
+              <div className="min-w-0">
+                <RupeeInput label="Consultation fee" placeholder="1,000" error={errors.consultationFees?.message} {...register('consultationFees')} />
+              </div>
+
+              <div className="min-w-0">
+                <RupeeInput label="Follow-up fee" placeholder="500" error={errors.followUpFees?.message} {...register('followUpFees')} />
+              </div>
+            </div>
+
+            <div className="mt-6 min-w-0 w-full lg:w-3/4">
               <DoctorAvailabilityFields
                 selectedDays={availabilityDays}
-                onDaysChange={(days) =>
-                  setValue('availabilityDays', days, {
-                    shouldValidate: true,
-                  })
-                }
+                onDaysChange={(days) => setValue('availabilityDays', days, { shouldValidate: true })}
                 startTime={watch('availabilityStartTime') ?? '09:00'}
                 endTime={watch('availabilityEndTime') ?? '17:00'}
-                onStartTimeChange={(value) =>
-                  setValue('availabilityStartTime', value, {
-                    shouldValidate: true,
-                  })
-                }
-                onEndTimeChange={(value) =>
-                  setValue('availabilityEndTime', value, {
-                    shouldValidate: true,
-                  })
-                }
+                onStartTimeChange={(val) => setValue('availabilityStartTime', val, { shouldValidate: true })}
+                onEndTimeChange={(val) => setValue('availabilityEndTime', val, { shouldValidate: true })}
                 daysError={errors.availabilityDays?.message}
                 startTimeError={errors.availabilityStartTime?.message}
                 endTimeError={errors.availabilityEndTime?.message}
               />
             </div>
 
-            <SettingsActionButton
-              label="Add doctor"
-              disabled={isSubmitting}
-              onClick={() => void handleSubmit(onSubmit, onInvalid)()}
-            />
+            <div className="mt-8 flex items-center justify-end gap-4 border-t border-[#EFF0F6] pt-6">
+              <div className="mt-8 flex items-center justify-end gap-4 border-t border-[#EFF0F6] pt-6">
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="rounded-md border border-gray-300 bg-white px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => void handleSubmit(onSubmit, onInvalid)()}
+                  className="rounded-md bg-gold px-6 py-2 text-sm font-medium text-white focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {editingDoctor ? 'Save' : 'Add doctor'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </Card>
+
+        {/* Doctor List Table Card */}
+        <Card className="settings-card p-6 shadow-sm">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-[#422C23]">Doctor list</h2>
+              <p className="text-sm text-gray-500">{doctors.length} doctors</p>
+            </div>
+            <div className="w-full sm:w-64">
+              <Input placeholder="Search doctors..." />
+            </div>
           </div>
-        </form>
 
-        <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-white">
-              <SettingsTableHead
-                columns={[
-                  'S No.',
-                  'Name',
-                  'Specialization',
-                  'Qualification',
-                  'Mobile',
-                  'Status',
-                  'Consultation Fees',
-                  'Follow Up Fees',
-                  'Availability',
-                  'Action',
-                ]}
-              />
-            </thead>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="border-b border-[#EFF0F6] bg-white text-xs uppercase tracking-wider text-gray-500">
+                <SettingsTableHead
+                  columns={[
+                    'DOCTOR', 'SPECIALISATION', 'QUALIFICATION', 'MOBILE',
+                    'STATUS', 'FEES', 'AVAILABILITY', 'ACTIONS'
+                  ]}
+                />
+              </thead>
 
-            <tbody>
-              {doctors.map((doctor, index) => (
-                <tr key={doctor.id} className="border-b border-[#EFF0F6]">
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {index + 1}.
-                  </td>
+              <tbody>
+                {doctors.map((doctor) => (
+                  <tr key={doctor.id} className="border-b border-[#EFF0F6] hover:bg-gray-50/50">
+                    <td className="px-4 py-4 font-medium text-[#422C23]">{doctor.name}</td>
+                    <td className="px-4 py-4 text-[#422C23]">{doctor.specialization}</td>
+                    <td className="px-4 py-4 text-[#422C23]">{doctor.qualification || '—'}</td>
+                    <td className="px-4 py-4 text-[#422C23]">{doctor.mobileNumber || '—'}</td>
+                    <td className="px-4 py-4">
+                      <StatusToggle
+                        status={doctor.status}
+                        disabled={togglingId === doctor.id}
+                        onToggle={() => handleToggleStatus(doctor)}
+                      />
+                    </td>
+                    <td className="px-4 py-4 text-[#422C23]">
+                      {formatCurrency(doctor.consultationFees)} / {formatCurrency(doctor.followUpFees)}
+                    </td>
+                    <td className="px-4 py-4 text-[#422C23]">{doctor.availability || '—'}</td>
 
-                  <td className="px-4 py-4 font-medium text-[#422C23]">
-                    {doctor.name}
-                  </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <SettingsActionButton
+                          label="Edit"
+                          variant='edit'
+                          onClick={() => handleEditClick(doctor)}
+                        />
+                        <SettingsActionButton
+                          label="Delete"
+                          variant="delete"
+                          onClick={() => setDeleteTarget(doctor)}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {doctor.specialization}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {doctor.qualification || '—'}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {doctor.mobileNumber || '—'}
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <StatusToggle
-                      status={doctor.status}
-                      disabled={togglingId === doctor.id}
-                      onToggle={() => handleToggleStatus(doctor)}
-                    />
-                  </td>
-
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {formatCurrency(doctor.consultationFees)}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {formatCurrency(doctor.followUpFees)}
-                  </td>
-
-                  <td className="px-4 py-4 text-[#422C23]">
-                    {doctor.availability || '—'}
-                  </td>
-
-                  <td className="px-4 py-4">
-                    <SettingsActionButton
-                      label={`Delete ${doctor.name}`}
-                      variant="delete"
-                      onClick={() => setDeleteTarget(doctor)}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+            <div>
+              Showing {doctors.length > 0 ? 1 : 0}-{doctors.length} of {doctors.length} doctors
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="rounded px-2 py-1 hover:bg-gray-100">&lt;</button>
+              <span className="font-medium">1</span>
+              <button className="rounded px-2 py-1 hover:bg-gray-100">&gt;</button>
+            </div>
+          </div>
+        </Card>
 
         <DeleteClinicItemModal
           open={Boolean(deleteTarget)}
@@ -398,7 +401,7 @@ export function DocterManagementTab() {
           onConfirm={handleDelete}
           itemType="Doctor"
         />
-      </Card>
+      </div>
     </AsyncStatus>
   );
 }

@@ -33,3 +33,13 @@ export function createPackageMaster(payload: CreatePackageMasterPayload) {
     body: payload,
   });
 }
+
+export function updatePackageMaster(
+  id: string,
+  payload: Partial<CreatePackageMasterPayload>,
+) {
+  return apiRequest<PackageMasterDto>(url(ep.getById(id)), {
+    method: 'PUT',
+    body: payload,
+  });
+}

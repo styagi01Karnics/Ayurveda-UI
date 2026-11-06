@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ChevronDown, KeyRound, LogOut, User } from 'lucide-react';
+import { ChevronDown, KeyRound, LogOut, User , Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getStoredTenant, getStoredUser } from '@/lib/auth';
 import { cn, formatPersonName } from '@/lib/utils';
@@ -79,7 +79,7 @@ export function UserMenu({ onChangePassword, onLogout }: UserMenuProps) {
               }}
             />
              <MenuItem
-              icon={<User className="h-4 w-4" />}
+              icon={<Settings className="h-4 w-4" />}
               label="System Settings"
               onClick={() => setOpen(false)}
               as={Link}

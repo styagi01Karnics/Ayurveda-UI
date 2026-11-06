@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Icon } from '@iconify/react';
-import { Building2, Megaphone, MessageCircle } from 'lucide-react';
+import { Building2, Megaphone, MessageCircle , UserRoundCog } from 'lucide-react';
 import { assets, type NavIconKey } from '@/lib/assets';
 import {
   getClinicDisplayName,
@@ -23,7 +23,7 @@ const navItems: {
   superAdminOnly?: boolean;
   icon?: NavIconKey;
   iconify?: { outline: string; filled: string };
-  lucide?: 'megaphone' | 'message' | 'clinics';
+  lucide?: 'megaphone' | 'message' | 'clinics' | 'user-round-cog';
 }[] = [
   { to: '/dashboard', label: 'Dashboard', pageCode: 'DASHBOARD', icon: 'dashboard' },
   {
@@ -99,7 +99,7 @@ const navItems: {
     requiresSettings: true,
     lucide: 'message',
   },
-  { to: '/settings', label: 'Configuration', pageCode: 'SETTINGS', icon: 'settings' },
+  { to: '/settings', label: 'Configuration', pageCode: 'SETTINGS', lucide: 'user-round-cog' },
   {
     to: PLATFORM_CLINICS_PATH,
     label: 'Clinics',
@@ -212,7 +212,15 @@ export function Sidebar({ onNavigate, className }: SidebarProps) {
                     strokeWidth={1.5}
                     aria-hidden
                   />
-                ) : icon ? (
+                ) : lucide === 'user-round-cog' ? (
+                  <UserRoundCog
+                    className={cn(
+                      'h-[22px] w-[22px] shrink-0',
+                      isActive ? 'text-gold' : 'text-brown',
+                    )}
+                    strokeWidth={1.5}
+                    aria-hidden
+                  />): icon ? (
                   <NavIcon
                     outline={assets.icons.nav[icon].outline}
                     filled={assets.icons.nav[icon].filled}
