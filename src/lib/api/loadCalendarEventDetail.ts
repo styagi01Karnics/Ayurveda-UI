@@ -19,6 +19,7 @@ function formatVisitDate(value?: string | null): string {
   const parsed = new Date(value.includes('T') ? value : `${value.slice(0, 10)}T09:00:00`);
   if (Number.isNaN(parsed.getTime())) return value;
   return parsed.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
     day: '2-digit',
     month: 'short',
     year: 'numeric',

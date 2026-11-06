@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type ReactNode,
   type SelectHTMLAttributes,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -21,6 +22,8 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   placeholder?: string;
   options: readonly SelectOption[] | SelectOption[];
   fieldVariant?: 'default' | 'auth';
+  /** Rendered at the bottom of the open menu, e.g. an inline "add new" row. Receives a close callback. */
+  footer?: ReactNode | ((close: () => void) => ReactNode);
 }
 
 function normalizeOption(option: SelectOption): { value: string; label: string } {
@@ -42,6 +45,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       placeholder = 'Select',
       options,
       fieldVariant = 'default',
+      footer,
       value,
       defaultValue,
       onChange,
@@ -212,6 +216,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </li>
           );
         })}
+        {typeof footer === 'function' ? footer(() => setOpen(false)) : footer}
       </ul>
     ) : null;
 

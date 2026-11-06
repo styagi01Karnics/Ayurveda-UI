@@ -402,7 +402,7 @@ function MessageHistoryRow({ row }: { row: MessageLogDto }) {
             {channelLabel[row.channel]}
           </span>
           <p className="mt-1 text-[10px] text-text-muted">
-            {new Date(row.createdAt).toLocaleString()}
+            {new Date(row.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
           </p>
           <p className="text-[10px] font-medium text-success">{row.status}</p>
         </div>

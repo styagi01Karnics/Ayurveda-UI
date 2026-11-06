@@ -21,8 +21,70 @@ interface MedicineFormModalProps {
   medicine?: MedicineRecord | null;
   categoryOptions: SelectOption[];
   categoriesLoading?: boolean;
+  /** Creates a category from a typed name and resolves to its code. */
+  onAddCategory?: (name: string) => Promise<string>;
   submitting?: boolean;
 }
+
+function CategoryAddRow({
+  onAdd,
+  disabled,
+}: {
+  onAdd: (name: string) => Promise<void>;
+  disabled: boolean;
+}) {
+  const [name, setName] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      setError('Enter a category name');
+      return;
+    }
+    setAdding(true);
+    setError(null);
+    try {
+      await onAdd(trimmed);
+      setName('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not add category');
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <li role="presentation" className="border-t border-[#EFF0F6] px-3 pb-2 pt-2">
+      <div className="flex gap-2">
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              void submit();
+            }
+          }}
+          placeholder="New category name"
+          disabled={disabled || adding}
+          className="min-w-0 flex-1 rounded-md border border-[#EFF0F6] bg-white px-3 py-1.5 font-sans text-xs text-[#161616] focus:border-gold focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => void submit()}
+          disabled={disabled || adding}
+          className="rounded-md bg-[#422C23] px-3 py-1.5 font-sans text-xs font-semibold text-white disabled:opacity-50"
+        >
+          {adding ? 'Adding…' : 'Add'}
+        </button>
+      </div>
+      {error && <p className="mt-1 font-sans text-[11px] text-red-600">{error}</p>}
+    </li>
+  );
+}
+
 
 const emptyValues: MedicineFormValues = {
   name: '',
@@ -167,6 +229,7 @@ export function MedicineFormModal({
   medicine,
   categoryOptions,
   categoriesLoading = false,
+  onAddCategory,
   submitting = false,
 }: MedicineFormModalProps) {
   const [pendingItems, setPendingItems] = useState<MedicineFormValues[]>([]);
@@ -213,6 +276,12 @@ export function MedicineFormModal({
       reset(emptyValues);
     }
   }, [medicine, reset, open]);
+
+  const handleAddCategory = async (name: string) => {
+    if (!onAddCategory) return;
+    const code = await onAddCategory(name);
+    setValue('category', code, { shouldValidate: true });
+  };
 
   const handleClose = () => {
     reset(emptyValues);
@@ -305,16 +374,34 @@ export function MedicineFormModal({
           />
           <Select
             label="Medicine Category"
+            name="category"
+            id="medicine-category"
             placeholder={categoriesLoading ? 'Loading categories…' : 'Medicine Category'}
             options={categoryOptions}
-            disabled={categoriesLoading || categoryOptions.length === 0}
+            disabled={categoriesLoading || submitting}
             error={
               errors.category?.message ??
               (!categoriesLoading && categoryOptions.length === 0
-                ? 'No categories available from API'
+                ? 'No categories yet. Add one from the dropdown.'
                 : undefined)
             }
-            {...register('category')}
+            value={watch('category')}
+            onChange={(event) =>
+              setValue('category', event.target.value, { shouldValidate: true })
+            }
+            footer={
+              onAddCategory
+                ? (close) => (
+                    <CategoryAddRow
+                      onAdd={async (name) => {
+                        await handleAddCategory(name);
+                        close();
+                      }}
+                      disabled={submitting}
+                    />
+                  )
+                : undefined
+            }
           />
           <Input
             label="Manufacturer"

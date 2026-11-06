@@ -33,7 +33,7 @@ All business APIs return a common wrapper unless noted (file download / biometri
 
 | Service | Port | Base URL example |
 |---|---|---|
-| Auth | **8100** | `http://45.195.229.15:8100` |
+| Auth | **8113** | `http://45.195.229.15:8113` |
 | Patient | **8101** | `http://45.195.229.15:8101` |
 | Doctor | **8102** | `http://45.195.229.15:8102` |
 | Appointment | **8103** | `http://45.195.229.15:8103` |
@@ -78,7 +78,7 @@ Swagger UI (per service): `http://HOST:PORT/swagger-ui/index.html`
 
 ---
 
-## 4. Auth Service (`:8100`)
+## 4. Auth Service (`:8113`)
 
 ### POST `/api/v1/auth/login`
 
@@ -1019,7 +1019,7 @@ Accepts **one object** or **array**:
 
 | Screen | Primary API |
 |---|---|
-| Login / Signup | Auth `:8100` |
+| Login / Signup | Auth `:8113` |
 | Patients (Active/Inactive) | `GET :8103/api/v1/appointments/patients` |
 | Book appointment | `POST :8103/api/v1/appointments` |
 | Doctors | Doctor `:8102` |

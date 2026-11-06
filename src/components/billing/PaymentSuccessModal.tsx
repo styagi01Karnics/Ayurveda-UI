@@ -27,7 +27,7 @@ export function formatPaymentDateTime(iso?: string | null): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString('en-IN', {
-    day: '2-digit',
+    timeZone: 'Asia/Kolkata',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',

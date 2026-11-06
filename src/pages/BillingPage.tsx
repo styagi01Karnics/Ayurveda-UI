@@ -295,7 +295,7 @@ export function BillingPage() {
         variant: 'link',
         amount: result.link.amount ?? amount,
         refNumber: pending.invoiceRef,
-        paymentTime: new Date().toLocaleString('en-IN'),
+        paymentTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
         paymentMethod: 'Online',
         senderName: pending.senderName,
         payUrl: result.payUrl,

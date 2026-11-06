@@ -17,13 +17,14 @@ export function ActivityLogTable({ records, embedded }: ActivityLogTableProps) {
             <th className="px-5 py-3 font-medium">Target</th>
             <th className="px-5 py-3 font-medium">Before</th>
             <th className="px-5 py-3 font-medium">After</th>
+            <th className="px-5 py-3 font-medium">By</th>
             <th className="px-5 py-3 font-medium">Timestamp</th>
           </tr>
         </thead>
         <tbody>
           {records.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-5 py-12 text-center text-text-muted">
+              <td colSpan={7} className="px-5 py-12 text-center text-text-muted">
                 No activity logs found matching your search.
               </td>
             </tr>
@@ -38,6 +39,7 @@ export function ActivityLogTable({ records, embedded }: ActivityLogTableProps) {
                 <td className="px-5 py-4 text-brown">{record.target}</td>
                 <td className="px-5 py-4 text-text-muted">{record.before}</td>
                 <td className="px-5 py-4 text-text-muted">{record.after}</td>
+                <td className="px-5 py-4 text-text-muted">{record.performedBy ?? '—'}</td>
                 <td className="px-5 py-4 text-text-muted">{record.timestamp}</td>
               </tr>
             ))

@@ -16,10 +16,11 @@ import { useAsyncData } from '@/hooks/useAsyncData';
 import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   createMedicine,
+  createMedicineCategory,
   createMultipleMedicines,
   deleteMedicine,
   getAllMedicines,
-  getMedicineCategories,
+  getMedicineCategoryMaster,
   updateMedicine,
 } from '@/lib/api/medicines';
 import { ApiError } from '@/lib/api/client';
@@ -27,6 +28,7 @@ import {
   mapMedicineCategoryOptions,
   mapMedicineToRecord,
   toApiMedicineCategory,
+  toMedicineCategoryCode,
 } from '@/lib/api/mappers';
 import type { CreateMedicinePayload } from '@/lib/api/types';
 import { assets } from '@/lib/assets';
@@ -52,7 +54,7 @@ export function MedicinesPage() {
   } = useAsyncData(async () => {
     const [rows, apiCategories] = await Promise.all([
       getAllMedicines({ page: 0, size: 100 }),
-      getMedicineCategories(),
+      getMedicineCategoryMaster(),
     ]);
 
     return {
@@ -60,6 +62,16 @@ export function MedicinesPage() {
       categoryOptions: mapMedicineCategoryOptions(apiCategories),
     };
   }, { medicines: [] as MedicineRecord[], categoryOptions: [] });
+
+  const handleAddCategory = async (name: string) => {
+    const code = toMedicineCategoryCode(name);
+    if (!/^[A-Z][A-Z0-9_]*$/.test(code)) {
+      throw new Error('Use letters or numbers, starting with a letter');
+    }
+    const created = await createMedicineCategory({ code, name });
+    await reload();
+    return created.code;
+  };
 
   const filteredMedicines = useMemo(() => {
     return data.medicines.filter((item) => {
@@ -245,6 +257,7 @@ export function MedicinesPage() {
         submitting={saving}
         categoriesLoading={loading}
         categoryOptions={data.categoryOptions}
+        onAddCategory={handleAddCategory}
         onClose={() => {
           if (saving) return;
           setFormOpen(false);

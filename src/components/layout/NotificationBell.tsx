@@ -23,7 +23,7 @@ function formatRelativeTime(iso: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return new Date(time).toLocaleDateString();
+  return new Date(time).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
 }
 
 function typeLabel(type: string): string {

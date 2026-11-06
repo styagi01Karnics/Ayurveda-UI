@@ -1,7 +1,7 @@
 import { apiConfig } from './config';
 import { apiRequest, apiRequestList, apiRequestPage, type PagedResult } from './client';
 import { apiEndpoints } from './endpoints';
-import type { CreateMedicinePayload, MedicineDto } from './types';
+import type { CreateMedicinePayload, MedicineCategoryDto, MedicineDto } from './types';
 import { DEFAULT_PAGE_SIZE } from '@/components/ui/Pagination';
 
 const url = (path: string) => `${apiConfig.medicine}${path}`;
@@ -81,6 +81,17 @@ export function deductMedicineStock(medicineId: string, quantity: number) {
 
 export function getMedicineCategories() {
     return apiRequestList<string>(url(ep.categories));
+}
+
+export function getMedicineCategoryMaster() {
+    return apiRequestList<MedicineCategoryDto>(url(ep.categoryMaster));
+}
+
+export async function createMedicineCategory(payload: { code: string; name: string }) {
+    return apiRequest<MedicineCategoryDto>(url(ep.categoryMaster), {
+        method: 'POST',
+        body: payload,
+    });
 }
 
 export function getMedicineNames() {

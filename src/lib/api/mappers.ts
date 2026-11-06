@@ -6,6 +6,7 @@ import type {
   ConsultationTypeRef,
   CreateMedicalAssessmentPayload,
   DoctorDto,
+  MedicineCategoryDto,
   MedicineDto,
   MedicalAssessmentDto,
   MedicalAssessmentDocuments,
@@ -71,6 +72,7 @@ function formatDisplayDate(iso?: string | null): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -84,6 +86,7 @@ function formatDisplayDateTime(date?: string | null, time?: string | null): stri
     const parsed = new Date(date);
     if (!Number.isNaN(parsed.getTime())) {
       return parsed.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -97,6 +100,7 @@ function formatDisplayDateTime(date?: string | null, time?: string | null): stri
     const combined = new Date(`${date.slice(0, 10)}T${normalizeSlotTimeForDisplay(time)}`);
     if (!Number.isNaN(combined.getTime())) {
       return combined.toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -179,6 +183,7 @@ function formatIsoDateTime(iso?: string | null): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -1025,15 +1030,22 @@ export function mapMedicineToRecord(medicine: MedicineDto): MedicineRecord {
   };
 }
 
-export function mapMedicineCategoryOptions(categories: string[]) {
-  return categories.map((code) => ({
-    value: code,
-    label: titleCase(code),
-  }));
+export function mapMedicineCategoryOptions(categories: MedicineCategoryDto[]) {
+  return categories
+    .filter((category) => category.active)
+    .map((category) => ({
+      value: category.code,
+      label: category.name,
+    }));
 }
 
 export function toApiMedicineCategory(category: string): string {
   return category.trim().toUpperCase().replace(/\s+/g, '_');
+}
+
+/** Builds a master code (e.g. "Eye Drops" → "EYE_DROPS") from a typed category name. */
+export function toMedicineCategoryCode(name: string): string {
+  return name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
 
 export function toApiGender(gender: string): string {
@@ -1187,7 +1199,12 @@ function formatInvoiceDate(date: string): string {
   if (!date) return '—';
   const parsed = new Date(date);
   if (Number.isNaN(parsed.getTime())) return date;
-  return parsed.toLocaleDateString('en-IN');
+  return parsed.toLocaleDateString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
 
 function mapInvoiceStatus(status: string): import('@/types').BillingStatus {
@@ -1299,6 +1316,7 @@ export function mapActivityLogDtoToRecord(
     before: log.before ?? '—',
     after: log.after ?? '—',
     timestamp: log.timestamp,
+    performedBy: log.performedByUserName ?? log.performedByRole ?? '—',
   };
 }
 

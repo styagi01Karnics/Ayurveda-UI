@@ -170,6 +170,7 @@ export function parseAppointmentDateTime(record: AppointmentRecord): Date | null
 
 function formatEventTime(date: Date): string {
   return date.toLocaleTimeString(undefined, {
+    timeZone: 'Asia/Kolkata',
     hour: 'numeric',
     minute: '2-digit',
   });
