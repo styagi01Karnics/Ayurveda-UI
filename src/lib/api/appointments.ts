@@ -356,6 +356,15 @@ export function createDosha(payload: CreateDoshaPayload) {
   });
 }
 
+export function updateDoshaMaster(
+  id: string,
+  payload: Partial<CreateDoshaPayload>,
+) {
+  return apiRequest<DoshaDto>(url(ep.doshas.getById(id)), {
+    method: 'PUT',
+    body: payload,
+  });
+}
 // ── Schedule ─────────────────────────────────────────────────────────────────
 
 export function getTodaysSchedule() {

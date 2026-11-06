@@ -433,13 +433,16 @@ export function mapPackageMasterToRecord(
   };
 }
 
+
 export function DoshasSection({
   records,
   onAdd,
-  onDelete
+  onUpdate,
+  onDelete,
 }: {
   records: ClinicDoshaRecord[];
-  onAdd: (values: ClinicDoshaFormValues) => void | Promise<void>;
+  onAdd: (values: ClinicDoshaFormValues) => Promise<boolean> | void;
+  onUpdate: (id: string, values: ClinicDoshaFormValues) => Promise<boolean>;
   onDelete: (record: ClinicDoshaRecord) => void;
 }) {
   const {
@@ -452,9 +455,36 @@ export function DoshasSection({
     defaultValues: { name: '', elements: '', characteristics: '' },
   });
 
+  const [editingRecord, setEditingRecord] =
+    useState<ClinicDoshaRecord | null>(null);
+
+  const handleCancelEdit = () => {
+    setEditingRecord(null);
+    reset({ name: '', elements: '', characteristics: '' });
+  };
+
   const onSubmit = async (values: ClinicDoshaFormValues) => {
-    await onAdd(values);
-    reset();
+    let success = false;
+
+    if (editingRecord) {
+      success = await onUpdate(editingRecord.id, values);
+    } else {
+      const res = await onAdd(values);
+      success = res !== false;
+    }
+
+    if (success) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleEditClick = (record: ClinicDoshaRecord) => {
+    setEditingRecord(record);
+    reset({
+      name: record.name,
+      elements: record.elements || '',
+      characteristics: record.characteristics || '',
+    });
   };
 
   return (
@@ -464,17 +494,18 @@ export function DoshasSection({
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
+          <thead className="sticky top-0 z-10 bg-white">
             <tr className="border-b border-gray-100 bg-gray-50/80 text-xs text-text-muted">
               <th className="w-16 px-4 py-3 font-medium">S No.</th>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Elements</th>
               <th className="px-4 py-3 font-medium">Characteristics</th>
               <th className="w-24 px-4 py-3 font-medium">Status</th>
-              <th className="w-20 px-4 py-3 font-medium">Action</th>
+              <th className="px-4 py-3 font-medium">Action</th>
             </tr>
           </thead>
           <tbody>
+            {/* Input Row: Add or Edit */}
             <tr className="border-b border-gray-50 bg-cream/30">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -500,21 +531,29 @@ export function DoshasSection({
               </td>
               <td className="px-4 py-3 text-text-muted">Active</td>
               <td className="px-4 py-3">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    void handleSubmit(onSubmit)();
-                  }}
-                  disabled={isSubmitting}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-[#FAF4E5] text-[#422C23] hover:bg-[#F5EBD3] disabled:opacity-60"
-                  aria-label="Add dosha"
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {editingRecord && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmit(onSubmit)()}
+                    className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {editingRecord ? 'Save' : 'Add'}
+                  </button>
+                </div>
               </td>
             </tr>
+
+            {/* List Rows */}
             {records.length === 0 ? (
               <tr>
                 <td
@@ -537,11 +576,18 @@ export function DoshasSection({
                   </td>
                   <td className="px-4 py-4 text-brown">{record.status}</td>
                   <td className="px-4 py-4">
-                    <SettingsActionButton
-                      label={`Delete ${record.name}`}
-                      variant="delete"
-                      onClick={() => onDelete(record)}
-                    />
+                    <div className="flex items-center gap-2">
+                      <SettingsActionButton
+                        label={`Edit ${record.name}`}
+                        variant="edit"
+                        onClick={() => handleEditClick(record)}
+                      />
+                      <SettingsActionButton
+                        label={`Delete ${record.name}`}
+                        variant="delete"
+                        onClick={() => onDelete(record)}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))

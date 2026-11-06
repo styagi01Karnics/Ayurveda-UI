@@ -33,7 +33,8 @@ import {
   invalidateBookingDoshasCache,
   updateTherapyStatus,
   updateTreatmentCategory,
-  updateTherapy
+  updateTherapy,
+  updateDoshaMaster
 } from '@/lib/api/appointments';
 import { createConsultationType, deleteConsultationType, getAllConsultationTypes, updateConsultationType } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
@@ -712,6 +713,7 @@ export function ClinicSettingsTab() {
                 title: 'Dosha added',
                 message: `${values.name} has been added to Dosha Master.`,
               });
+              return true;
             } catch (err) {
               showToast({
                 title: 'Failed to add dosha',
@@ -719,7 +721,37 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create dosha.',
+                variant: 'error',
               });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateDoshaMaster(id, {
+                name: values.name.trim(),
+                elements: values.elements.trim(),
+                characteristics: values.characteristics.trim(),
+                status: 'ACTIVE',
+              });
+              invalidateBookingDoshasCache();
+              await refreshDoshas();
+              showToast({
+                title: 'Dosha updated',
+                message: `${values.name} has been updated successfully.`,
+              });
+              return true;
+            } catch (err) {
+              console.error('Update dosha failed:', err);
+              showToast({
+                title: 'Failed to update dosha',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update dosha.',
+                variant: 'error',
+              });
+              return false;
             }
           }}
           onDelete={(record) => setDeleteTarget({ type: 'Dosha Master', record })}
