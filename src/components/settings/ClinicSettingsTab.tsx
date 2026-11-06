@@ -32,6 +32,7 @@ import {
   getAllTreatmentCategories,
   invalidateBookingDoshasCache,
   updateTherapyStatus,
+  updateTreatmentCategory,
 } from '@/lib/api/appointments';
 import { createConsultationType, deleteConsultationType, getAllConsultationTypes } from '@/lib/api/consultationTypes';
 import { ApiError } from '@/lib/api/client';
@@ -352,7 +353,7 @@ export function ClinicSettingsTab() {
           message: `${deleteTarget.record.id} was removed from the database`
         });
       }
-       else if (deleteTarget.type === 'Dosha Master') {
+      else if (deleteTarget.type === 'Dosha Master') {
         await deleteDosha(deleteTarget.record.id);
         await refreshDoshas();
         showToast({
@@ -445,6 +446,35 @@ export function ClinicSettingsTab() {
                   err instanceof ApiError
                     ? err.message
                     : 'Could not create treatment category.',
+                variant: 'error',
+              });
+              return false;
+            }
+          }}
+          onUpdate={async (id, values) => {
+            try {
+              await updateTreatmentCategory(id, {
+                categoryName: values.categoryName.trim(),
+                description: values.description.trim(),
+              });
+
+              await refreshCategories();
+
+              showToast({
+                title: 'Category Updated',
+                message: `${values.categoryName} has been updated successfully.`,
+              });
+
+              return true;
+            } catch (err) {
+              console.error('Update category failed:', err);
+
+              showToast({
+                title: 'Failed to update category',
+                message:
+                  err instanceof ApiError
+                    ? err.message
+                    : 'Could not update treatment category.',
                 variant: 'error',
               });
               return false;
@@ -669,14 +699,15 @@ export function SettingsTableHead({ columns }: { columns: string[] }) {
   );
 }
 
-function TreatmentCategoriesSection({
+export function TreatmentCategoriesSection({
   categories,
   onAdd,
-  onDelete
+  onUpdate,
+  onDelete,
 }: {
   categories: ClinicTreatmentCategoryRecord[];
-  // onAdd: (values: ClinicCategoryFormValues) => void | Promise<void>;
   onAdd: (values: ClinicCategoryFormValues) => Promise<boolean>;
+  onUpdate: (id: string, values: ClinicCategoryFormValues) => Promise<boolean>;
   onDelete: (record: ClinicTreatmentCategoryRecord) => void;
 }) {
   const {
@@ -689,10 +720,35 @@ function TreatmentCategoriesSection({
     defaultValues: { categoryName: '', description: '' },
   });
 
-  const onSubmit = async (values: ClinicCategoryFormValues) => {
-    const success = await onAdd(values);
+  const [editingCategory, setEditingCategory] =
+    useState<ClinicTreatmentCategoryRecord | null>(null);
 
-    if (success) reset();
+  const onSubmit = async (values: ClinicCategoryFormValues) => {
+    let success = false;
+
+    if (editingCategory) {
+      success = await onUpdate(editingCategory.id, values);
+    } else {
+      success = await onAdd(values);
+    }
+
+    if (success) {
+      reset({ categoryName: '', description: '' });
+      setEditingCategory(null);
+    }
+  };
+
+  const handleEditClick = (category: ClinicTreatmentCategoryRecord) => {
+    setEditingCategory(category);
+    reset({
+      categoryName: category.name,
+      description: category.description || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCategory(null);
+    reset({ categoryName: '', description: '' });
   };
 
   return (
@@ -702,12 +758,13 @@ function TreatmentCategoriesSection({
       </div>
       <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
         <table className="w-full text-left text-sm">
-          <thead className='sticky top-0 z-10 bg-white'>
+          <thead className="sticky top-0 z-10 bg-white">
             <SettingsTableHead
               columns={['S No.', 'Category Name', 'Description', 'Action']}
             />
           </thead>
           <tbody>
+            {/* Input Row: Used for both Adding and Editing */}
             <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -725,24 +782,51 @@ function TreatmentCategoriesSection({
                 />
               </td>
               <td className="px-4 py-3">
-                <SettingsActionButton
-                  label="Add category"
-                  disabled={isSubmitting}
-                  onClick={() => void handleSubmit(onSubmit)()}
-                />
+                <div className="flex items-center gap-2">
+                  {editingCategory && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmit(onSubmit)()}
+                    className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {editingCategory ? 'Save' : 'Add'}
+                  </button>
+                </div>
               </td>
             </tr>
+
+            {/* List Rows */}
             {categories.map((category, index) => (
               <tr key={category.id} className="border-b border-[#EFF0F6]">
                 <td className="px-4 py-4 text-[#422C23]">{index + 1}.</td>
-                <td className="px-4 py-4 font-medium text-[#422C23]">{category.name}</td>
-                <td className="px-4 py-4 text-[#422C23]">{category.description}</td>
+                <td className="px-4 py-4 font-medium text-[#422C23]">
+                  {category.name}
+                </td>
+                <td className="px-4 py-4 text-[#422C23]">
+                  {category.description}
+                </td>
                 <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${category.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(category)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <SettingsActionButton
+                      label={`Edit ${category.name}`}
+                      variant="edit"
+                      onClick={() => handleEditClick(category)}
+                    />
+                    <SettingsActionButton
+                      label={`Delete ${category.name}`}
+                      variant="delete"
+                      onClick={() => onDelete(category)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

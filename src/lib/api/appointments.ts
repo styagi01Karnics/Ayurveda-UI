@@ -52,6 +52,18 @@ export function deleteCategory(categoryId: string) {
     method: 'DELETE',
   });
 }
+export function updateTreatmentCategory(
+  categoryId: string,
+  payload: CreateTreatmentCategoryPayload,
+) {
+  return apiRequest<TreatmentCategoryDto>(
+    url(ep.treatmentCategories.getById(categoryId)),
+    {
+      method: 'PUT',
+      body: payload,
+    },
+  );
+}
 
 // ── Therapies ────────────────────────────────────────────────────────────────
 
