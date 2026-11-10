@@ -52,6 +52,11 @@ export const clinicDoctorSchema = z
       .trim()
       .min(1, 'Mobile number is required')
       .regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
+    email: z
+      .string()
+      .trim()
+      .min(1, 'Email is required')
+      .email('Enter a valid email'),
     status: z.enum(CLINIC_STATUS_OPTIONS),
     consultationFees: z
       .string()

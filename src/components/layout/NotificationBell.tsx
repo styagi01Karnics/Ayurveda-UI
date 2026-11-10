@@ -49,6 +49,7 @@ function typeBadgeClass(type: string): string {
 export function NotificationBell() {
   const user = getStoredUser();
   const userId = user?.id?.trim() || '';
+  const roleId = (user?.apiRole || user?.role || '').trim().toUpperCase().replace(/\s+/g, '_');
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<NotificationDto[]>([]);
@@ -66,8 +67,8 @@ export function NotificationBell() {
     setError(null);
     try {
       const [list, count] = await Promise.all([
-        getNotifications({ userId }),
-        getUnreadNotificationCount(userId),
+        getNotifications({ userId, roleId: roleId || undefined }),
+        getUnreadNotificationCount(userId, roleId || undefined),
       ]);
       const sorted = [...list].sort((a, b) => {
         const aTime = Date.parse(a.createdAt) || 0;
@@ -83,7 +84,7 @@ export function NotificationBell() {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, roleId]);
 
   useEffect(() => {
     void refresh();
@@ -114,7 +115,7 @@ export function NotificationBell() {
   const handleMarkRead = async (notification: NotificationDto) => {
     if (notification.read) return;
     try {
-      await markNotificationRead(notification.id);
+      await markNotificationRead(notification.id, userId, roleId || undefined);
       setItems((prev) =>
         prev.map((item) =>
           item.id === notification.id
@@ -131,7 +132,7 @@ export function NotificationBell() {
   const handleMarkAllRead = async () => {
     if (!userId || unreadCount === 0) return;
     try {
-      await markAllNotificationsRead(userId);
+      await markAllNotificationsRead(userId, roleId || undefined);
       setItems((prev) =>
         prev.map((item) => ({
           ...item,

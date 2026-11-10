@@ -51,6 +51,7 @@ export interface SendEmailPayload {
 
 export interface NotificationsQuery {
   userId: string;
+  roleId?: string;
   unreadOnly?: boolean;
   type?: NotificationTypeApi | string;
 }
@@ -61,6 +62,7 @@ export interface UnreadCountDto {
 
 export function getNotifications(query: NotificationsQuery) {
   const params = new URLSearchParams({ userId: query.userId });
+  if (query.roleId) params.set('roleId', query.roleId);
   if (query.unreadOnly) params.set('unreadOnly', 'true');
   if (query.type) params.set('type', query.type);
   return apiRequestList<NotificationDto>(
@@ -68,9 +70,11 @@ export function getNotifications(query: NotificationsQuery) {
   );
 }
 
-export async function getUnreadNotificationCount(userId: string): Promise<number> {
+export async function getUnreadNotificationCount(userId: string, roleId?: string): Promise<number> {
+  const params = new URLSearchParams({ userId });
+  if (roleId) params.set('roleId', roleId);
   const data = await apiRequest<UnreadCountDto | number>(
-    url(`${ep.unreadCount}?userId=${encodeURIComponent(userId)}`),
+    url(`${ep.unreadCount}?${params.toString()}`),
   );
   if (typeof data === 'number') return data;
   return Number(data?.unreadCount ?? 0);
@@ -94,13 +98,22 @@ export function sendEmail(payload: SendEmailPayload) {
   });
 }
 
-export function markNotificationRead(id: string) {
-  return apiRequest<NotificationDto>(url(ep.markRead(id)), { method: 'PUT' });
+export function markNotificationRead(id: string, userId?: string, roleId?: string) {
+  const params = new URLSearchParams();
+  if (userId) params.set('userId', userId);
+  if (roleId) params.set('roleId', roleId);
+  const qs = params.toString();
+  return apiRequest<NotificationDto>(
+    url(`${ep.markRead(id)}${qs ? `?${qs}` : ''}`),
+    { method: 'PUT' },
+  );
 }
 
-export function markAllNotificationsRead(userId: string) {
+export function markAllNotificationsRead(userId: string, roleId?: string) {
+  const params = new URLSearchParams({ userId });
+  if (roleId) params.set('roleId', roleId);
   return apiRequest<void>(
-    url(`${ep.markAllRead}?userId=${encodeURIComponent(userId)}`),
+    url(`${ep.markAllRead}?${params.toString()}`),
     { method: 'PUT' },
   );
 }

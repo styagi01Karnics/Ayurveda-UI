@@ -45,6 +45,7 @@ const EMPTY_DOCTOR_FORM: ClinicDoctorFormValues = {
   specialization: '',
   qualification: '',
   mobileNumber: '',
+  email: '',
   status: 'Active',
   consultationFees: '',
   followUpFees: '',
@@ -114,6 +115,7 @@ export function DocterManagementTab() {
           values.availabilityEndTime,
         ),
         mobileNumber: values.mobileNumber,
+        email: values.email,
         qualification: values.qualification ?? '',
       });
 
@@ -178,7 +180,7 @@ export function DocterManagementTab() {
     showToast({
       title: 'Cannot add doctor',
       message:
-        'Please fill name, specialization, mobile, fees, and availability.',
+        'Please fill name, specialization, mobile, email, fees, and availability.',
     });
   };
 
@@ -243,6 +245,26 @@ export function DocterManagementTab() {
                     label="Mobile"
                     placeholder="10-digit no."
                     error={errors.mobileNumber?.message}
+                    name={field.name}
+                    value={field.value ?? ''}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                )}
+              />
+            </div>
+
+            <div className="min-w-0">
+              <Controller
+                name="email"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="doctor@example.com"
+                    error={errors.email?.message}
                     name={field.name}
                     value={field.value ?? ''}
                     onChange={field.onChange}
