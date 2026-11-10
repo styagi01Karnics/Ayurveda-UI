@@ -35,3 +35,13 @@ export function createTreatmentPlanMaster(
     body: payload,
   });
 }
+
+export function updateTreatmentPlanMaster(
+  id: string,
+  payload: Partial<CreateTreatmentPlanMasterPayload>,
+) {
+  return apiRequest<TreatmentPlanMasterDto>(url(ep.getById(id)), {
+    method: 'PUT',
+    body: payload,
+  });
+}

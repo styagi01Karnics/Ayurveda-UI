@@ -35,3 +35,13 @@ export function deleteConsultationType(id: string) {
     method: 'DELETE',
   });
 }
+
+export function updateConsultationType(
+  id: string,
+  payload: Partial<CreateConsultationTypeMasterPayload>,
+) {
+  return apiRequest<ConsultationTypeMasterDto>(url(ep.getById(id)), {
+    method: 'PUT',
+    body: payload,
+  });
+}
