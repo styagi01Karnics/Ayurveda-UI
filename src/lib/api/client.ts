@@ -1,5 +1,5 @@
 import type { ApiResponse } from './types';
-import { getStoredToken } from '@/lib/auth';
+import { getStoredToken, handleUnauthorizedSession } from '@/lib/auth';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -40,6 +40,24 @@ function messageFromBody(body: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Check if the response or body indicates an expired/unauthorized session */
+function checkUnauthorized(status: number, parsedBody?: unknown): void {
+  if (status === 401) {
+    handleUnauthorizedSession();
+    return;
+  }
+
+  if (parsedBody && typeof parsedBody === 'object') {
+    const bodyObj = parsedBody as { status?: number; message?: string };
+    if (
+      bodyObj.status === 401 ||
+      bodyObj.message === 'Invalid or expired access token.'
+    ) {
+      handleUnauthorizedSession();
+    }
+  }
+}
+
 export async function apiRequest<T>(
   url: string,
   options: RequestOptions = {},
@@ -59,6 +77,9 @@ export async function apiRequest<T>(
 
   const parsed = await parseJson(response);
 
+  // Check for 401 status or token expiration in response
+  checkUnauthorized(response.status, parsed);
+
   if (!response.ok) {
     throw new ApiError(
       messageFromBody(parsed, `Request failed (${response.status})`),
@@ -75,6 +96,8 @@ export async function apiRequest<T>(
   ) {
     const envelope = parsed as ApiResponse<T>;
     if (!envelope.success) {
+      checkUnauthorized(envelope.status || response.status, envelope);
+
       throw new ApiError(
         envelope.message || 'Request was not successful',
         envelope.status || response.status,
@@ -106,6 +129,9 @@ export async function apiRequestFormData<T>(
 
   const parsed = await parseJson(response);
 
+  // Check for 401 status or token expiration in response
+  checkUnauthorized(response.status, parsed);
+
   if (!response.ok) {
     throw new ApiError(
       messageFromBody(parsed, `Request failed (${response.status})`),
@@ -122,6 +148,8 @@ export async function apiRequestFormData<T>(
   ) {
     const envelope = parsed as ApiResponse<T>;
     if (!envelope.success) {
+      checkUnauthorized(envelope.status || response.status, envelope);
+
       throw new ApiError(
         envelope.message || 'Request was not successful',
         envelope.status || response.status,
