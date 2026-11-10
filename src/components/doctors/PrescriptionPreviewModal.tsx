@@ -39,7 +39,7 @@ function formatPreviewDate(value?: string | null): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString('en-IN', {
-    day: '2-digit',
+    timeZone: 'Asia/Kolkata',
     month: 'short',
     year: 'numeric',
     hour: '2-digit',

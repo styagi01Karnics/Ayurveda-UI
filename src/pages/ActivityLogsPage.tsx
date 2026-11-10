@@ -18,8 +18,6 @@ export function ActivityLogsPage() {
     async () => {
       const rows = await getActivityLogs({
         search: searchQuery.trim() || undefined,
-        page: 0,
-        size: 100,
       });
       return rows.map(mapActivityLogDtoToRecord);
     },

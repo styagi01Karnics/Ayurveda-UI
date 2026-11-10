@@ -410,6 +410,13 @@ export interface MedicineDto {
   stockStatus?: string;
 }
 
+export interface MedicineCategoryDto {
+  id: string;
+  code: string;
+  name: string;
+  active: boolean;
+}
+
 export interface CreateMedicinePayload {
   medicineName: string;
   category: string;

@@ -62,6 +62,7 @@ export function isConsultationNotStartedError(error: unknown): boolean {
 
 export function formatAppointmentReminderTime(scheduledAt: Date): string {
   return scheduledAt.toLocaleTimeString(undefined, {
+    timeZone: 'Asia/Kolkata',
     hour: 'numeric',
     minute: '2-digit',
   });

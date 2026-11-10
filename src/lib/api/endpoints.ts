@@ -228,6 +228,7 @@ export const apiEndpoints = {
     stockByCategory: (category: string) =>
       `/api/v1/medicines/stock/category/${encodeURIComponent(category)}`,
     categories: '/api/v1/medicines/meta/categories',
+    categoryMaster: '/api/v1/medicines/categories',
     names: '/api/v1/medicines/meta/names',
     manufacturers: '/api/v1/medicines/meta/manufacturers',
     lowStock: '/api/v1/medicines/low-stock',

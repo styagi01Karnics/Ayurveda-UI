@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PageActionContext } from '@/app/PageActionContext';
 import { ToastProvider, ToastViewport } from '@/app/ToastContext';
+import { createMedicineCategory } from '@/lib/api/medicines';
 import { MedicinesPage } from '@/pages/MedicinesPage';
 
 function renderMedicines() {
@@ -40,6 +41,54 @@ describe('MedicinesPage', () => {
     const deleteButtons = screen.getAllByLabelText(/Delete Tab OCRIS 200/);
     await user.click(deleteButtons[0]);
     expect(screen.getByText('Delete Medicine')).toBeInTheDocument();
+  });
+
+  it('adds a new medicine category from the dropdown and selects it', async () => {
+    const user = userEvent.setup();
+    renderMedicines();
+    await screen.findAllByText('Tab OCRIS 200');
+    await user.click(screen.getAllByRole('button', { name: /Add Medicine/ })[0]);
+
+    const trigger = () =>
+      document.querySelector('button[aria-labelledby="medicine-category"]') as HTMLElement;
+    await user.click(trigger());
+    await user.type(screen.getByPlaceholderText('New category name'), 'Eye Drops');
+    await user.click(screen.getByRole('button', { name: 'Add', exact: true }));
+
+    await waitFor(() =>
+      expect(createMedicineCategory).toHaveBeenCalledWith({ code: 'EYE_DROPS', name: 'Eye Drops' }),
+    );
+    await waitFor(() => expect(trigger()).toHaveTextContent('Eye Drops'));
+    expect(screen.queryByPlaceholderText('New category name')).not.toBeInTheDocument();
+  });
+
+  it('asks for a name before adding a category', async () => {
+    const user = userEvent.setup();
+    vi.mocked(createMedicineCategory).mockClear();
+    renderMedicines();
+    await screen.findAllByText('Tab OCRIS 200');
+    await user.click(screen.getAllByRole('button', { name: /Add Medicine/ })[0]);
+    await user.click(
+      document.querySelector('button[aria-labelledby="medicine-category"]') as HTMLElement,
+    );
+    await user.click(screen.getByRole('button', { name: 'Add', exact: true }));
+    expect(await screen.findByText('Enter a category name')).toBeInTheDocument();
+    expect(createMedicineCategory).not.toHaveBeenCalled();
+  });
+
+  it('shows the API error inline when adding a category fails', async () => {
+    const user = userEvent.setup();
+    vi.mocked(createMedicineCategory).mockRejectedValueOnce(new Error('Category already exists'));
+    renderMedicines();
+    await screen.findAllByText('Tab OCRIS 200');
+    await user.click(screen.getAllByRole('button', { name: /Add Medicine/ })[0]);
+    await user.click(
+      document.querySelector('button[aria-labelledby="medicine-category"]') as HTMLElement,
+    );
+    await user.type(screen.getByPlaceholderText('New category name'), 'Syrup');
+    await user.click(screen.getByRole('button', { name: 'Add', exact: true }));
+    expect(await screen.findByText('Category already exists')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('New category name')).toBeInTheDocument();
   });
 });
 

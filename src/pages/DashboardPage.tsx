@@ -207,6 +207,7 @@ export function DashboardPage() {
   const scheduleDateLabel = useMemo(() => {
     if (data.schedule?.currentDateTime) {
       return new Date(data.schedule.currentDateTime).toLocaleString('en-IN', {
+        timeZone: 'Asia/Kolkata',
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -216,6 +217,7 @@ export function DashboardPage() {
       });
     }
     return new Date().toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
       day: '2-digit',
       month: 'short',
       year: 'numeric',

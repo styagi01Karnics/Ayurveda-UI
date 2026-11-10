@@ -44,6 +44,7 @@ const EMPTY_DOCTOR_FORM: ClinicDoctorFormValues = {
   specialization: '',
   qualification: '',
   mobileNumber: '',
+  email: '',
   status: 'Active',
   consultationFees: '',
   followUpFees: '',
@@ -107,6 +108,7 @@ export function DocterManagementTab() {
       specialization: doctor.specialization,
       qualification: doctor.qualification || '',
       mobileNumber: doctor.mobileNumber || '',
+      email: doctor.email || '',
       status: doctor.status,
       consultationFees: doctor.consultationFees.toString(),
       followUpFees: doctor.followUpFees.toString(),
@@ -137,6 +139,7 @@ export function DocterManagementTab() {
           values.availabilityEndTime,
         ),
         mobileNumber: values.mobileNumber,
+        email: values.email,
         qualification: values.qualification ?? '',
       };
 
@@ -268,6 +271,16 @@ export function DocterManagementTab() {
                   control={control}
                   render={({ field }) => (
                     <Input label="Mobile number" placeholder="+91 98765 43210" error={errors.mobileNumber?.message} {...field} value={field.value ?? ''} />
+                  )}
+                />
+              </div>
+
+              <div className="min-w-0">
+                <Controller
+                  name="email"
+                  control={control}
+                  render={({ field }) => (
+                    <Input label="Email" type="email" placeholder="doctor@example.com" error={errors.email?.message} {...field} value={field.value ?? ''} />
                   )}
                 />
               </div>

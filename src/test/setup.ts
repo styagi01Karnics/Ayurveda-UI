@@ -11,6 +11,15 @@ import {
 import { initialMedicines } from '@/data/mock/medicines';
 import { initialDoctorSchedule } from '@/data/mock/doctors';
 
+const categoryMasterStore = vi.hoisted(() =>
+  ['TABLET', 'SYRUP', 'POWDER', 'CAPSULE', 'OIL'].map((code) => ({
+    id: `cat-${code.toLowerCase()}`,
+    code,
+    name: code.charAt(0) + code.slice(1).toLowerCase(),
+    active: true,
+  })),
+);
+
 vi.mock('@/lib/api/patients', () => ({
   getAllPatients: vi.fn(async () => mockPatientDtos()),
   getPatientById: vi.fn(async (id: string) => {
@@ -774,6 +783,17 @@ vi.mock('@/lib/api/medicines', () => ({
     })),
   ),
   getMedicineCategories: vi.fn(async () => ['TABLET', 'SYRUP', 'POWDER', 'CAPSULE', 'OIL']),
+  createMedicineCategory: vi.fn(async (payload: { code: string; name: string }) => {
+    const created = {
+      id: `cat-${payload.code.toLowerCase()}`,
+      code: payload.code,
+      name: payload.name,
+      active: true,
+    };
+    categoryMasterStore.push(created);
+    return created;
+  }),
+  getMedicineCategoryMaster: vi.fn(async () => [...categoryMasterStore]),
   getMedicineById: vi.fn(),
   createMedicine: vi.fn(async (payload: { medicineName: string }) => [
     {

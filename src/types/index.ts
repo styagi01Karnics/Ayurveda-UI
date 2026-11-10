@@ -379,6 +379,7 @@ export interface ActivityLogRecord {
   before: string;
   after: string;
   timestamp: string;
+  performedBy?: string;
 }
 
 export type InvoiceBillType = 'service' | 'medicine' | 'therapy';
