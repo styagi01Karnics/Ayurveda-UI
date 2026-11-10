@@ -1,3 +1,4 @@
+
 timestamps {
 
     node {
@@ -18,6 +19,10 @@ timestamps {
         env.APP_PORT = '8100'
 
         env.SONAR_HOME = sonarHome
+
+        // Isolated Docker credentials for each Jenkins build.
+        // Prevents other Jenkins jobs from interfering with login/logout.
+        env.DOCKER_CONFIG = "${env.WORKSPACE}/.docker-config-${env.BUILD_NUMBER}"
 
         def branchName = env.BRANCH_NAME ?: 'unknown'
 
@@ -136,6 +141,7 @@ timestamps {
 
             if (branchName == 'dev') {
 
+
                 // =================================================
                 // SONARQUBE ANALYSIS
                 // =================================================
@@ -190,6 +196,8 @@ timestamps {
 
                 // =================================================
                 // DOCKER LOGIN
+                // ISOLATED DOCKER CONFIG
+                // RETRY ENABLED
                 // =================================================
 
                 stage('Docker Login') {
@@ -203,16 +211,40 @@ timestamps {
                     ]) {
 
                         sh '''
-                            set -e
+                            set -eu
 
                             echo "=========================================="
                             echo "Docker Hub Login"
                             echo "=========================================="
 
-                            echo "$DOCKER_PASSWORD" |
-                                docker login \
-                                    --username "$DOCKER_USERNAME" \
-                                    --password-stdin
+                            mkdir -p "$DOCKER_CONFIG"
+                            chmod 700 "$DOCKER_CONFIG"
+
+                            login_docker() {
+                                printf '%s' "$DOCKER_PASSWORD" |
+                                    docker login \
+                                        --username "$DOCKER_USERNAME" \
+                                        --password-stdin
+                            }
+
+                            ATTEMPT=1
+                            MAX_ATTEMPTS=3
+                            WAIT_TIME=5
+
+                            until login_docker
+                            do
+                                if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+                                    echo "ERROR: Docker Hub login failed after $MAX_ATTEMPTS attempts."
+                                    exit 1
+                                fi
+
+                                echo "Docker login failed. Retrying in $WAIT_TIME seconds..."
+
+                                sleep "$WAIT_TIME"
+
+                                ATTEMPT=$((ATTEMPT + 1))
+                                WAIT_TIME=$((WAIT_TIME * 2))
+                            done
 
                             echo "Docker Hub login successful."
                         '''
@@ -222,12 +254,13 @@ timestamps {
 
                 // =================================================
                 // DOCKER BUILD
+                // RETRY ENABLED
                 // =================================================
 
                 stage('Docker Build') {
 
                     sh '''
-                        set -e
+                        set -eu
 
                         IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
@@ -237,7 +270,28 @@ timestamps {
 
                         echo "Image: $IMAGE"
 
-                        docker build -t "$IMAGE" .
+                        ATTEMPT=1
+                        MAX_ATTEMPTS=3
+                        WAIT_TIME=10
+
+                        while true
+                        do
+                            if docker build -t "$IMAGE" .; then
+                                break
+                            fi
+
+                            if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+                                echo "ERROR: Docker build failed after $MAX_ATTEMPTS attempts."
+                                exit 1
+                            fi
+
+                            echo "Docker build failed. Retrying in $WAIT_TIME seconds..."
+
+                            sleep "$WAIT_TIME"
+
+                            ATTEMPT=$((ATTEMPT + 1))
+                            WAIT_TIME=$((WAIT_TIME * 2))
+                        done
 
                         docker image inspect "$IMAGE" >/dev/null
 
@@ -248,12 +302,13 @@ timestamps {
 
                 // =================================================
                 // DOCKER PUSH
+                // RETRY ENABLED
                 // =================================================
 
                 stage('Docker Push') {
 
                     sh '''
-                        set -e
+                        set -eu
 
                         IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
@@ -261,7 +316,30 @@ timestamps {
                         echo "Pushing Image to Docker Hub"
                         echo "=========================================="
 
-                        docker push "$IMAGE"
+                        echo "Image: $IMAGE"
+
+                        ATTEMPT=1
+                        MAX_ATTEMPTS=4
+                        WAIT_TIME=10
+
+                        while true
+                        do
+                            if docker push "$IMAGE"; then
+                                break
+                            fi
+
+                            if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+                                echo "ERROR: Docker push failed after $MAX_ATTEMPTS attempts."
+                                exit 1
+                            fi
+
+                            echo "Docker push failed. Retrying in $WAIT_TIME seconds..."
+
+                            sleep "$WAIT_TIME"
+
+                            ATTEMPT=$((ATTEMPT + 1))
+                            WAIT_TIME=$((WAIT_TIME * 2))
+                        done
 
                         echo "Image pushed successfully: $IMAGE"
                     '''
@@ -271,15 +349,14 @@ timestamps {
                 // =================================================
                 // JENKINS SERVER CLEANUP
                 //
-                // Keep only the current Ayurvedaa UI image.
-                // Do not touch other application images.
+                // Keep only current Ayurvedaa UI image.
                 // No global image prune.
                 // =================================================
 
                 stage('Jenkins Docker Cleanup') {
 
                     sh '''
-                        set -e
+                        set -eu
 
                         CURRENT_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
 
@@ -385,15 +462,8 @@ timestamps {
                 // =================================================
                 // DEPLOYMENT SCRIPT
                 //
-                // History file:
-                // /root/ayurvedaa-ui/.ui-image-history
-                //
-                // Line 1: current deployment
-                // Line 2: previous deployment
-                // Line 3: previous-previous deployment
-                //
-                // Preserve previous images when available.
-                // Pull the new image before replacing the container.
+                // Current + previous 2 images preserved.
+                // Pull new image before replacing container.
                 // =================================================
 
                 stage('Deploy Application') {
@@ -468,7 +538,6 @@ add_candidate() {
     [ -z "$IMAGE" ] && return 0
     [ "$IMAGE" = "$CURRENT_IMAGE" ] && return 0
 
-    # Never process images outside the Ayurvedaa UI repository.
     case "$IMAGE" in
         "$IMAGE_NAME":*) ;;
         *) return 0 ;;
@@ -493,7 +562,8 @@ echo "===== Previous Images ====="
 
 cat "$CANDIDATE_FILE" || true
 
-# Restore missing previous images if Docker Hub still has them.
+# Retry previous image restoration.
+# Previous image restoration remains best-effort.
 
 echo ""
 echo "===== Restoring Previous Images ====="
@@ -507,22 +577,52 @@ do
     else
         echo "Attempting to restore: $IMAGE"
 
-        if docker pull "$IMAGE"; then
-            echo "Restored: $IMAGE"
-        else
-            echo "WARNING: Previous image unavailable: $IMAGE"
-        fi
+        ATTEMPT=1
+        MAX_ATTEMPTS=3
+        WAIT_TIME=5
+
+        until docker pull "$IMAGE"; do
+
+            if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+                echo "WARNING: Previous image unavailable: $IMAGE"
+                break
+            fi
+
+            echo "Previous image pull failed. Retrying in $WAIT_TIME seconds..."
+
+            sleep "$WAIT_TIME"
+
+            ATTEMPT=$((ATTEMPT + 1))
+            WAIT_TIME=$((WAIT_TIME * 2))
+        done
     fi
 done < "$CANDIDATE_FILE"
 
-# Pull the new image before replacing the running container.
+# Pull new image before replacing the running container.
 
 echo ""
 echo "===== Pulling Current UI Image ====="
 
-docker compose pull
+ATTEMPT=1
+MAX_ATTEMPTS=4
+WAIT_TIME=10
 
-# Update the running service without bringing down the entire stack.
+until docker compose pull; do
+
+    if [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; then
+        echo "ERROR: Current UI image pull failed."
+        exit 1
+    fi
+
+    echo "Docker Compose pull failed. Retrying in $WAIT_TIME seconds..."
+
+    sleep "$WAIT_TIME"
+
+    ATTEMPT=$((ATTEMPT + 1))
+    WAIT_TIME=$((WAIT_TIME * 2))
+done
+
+# Update the running service.
 
 echo ""
 echo "===== Starting Current UI Deployment ====="
@@ -548,7 +648,7 @@ fi
 
 echo "Running image confirmed: $DEPLOYED_IMAGE"
 
-# Update history only after the expected image is running.
+# Update history only after expected image is running.
 
 echo ""
 echo "===== Updating Image History ====="
@@ -696,7 +796,6 @@ echo "Ayurvedaa UI deployment completed."
                 //
                 // Keep current + previous 2 images.
                 // Only Ayurvedaa UI images are touched.
-                // No global image prune.
                 // =================================================
 
                 stage('Application Server Docker Cleanup') {
@@ -714,8 +813,6 @@ HISTORY_FILE="${APP_DIR}/.ui-image-history"
 echo "=========================================="
 echo "Ayurvedaa UI Image Cleanup"
 echo "=========================================="
-
-# Do not remove images if history is missing or invalid.
 
 if [ ! -f "$HISTORY_FILE" ]; then
     echo "ERROR: Image history is missing."
@@ -740,7 +837,7 @@ if ! grep -Fxq "$RUNNING_IMAGE" "$HISTORY_FILE"; then
     exit 1
 fi
 
-# Validate every history entry before removing any images.
+# Validate every history entry before removing images.
 
 while IFS= read -r IMAGE || [ -n "$IMAGE" ]
 do
@@ -909,8 +1006,19 @@ echo "Ayurvedaa UI image cleanup completed."
 
         } finally {
 
+            // Logout only from this build's isolated Docker config.
             if (branchName == 'dev') {
-                sh 'docker logout || true'
+
+                sh '''
+                    set +e
+
+                    if [ -n "$DOCKER_CONFIG" ] && [ -d "$DOCKER_CONFIG" ]; then
+                        docker logout
+                        rm -rf "$DOCKER_CONFIG"
+                    fi
+
+                    exit 0
+                '''
             }
 
             echo "Cleaning Jenkins workspace..."
