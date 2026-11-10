@@ -20,8 +20,6 @@ timestamps {
 
         env.SONAR_HOME = sonarHome
 
-        // Isolated Docker credentials for each Jenkins build.
-        // Prevents other Jenkins jobs from interfering with login/logout.
         env.DOCKER_CONFIG = "${env.WORKSPACE}/.docker-config-${env.BUILD_NUMBER}"
 
         def branchName = env.BRANCH_NAME ?: 'unknown'
@@ -48,8 +46,7 @@ timestamps {
                     env.SAFE_BRANCH = 'unknown'
                 }
 
-                env.IMAGE_TAG =
-                    "${env.SAFE_BRANCH}-${env.BUILD_NUMBER}"
+                env.IMAGE_TAG = "${env.SAFE_BRANCH}-${env.BUILD_NUMBER}"
 
                 echo "=========================================="
                 echo "Ayurvedaa UI Multibranch Pipeline"
@@ -64,7 +61,6 @@ timestamps {
 
             // =====================================================
             // ENVIRONMENT CHECK
-            // ALL BRANCHES
             // =====================================================
 
             stage('Environment Check') {
@@ -80,6 +76,8 @@ timestamps {
                     npm --version
                     docker --version
                     git --version
+                    command -v ssh
+                    command -v scp
 
                     echo "=========================================="
                 '''
@@ -88,7 +86,6 @@ timestamps {
 
             // =====================================================
             // INSTALL DEPENDENCIES
-            // ALL BRANCHES
             // =====================================================
 
             stage('Install Dependencies') {
@@ -109,7 +106,6 @@ timestamps {
 
             // =====================================================
             // BUILD REACT APPLICATION
-            // ALL BRANCHES
             // =====================================================
 
             stage('Build React Application') {
@@ -196,8 +192,6 @@ timestamps {
 
                 // =================================================
                 // DOCKER LOGIN
-                // ISOLATED DOCKER CONFIG
-                // RETRY ENABLED
                 // =================================================
 
                 stage('Docker Login') {
@@ -254,7 +248,6 @@ timestamps {
 
                 // =================================================
                 // DOCKER BUILD
-                // RETRY ENABLED
                 // =================================================
 
                 stage('Docker Build') {
@@ -302,7 +295,6 @@ timestamps {
 
                 // =================================================
                 // DOCKER PUSH
-                // RETRY ENABLED
                 // =================================================
 
                 stage('Docker Push') {
@@ -348,9 +340,6 @@ timestamps {
 
                 // =================================================
                 // JENKINS SERVER CLEANUP
-                //
-                // Keep only current Ayurvedaa UI image.
-                // No global image prune.
                 // =================================================
 
                 stage('Jenkins Docker Cleanup') {
@@ -392,15 +381,16 @@ timestamps {
 
                 // =================================================
                 // PREPARE APPLICATION SERVER
+                // SSH PRIVATE KEY AUTHENTICATION
                 // =================================================
 
                 stage('Prepare Application Server') {
 
                     withCredentials([
-                        usernamePassword(
+                        sshUserPrivateKey(
                             credentialsId: 'new-server-ssh',
-                            usernameVariable: 'SSH_USERNAME',
-                            passwordVariable: 'SSH_PASSWORD'
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USERNAME'
                         )
                     ]) {
 
@@ -411,13 +401,10 @@ timestamps {
                             echo "Preparing Application Server"
                             echo "=========================================="
 
-                            command -v sshpass >/dev/null 2>&1 || {
-                                echo "ERROR: sshpass is not installed."
-                                exit 1
-                            }
-
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 "mkdir -p '$DEPLOY_PATH'"
 
@@ -429,15 +416,16 @@ timestamps {
 
                 // =================================================
                 // COPY DOCKER COMPOSE
+                // SSH PRIVATE KEY AUTHENTICATION
                 // =================================================
 
                 stage('Copy Docker Compose') {
 
                     withCredentials([
-                        usernamePassword(
+                        sshUserPrivateKey(
                             credentialsId: 'new-server-ssh',
-                            usernameVariable: 'SSH_USERNAME',
-                            passwordVariable: 'SSH_PASSWORD'
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USERNAME'
                         )
                     ]) {
 
@@ -448,8 +436,10 @@ timestamps {
                             echo "Copying Docker Compose"
                             echo "=========================================="
 
-                            sshpass -p "$SSH_PASSWORD" scp \
-                                -o StrictHostKeyChecking=no \
+                            scp -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 docker-compose.yml \
                                 "$SSH_USERNAME@$DEPLOY_SERVER:$DEPLOY_PATH/docker-compose.yml"
 
@@ -461,9 +451,6 @@ timestamps {
 
                 // =================================================
                 // DEPLOYMENT SCRIPT
-                //
-                // Current + previous 2 images preserved.
-                // Pull new image before replacing container.
                 // =================================================
 
                 stage('Deploy Application') {
@@ -511,14 +498,10 @@ cd "$APP_DIR"
 export IMAGE_NAME
 export IMAGE_TAG
 
-# Validate Compose configuration before changing containers.
-
 echo ""
 echo "===== Validate Compose Configuration ====="
 
 docker compose config --quiet
-
-# Capture the currently running image.
 
 RUNNING_IMAGE=$(
     docker inspect "$APP_NAME" \
@@ -526,8 +509,6 @@ RUNNING_IMAGE=$(
 )
 
 echo "Currently running image: ${RUNNING_IMAGE:-none}"
-
-# Create a list of previous UI images to preserve.
 
 rm -f "$CANDIDATE_FILE"
 touch "$CANDIDATE_FILE"
@@ -562,9 +543,6 @@ echo "===== Previous Images ====="
 
 cat "$CANDIDATE_FILE" || true
 
-# Retry previous image restoration.
-# Previous image restoration remains best-effort.
-
 echo ""
 echo "===== Restoring Previous Images ====="
 
@@ -598,8 +576,6 @@ do
     fi
 done < "$CANDIDATE_FILE"
 
-# Pull new image before replacing the running container.
-
 echo ""
 echo "===== Pulling Current UI Image ====="
 
@@ -622,14 +598,10 @@ until docker compose pull; do
     WAIT_TIME=$((WAIT_TIME * 2))
 done
 
-# Update the running service.
-
 echo ""
 echo "===== Starting Current UI Deployment ====="
 
 docker compose up -d --remove-orphans
-
-# Verify the configured container image.
 
 echo ""
 echo "===== Verifying Deployment Image ====="
@@ -647,8 +619,6 @@ if [ "$DEPLOYED_IMAGE" != "$CURRENT_IMAGE" ]; then
 fi
 
 echo "Running image confirmed: $DEPLOYED_IMAGE"
-
-# Update history only after expected image is running.
 
 echo ""
 echo "===== Updating Image History ====="
@@ -700,23 +670,31 @@ echo "Ayurvedaa UI deployment completed."
                     sh 'chmod +x deploy-ayurvedaa-ui.sh'
 
                     withCredentials([
-                        usernamePassword(
+                        sshUserPrivateKey(
                             credentialsId: 'new-server-ssh',
-                            usernameVariable: 'SSH_USERNAME',
-                            passwordVariable: 'SSH_PASSWORD'
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USERNAME'
                         )
                     ]) {
 
                         sh '''
                             set -e
 
-                            sshpass -p "$SSH_PASSWORD" scp \
-                                -o StrictHostKeyChecking=no \
+                            echo "=========================================="
+                            echo "Deploying Ayurvedaa UI"
+                            echo "=========================================="
+
+                            scp -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 deploy-ayurvedaa-ui.sh \
                                 "$SSH_USERNAME@$DEPLOY_SERVER:/tmp/deploy-ayurvedaa-ui.sh"
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 bash /tmp/deploy-ayurvedaa-ui.sh \
                                 "$DEPLOY_PATH" \
@@ -726,8 +704,10 @@ echo "Ayurvedaa UI deployment completed."
                                 "$BUILD_NUMBER" \
                                 "$APP_NAME"
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 rm -f /tmp/deploy-ayurvedaa-ui.sh
                         '''
@@ -739,15 +719,16 @@ echo "Ayurvedaa UI deployment completed."
 
                 // =================================================
                 // CONTAINER VERIFICATION
+                // SSH PRIVATE KEY AUTHENTICATION
                 // =================================================
 
                 stage('Container Verification') {
 
                     withCredentials([
-                        usernamePassword(
+                        sshUserPrivateKey(
                             credentialsId: 'new-server-ssh',
-                            usernameVariable: 'SSH_USERNAME',
-                            passwordVariable: 'SSH_PASSWORD'
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USERNAME'
                         )
                     ]) {
 
@@ -763,24 +744,30 @@ echo "Ayurvedaa UI deployment completed."
                             echo ""
                             echo "===== Docker Compose Status ====="
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 "cd '$DEPLOY_PATH' && docker compose ps"
 
                             echo ""
                             echo "===== Verify Nginx Configuration ====="
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 "docker exec '$APP_NAME' nginx -t"
 
                             echo ""
                             echo "===== HTTP Verification ====="
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 "curl -f http://127.0.0.1:$APP_PORT/"
 
@@ -793,9 +780,6 @@ echo "Ayurvedaa UI deployment completed."
 
                 // =================================================
                 // APPLICATION SERVER IMAGE CLEANUP
-                //
-                // Keep current + previous 2 images.
-                // Only Ayurvedaa UI images are touched.
                 // =================================================
 
                 stage('Application Server Docker Cleanup') {
@@ -836,8 +820,6 @@ if ! grep -Fxq "$RUNNING_IMAGE" "$HISTORY_FILE"; then
     echo "No images will be removed."
     exit 1
 fi
-
-# Validate every history entry before removing images.
 
 while IFS= read -r IMAGE || [ -n "$IMAGE" ]
 do
@@ -908,28 +890,38 @@ echo "Ayurvedaa UI image cleanup completed."
                     sh 'chmod +x cleanup-ayurvedaa-ui.sh'
 
                     withCredentials([
-                        usernamePassword(
+                        sshUserPrivateKey(
                             credentialsId: 'new-server-ssh',
-                            usernameVariable: 'SSH_USERNAME',
-                            passwordVariable: 'SSH_PASSWORD'
+                            keyFileVariable: 'SSH_KEY',
+                            usernameVariable: 'SSH_USERNAME'
                         )
                     ]) {
 
                         sh '''
                             set -e
 
-                            sshpass -p "$SSH_PASSWORD" scp \
-                                -o StrictHostKeyChecking=no \
+                            echo "=========================================="
+                            echo "Application Server Docker Cleanup"
+                            echo "=========================================="
+
+                            scp -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 cleanup-ayurvedaa-ui.sh \
                                 "$SSH_USERNAME@$DEPLOY_SERVER:/tmp/cleanup-ayurvedaa-ui.sh"
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 bash /tmp/cleanup-ayurvedaa-ui.sh
 
-                            sshpass -p "$SSH_PASSWORD" ssh \
-                                -o StrictHostKeyChecking=no \
+                            ssh -i "$SSH_KEY" \
+                                -o IdentitiesOnly=yes \
+                                -o BatchMode=yes \
+                                -o StrictHostKeyChecking=yes \
                                 "$SSH_USERNAME@$DEPLOY_SERVER" \
                                 rm -f /tmp/cleanup-ayurvedaa-ui.sh
                         '''
