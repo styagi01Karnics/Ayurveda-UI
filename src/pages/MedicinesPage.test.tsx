@@ -53,7 +53,7 @@ describe('MedicinesPage', () => {
       document.querySelector('button[aria-labelledby="medicine-category"]') as HTMLElement;
     await user.click(trigger());
     await user.type(screen.getByPlaceholderText('New category name'), 'Eye Drops');
-    await user.click(screen.getByRole('button', { name: 'Add', exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
 
     await waitFor(() =>
       expect(createMedicineCategory).toHaveBeenCalledWith({ code: 'EYE_DROPS', name: 'Eye Drops' }),
@@ -71,7 +71,7 @@ describe('MedicinesPage', () => {
     await user.click(
       document.querySelector('button[aria-labelledby="medicine-category"]') as HTMLElement,
     );
-    await user.click(screen.getByRole('button', { name: 'Add', exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByText('Enter a category name')).toBeInTheDocument();
     expect(createMedicineCategory).not.toHaveBeenCalled();
   });
@@ -86,7 +86,7 @@ describe('MedicinesPage', () => {
       document.querySelector('button[aria-labelledby="medicine-category"]') as HTMLElement,
     );
     await user.type(screen.getByPlaceholderText('New category name'), 'Syrup');
-    await user.click(screen.getByRole('button', { name: 'Add', exact: true }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(await screen.findByText('Category already exists')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('New category name')).toBeInTheDocument();
   });

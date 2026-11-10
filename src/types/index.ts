@@ -500,10 +500,11 @@ export interface ClinicDoctorRecord {
   specialization: string;
   qualification: string;
   mobileNumber: string;
-  status: ClinicStatus;
-  consultationFees: number;
-  followUpFees: number;
-  availability: string;
+ email?: string;
+ status: ClinicStatus;
+ consultationFees: number;
+ followUpFees: number;
+ availability: string;
 }
 
 export interface ClinicTherapyRecord {
