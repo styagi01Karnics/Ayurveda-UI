@@ -141,6 +141,21 @@ export function clearAuthSession(): void {
   clearStoredClinicLocation();
 }
 
+/**
+ * Clears storage and redirects to login when session is missing or expired.
+ */
+export function handleUnauthorizedSession(): void {
+  clearAuthSession();
+  if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+    window.location.href = '/login';
+  }
+}
+
+/** Check if user currently has an active token */
+export function isAuthenticated(): boolean {
+  return Boolean(getStoredToken());
+}
+
 export function formatAuthRole(role: string): string {
   return ROLE_LABELS[role] ?? role.replace(/_/g, ' ');
 }
