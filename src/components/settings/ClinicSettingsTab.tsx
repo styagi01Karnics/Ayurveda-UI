@@ -565,7 +565,7 @@ export function ClinicSettingsTab() {
           onAdd={async (values) => {
             try {
               await createConsultationType({
-                name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
+                name: values.name.trim(),
                 status: 'ACTIVE',
               });
               await refreshConsultationTypes();
