@@ -937,66 +937,139 @@ export function GenerateInvoicePage() {
     setTherapyItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const openPayment = async () => {
-    const patientValid = await serviceForm.trigger([...PATIENT_FIELDS]);
-    if (!patientValid) {
+const openPayment = async () => {
+  const patientValid = await serviceForm.trigger([...PATIENT_FIELDS]);
+  if (!patientValid) {
+    showToast({
+      title: 'Patient details required',
+      message: 'Complete patient information before continuing to payment.',
+    });
+    return;
+  }
+
+  if (!patientContext?.uuid && !activeBillingId) {
+    showToast({
+      title: 'Patient required',
+      message: 'Select a patient from the list before generating an invoice.',
+    });
+    return;
+  }
+
+  if (includeConsultation) {
+    const consultationValid = await serviceForm.trigger([
+      'visitType',
+      'serviceFees',
+      'packageMasterId',
+      'packageCharges',
+    ]);
+    const serviceFees = serviceForm.getValues('serviceFees')?.trim();
+    if (!consultationValid || !serviceFees) {
+      if (!serviceFees) {
+        serviceForm.setError('serviceFees', {
+          type: 'manual',
+          message: 'Service fees is required',
+        });
+      }
       showToast({
-        title: 'Patient details required',
-        message: 'Complete patient information before continuing to payment.',
+        title: 'Consultation details required',
+        message: 'Enter visit type and service fees for a consultation invoice.',
       });
       return;
     }
+  }
 
-    if (!patientContext?.uuid && !activeBillingId) {
-      showToast({
-        title: 'Patient required',
-        message: 'Select a patient from the list before generating an invoice.',
-      });
-      return;
-    }
 
-    if (includeConsultation) {
-      const consultationValid = await serviceForm.trigger([
-        'visitType',
-        'serviceFees',
-        'packageMasterId',
-        'packageCharges',
-      ]);
-      const serviceFees = serviceForm.getValues('serviceFees')?.trim();
-      if (!consultationValid || !serviceFees) {
-        if (!serviceFees) {
-          serviceForm.setError('serviceFees', {
-            type: 'manual',
-            message: 'Service fees is required',
-          });
-        }
+  if (includeMedicine) {
+    const currentMedicineId = medicineForm.getValues('medicineId');
+
+    if (medicineItems.length === 0) {
+      if (!currentMedicineId) {
         showToast({
-          title: 'Consultation details required',
-          message: 'Enter visit type and service fees for a consultation invoice.',
+          title: 'Medicine required',
+          message: 'Select or add at least one medicine before generating this invoice.',
         });
         return;
       }
-    }
 
-    if (includeMedicine && medicineItems.length === 0) {
-      showToast({
-        title: 'Medicine required',
-        message: 'Add at least one medicine before generating this invoice.',
+      const medicineValid = await medicineForm.trigger();
+      if (!medicineValid) {
+        showToast({
+          title: 'Medicine details required',
+          message: 'Enter valid quantity and price for the selected medicine before continuing.',
+        });
+        return;
+      }
+
+      const data = medicineForm.getValues();
+      const selected = lookup.medicines.find((m) => m.value === data.medicineId);
+
+      setMedicineItems([
+        {
+          id: `med-${Date.now()}`,
+          medicineId: data.medicineId,
+          name: selected?.label ?? data.medicineId,
+          quantity: Number(data.quantity),
+          amount: Number(data.price),
+          type: 'medicine',
+        },
+      ]);
+      medicineForm.reset({ medicineId: '', quantity: '1', price: '' });
+    }
+  }
+
+ if (includeTherapy) {
+    const currentTherapyName = therapyForm.getValues('therapyName');
+
+    if (therapyItems.length === 0) {
+      if (!currentTherapyName) {
+        showToast({
+          title: 'Therapy required',
+          message: 'Select or add at least one therapy before generating this invoice.',
+        });
+        return;
+      }
+
+      const therapyValid = await therapyForm.trigger();
+      if (!therapyValid) {
+        showToast({
+          title: 'Therapy details required',
+          message: 'Complete all therapy and schedule fields before continuing.',
+        });
+        return;
+      }
+
+      const data = therapyForm.getValues();
+      setTherapyItems([
+        {
+          id: `th-${Date.now()}`,
+          name: data.therapyName,
+          quantity: 1,
+          amount: Number(data.therapyPrice),
+          type: 'therapy',
+          assignedTherapist: data.assignedTherapistName ?? '',
+          assignedTherapistId: data.assignedTherapistId,
+          scheduleDate: data.scheduleDate,
+          scheduleTime: data.scheduleTime,
+          sessionDuration: data.sessionDuration,
+          sessionFrequency: data.sessionFrequency,
+        },
+      ]);
+      therapyForm.reset({
+        therapyName: '',
+        therapyPrice: '',
+        assignedTherapistId: '',
+        assignedTherapistName: '',
+        scheduleDate: '',
+        scheduleTime: '',
+        sessionDuration: '45 mins',
+        sessionFrequency: DEFAULT_SESSION_FREQUENCY,
       });
-      return;
     }
+  }
 
-    if (includeTherapy && therapyItems.length === 0) {
-      showToast({
-        title: 'Therapy required',
-        message: 'Add at least one therapy before generating this invoice.',
-      });
-      return;
-    }
-
-    setServiceData(serviceForm.getValues());
-    setPaymentOpen(true);
-  };
+  setServiceData(serviceForm.getValues());
+  setPaymentOpen(true);
+};
 
   const handleCreateInvoice = async () => {
     if (paymentSubmitting) return;

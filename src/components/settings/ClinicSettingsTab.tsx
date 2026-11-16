@@ -67,7 +67,7 @@ import {
   type ClinicCategoryFormValues,
   type ClinicTherapyFormValues,
 } from '@/lib/validation/settings.schema';
-import { cn, formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency, formatString } from '@/lib/utils';
 import type { TherapistDto, TherapyDto, TreatmentCategoryDto } from '@/lib/api/types';
 import type {
   ClinicConsultationTypeRecord,
@@ -565,7 +565,7 @@ export function ClinicSettingsTab() {
           onAdd={async (values) => {
             try {
               await createConsultationType({
-                name: values.name.trim().toUpperCase().replace(/\s+/g, '_'),
+                name: formatString(values.name),
                 status: 'ACTIVE',
               });
               await refreshConsultationTypes();

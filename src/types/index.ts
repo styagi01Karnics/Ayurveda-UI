@@ -9,7 +9,7 @@ export type PatientStatus =
   | 'Upcoming'
   | 'Missed';
 
-export type VisitType = 'Consultation' | 'Follow-Up' | 'Treatment' | 'Therapy';
+export type VisitType = 'Consultation' | 'Follow-Up' | 'Treatment' | 'Therapy' | string;
 
 export interface PatientRecord {
   id: string;

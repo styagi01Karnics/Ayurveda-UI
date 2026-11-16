@@ -166,7 +166,6 @@ export function AppointmentsPage() {
     };
 
     const followUpRecords = followUpDtos.map(mapFollowUpDtoToRecord);
-
     return { records, lookupOptions, doctors, followUpRecords };
   }, {
     records: [] as AppointmentRecord[],

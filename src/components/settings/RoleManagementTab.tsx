@@ -88,83 +88,59 @@ export function RoleManagementTab({
     setEditTarget(null);
     onAddRoleClose();
   };
-
-  const handleSubmit = async (values: RoleFormValues) => {
-    setSubmitting(true);
-    const active = values.status === 'Active';
-    const payload = {
-      roleName: values.name,
-      description: values.description?.trim() || undefined,
-      pageCodes: values.permissions,
-      active,
-    };
-
-    try {
-      if (editTarget) {
-        const updated = await updateRole(editTarget.id, payload);
-        setRoles((prev) =>
-          prev.map((role) =>
-            role.id === editTarget.id ? mapApiRole(updated) : role,
-          ),
-        );
-        showToast({
-          title: 'Role Updated',
-          message: `${values.name} has been updated successfully.`,
-        });
-      } else {
-        const created = await createRole(payload);
-        setRoles((prev) => [...prev, mapApiRole(created)]);
-        showToast({
-          title: 'Role Added',
-          message: `${values.name} has been created successfully.`,
-        });
-      }
-      handleCloseModal();
-    } catch {
-      // Local mock fallback when API is unavailable.
-      if (editTarget) {
-        setRoles((prev) =>
-          prev.map((role) =>
-            role.id === editTarget.id
-              ? {
-                  ...role,
-                  name: values.name,
-                  status: values.status,
-                  accessLevel: values.accessLevel ?? accessLevelFor(values.permissions),
-                  description: values.description,
-                  permissions: values.permissions,
-                }
-              : role,
-          ),
-        );
-        showToast({
-          title: 'Role Updated',
-          message: `${values.name} has been updated successfully.`,
-        });
-      } else {
-        setRoles((prev) => [
-          ...prev,
-          {
-            id: `role-${Date.now()}`,
-            name: values.name,
-            status: values.status,
-            accessLevel: values.accessLevel ?? accessLevelFor(values.permissions),
-            description: values.description,
-            permissions: values.permissions,
-            userCount: 0,
-          },
-        ]);
-        showToast({
-          title: 'Role Added',
-          message: `${values.name} has been created successfully.`,
-        });
-      }
-      handleCloseModal();
-    } finally {
-      setSubmitting(false);
-    }
+const handleSubmit = async (values: RoleFormValues) => {
+  setSubmitting(true);
+  const active = values.status === 'Active';
+  const payload = {
+    roleName: values.name,
+    description: values.description?.trim() || undefined,
+    pageCodes: values.permissions,
+    active,
   };
 
+  try {
+    if (editTarget) {
+      const updated = await updateRole(editTarget.id, payload);
+      setRoles((prev) =>
+        prev.map((role) =>
+          role.id === editTarget.id ? mapApiRole(updated) : role,
+        ),
+      );
+      showToast({
+        title: 'Role Updated',
+        message: `${values.name} has been updated successfully.`,
+      });
+    } else {
+      const created = await createRole(payload);
+      setRoles((prev) => [...prev, mapApiRole(created)]);
+      showToast({
+        title: 'Role Added',
+        message: `${values.name} has been created successfully.`,
+      });
+    }
+
+    // Only closes when the API call succeeds
+    handleCloseModal();
+  } catch (error: unknown) {
+    const err = error as {
+      response?: { data?: { message?: string; error?: string } };
+      message?: string;
+    };
+
+    const errorMessage =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      'Something went wrong while saving the role.';
+    showToast({
+      title: 'Error',
+      message: errorMessage,
+      variant: 'error', });
+    throw error;
+  } finally {
+    setSubmitting(false);
+  }
+};
   return (
     <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-3">
       {roles.map((role) => (

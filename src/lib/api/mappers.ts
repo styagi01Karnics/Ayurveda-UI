@@ -388,6 +388,7 @@ export function mapAppointmentToRecord(
   doctorsById: Map<string, DoctorDto> = new Map(),
 ): AppointmentRecord {
   const doctorId = appointment.assignedDoctorId ?? appointment.doctorId;
+  console.log("appointment",JSON.stringify(appointment))
   const doctor = personName(
     appointment.doctorName ??
       appointment.assignedDoctor?.doctorName ??
@@ -409,10 +410,14 @@ export function mapAppointmentToRecord(
     id: appointment.patient?.id,
   });
 
-  const visitType = normalizeVisitType(
-    appointment.consultationTypes ?? appointment.visitType,
-  );
-
+  // const visitType = normalizeVisitType(
+  //   appointment.consultationTypes ?? appointment.visitType,
+  // );
+const visitType =
+  appointment.consultationTypes
+    ?.map(type => typeof type === 'string' ? type : type.name)
+    .join(', ') || appointment.visitType || '';
+    
   const appointmentDate = formatDisplayDateTime(
     appointment.appointmentDate ??
       appointment.scheduleDate ??
