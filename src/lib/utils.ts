@@ -17,6 +17,15 @@ export function formatNumber(value: number): string {
   return new Intl.NumberFormat('en-IN').format(value);
 }
 
+export function formatString (str: string): string {
+  return str
+    .trim()
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .toLowerCase()
+    .replace(/(^|\s)\S/g, char => char.toUpperCase());
+};
+
 /**
  * Display names with each word capitalized, e.g. "rashee jain" → "Rashee Jain".
  * Leaves placeholders like "—" unchanged.
