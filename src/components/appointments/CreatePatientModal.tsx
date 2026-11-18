@@ -382,6 +382,41 @@ export function CreatePatientModal({
     }
   });
 
+ function calculateAgeFromDob(dobString: string): string {
+  if (!dobString) return '';
+  const [year, month, day] = dobString.split('-').map(Number);
+  if (!year || !month || !day) return '';
+
+  const dob = new Date(year, month - 1, day);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Reject future dates
+  if (dob > today) return '';
+
+  let age = today.getFullYear() - dob.getFullYear();
+  const monthDiff = today.getMonth() - dob.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+    age--;
+  }
+  return age >= 0 ? String(age) : '';
+}
+
+ const watchedDob = step1Form.watch('dateOfBirth');
+
+useEffect(() => {
+  const dob = watchedDob ?? '';
+  const calculatedAge = calculateAgeFromDob(dob);
+
+  step1Form.setValue('age', calculatedAge, {
+    shouldValidate: Boolean(dob),
+  });
+
+  if (dob) {
+    step1Form.trigger('dateOfBirth');
+  }
+}, [watchedDob, step1Form]);
+
   const goBack = () => {
     if (stepIndex > 0) setStepIndex((index) => index - 1);
   };
@@ -417,14 +452,15 @@ export function CreatePatientModal({
       ? categoryTherapyOptions
       : selectedCategory
         ? lookupOptions.therapies.filter((option) => {
-            if (typeof option === 'string') return true;
-            return (
-              (option as TagOption & { categoryId?: string }).categoryId ===
-                undefined ||
-              (option as { categoryId?: string }).categoryId === selectedCategory
-            );
-          })
+          if (typeof option === 'string') return true;
+          return (
+            (option as TagOption & { categoryId?: string }).categoryId ===
+            undefined ||
+            (option as { categoryId?: string }).categoryId === selectedCategory
+          );
+        })
         : lookupOptions.therapies;
+
 
   useEffect(() => {
     setDoshaOptions(lookupOptions.doshas);
@@ -592,7 +628,13 @@ export function CreatePatientModal({
           <FormSection title="Basic Information">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Input label="Full Name *" placeholder="Full Name" error={step1Form.formState.errors.fullName?.message} {...step1Form.register('fullName')} />
-              <Input label="Date of Birth *" type="date" error={step1Form.formState.errors.dateOfBirth?.message} {...step1Form.register('dateOfBirth')} />
+              <Input
+                label="Date of Birth *"
+                type="date"
+                max={getTodayIsoDate()}
+                error={step1Form.formState.errors.dateOfBirth?.message}
+                {...step1Form.register('dateOfBirth')}
+              />
               <Input label="Mobile Number *" placeholder="Mobile Number" error={step1Form.formState.errors.mobileNumber?.message} {...step1Form.register('mobileNumber')} />
               <Select label="Gender *" placeholder="Gender" options={[...GENDER_OPTIONS]} error={step1Form.formState.errors.gender?.message} {...step1Form.register('gender')} />
               <TagInput
@@ -606,7 +648,14 @@ export function CreatePatientModal({
                 options={lookupOptions.consultationTypes}
                 error={step1Form.formState.errors.consultationTypeIds?.message}
               />
-              <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
+              <Input
+                label="Age"
+                placeholder="Auto-calculated"
+                readOnly
+                className="cursor-not-allowed bg-gray-50"
+                error={step1Form.formState.errors.age?.message}
+                {...step1Form.register('age')}
+              />
               <Input label="Appointment Date" type="date" min={dateInputProps.min} error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
               <Select
                 label="Appointment Time"

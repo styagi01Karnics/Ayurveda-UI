@@ -29,7 +29,20 @@ const optionalPhoneSchema = z
 export const patientStep1BookingSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
   gender: z.string().min(1, 'Gender is required'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+ dateOfBirth: z
+  .string()
+  .min(1, 'Date of birth is required')
+  .refine(
+    (val) => {
+      const [year, month, day] = val.split('-').map(Number);
+      if (!year || !month || !day) return false;
+      const dob = new Date(year, month - 1, day);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return dob <= today;
+    },
+    { message: 'Date of birth cannot be in the future' },
+  ),
   mobileNumber: z
     .string()
     .min(1, 'Mobile number is required')
