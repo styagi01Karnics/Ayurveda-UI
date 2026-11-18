@@ -388,7 +388,6 @@ export function mapAppointmentToRecord(
   doctorsById: Map<string, DoctorDto> = new Map(),
 ): AppointmentRecord {
   const doctorId = appointment.assignedDoctorId ?? appointment.doctorId;
-  console.log("appointment",JSON.stringify(appointment))
   const doctor = personName(
     appointment.doctorName ??
       appointment.assignedDoctor?.doctorName ??
