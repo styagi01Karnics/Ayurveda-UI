@@ -25,11 +25,57 @@ const optionalPhoneSchema = z
     'Enter a valid 10-digit phone number',
   );
 
+  
+  const isBookingDateTimeInFuture = (dateStr: string, timeStr: string): boolean => {
+  if (!dateStr || !timeStr) return true; // Handled by individual field required checks
+
+  const now = new Date();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  
+  // Assumes timeStr is "HH:mm" (24-hour format). If "hh:mm AM/PM", parse accordingly.
+  const [hours, minutes] = timeStr.split(':').map(Number); 
+
+  const selectedDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return selectedDateTime > now;
+};
+
 /** Step 1 — booking flow: core identity, contact, and booking fields. */
+// Helper to apply the cross-field future date/time check after any .merge() calls
+export const withFutureAppointmentCheck = <
+  T extends z.ZodType<{ registrationDate?: string; appointmentTime?: string }>,
+>(
+  schema: T,
+) =>
+  schema.refine(
+    (data) =>
+      isBookingDateTimeInFuture(
+        data.registrationDate ?? '',
+        data.appointmentTime ?? '',
+      ),
+    {
+      message: 'Selected time has already passed for today',
+      path: ['appointmentTime'],
+    },
+  );
+
+// 1. Keep this as a plain z.object() (NO trailing .refine) so .merge() at line 208 works
 export const patientStep1BookingSchema = z.object({
   fullName: z.string().min(1, 'Full name is required'),
   gender: z.string().min(1, 'Gender is required'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
+  dateOfBirth: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine(
+      (val) => {
+        const [year, month, day] = val.split('-').map(Number);
+        if (!year || !month || !day) return false;
+        const dob = new Date(year, month - 1, day);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return dob <= today;
+      },
+      { message: 'Date of birth cannot be in the future' },
+    ),
   mobileNumber: z
     .string()
     .min(1, 'Mobile number is required')
@@ -46,7 +92,7 @@ export const patientStep1BookingSchema = z.object({
     ),
   preferredLanguage: z.string().optional(),
   registrationDate: requiredBookingDateSchema,
-  appointmentTime: optionalBookingTimeSchema,
+  appointmentTime: requiredBookingTimeSchema,
   assignedDoctor: z.string().min(1, 'Assigned doctor is required'),
   email: optionalEmailSchema,
   state: z.string().optional(),
@@ -61,6 +107,11 @@ export const patientStep1BookingSchema = z.object({
   occupation: z.string().optional(),
   insuranceDetails: z.string().optional(),
 });
+
+// 2. Use this refined schema in your Step 1 form's zodResolver(...)
+export const patientStep1BookingFormSchema = withFutureAppointmentCheck(
+  patientStep1BookingSchema,
+);
 
 /** Step 1 — doctor edit: stricter validation. */
 export const patientStep1FullSchema = z.object({

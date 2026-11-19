@@ -43,6 +43,7 @@ import {
   includesTherapyTypeIds,
   OCCUPATION_OPTIONS,
   patientCategoryStepSchema,
+  patientStep1BookingFormSchema,
   patientStep1BookingSchema,
   patientStep2Schema,
   patientStep3Schema,
@@ -138,10 +139,10 @@ export function CreatePatientModal({
   const [doshasError, setDoshasError] = useState<string | null>(null);
 
   const step1Form = useForm<PatientStep1Values>({
-    resolver: zodResolver(patientStep1BookingSchema),
+    resolver: zodResolver(patientStep1BookingFormSchema),
     defaultValues: {
       consultationTypeIds: [],
-      appointmentTime: '10:00',
+      appointmentTime: ' ',
       registrationDate: getTodayIsoDate(),
       ...formData,
     },
@@ -216,7 +217,7 @@ export function CreatePatientModal({
     setDocumentTab('pastMedicalReports');
     step1Form.reset({
       consultationTypeIds: [],
-      appointmentTime: '10:00',
+      appointmentTime: ' ',
       registrationDate: getTodayIsoDate(),
     });
     categoryForm.reset({ treatmentCategory: '' });
@@ -382,6 +383,41 @@ export function CreatePatientModal({
     }
   });
 
+  function calculateAgeFromDob(dobString: string): string {
+    if (!dobString) return '';
+    const [year, month, day] = dobString.split('-').map(Number);
+    if (!year || !month || !day) return '';
+
+    const dob = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Reject future dates
+    if (dob > today) return '';
+
+    let age = today.getFullYear() - dob.getFullYear();
+    const monthDiff = today.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+      age--;
+    }
+    return age >= 0 ? String(age) : '';
+  }
+
+  const watchedDob = step1Form.watch('dateOfBirth');
+
+  useEffect(() => {
+    const dob = watchedDob ?? '';
+    const calculatedAge = calculateAgeFromDob(dob);
+
+    step1Form.setValue('age', calculatedAge, {
+      shouldValidate: Boolean(dob),
+    });
+
+    if (dob) {
+      step1Form.trigger('dateOfBirth');
+    }
+  }, [watchedDob, step1Form]);
+
   const goBack = () => {
     if (stepIndex > 0) setStepIndex((index) => index - 1);
   };
@@ -417,14 +453,57 @@ export function CreatePatientModal({
       ? categoryTherapyOptions
       : selectedCategory
         ? lookupOptions.therapies.filter((option) => {
-            if (typeof option === 'string') return true;
-            return (
-              (option as TagOption & { categoryId?: string }).categoryId ===
-                undefined ||
-              (option as { categoryId?: string }).categoryId === selectedCategory
-            );
-          })
+          if (typeof option === 'string') return true;
+          return (
+            (option as TagOption & { categoryId?: string }).categoryId ===
+            undefined ||
+            (option as { categoryId?: string }).categoryId === selectedCategory
+          );
+        })
         : lookupOptions.therapies;
+
+ //  Helper to ensure selected date + time is in the future
+const isBookingDateTimeInFuture = (dateStr: string, timeStr: string): boolean => {
+  if (!dateStr || !timeStr) return true; // Handled by individual field required checks
+
+  const now = new Date();
+  const [year, month, day] = dateStr.split('-').map(Number);
+  
+  // Assumes timeStr is "HH:mm" (24-hour format). If "hh:mm AM/PM", parse accordingly.
+  const [hours, minutes] = timeStr.split(':').map(Number); 
+
+  const selectedDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  return selectedDateTime > now;
+};
+
+
+
+  const selectedDate = step1Form.watch('registrationDate');
+  const selectedTime = step1Form.watch('appointmentTime');
+  // Filter or disable options based on the selected date
+const availableTimeOptions = useMemo(() => {
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const isToday = selectedDate === todayStr;
+
+  if (!isToday) return BOOKING_TIME_OPTIONS;
+
+  return BOOKING_TIME_OPTIONS.filter((option) =>
+    isBookingDateTimeInFuture(selectedDate, option.value),
+  );
+}, [selectedDate]);
+
+  // Clear selected time if the user changes the date to today and the chosen time is now in the past
+// Clear selected time if the user changes the date to today and the chosen time is now in the past
+  useEffect(() => {
+    if (!selectedDate || !selectedTime) return;
+
+    if (!isBookingDateTimeInFuture(selectedDate, selectedTime)) {
+      step1Form.setValue('appointmentTime', '', {
+        shouldValidate: step1Form.formState.isSubmitted,
+      });
+    }
+  }, [selectedDate, selectedTime, step1Form]);
+
 
   useEffect(() => {
     setDoshaOptions(lookupOptions.doshas);
@@ -592,7 +671,13 @@ export function CreatePatientModal({
           <FormSection title="Basic Information">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Input label="Full Name *" placeholder="Full Name" error={step1Form.formState.errors.fullName?.message} {...step1Form.register('fullName')} />
-              <Input label="Date of Birth *" type="date" error={step1Form.formState.errors.dateOfBirth?.message} {...step1Form.register('dateOfBirth')} />
+              <Input
+                label="Date of Birth *"
+                type="date"
+                max={getTodayIsoDate()}
+                error={step1Form.formState.errors.dateOfBirth?.message}
+                {...step1Form.register('dateOfBirth')}
+              />
               <Input label="Mobile Number *" placeholder="Mobile Number" error={step1Form.formState.errors.mobileNumber?.message} {...step1Form.register('mobileNumber')} />
               <Select label="Gender *" placeholder="Gender" options={[...GENDER_OPTIONS]} error={step1Form.formState.errors.gender?.message} {...step1Form.register('gender')} />
               <TagInput
@@ -606,12 +691,28 @@ export function CreatePatientModal({
                 options={lookupOptions.consultationTypes}
                 error={step1Form.formState.errors.consultationTypeIds?.message}
               />
-              <Input label="Age" placeholder="Age" error={step1Form.formState.errors.age?.message} {...step1Form.register('age')} />
-              <Input label="Appointment Date" type="date" min={dateInputProps.min} error={step1Form.formState.errors.registrationDate?.message} {...step1Form.register('registrationDate')} />
+              <Input
+                label="Age"
+                placeholder="Auto-calculated"
+                readOnly
+                className="cursor-not-allowed bg-gray-50"
+                error={step1Form.formState.errors.age?.message}
+                {...step1Form.register('age')}
+              />
+              <Input
+                label="Appointment Date *"
+                type="date"
+                required
+                min={dateInputProps.min}
+                error={step1Form.formState.errors.registrationDate?.message}
+                {...step1Form.register('registrationDate')}
+              />
+
               <Select
-                label="Appointment Time"
+                label="Appointment Time *"
                 placeholder="Select time"
-                options={BOOKING_TIME_OPTIONS}
+                required
+                options={availableTimeOptions}
                 error={step1Form.formState.errors.appointmentTime?.message}
                 {...step1Form.register('appointmentTime')}
               />
