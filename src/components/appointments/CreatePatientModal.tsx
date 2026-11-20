@@ -636,7 +636,6 @@ export function CreatePatientModal({
     isBusy ||
     (currentStepKey === 'medical' &&
       (doshasLoading || doshaOptions.length === 0));
-  console.log('Doctors options:', lookupOptions.doctors);
   return (
     <Modal
       open={open}
