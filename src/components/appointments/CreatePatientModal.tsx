@@ -461,38 +461,38 @@ export function CreatePatientModal({
         })
         : lookupOptions.therapies;
 
- //  Helper to ensure selected date + time is in the future
-const isBookingDateTimeInFuture = (dateStr: string, timeStr: string): boolean => {
-  if (!dateStr || !timeStr) return true; // Handled by individual field required checks
+  //  Helper to ensure selected date + time is in the future
+  const isBookingDateTimeInFuture = (dateStr: string, timeStr: string): boolean => {
+    if (!dateStr || !timeStr) return true; // Handled by individual field required checks
 
-  const now = new Date();
-  const [year, month, day] = dateStr.split('-').map(Number);
-  
-  // Assumes timeStr is "HH:mm" (24-hour format). If "hh:mm AM/PM", parse accordingly.
-  const [hours, minutes] = timeStr.split(':').map(Number); 
+    const now = new Date();
+    const [year, month, day] = dateStr.split('-').map(Number);
 
-  const selectedDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
-  return selectedDateTime > now;
-};
+    // Assumes timeStr is "HH:mm" (24-hour format). If "hh:mm AM/PM", parse accordingly.
+    const [hours, minutes] = timeStr.split(':').map(Number);
+
+    const selectedDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    return selectedDateTime > now;
+  };
 
 
 
   const selectedDate = step1Form.watch('registrationDate');
   const selectedTime = step1Form.watch('appointmentTime');
   // Filter or disable options based on the selected date
-const availableTimeOptions = useMemo(() => {
-  const todayStr = new Date().toLocaleDateString('en-CA');
-  const isToday = selectedDate === todayStr;
+  const availableTimeOptions = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    const isToday = selectedDate === todayStr;
 
-  if (!isToday) return BOOKING_TIME_OPTIONS;
+    if (!isToday) return BOOKING_TIME_OPTIONS;
 
-  return BOOKING_TIME_OPTIONS.filter((option) =>
-    isBookingDateTimeInFuture(selectedDate, option.value),
-  );
-}, [selectedDate]);
+    return BOOKING_TIME_OPTIONS.filter((option) =>
+      isBookingDateTimeInFuture(selectedDate, option.value),
+    );
+  }, [selectedDate]);
 
   // Clear selected time if the user changes the date to today and the chosen time is now in the past
-// Clear selected time if the user changes the date to today and the chosen time is now in the past
+  // Clear selected time if the user changes the date to today and the chosen time is now in the past
   useEffect(() => {
     if (!selectedDate || !selectedTime) return;
 
@@ -636,7 +636,7 @@ const availableTimeOptions = useMemo(() => {
     isBusy ||
     (currentStepKey === 'medical' &&
       (doshasLoading || doshaOptions.length === 0));
-
+  console.log('Doctors options:', lookupOptions.doctors);
   return (
     <Modal
       open={open}
@@ -719,8 +719,13 @@ const availableTimeOptions = useMemo(() => {
                 label="Assigned Doctor *"
                 placeholder="Select Doctor"
                 options={lookupOptions.doctors}
+                value={step1Form.watch('assignedDoctor') ?? ''}
+                onChange={(e) =>
+                  step1Form.setValue('assignedDoctor', e.target.value, {
+                    shouldValidate: true,
+                  })
+                }
                 error={step1Form.formState.errors.assignedDoctor?.message}
-                {...step1Form.register('assignedDoctor')}
               />
             </div>
           </FormSection>
