@@ -44,7 +44,6 @@ import {
   OCCUPATION_OPTIONS,
   patientCategoryStepSchema,
   patientStep1BookingFormSchema,
-  patientStep1BookingSchema,
   patientStep2Schema,
   patientStep3Schema,
   RELATION_OPTIONS,

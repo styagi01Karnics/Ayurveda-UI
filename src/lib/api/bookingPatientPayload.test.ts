@@ -12,6 +12,7 @@ const minimalBooking: CreatePatientValues = {
   assignedDoctor: 'doc-1',
   treatmentCategory: '',
   recommendedTherapies: [],
+  appointmentTime: '10:00',
   scheduleDate: '',
   scheduleTime: '',
   sessionDuration: '',
