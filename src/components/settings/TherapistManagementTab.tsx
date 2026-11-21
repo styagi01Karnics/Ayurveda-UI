@@ -13,6 +13,7 @@ import {
   deleteTherapist,
   getAllTherapists,
   updateTherapistStatus,
+  updateTherapist,
 } from '@/lib/api/therapists';
 import { mapTherapistToClinicRecord } from '@/lib/api/mappers';
 
@@ -142,6 +143,38 @@ export function TherapistManagementTab() {
     }
   };
 
+  const handleUpdateTherapist = async (
+    id: string,
+    values: ClinicTherapistFormValues,
+  ) => {
+    try {
+      await updateTherapist(id, {
+        name: values.name,
+        status: values.status === 'Active' ? 'ACTIVE' : 'INACTIVE',
+        assignedTherapyIds: values.assignedTherapyIds,
+      });
+
+      await refreshTherapists();
+
+      showToast({
+        title: 'Therapist Updated',
+        message: `${values.name} has been updated successfully.`,
+      });
+
+      return true;
+    } catch (err) {
+      showToast({
+        title: 'Failed to update therapist',
+        message:
+          err instanceof ApiError
+            ? err.message
+            : 'Could not update therapist.',
+        variant: 'error',
+      });
+      return false;
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
 
@@ -180,6 +213,7 @@ export function TherapistManagementTab() {
           togglingId={togglingId}
           onToggleStatus={handleToggleStatus}
           onAdd={handleAddTherapist}
+          onUpdate={handleUpdateTherapist}
           onDelete={setDeleteTarget}
         />
 
@@ -200,6 +234,7 @@ function TherapistSection({
   togglingId,
   onToggleStatus,
   onAdd,
+  onUpdate,
   onDelete,
 }: {
   therapists: ClinicTherapistRecord[];
@@ -211,6 +246,10 @@ function TherapistSection({
   onAdd: (
     values: ClinicTherapistFormValues,
   ) => void | Promise<void>;
+  onUpdate: (
+    id: string,
+    values: ClinicTherapistFormValues,
+  ) => Promise<boolean>;
   onDelete: (record: ClinicTherapistRecord) => void;
 }) {
   const {
@@ -228,6 +267,8 @@ function TherapistSection({
       assignedTherapyIds: [],
     },
   });
+
+  const [editingTherapist, setEditingTherapist] = useState<ClinicTherapistRecord | null>(null);
 
   const assignedTherapyIds = watch('assignedTherapyIds') ?? [];
 
@@ -259,11 +300,36 @@ function TherapistSection({
       (option) => option.value === therapyId,
     )?.label ?? therapyId;
 
-  const onSubmit = async (
-    values: ClinicTherapistFormValues,
-  ) => {
-    await onAdd(values);
-    reset();
+  const handleCancelEdit = () => {
+    setEditingTherapist(null);
+    reset({
+      name: '',
+      status: 'Active',
+      assignedTherapyIds: [],
+    });
+  };
+
+  const onSubmit = async (values: ClinicTherapistFormValues) => {
+    let success = false;
+    if (editingTherapist) {
+      success = await onUpdate(editingTherapist.id, values);
+    } else {
+      await onAdd(values);
+      success = true;
+    }
+
+    if (success) {
+      handleCancelEdit();
+    }
+  };
+
+  const handleEditClick = (therapist: ClinicTherapistRecord) => {
+    setEditingTherapist(therapist);
+    reset({
+      name: therapist.name,
+      status: therapist.status,
+      assignedTherapyIds: therapist.assignedTherapyIds || [],
+    });
   };
 
   return (
@@ -374,13 +440,25 @@ function TherapistSection({
               </td>
 
               <td className="px-4 py-3">
-                <SettingsActionButton
-                  label="Add therapist"
-                  disabled={isSubmitting}
-                  onClick={() =>
-                    void handleSubmit(onSubmit)()
-                  }
-                />
+                <div className="flex items-center gap-2">
+                  {editingTherapist && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEdit}
+                      className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                   <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => void handleSubmit(onSubmit)()}
+                    className="rounded-md bg-gold px-4 py-2 text-sm font-medium text-white focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {editingTherapist ? 'Save' : 'Add'}
+                  </button>
+                </div>
               </td>
             </tr>
 
@@ -429,11 +507,18 @@ function TherapistSection({
                 </td>
 
                 <td className="px-4 py-4">
-                  <SettingsActionButton
-                    label={`Delete ${therapist.name}`}
-                    variant="delete"
-                    onClick={() => onDelete(therapist)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <SettingsActionButton
+                      label={`Edit ${therapist.name}`}
+                      variant="edit"
+                      onClick={() => handleEditClick(therapist)}
+                    />
+                    <SettingsActionButton
+                      label={`Delete ${therapist.name}`}
+                      variant="delete"
+                      onClick={() => onDelete(therapist)}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

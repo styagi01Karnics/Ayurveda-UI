@@ -389,20 +389,25 @@ export function ClinicSettingsTab() {
   //   }
   // };
 
-  const handleToggleTherapyStatus = async (therapy: ClinicTherapyRecord) => {
-    setTogglingId(therapy.id);
-    try {
-      await updateTherapyStatus(therapy.id, nextStatus(therapy.status));
-      await refreshTherapies();
-    } catch (err) {
-      showToast({
-        title: 'Failed to update therapy status',
-        message: err instanceof ApiError ? err.message : 'Could not update status.',
-      });
-    } finally {
-      setTogglingId(null);
-    }
-  };
+const handleToggleTherapyStatus = async (therapy: ClinicTherapyRecord) => {
+  const newStatus = nextStatus(therapy.status);
+  setTogglingId(therapy.id);
+  try {
+    await updateTherapyStatus(therapy.id, newStatus);
+    await refreshTherapies();
+    showToast({
+      title: 'Status updated',
+      message: `${therapy.name} is now ${newStatus}.`,
+    });
+  } catch (err) {
+    showToast({
+      title: 'Failed to update therapy status',
+      message: err instanceof ApiError ? err.message : 'Could not update status.',
+    });
+  } finally {
+    setTogglingId(null);
+  }
+};
 
   // const handleToggleTherapistStatus = async (therapist: ClinicTherapistRecord) => {
   //   setTogglingId(therapist.id);
