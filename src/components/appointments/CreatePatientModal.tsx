@@ -293,7 +293,13 @@ export function CreatePatientModal({
 
       setStepIndex(1);
     } catch (err) {
-      showStepError(err, 'Failed to create appointment.');
+      if (err instanceof ApiError && err.status === 409) {
+        const message = err.message || 'Email already registered';
+        step1Form.setError('email', { type: 'manual', message });
+        showToast({ title: 'Booking failed', message, variant: 'error' });
+      } else {
+        showStepError(err, 'Failed to create appointment.');
+      }
     } finally {
       setStepSubmitting(false);
     }

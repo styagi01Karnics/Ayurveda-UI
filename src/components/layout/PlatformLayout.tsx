@@ -21,9 +21,9 @@ export function PlatformLayout({ children }: { children?: ReactNode }) {
     navigate('/login');
   };
 
-  return (
-    <ToastProvider>
-      <div className="min-h-screen bg-cream-light">
+return (
+      <ToastProvider>
+        <div className="min-h-screen bg-cream-light">
         <header className="border-b border-[#f0ebe3] bg-white">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ export function PlatformLayout({ children }: { children?: ReactNode }) {
         open={passwordSuccessOpen}
         onClose={() => setPasswordSuccessOpen(false)}
       />
-      <ConfirmDialog
+<ConfirmDialog
         open={logoutOpen}
         title="Log out?"
         message={UI_MESSAGES.confirm.logoutMessage}

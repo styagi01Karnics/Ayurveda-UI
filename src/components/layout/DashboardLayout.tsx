@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { LogOut, Menu, X } from 'lucide-react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { PageActionContext } from '@/app/PageActionContext';
-import { ToastProvider } from '@/app/ToastContext';
+import { ToastProvider, ToastViewport } from '@/app/ToastContext';
 import { ChangePasswordModal } from '@/components/auth/ChangePasswordModal';
 import { PasswordSuccessModal } from '@/components/auth/PasswordSuccessModal';
 import { RedeemCouponModal } from '@/components/dashboard/RedeemCouponModal';
@@ -150,6 +150,7 @@ export function DashboardLayout() {
           open={couponOpen}
           onClose={() => setCouponOpen(false)}
         />
+        <ToastViewport className="fixed right-5 top-5 z-[9999]" />
       </PageActionContext.Provider>
     </ToastProvider>
   );
