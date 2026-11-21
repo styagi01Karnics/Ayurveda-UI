@@ -556,6 +556,7 @@ export interface ClinicTherapistRecord {
   name: string;
   status: ClinicStatus;
   assignedTherapies: string[];
+  assignedTherapyIds: string[];
 }
 
 export type UserStatus = 'Active' | 'Inactive';
