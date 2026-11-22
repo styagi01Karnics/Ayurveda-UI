@@ -172,21 +172,21 @@ export function MedicalAssessmentTab({ patient }: { patient: PatientDetail }) {
       <SectionBlock title="Physical Examination">
         <InfoGrid
           items={[
-            { label: 'Weight', value: m.weight },
-            { label: 'Height', value: m.height },
-            { label: 'IBW', value: m.ibw },
-            { label: 'Pulse', value: m.pulse },
-            { label: 'BP', value: m.bp },
-            { label: 'Pallor', value: m.pallor },
-            { label: 'Temperature', value: m.temperature },
-            { label: 'Acidity / Gas', value: m.acidityGas },
-            { label: 'Oedema', value: m.oedema },
-            { label: 'Sensorium', value: m.sensorium },
-            { label: 'Icterus', value: m.icterus },
-            { label: 'Cyanosis', value: m.cyanosis },
-            { label: 'Motion', value: m.motion },
-            { label: 'Micturition', value: m.micturition },
-            { label: 'Lymph Nodes', value: m.lymphNodes },
+            { label: 'Weight (kg)', value: m.weight },
+            { label: 'Height (cm)', value: m.height },
+            { label: 'IBW (kg)', value: m.ibw },
+            { label: 'Pulse (bpm)', value: m.pulse },
+            { label: 'BP (mmHg)', value: m.bp },
+            { label: 'Temperature (°F)', value: m.temperature },
+            { label: 'Pallor (Present / Absent)', value: m.pallor },
+            { label: 'Icterus (Present / Absent)', value: m.icterus },
+            { label: 'Cyanosis (Present / Absent)', value: m.cyanosis },
+            { label: 'Lymph Nodes (Palpable / Non-palpable)', value: m.lymphNodes },
+            { label: 'Oedema (Present / Absent)', value: m.oedema },
+            { label: 'Sensorium (Conscious / Oriented)', value: m.sensorium },
+            { label: 'Acidity / Gas (Yes / No)', value: m.acidityGas },
+            { label: 'Motion (Normal / Irregular)', value: m.motion },
+            { label: 'Micturition (Normal / Abnormal)', value: m.micturition },
           ]}
         />
       </SectionBlock>
