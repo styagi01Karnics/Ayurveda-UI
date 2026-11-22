@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/app/ToastContext';
 import { PageShell } from '@/components/layout/PageShell';
 import { AppointmentConfirmedModal } from '@/components/appointments/AppointmentConfirmedModal';
@@ -75,6 +76,7 @@ type ViewMode = 'list' | 'calendar';
 
 export function AppointmentsPage() {
   const { showToast } = useToast();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AppointmentTab>('appointments');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [patientIdQuery, setPatientIdQuery] = useState('');
@@ -302,6 +304,18 @@ export function AppointmentsPage() {
   const handleCancelRequest = (id: string) => {
     const item = appointments.find((a) => a.id === id);
     if (item) setCancelTarget(item);
+  };
+
+  const handleAppointmentRowClick = (record: AppointmentRecord) => {
+    if (record.patientId) {
+      navigate(`/patients/${record.patientId}`);
+    }
+  };
+
+  const handleFollowUpRowClick = (record: FollowUpRecord) => {
+    if (record.patientId) {
+      navigate(`/patients/${record.patientId}`);
+    }
   };
 
   const handleCancelConfirm = async (reason: string) => {
@@ -678,6 +692,7 @@ export function AppointmentsPage() {
                 items={appointmentsPaging.pageItems}
                 onCancel={handleCancelRequest}
                 onReschedule={handleRescheduleRequest}
+                onRowClick={handleAppointmentRowClick}
               />
               <Pagination
                 page={appointmentsPaging.page}
@@ -700,6 +715,7 @@ export function AppointmentsPage() {
                 embedded
                 items={followUpsPaging.pageItems}
                 onReschedule={setFollowUpRescheduleTarget}
+                onRowClick={handleFollowUpRowClick}
               />
               <Pagination
                 page={followUpsPaging.page}

@@ -6,12 +6,14 @@ import type { FollowUpRecord } from '@/types';
 interface FollowUpsTableProps {
   items: FollowUpRecord[];
   onReschedule: (item: FollowUpRecord) => void;
+  onRowClick?: (record: FollowUpRecord) => void;
   embedded?: boolean;
 }
 
 export function FollowUpsTable({
   items,
   onReschedule,
+  onRowClick,
   embedded,
 }: FollowUpsTableProps) {
   return (
@@ -34,8 +36,24 @@ export function FollowUpsTable({
                 key={item.id}
                 className="border-b border-gray-50 hover:bg-gray-50/50"
               >
-                <td className="px-5 py-4 font-medium text-brown">{item.uhid}</td>
-                <td className="px-5 py-4 text-brown">{item.patient}</td>
+                <td className="px-5 py-4 font-medium text-brown">
+                  <button
+                    type="button"
+                    onClick={() => onRowClick?.(item)}
+                    className="text-gold hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                  >
+                    {item.uhid}
+                  </button>
+                </td>
+                <td className="px-5 py-4 text-brown">
+                  <button
+                    type="button"
+                    onClick={() => onRowClick?.(item)}
+                    className="text-gold hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                  >
+                    {item.patient}
+                  </button>
+                </td>
                 <td className="px-5 py-4 text-brown">{item.doctor}</td>
                 <td className="px-5 py-4">
                   <span className="font-medium text-gold">{item.visitType}</span>
