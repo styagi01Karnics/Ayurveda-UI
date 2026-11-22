@@ -44,7 +44,13 @@ export { PAGE_CODE_LABELS };
 
 export const clinicDoctorSchema = z
   .object({
-    name: z.string().min(1, 'Name is required'),
+    name: z
+      .string()
+      .min(1, 'Name is required')
+      .refine(
+        (val) => !/^\s*dr\.?\s+/i.test(val),
+        'Do not include "Dr." prefix — it is added automatically',
+      ),
     specialization: z.string().min(1, 'Specialization is required'),
     qualification: z.string().trim().optional(),
     mobileNumber: z
