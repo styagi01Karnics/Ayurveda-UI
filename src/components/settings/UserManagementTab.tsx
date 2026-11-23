@@ -54,7 +54,7 @@ function mapUserToRecord(user: UserResponse): SettingsUserRecord {
       : '—',
     email: user.email || '—',
     status: statusUpper === 'INACTIVE' ? 'Inactive' : 'Active',
-    assignedRole: user.role,
+    tenantRoleName: user.tenantRoleName || user.role || '—',
     tenantRoleId: user.tenantRoleId,
   };
 }
@@ -155,7 +155,7 @@ export function UserManagementTab({
   const isRoleAlreadyAssigned = (role: string, exceptUserId?: string) =>
     users.some(
       (user) =>
-        user.assignedRole === role &&
+        user.tenantRoleName === role &&
         user.id !== exceptUserId &&
         user.status === 'Active',
     );
@@ -232,7 +232,7 @@ export function UserManagementTab({
   const handleRoleChangeRequest = (userId: string, newRole: string) => {
     if (isRoleAlreadyAssigned(newRole, userId)) {
       const holder = users.find(
-        (user) => user.assignedRole === newRole && user.id !== userId,
+        (user) => user.tenantRoleName === newRole && user.id !== userId,
       );
       showToast({
         title: 'Role already assigned',

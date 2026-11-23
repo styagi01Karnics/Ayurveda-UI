@@ -568,7 +568,7 @@ export interface SettingsUserRecord {
   phone: string;
   email: string;
   status: UserStatus;
-  assignedRole: string;
+  tenantRoleName: string;
   tenantRoleId?: string;
 }
 

@@ -18,16 +18,16 @@ export const DUMMY_LOGIN_CREDENTIALS = {
   tenantCode: 'GAN-DL',
 } as const;
 
-const ROLE_LABELS: Record<string, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ADMIN: 'Admin',
-  TENANT_ADMIN: 'Tenant Admin',
-  MANAGER: 'Manager',
-  RECEPTIONIST: 'Receptionist',
-  DIETICIAN: 'Dietician',
-  DOCTOR: 'Doctor',
-  CHEMIST: 'Chemist',
-};
+// const ROLE_LABELS: Record<string, string> = {
+//   SUPER_ADMIN: 'Super Admin',
+//   ADMIN: 'Admin',
+//   TENANT_ADMIN: 'Tenant Admin',
+//   MANAGER: 'Manager',
+//   RECEPTIONIST: 'Receptionist',
+//   DIETICIAN: 'Dietician',
+//   DOCTOR: 'Doctor',
+//   CHEMIST: 'Chemist',
+// };
 
 export function getStoredUser(): AuthUser | null {
   const raw = localStorage.getItem(AUTH_KEY);
@@ -156,13 +156,13 @@ export function isAuthenticated(): boolean {
   return Boolean(getStoredToken());
 }
 
-export function formatAuthRole(role?: string | null): string {
-  if (!role || typeof role !== 'string') {
+export function formatAuthRole(tenantRoleName?: string | null): string {
+  if (!tenantRoleName || typeof tenantRoleName !== 'string') {
     return '—';
   }
-  return role
+  return tenantRoleName
     .replace(/_/g, ' ')
-    .trim(); // keep your existing formatting logic after the null guard
+    .trim();
 }
 
 export function isSuperAdmin(user: AuthUser | null | undefined): boolean {

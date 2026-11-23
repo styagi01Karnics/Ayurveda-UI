@@ -68,7 +68,7 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
                 </td>
                 <td className="px-5 py-4">
                   <span className="inline-flex rounded-full bg-[#FAF4E5] px-3 py-1 text-xs font-medium text-[#422C23]">
-                    {formatAuthRole(record.assignedRole)}
+                    {formatAuthRole(record.tenantRoleName)}
                   </span>
                 </td>
                 <td className="px-5 py-4">
@@ -76,11 +76,11 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
                     <Select
                       className="min-w-[148px] !border-[#BE880B] !bg-white !py-2 !text-xs !font-medium !text-[#422C23]"
                       options={[...USER_ROLE_OPTIONS]}
-                      value={record.assignedRole}
+                      value={record.tenantRoleName}
                       onChange={(e) => {
                         if (
                           e.target.value &&
-                          e.target.value !== record.assignedRole
+                          e.target.value !== record.tenantRoleName
                         ) {
                           onRoleChange(record.id, e.target.value);
                         }
