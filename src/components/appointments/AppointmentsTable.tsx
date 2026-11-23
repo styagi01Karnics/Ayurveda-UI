@@ -7,6 +7,7 @@ interface AppointmentsTableProps {
   items: AppointmentRecord[];
   onCancel: (id: string) => void;
   onReschedule: (id: string) => void;
+  onRowClick?: (record: AppointmentRecord) => void;
   embedded?: boolean;
 }
 
@@ -14,6 +15,7 @@ export function AppointmentsTable({
   items,
   onCancel,
   onReschedule,
+  onRowClick,
   embedded,
 }: AppointmentsTableProps) {
   return (
@@ -36,8 +38,24 @@ export function AppointmentsTable({
                 key={item.id}
                 className="border-b border-gray-50 hover:bg-gray-50/50"
               >
-                <td className="px-5 py-4 font-medium text-brown">{item.uhid}</td>
-                <td className="px-5 py-4 text-brown">{item.patient}</td>
+                <td className="px-5 py-4 font-medium text-brown">
+                  <button
+                    type="button"
+                    onClick={() => onRowClick?.(item)}
+                    className="text-gold hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                  >
+                    {item.uhid}
+                  </button>
+                </td>
+                <td className="px-5 py-4 text-brown">
+                  <button
+                    type="button"
+                    onClick={() => onRowClick?.(item)}
+                    className="text-gold hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                  >
+                    {item.patient}
+                  </button>
+                </td>
                 <td className="px-5 py-4 text-brown">{item.doctor}</td>
                 <td className="px-5 py-4">
                   <VisitTypeText type={item.visitType} />

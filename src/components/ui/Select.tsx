@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils';
 
 export type SelectOption = string | { value: string; label: string };
 
+type SelectPlacement = 'bottom' | 'top' | 'auto';
+
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
@@ -24,6 +26,8 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   fieldVariant?: 'default' | 'auth';
   /** Rendered at the bottom of the open menu, e.g. an inline "add new" row. Receives a close callback. */
   footer?: ReactNode | ((close: () => void) => ReactNode);
+  /** Preferred placement of the dropdown menu. 'auto' will flip based on viewport space. */
+  placement?: SelectPlacement;
 }
 
 function normalizeOption(option: SelectOption): { value: string; label: string } {
@@ -51,6 +55,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       onChange,
       onBlur,
       disabled,
+      placement = 'auto',
       ...props
     },
     ref,
@@ -68,7 +73,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       top: number;
       left: number;
       width: number;
-    }>({ top: 0, left: 0, width: 0 });
+      placement: 'top' | 'bottom';
+    }>({ top: 0, left: 0, width: 0, placement: 'bottom' });
     const rootRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLButtonElement | null>(null);
     const menuRef = useRef<HTMLUListElement | null>(null);
@@ -84,12 +90,49 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
       const trigger = triggerRef.current;
       if (!trigger) return;
       const box = trigger.getBoundingClientRect();
+      const menuHeight = 224; // max-h-56 = 224px
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - box.bottom;
+      const spaceAbove = box.top;
+
+      let finalPlacement: 'top' | 'bottom' = 'bottom';
+      let top = box.bottom + 4;
+
+      if (placement === 'top') {
+        finalPlacement = 'top';
+        top = box.top - menuHeight - 4;
+      } else if (placement === 'auto') {
+        if (spaceBelow < menuHeight && spaceAbove >= menuHeight) {
+          // Not enough space below, but enough above - flip to top
+          finalPlacement = 'top';
+          top = box.top - menuHeight - 4;
+        } else if (spaceBelow < menuHeight && spaceAbove < menuHeight) {
+          // Not enough space either way, use the side with more space
+          if (spaceAbove > spaceBelow) {
+            finalPlacement = 'top';
+            top = box.top - menuHeight - 4;
+          } else {
+            finalPlacement = 'bottom';
+            top = box.bottom + 4;
+          }
+        } else {
+          // Enough space below
+          finalPlacement = 'bottom';
+          top = box.bottom + 4;
+        }
+      } else {
+        // placement === 'bottom'
+        finalPlacement = 'bottom';
+        top = box.bottom + 4;
+      }
+
       setMenuBox({
-        top: box.bottom + 4,
+        top,
         left: box.left,
         width: box.width,
+        placement: finalPlacement,
       });
-    }, []);
+    }, [placement]);
 
     useLayoutEffect(() => {
       if (!open) return;
@@ -176,7 +219,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           top: menuBox.top,
           left: menuBox.left,
           width: menuBox.width,
-          zIndex: 80,
+          zIndex: 9999,
         }}
       >
         <li role="option" aria-selected={!hasValue}>
@@ -282,7 +325,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           <span className="min-w-0 truncate">
             {hasValue ? selectedLabel : placeholder}
           </span>
-          <ChevronDown className="h-4 w-4 shrink-0 text-[#422C23]" />
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 shrink-0 text-[#422C23] transition-transform duration-150',
+              open && menuBox.placement === 'top' && 'rotate-180',
+            )}
+          />
         </button>
 
         {open && typeof document !== 'undefined'

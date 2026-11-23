@@ -48,3 +48,18 @@ export function formatPersonName(value: string | null | undefined): string {
     )
     .join(' ');
 }
+
+/**
+ * Strip any leading "Dr." / "Dr" / "DR." / "dr" prefix (case-insensitive)
+ * and format the name cleanly with "Dr. " prefix.
+ * Returns "—" for empty/placeholder values.
+ */
+export function formatDoctorName(name: string | null | undefined): string {
+  if (name == null) return '—';
+  const trimmed = name.trim();
+  if (!trimmed || trimmed === '—') return '—';
+  // Strip existing Dr. prefix (case-insensitive, handles "Dr.", "Dr", "DR.", "dr", etc.)
+  const withoutPrefix = trimmed.replace(/^\s*dr\.?\s+/i, '');
+  const formatted = formatPersonName(withoutPrefix);
+  return `Dr. ${formatted}`;
+}

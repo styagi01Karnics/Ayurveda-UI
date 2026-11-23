@@ -200,6 +200,24 @@ export function DoctorMedicalForm({
     'icterus', 'cyanosis', 'lymphNodes', 'oedema', 'sensorium',
     'acidityGas', 'motion', 'micturition',
   ] as const;
+
+  const physicalFieldLabels: Record<string, string> = {
+    weight: 'Weight (kg)',
+    height: 'Height (cm)',
+    ibw: 'IBW (kg)',
+    pulse: 'Pulse (bpm)',
+    bp: 'BP (mmHg)',
+    temperature: 'Temperature (°F)',
+    pallor: 'Pallor (Present / Absent)',
+    icterus: 'Icterus (Present / Absent)',
+    cyanosis: 'Cyanosis (Present / Absent)',
+    lymphNodes: 'Lymph Nodes (Palpable / Non-palpable)',
+    oedema: 'Oedema (Present / Absent)',
+    sensorium: 'Sensorium (Conscious / Oriented)',
+    acidityGas: 'Acidity / Gas (Yes / No)',
+    motion: 'Motion (Normal / Irregular)',
+    micturition: 'Micturition (Normal / Abnormal)',
+  };
   const historyOptions = getMedicalHistoryOptions(patient.personalInfo.gender);
 
   return (
@@ -223,7 +241,7 @@ export function DoctorMedicalForm({
           {physicalFields.map((field) => (
             <Input
               key={field}
-              label={field.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase())}
+              label={physicalFieldLabels[field]}
               error={form.formState.errors[field]?.message}
               {...form.register(field)}
             />

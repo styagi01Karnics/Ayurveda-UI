@@ -5,6 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -62,11 +63,11 @@ export function ToastViewport({ className }: { className?: string }) {
   const ctx = useContext(ToastContext);
   if (!ctx || ctx.toasts.length === 0) return null;
 
-  return (
+  const toastContainer = (
     <div className={cn(
-    'fixed right-5 top-5 z-[9999] flex w-[min(100%,22rem)] flex-col gap-2',
-    className
-  )}>
+      'fixed right-5 top-5 z-[10000] flex w-[min(100%,22rem)] flex-col gap-2',
+      className
+    )}>
       {ctx.toasts.map((toast) => {
         const isError = toast.variant === 'error';
         return (
@@ -111,6 +112,9 @@ export function ToastViewport({ className }: { className?: string }) {
       })}
     </div>
   );
+
+  if (typeof document === 'undefined') return null;
+  return createPortal(toastContainer, document.body);
 }
 
 export function useToast() {

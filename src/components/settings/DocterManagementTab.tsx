@@ -29,7 +29,7 @@ import { mapDoctorToClinicRecord } from '@/lib/api/mappers';
 import { ApiError } from '@/lib/api/client';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { formatDoctorAvailability } from '@/lib/doctorAvailability';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDoctorName } from '@/lib/utils';
 
 import {
   CLINIC_STATUS_OPTIONS,
@@ -103,8 +103,11 @@ export function DocterManagementTab() {
   const handleEditClick = (doctor: ClinicDoctorRecord) => {
     setEditingDoctor(doctor);
 
+    // Strip "Dr. " prefix for the form input (it will be added back on display)
+    const nameWithoutPrefix = doctor.name.replace(/^\s*dr\.?\s+/i, '');
+
     reset({
-      name: doctor.name,
+      name: nameWithoutPrefix,
       specialization: doctor.specialization,
       qualification: doctor.qualification || '',
       mobileNumber: doctor.mobileNumber || '',
@@ -147,13 +150,13 @@ export function DocterManagementTab() {
         await updateDoctor(editingDoctor.id, payload);
         showToast({
           title: 'Doctor Updated',
-          message: `${values.name}'s profile has been updated.`,
+          message: `${formatDoctorName(values.name)}'s profile has been updated.`,
         });
       } else {
         await createDoctor(payload);
         showToast({
           title: 'Doctor Added',
-          message: `${values.name} has been added successfully.`,
+          message: `${formatDoctorName(values.name)} has been added successfully.`,
         });
       }
 
@@ -189,10 +192,10 @@ export function DocterManagementTab() {
     try {
       await deleteDoctor(deleteTarget.id);
       await refreshDoctors();
-      showToast({
-        title: 'Doctor deleted',
-        message: `${deleteTarget.name} was removed.`,
-      });
+showToast({
+          title: 'Doctor deleted',
+          message: `${formatDoctorName(deleteTarget.name)} was removed.`,
+        });
     } catch (err) {
       showToast({
         title: 'Error deleting record',
@@ -240,7 +243,7 @@ export function DocterManagementTab() {
             </div>
             {editingDoctor && (
               <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
-                Editing: {editingDoctor.name}
+                Editing: {formatDoctorName(editingDoctor.name)}
               </span>
             )}
           </div>
@@ -248,7 +251,12 @@ export function DocterManagementTab() {
           <form onSubmit={(e) => { e.preventDefault(); void handleSubmit(onSubmit, onInvalid)(); }}>
             <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               <div className="min-w-0">
-                <Input label="Full name" placeholder="e.g. Dr. Arman" error={errors.name?.message} {...register('name')} />
+                <Input
+                  label="Full name"
+                  placeholder="e.g. Shweta Sharma"
+                  error={errors.name?.message}
+                  {...register('name')}
+                />
               </div>
 
               <div className="min-w-0">
@@ -360,7 +368,7 @@ export function DocterManagementTab() {
               <tbody>
                 {doctors.map((doctor) => (
                   <tr key={doctor.id} className="border-b border-[#EFF0F6] hover:bg-gray-50/50">
-                    <td className="px-4 py-4 font-medium text-[#422C23]">{doctor.name}</td>
+                    <td className="px-4 py-4 font-medium text-[#422C23]">{formatDoctorName(doctor.name)}</td>
                     <td className="px-4 py-4 text-[#422C23]">{doctor.specialization}</td>
                     <td className="px-4 py-4 text-[#422C23]">{doctor.qualification || '—'}</td>
                     <td className="px-4 py-4 text-[#422C23]">{doctor.mobileNumber || '—'}</td>

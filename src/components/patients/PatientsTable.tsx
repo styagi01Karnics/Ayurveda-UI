@@ -38,43 +38,51 @@ export function PatientsTable({
             <th className="w-[12%] px-3 py-3">Report</th>
           </tr>
         </thead>
-        <tbody>
-          {records.length === 0 ? (
-            <tr>
-              <td colSpan={8} className="px-3 py-12 text-center text-text-muted">
-                No patients found matching your filters.
-              </td>
-            </tr>
-          ) : (
-            records.map((record) => (
-              <tr
-                key={record.id}
-                className="border-b border-gray-50 hover:bg-gray-50/50"
-              >
-                <td className="px-3 py-4">
-                  <button
-                    type="button"
-                    onClick={() => onRowClick?.(record)}
-                    className="w-full text-left hover:text-gold"
-                  >
-                    <div className="truncate font-medium text-brown">{record.id}</div>
-                    {record.secondaryId ? (
-                      <div className="truncate text-xs text-text-muted">
-                        {record.secondaryId}
-                      </div>
-                    ) : null}
-                  </button>
+<tbody>
+            {records.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="px-3 py-12 text-center text-text-muted">
+                  No patients found matching your filters.
                 </td>
-                <td className="px-3 py-4">
-                  <button
-                    type="button"
-                    onClick={() => onRowClick?.(record)}
-                    className="w-full text-left hover:text-gold"
-                  >
-                    <div className="truncate font-medium text-brown">{record.name}</div>
-                    <div className="truncate text-xs text-text-muted">{record.phone}</div>
-                  </button>
-                </td>
+              </tr>
+            ) : (
+              records.map((record) => (
+                <tr
+                  key={record.id}
+                  className="border-b border-gray-50 hover:bg-gray-50/50"
+                >
+                  <td className="px-5 py-4 font-medium text-brown">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRowClick?.(record);
+                      }}
+                      className="text-gold hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                    >
+                      {record.id}
+                      {record.secondaryId && (
+                        <span className="block truncate text-xs text-text-muted">
+                          {record.secondaryId}
+                        </span>
+                      )}
+                    </button>
+                  </td>
+                  <td className="px-5 py-4 text-brown">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRowClick?.(record);
+                      }}
+                      className="text-gold hover:underline cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2"
+                    >
+                      <span className="truncate font-medium">{record.name}</span>
+                      <span className="block truncate text-xs text-text-muted">
+                        {record.phone}
+                      </span>
+                    </button>
+                  </td>
                 <td className="truncate px-3 py-4 text-brown">{record.doctor}</td>
                 <td className="px-3 py-4">
                   <VisitTypeText type={record.visitType} />

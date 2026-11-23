@@ -940,13 +940,15 @@ export function mapTherapistToClinicRecord(
   therapiesById: Map<string, TherapyDto> = new Map(),
 ): ClinicTherapistRecord {
   const names: string[] = [];
+  const ids: string[] = [];
   const seen = new Set<string>();
 
-  const pushName = (raw: string) => {
+  const pushName = (raw: string, id?: string) => {
     const name = raw.trim();
     if (!name || seen.has(name)) return;
     seen.add(name);
     names.push(name);
+    if (id) ids.push(id);
   };
 
   for (const therapy of therapist.assignedTherapies ?? []) {
@@ -957,12 +959,13 @@ export function mapTherapistToClinicRecord(
         lookedUp?.name ||
         lookedUp?.therapyName ||
         '',
+      therapy.id,
     );
   }
 
   for (const id of therapist.assignedTherapyIds ?? []) {
     const lookedUp = therapiesById.get(id);
-    pushName(lookedUp?.name || lookedUp?.therapyName || '');
+    pushName(lookedUp?.name || lookedUp?.therapyName || '', id);
   }
 
   return {
@@ -971,6 +974,7 @@ export function mapTherapistToClinicRecord(
     status:
       therapist.status === 'ACTIVE' || therapist.active ? 'Active' : 'Inactive',
     assignedTherapies: names,
+    assignedTherapyIds: ids,
   };
 }
 
