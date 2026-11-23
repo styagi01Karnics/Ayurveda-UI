@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
@@ -12,6 +12,7 @@ import {
   type EditUserFormValues,
 } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
+import { getActiveDoctors } from '@/lib/api/doctors';
 
 export interface TenantRoleOption {
   value: string;
@@ -44,6 +45,8 @@ export function AddUserModal({
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<UserFormValues>({
     resolver: zodResolver(isEdit ? editUserSchema : addUserSchema),
@@ -55,8 +58,43 @@ export function AddUserModal({
       password: '',
       confirmPassword: '',
       status: 'Active',
+      profession: 'OTHERS' as const,
+      userCode: '',
+      doctorId: '',
     },
   });
+
+  const profession = watch('profession');
+  const [doctorEmails, setDoctorEmails] = useState<{ value: string; label: string }[]>([]);
+  const [doctors, setDoctors] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (profession === 'DOCTOR') {
+      void (async () => {
+        try {
+          const doctors = await getActiveDoctors(0, 100);
+          setDoctors(Array.isArray(doctors) ? doctors : []);
+          const emails = (Array.isArray(doctors) ? doctors : []).map((d: any) => {
+            const email = d?.email ?? d?.emailId ?? d?.doctorEmail;
+            return typeof email === 'string' ? email.trim() : '';
+          }).filter((e: string) => e.length > 0).map((e: string) => ({ value: e, label: e }));
+          // Deduplicate
+          const seen = new Set<string>();
+          const unique = emails.filter((opt) => {
+            if (seen.has(opt.value)) return false;
+            seen.add(opt.value);
+            return true;
+          });
+          setDoctorEmails(unique);
+        } catch {
+          setDoctorEmails([]);
+        }
+      })();
+    } else {
+      setDoctorEmails([]);
+    }
+  }, [profession, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -67,6 +105,9 @@ export function AddUserModal({
         mobileNumber: user.phone.replace(/\D/g, '').slice(-10),
         email: user.email === '—' ? '' : user.email,
         status: user.status,
+        profession: (user.profession as 'DOCTOR' | 'OTHERS') ?? 'OTHERS',
+        userCode: user.userCode ?? '',
+        doctorId: user.doctorId ?? '',
       });
       return;
     }
@@ -78,8 +119,20 @@ export function AddUserModal({
       password: '',
       confirmPassword: '',
       status: 'Active',
+      profession: 'OTHERS',
+      userCode: '',
+      doctorId: '',
     });
   }, [open, user, reset]);
+
+  const [prevProfession, setPrevProfession] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (prevProfession !== undefined && prevProfession !== profession) {
+      setValue('email', '');
+    }
+    setPrevProfession(profession);
+  }, [profession, setValue, prevProfession]);
 
   const handleClose = () => {
     reset();
@@ -103,9 +156,29 @@ export function AddUserModal({
       }
     >
       <form className="grid gap-4 sm:grid-cols-2" noValidate>
+         <Select
+          label="Profession"
+          placeholder="Select profession"
+          options={[
+            { value: 'DOCTOR', label: 'Doctor' },
+            { value: 'OTHERS', label: 'Others' },
+          ]}
+          disabled={isEdit}
+          error={'profession' in errors ? errors.profession?.message : undefined}
+          {...register('profession')}
+        />
+        <Input
+          label="User ID"
+          placeholder="User ID"
+          disabled={isEdit}
+          readOnly={isEdit}
+          className={isEdit ? 'cursor-not-allowed bg-gray-50' : ''}
+          error={'userCode' in errors ? errors.userCode?.message : undefined}
+          {...register('userCode')}
+        />
         <Select
-          label="Tenant Role"
-          placeholder="Select tenant role"
+          label="Role"
+          placeholder="Select role"
           options={tenantRoleOptions}
           error={'tenantRoleId' in errors ? errors.tenantRoleId?.message : undefined}
           {...register('tenantRoleId')}
@@ -122,13 +195,31 @@ export function AddUserModal({
           error={'mobileNumber' in errors ? errors.mobileNumber?.message : undefined}
           {...register('mobileNumber')}
         />
-        <Input
-          label="Email"
-          type="email"
-          placeholder="Email"
-          error={'email' in errors ? errors.email?.message : undefined}
-          {...register('email')}
-        />
+        {profession === 'DOCTOR' ? (
+          <Select
+            label="Email"
+            placeholder="Select doctor email"
+            options={doctorEmails}
+            error={'email' in errors ? errors.email?.message : undefined}
+            {...register('email', {
+              onChange: (e) => {
+                const selected = doctorEmails.find((opt) => opt.value === e.target.value);
+                // find doctor id from the fetched doctors
+                const doc = doctors.find((d: any) => (d.email ?? d.emailId ?? d.doctorEmail) === e.target.value);
+                setValue('doctorId', doc?.id ?? '');
+              },
+            })}
+          />
+        ) : (
+          <Input
+            label="Email"
+            type="email"
+            placeholder="Email"
+            error={'email' in errors ? errors.email?.message : undefined}
+            {...register('email')}
+          />
+        )}
+       
         {!isEdit ? (
           <>
             <Input
