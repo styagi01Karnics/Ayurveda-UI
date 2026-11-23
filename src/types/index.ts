@@ -570,6 +570,9 @@ export interface SettingsUserRecord {
   status: UserStatus;
   tenantRoleName: string;
   tenantRoleId?: string;
+  profession?: string;
+  userCode?: string;
+  doctorId?: string;
 }
 
 export interface SettingsRoleRecord {

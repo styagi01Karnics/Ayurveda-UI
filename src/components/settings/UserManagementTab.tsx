@@ -55,9 +55,13 @@ function mapUserToRecord(user: UserResponse): SettingsUserRecord {
     email: user.email || '—',
     status: statusUpper === 'INACTIVE' ? 'Inactive' : 'Active',
     tenantRoleName: user.tenantRoleName || user.role || '—',
-    tenantRoleId: user.tenantRoleId,
+    tenantRoleId: user.tenantRoleId || '-',
+    profession: user.profession,
+    userCode: user.userCode,
+    doctorId: user.doctorId,
   };
-}
+  };
+
 
 export function UserManagementTab({
   addUserOpen,
@@ -175,6 +179,9 @@ export function UserManagementTab({
           tenantRoleId: values.tenantRoleId,
           mobileNumber: values.mobileNumber,
           status: values.status.toUpperCase(),
+          profession: values.profession,
+          userCode: values.userCode,
+          doctorId: values.doctorId || undefined,
         });
         if (updated.status?.toUpperCase() !== values.status.toUpperCase()) {
           await updateUserStatus(editUser.id, values.status.toUpperCase());
@@ -200,6 +207,9 @@ export function UserManagementTab({
         password: addValues.password,
         tenantRoleId: addValues.tenantRoleId,
         mobileNumber: addValues.mobileNumber,
+        profession: addValues.profession,
+        userCode: addValues.userCode,
+        doctorId: addValues.doctorId || undefined,
       });
       if (!created.mobileNumber && addValues.mobileNumber) {
         created = await updateUser(created.id, {

@@ -73,7 +73,7 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-2">
-                    <Select
+                    {/* <Select
                       className="min-w-[148px] !border-[#BE880B] !bg-white !py-2 !text-xs !font-medium !text-[#422C23]"
                       options={[...USER_ROLE_OPTIONS]}
                       value={record.tenantRoleName}
@@ -85,7 +85,7 @@ export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
                           onRoleChange(record.id, e.target.value);
                         }
                       }}
-                    />
+                    /> */}
                     <IconActionButton
                       onClick={() => onEdit(record)}
                       aria-label={`Edit ${record.fullName}`}

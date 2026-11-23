@@ -166,6 +166,9 @@ const userDetailFields = {
     .regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
   status: z.enum(USER_STATUS_OPTIONS),
+  profession: z.enum(['DOCTOR', 'OTHERS']),
+  userCode: z.string().min(1, 'User Code is required'),
+  doctorId: z.string().optional(),
 };
 
 export const addUserSchema = z
