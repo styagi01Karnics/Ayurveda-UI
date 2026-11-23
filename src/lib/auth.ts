@@ -156,8 +156,13 @@ export function isAuthenticated(): boolean {
   return Boolean(getStoredToken());
 }
 
-export function formatAuthRole(role: string): string {
-  return ROLE_LABELS[role] ?? role.replace(/_/g, ' ');
+export function formatAuthRole(role?: string | null): string {
+  if (!role || typeof role !== 'string') {
+    return '—';
+  }
+  return role
+    .replace(/_/g, ' ')
+    .trim(); // keep your existing formatting logic after the null guard
 }
 
 export function isSuperAdmin(user: AuthUser | null | undefined): boolean {
