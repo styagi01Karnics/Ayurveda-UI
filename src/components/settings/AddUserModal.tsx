@@ -12,7 +12,7 @@ import {
   type EditUserFormValues,
 } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
-import { getActiveDoctors } from '@/lib/api/doctors';
+import { getActiveDoctorsWithoutUserCode } from '@/lib/api/doctors';
 
 export interface TenantRoleOption {
   value: string;
@@ -73,7 +73,7 @@ export function AddUserModal({
     if (profession === 'DOCTOR') {
       void (async () => {
         try {
-          const doctors = await getActiveDoctors(0, 100);
+          const doctors = await getActiveDoctorsWithoutUserCode();
           setDoctors(Array.isArray(doctors) ? doctors : []);
           const emails = (Array.isArray(doctors) ? doctors : []).map((d: any) => {
             const email = d?.email ?? d?.emailId ?? d?.doctorEmail;
