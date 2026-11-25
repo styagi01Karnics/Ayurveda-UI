@@ -501,6 +501,7 @@ export interface ClinicDoctorRecord {
   qualification: string;
   mobileNumber: string;
  email?: string;
+ userCode?: string;
  status: ClinicStatus;
  consultationFees: number;
  followUpFees: number;

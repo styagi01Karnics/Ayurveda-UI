@@ -33,6 +33,12 @@ export const onboardHospitalSchema = z
         'Enter a valid image URL',
       ),
     fullName: z.string().min(1, 'Admin full name is required'),
+    userCode: z
+      .string()
+      .trim()
+      .min(1, 'User code is required')
+      .max(30, 'User code must be at most 30 characters')
+      .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+$/, 'User code must mix letters and numbers'),
     mobileNumber: z
       .string()
       .min(1, 'Mobile number is required')

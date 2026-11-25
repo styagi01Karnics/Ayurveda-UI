@@ -46,6 +46,7 @@ const emptyForm: OnboardHospitalFormValues = {
   registrationNumber: '',
   logoUrl: '',
   fullName: '',
+  userCode: '',
   mobileNumber: '',
   email: '',
   password: '',
@@ -170,6 +171,7 @@ export function PlatformHospitalsPage() {
         logoUrl,
         photoUrl,
         fullName: values.fullName.trim(),
+        userCode: values.userCode.trim(),
         mobileNumber: values.mobileNumber.trim(),
         email: values.email.trim(),
         password: values.password,
@@ -520,13 +522,13 @@ export function PlatformHospitalsPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Input
-                      label="Clinic name"
+                      label="Clinic Name"
                       placeholder="Ganesha Ayurveda"
                       error={errors.clinicName?.message}
                       {...register('clinicName')}
                     />
                     <Select
-                      label="Clinic type"
+                      label="Clinic Type"
                       options={[...PLATFORM_CLINIC_TYPES]}
                       error={errors.clinicType?.message}
                       {...register('clinicType')}
@@ -557,19 +559,19 @@ export function PlatformHospitalsPage() {
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Input
-                      label="Address line 1"
+                      label="Address Line 1"
                       placeholder="12 Main Road"
                       error={errors.addressLine1?.message}
                       {...register('addressLine1')}
                     />
                     <Input
-                      label="Address line 2"
+                      label="Address Line 2"
                       placeholder="Optional"
                       {...register('addressLine2')}
                     />
                   </div>
                   <Input
-                    label="Registration number / GST"
+                    label="Registration Number / GST"
                     placeholder="Registration Number/ GST"
                     error={errors.registrationNumber?.message}
                     {...register('registrationNumber')}
@@ -627,13 +629,19 @@ export function PlatformHospitalsPage() {
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_200px] lg:items-start">
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input
-                  label="Full name"
+                  label="Full Name"
                   placeholder="Clinic Admin"
                   error={errors.fullName?.message}
                   {...register('fullName')}
                 />
                 <Input
-                  label="Mobile number"
+                  label="User Code"
+                  placeholder="TES-DL-ADMIN"
+                  error={errors.userCode?.message}
+                  {...register('userCode')}
+                />
+                <Input
+                  label="Mobile Number"
                   placeholder="9876543210"
                   error={errors.mobileNumber?.message}
                   {...register('mobileNumber')}
@@ -645,7 +653,6 @@ export function PlatformHospitalsPage() {
                   error={errors.email?.message}
                   {...register('email')}
                 />
-                <div className="hidden sm:block" aria-hidden />
                 <Input
                   label="Password"
                   type="password"
@@ -653,7 +660,7 @@ export function PlatformHospitalsPage() {
                   {...register('password')}
                 />
                 <Input
-                  label="Confirm password"
+                  label="Confirm Password"
                   type="password"
                   error={errors.confirmPassword?.message}
                   {...register('confirmPassword')}

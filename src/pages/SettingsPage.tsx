@@ -49,7 +49,7 @@ export function SettingsPage() {
       <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
         <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#eadfc8]">
           <nav
-            className="flex w-full min-w-0 gap-6 overflow-x-auto whitespace-nowrap sm:flex-1 sm:grid sm:w-auto sm:grid-cols-5 sm:gap-0 sm:overflow-visible"
+            className="flex w-full min-w-0 gap-6 overflow-x-auto whitespace-nowrap sm:flex-1"
             aria-label="Settings sections"
           >
             {SETTINGS_TABS.map((tab) => {
@@ -60,7 +60,7 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   aria-current={isCurrent ? 'page' : undefined}
-                  className="flex justify-start"
+                  className="flex shrink-0 justify-start"
                 >
                   <span
                     className={cn(
@@ -77,7 +77,7 @@ export function SettingsPage() {
               );
             })}
           </nav>
-          {headerAction}
+          <div className="shrink-0">{headerAction}</div>
         </div>
 
         <div className="flex-1 pt-6">

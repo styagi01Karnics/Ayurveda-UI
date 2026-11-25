@@ -359,7 +359,7 @@ showToast({
               <thead className="border-b border-[#EFF0F6] bg-white text-xs uppercase tracking-wider text-gray-500">
                 <SettingsTableHead
                   columns={[
-                    'DOCTOR', 'SPECIALISATION', 'QUALIFICATION', 'MOBILE',
+                    'DOCTOR', 'SPECIALISATION', 'QUALIFICATION', 'MOBILE', 'EMAIL', 'USER CODE',
                     'STATUS', 'FEES', 'AVAILABILITY', 'ACTIONS'
                   ]}
                 />
@@ -372,6 +372,8 @@ showToast({
                     <td className="px-4 py-4 text-[#422C23]">{doctor.specialization}</td>
                     <td className="px-4 py-4 text-[#422C23]">{doctor.qualification || '—'}</td>
                     <td className="px-4 py-4 text-[#422C23]">{doctor.mobileNumber || '—'}</td>
+                    <td className="px-4 py-4 text-[#422C23]">{doctor.email || '—'}</td>
+                    <td className="px-4 py-4 text-[#422C23]">{doctor.userCode || '—'}</td>
                     <td className="px-4 py-4">
                       <StatusToggle
                         status={doctor.status}

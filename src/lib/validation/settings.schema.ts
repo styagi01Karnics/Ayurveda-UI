@@ -167,7 +167,13 @@ const userDetailFields = {
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
   status: z.enum(USER_STATUS_OPTIONS),
   profession: z.enum(['DOCTOR', 'OTHERS']),
-  userCode: z.string().min(1, 'User Code is required'),
+  userCode: z
+    .string()
+    .trim()
+    .min(1, 'User Code is required')
+    .min(3, 'User Code must be between 3 and 20 characters')
+    .max(20, 'User Code must be between 3 and 20 characters')
+    .regex(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]+$/, 'User Code must mix letters and numbers'),
   doctorId: z.string().optional(),
 };
 
@@ -191,7 +197,10 @@ export const addUserSchema = z
 
 export type AddUserFormValues = z.infer<typeof addUserSchema>;
 
-export const editUserSchema = z.object(userDetailFields);
+export const editUserSchema = z.object({
+  ...userDetailFields,
+  userCode: z.string().min(1, 'User Code is required'),
+});
 
 export type EditUserFormValues = z.infer<typeof editUserSchema>;
 
