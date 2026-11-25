@@ -125,6 +125,16 @@ export function AddUserModal({
     });
   }, [open, user, reset]);
 
+  useEffect(() => {
+    if (!open || isEdit || profession !== 'DOCTOR') return;
+    const doctorRole = tenantRoleOptions.find(
+      (opt) => opt.label.trim().toLowerCase() === 'doctor',
+    );
+    if (doctorRole && !watch('tenantRoleId')) {
+      setValue('tenantRoleId', doctorRole.value);
+    }
+  }, [open, isEdit, profession, tenantRoleOptions, setValue, watch]);
+
   const [prevProfession, setPrevProfession] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -195,7 +205,7 @@ export function AddUserModal({
           error={'mobileNumber' in errors ? errors.mobileNumber?.message : undefined}
           {...register('mobileNumber')}
         />
-        {profession === 'DOCTOR' ? (
+        {profession === 'DOCTOR' && !isEdit ? (
           <Select
             label="Email"
             placeholder="Select doctor email"
@@ -207,6 +217,10 @@ export function AddUserModal({
                 // find doctor id from the fetched doctors
                 const doc = doctors.find((d: any) => (d.email ?? d.emailId ?? d.doctorEmail) === e.target.value);
                 setValue('doctorId', doc?.id ?? '');
+                if (doc) {
+                  setValue('fullName', doc.name ?? doc.doctorName ?? '');
+                  setValue('mobileNumber', String(doc.mobileNumber ?? '').replace(/\D/g, '').slice(-10));
+                }
               },
             })}
           />
@@ -215,6 +229,9 @@ export function AddUserModal({
             label="Email"
             type="email"
             placeholder="Email"
+            disabled={isEdit}
+            readOnly={isEdit}
+            className={isEdit ? 'cursor-not-allowed bg-gray-50' : ''}
             error={'email' in errors ? errors.email?.message : undefined}
             {...register('email')}
           />

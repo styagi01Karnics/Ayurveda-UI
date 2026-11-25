@@ -7,7 +7,9 @@ import {
 } from '@/components/settings/AddUserModal';
 import { RoleChangeModal } from '@/components/settings/RoleChangeModal';
 import { UsersTable } from '@/components/settings/UsersTable';
+import { AppIcon } from '@/components/ui/AppIcon';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
+import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
@@ -22,6 +24,7 @@ import {
 } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
 import { getRoles } from '@/lib/api/roles';
+import { assets } from '@/lib/assets';
 import { formatAuthRole } from '@/lib/auth';
 import { formatPersonName } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
@@ -40,6 +43,7 @@ function userErrorMessage(err: ApiError): string {
 
 interface UserManagementTabProps {
   addUserOpen: boolean;
+  onAddUserOpen: () => void;
   onAddUserClose: () => void;
 }
 
@@ -65,6 +69,7 @@ function mapUserToRecord(user: UserResponse): SettingsUserRecord {
 
 export function UserManagementTab({
   addUserOpen,
+  onAddUserOpen,
   onAddUserClose,
 }: UserManagementTabProps) {
   const { showToast } = useToast();
@@ -284,7 +289,7 @@ export function UserManagementTab({
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2 sm:gap-3">
           <SearchField
             placeholder="User Name"
@@ -301,6 +306,13 @@ export function UserManagementTab({
             className="sm:w-36"
           />
         </div>
+        <Button
+          className="gap-1.5 px-4 py-2 text-sm"
+          onClick={onAddUserOpen}
+        >
+          <AppIcon src={assets.icons.add} className="h-4 w-4" />
+          Add User
+        </Button>
       </div>
 
       <AsyncStatus loading={loading} error={error} onRetry={() => void loadUsers()}>
