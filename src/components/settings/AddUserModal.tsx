@@ -12,7 +12,7 @@ import {
   type EditUserFormValues,
 } from '@/lib/validation/settings.schema';
 import type { SettingsUserRecord } from '@/types';
-import { getActiveDoctorsWithoutUserCode } from '@/lib/api/doctors';
+import { getActiveDoctorsWithoutUserCode, getDoctorById } from '@/lib/api/doctors';
 
 export interface TenantRoleOption {
   value: string;
@@ -79,6 +79,10 @@ export function AddUserModal({
             const email = d?.email ?? d?.emailId ?? d?.doctorEmail;
             return typeof email === 'string' ? email.trim() : '';
           }).filter((e: string) => e.length > 0).map((e: string) => ({ value: e, label: e }));
+          // In edit mode, ensure the existing user's email is in the list
+          if (isEdit && user?.email && user.email !== '—' && !emails.some((opt) => opt.value === user.email)) {
+            emails.unshift({ value: user.email, label: user.email });
+          }
           // Deduplicate
           const seen = new Set<string>();
           const unique = emails.filter((opt) => {
@@ -135,14 +139,21 @@ export function AddUserModal({
     }
   }, [open, isEdit, profession, tenantRoleOptions, setValue, watch]);
 
-  const [prevProfession, setPrevProfession] = useState<string | undefined>(undefined);
-
   useEffect(() => {
-    if (prevProfession !== undefined && prevProfession !== profession) {
-      setValue('email', '');
-    }
-    setPrevProfession(profession);
-  }, [profession, setValue, prevProfession]);
+    if (!open || !isEdit || profession !== 'DOCTOR' || !user?.doctorId) return;
+    if (user.email && user.email !== '—') return;
+    void (async () => {
+      try {
+        const doctor = await getDoctorById(user.doctorId!);
+        if (doctor?.email) {
+          setValue('email', doctor.email);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, [open, isEdit, profession, user, setValue]);
+
 
   const handleClose = () => {
     reset();
@@ -210,19 +221,18 @@ export function AddUserModal({
             label="Email"
             placeholder="Select doctor email"
             options={doctorEmails}
+            value={watch('email') ?? ''}
             error={'email' in errors ? errors.email?.message : undefined}
-            {...register('email', {
-              onChange: (e) => {
-                const selected = doctorEmails.find((opt) => opt.value === e.target.value);
-                // find doctor id from the fetched doctors
-                const doc = doctors.find((d: any) => (d.email ?? d.emailId ?? d.doctorEmail) === e.target.value);
-                setValue('doctorId', doc?.id ?? '');
-                if (doc) {
-                  setValue('fullName', doc.name ?? doc.doctorName ?? '');
-                  setValue('mobileNumber', String(doc.mobileNumber ?? '').replace(/\D/g, '').slice(-10));
-                }
-              },
-            })}
+            onChange={(e) => {
+              setValue('email', e.target.value, { shouldValidate: true });
+              // find doctor id from the fetched doctors
+              const doc = doctors.find((d: any) => (d.email ?? d.emailId ?? d.doctorEmail) === e.target.value);
+              setValue('doctorId', doc?.id ?? '');
+              if (doc) {
+                setValue('fullName', doc.name ?? doc.doctorName ?? '');
+                setValue('mobileNumber', String(doc.mobileNumber ?? '').replace(/\D/g, '').slice(-10));
+              }
+            }}
           />
         ) : (
           <Input

@@ -56,7 +56,7 @@ function mapUserToRecord(user: UserResponse): SettingsUserRecord {
     phone: user.mobileNumber
       ? user.mobileNumber.replace(/\D/g, '').slice(-10)
       : '—',
-    email: user.email || '—',
+    email: user.email || user.doctorEmail || user.doctor?.email || '—',
     status: statusUpper === 'INACTIVE' ? 'Inactive' : 'Active',
     tenantRoleName: user.tenantRoleName || user.role || '—',
     tenantRoleId: user.tenantRoleId || '-',
