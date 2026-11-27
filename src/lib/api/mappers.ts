@@ -911,6 +911,7 @@ export function mapDoctorToClinicRecord(doctor: DoctorDto): ClinicDoctorRecord {
     qualification: doctor.qualification || doctor.degree || '',
     mobileNumber: doctor.mobileNumber || '',
     email: doctor.email || '',
+    userCode: doctor.userCode || '',
     status: doctor.status === 'ACTIVE' || doctor.active ? 'Active' : 'Inactive',
     consultationFees: doctor.consultationFees ?? 0,
     followUpFees: doctor.followUpFees ?? 0,

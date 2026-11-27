@@ -62,6 +62,7 @@ export const apiEndpoints = {
     base: '/api/v1/doctors',
     getAll: '/api/v1/doctors',
     getActive: '/api/v1/doctors/active',
+    getActiveWithoutUserCode: '/api/v1/doctors/active/without-user-code',
     getById: (doctorId: string) => `/api/v1/doctors/${doctorId}`,
     updateStatus: (doctorId: string) => `/api/v1/doctors/${doctorId}/status`,
     create: '/api/v1/doctors',

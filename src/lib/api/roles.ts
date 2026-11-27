@@ -83,6 +83,7 @@ export interface CreateHospitalPayload {
   addressLine1: string;
   addressLine2?: string;
   fullName: string;
+  userCode: string;
   mobileNumber: string;
   email: string;
   password: string;

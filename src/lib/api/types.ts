@@ -61,6 +61,7 @@ export interface DoctorDto {
   specialization?: string;
   mobileNumber?: string;
   email?: string;
+  userCode?: string;
   qualification?: string;
   /** Alias used by some APIs for qualification / degree line. */
   degree?: string;

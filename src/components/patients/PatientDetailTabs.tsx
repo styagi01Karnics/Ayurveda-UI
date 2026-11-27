@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { UnderlineTabs } from '@/components/ui/UnderlineTabs';
 import { assets } from '@/lib/assets';
 import type { PatientDetail } from '@/types';
+import { formatToDDMMYYYY } from '@/lib/utils';      
 import type { PatientDetailTab } from '@/types/patientDetail';
 
 interface PatientDetailHeaderProps {
@@ -11,7 +12,7 @@ interface PatientDetailHeaderProps {
   activeTab: PatientDetailTab;
   onTabChange: (tab: PatientDetailTab) => void;
 }
-
+ 
 const detailTabs: { id: PatientDetailTab; label: string }[] = [
   { id: 'personal', label: 'Personal Information' },
   { id: 'medical', label: 'Medical Assessment' },
@@ -108,9 +109,9 @@ export function PersonalInfoTab({ patient }: { patient: PatientDetail }) {
             { label: 'Name', value: patient.name },
             { label: 'Gender', value: info.gender },
             { label: 'Age', value: info.age },
-            { label: 'DOB', value: info.dob },
+            { label: 'DOB', value: formatToDDMMYYYY(info.dob) },
             { label: 'Service Type', value: info.serviceType },
-            { label: 'Registration Date', value: info.registrationDate },
+            { label: 'Registration Date', value: formatToDDMMYYYY(info.registrationDate) },
             { label: 'Assigned Doctor', value: info.assignedDoctor },
             { label: 'Therapy Duration', value: info.therapyDuration },
           ]}
@@ -357,7 +358,7 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
               {t.appointmentHistory.map((row, i) => (
                 <tr key={i} className="border-b border-gray-50">
                   <td className={`py-3 ${DETAIL_VALUE}`}>{row.visitType}</td>
-                  <td className={`py-3 ${DETAIL_VALUE}`}>{row.date}</td>
+                  <td className={`py-3 ${DETAIL_VALUE}`}>{formatToDDMMYYYY(row.date)}</td>
                   <td className="py-3">
                     {row.status === 'Completed' || row.status === 'Scheduled' ? (
                       <span className="text-xs font-semibold text-[#2E7D32]">

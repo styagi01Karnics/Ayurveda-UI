@@ -20,6 +20,20 @@ export function getAllDoctors(page = 0, size = 100) {
   return getAllDoctorsPaged(page, size).then((result) => result.content);
 }
 
+/** ACTIVE doctors without an assigned user code — use for user creation dropdowns. */
+export function getActiveDoctorsWithoutUserCode() {
+  return apiRequest<DoctorDto[] | { content?: DoctorDto[]; data?: DoctorDto[] }>(
+    url(apiEndpoints.doctors.getActiveWithoutUserCode),
+  ).then((res: any) => {
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.content)) return res.content;
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.data?.content)) return res.data.content;
+    if (Array.isArray(res?.data?.data)) return res.data.data;
+    return [];
+  });
+}
+
 /** ACTIVE doctors only — use for appointment booking dropdowns. */
 export function getActiveDoctorsPaged(
   page = 0,

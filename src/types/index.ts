@@ -501,6 +501,7 @@ export interface ClinicDoctorRecord {
   qualification: string;
   mobileNumber: string;
  email?: string;
+ userCode?: string;
  status: ClinicStatus;
  consultationFees: number;
  followUpFees: number;
@@ -570,6 +571,9 @@ export interface SettingsUserRecord {
   status: UserStatus;
   tenantRoleName: string;
   tenantRoleId?: string;
+  profession?: string;
+  userCode?: string;
+  doctorId?: string;
 }
 
 export interface SettingsRoleRecord {

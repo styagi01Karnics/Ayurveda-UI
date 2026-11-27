@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { PageShell } from '@/components/layout/PageShell';
 import { ClinicSettingsTab } from '@/components/settings/ClinicSettingsTab';
 import { RoleManagementTab } from '@/components/settings/RoleManagementTab';
@@ -18,32 +18,6 @@ export function SettingsPage() {
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [addRoleOpen, setAddRoleOpen] = useState(false);
 
-  const headerAction = useMemo(() => {
-    if (activeTab === 'users') {
-      return (
-        <Button
-          className="gap-1.5 px-4 py-2 text-sm mb-[2px]"
-          onClick={() => setAddUserOpen(true)}
-        >
-          <AppIcon src={assets.icons.add} className="h-4 w-4" />
-          Add User
-        </Button>
-      );
-    }
-    if (activeTab === 'roles') {
-      return (
-        <Button
-          className="gap-1.5 px-4 py-2 text-sm"
-          onClick={() => setAddRoleOpen(true)}
-        >
-          <AppIcon src={assets.icons.add} className="h-4 w-4" />
-          Add New Role
-        </Button>
-      );
-    }
-    return null;
-  }, [activeTab]);
-
   return (
     <PageShell>
       <Card className="flex min-h-[calc(100vh-11rem)] flex-col p-6 sm:px-8 sm:py-7">
@@ -60,7 +34,7 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   aria-current={isCurrent ? 'page' : undefined}
-                  className="flex justify-start"
+                  className="flex shrink-0 justify-start"
                 >
                   <span
                     className={cn(
@@ -77,7 +51,6 @@ export function SettingsPage() {
               );
             })}
           </nav>
-          {headerAction}
         </div>
 
         <div className="flex-1 pt-6">
@@ -85,14 +58,26 @@ export function SettingsPage() {
           {activeTab === 'users' && (
             <UserManagementTab
               addUserOpen={addUserOpen}
+              onAddUserOpen={() => setAddUserOpen(true)}
               onAddUserClose={() => setAddUserOpen(false)}
             />
           )}
           {activeTab === 'roles' && (
-            <RoleManagementTab
-              addRoleOpen={addRoleOpen}
-              onAddRoleClose={() => setAddRoleOpen(false)}
-            />
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <Button
+                  className="gap-1.5 px-4 py-2 text-sm"
+                  onClick={() => setAddRoleOpen(true)}
+                >
+                  <AppIcon src={assets.icons.add} className="h-4 w-4" />
+                  Add New Role
+                </Button>
+              </div>
+              <RoleManagementTab
+                addRoleOpen={addRoleOpen}
+                onAddRoleClose={() => setAddRoleOpen(false)}
+              />
+            </div>
           )}
           {activeTab === 'docter' && (
             <DocterManagementTab />

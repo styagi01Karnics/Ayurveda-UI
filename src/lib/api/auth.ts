@@ -15,12 +15,15 @@ export interface UserResponse {
   email: string;
   fullName: string;
   mobileNumber?: string;
-  role: string;
-  tenantRoleId?: string;
+  role: string | null;
+  tenantRoleId?: string | null;
   tenantRoleCode?: string;
   tenantRoleName?: string;
   pageCodes?: string[];
   status: string;
+  userCode?: string;
+  profession?: string;
+  doctorId?: string;
 }
 
 export interface TenantResponse {
@@ -113,6 +116,9 @@ export interface RegisterUserPayload {
   tenantRoleId: string;
   username?: string;
   mobileNumber: string;
+  userCode: string;
+  profession: 'DOCTOR' | 'OTHERS';
+  doctorId?: string;
 }
 
 export interface UpdateUserPayload {
@@ -122,6 +128,9 @@ export interface UpdateUserPayload {
   tenantRoleId?: string;
   status?: string;
   mobileNumber?: string;
+  userCode?: string;
+  profession?: 'DOCTOR' | 'OTHERS';
+  doctorId?: string;
 }
 
 export function login(payload: LoginPayload) {
