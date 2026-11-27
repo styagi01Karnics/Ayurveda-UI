@@ -358,7 +358,7 @@ export function TreatmentFollowUpTab({ patient }: { patient: PatientDetail }) {
               {t.appointmentHistory.map((row, i) => (
                 <tr key={i} className="border-b border-gray-50">
                   <td className={`py-3 ${DETAIL_VALUE}`}>{row.visitType}</td>
-                  <td className={`py-3 ${DETAIL_VALUE}`}>{row.date}</td>
+                  <td className={`py-3 ${DETAIL_VALUE}`}>{formatToDDMMYYYY(row.date)}</td>
                   <td className="py-3">
                     {row.status === 'Completed' || row.status === 'Scheduled' ? (
                       <span className="text-xs font-semibold text-[#2E7D32]">
