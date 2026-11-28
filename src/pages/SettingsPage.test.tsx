@@ -49,6 +49,8 @@ describe('SettingsPage', () => {
         fullName: 'Rahul Sharma',
         role: 'TENANT_ADMIN',
         status: 'ACTIVE',
+        doctor: undefined,
+        doctorEmail: ''
       },
     ]);
     renderSettings();
