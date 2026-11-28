@@ -1,4 +1,117 @@
 
+import groovy.json.JsonOutput
+
+// =============================================================
+// TEAMS NOTIFICATION HELPER
+// =============================================================
+
+def sendTeamsNotification = { String notificationStatus, String branchName ->
+
+    def notificationFile = "teams-notification-${env.BUILD_NUMBER}.json"
+
+    def cardTitle = notificationStatus == 'FAILED' ?
+        'AYURVEDAA UI BUILD FAILED' :
+        'AYURVEDAA UI BUILD RECOVERED'
+
+    def payload = [
+        type: 'message',
+        attachments: [[
+            contentType: 'application/vnd.microsoft.card.adaptive',
+            content: [
+                '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                type: 'AdaptiveCard',
+                version: '1.4',
+                body: [
+                    [
+                        type: 'TextBlock',
+                        text: cardTitle,
+                        weight: 'Bolder',
+                        size: 'Large',
+                        wrap: true
+                    ],
+                    [
+                        type: 'TextBlock',
+                        text: "Ayurvedaa UI - ${notificationStatus}",
+                        weight: 'Bolder',
+                        wrap: true
+                    ],
+                    [
+                        type: 'FactSet',
+                        facts: [
+                            [title: 'Project', value: 'Ayurvedaa UI'],
+                            [title: 'Branch', value: branchName],
+                            [title: 'Build', value: "#${env.BUILD_NUMBER}"],
+                            [title: 'Status', value: notificationStatus]
+                        ]
+                    ]
+                ],
+                actions: [[
+                    type: 'Action.OpenUrl',
+                    title: 'View Jenkins Build',
+                    url: env.BUILD_URL
+                ]]
+            ]
+        ]]
+    ]
+
+    try {
+
+        writeFile(
+            file: notificationFile,
+            text: JsonOutput.toJson(payload)
+        )
+
+        withCredentials([
+            string(
+                credentialsId: 'teams-jenkins-webhook',
+                variable: 'TEAMS_WEBHOOK_URL'
+            )
+        ]) {
+
+            withEnv(["NOTIFICATION_FILE=${notificationFile}"]) {
+
+                sh '''
+                    set +x
+
+                    HTTP_CODE=$(curl -sS \
+                        --connect-timeout 10 \
+                        --max-time 30 \
+                        -o /dev/null \
+                        -w "%{http_code}" \
+                        -H "Content-Type: application/json" \
+                        --data-binary @"$NOTIFICATION_FILE" \
+                        "$TEAMS_WEBHOOK_URL")
+
+                    echo "Teams HTTP response: $HTTP_CODE"
+
+                    case "$HTTP_CODE" in
+                        2*)
+                            echo "Teams notification accepted."
+                            ;;
+                        *)
+                            echo "ERROR: Teams notification failed."
+                            exit 1
+                            ;;
+                    esac
+                '''
+            }
+        }
+
+    } catch (notificationError) {
+
+        echo "WARNING: Teams notification could not be delivered: ${notificationError.getMessage()}"
+
+    } finally {
+
+        sh "rm -f '${notificationFile}'"
+    }
+}
+
+
+// =============================================================
+// MAIN PIPELINE
+// =============================================================
+
 timestamps {
 
     node {
@@ -8,8 +121,6 @@ timestamps {
             disableConcurrentBuilds()
         ])
 
-        def sonarHome = tool 'SonarScanner'
-
         env.APP_NAME = 'ayurvedaa-ui'
         env.IMAGE_NAME = 'sunardock/ayurvedaa-ui'
         env.DOCKER_ORG = 'sunardock'
@@ -17,8 +128,6 @@ timestamps {
         env.DEPLOY_SERVER = '45.195.229.15'
         env.DEPLOY_PATH = '/root/ayurvedaa-ui'
         env.APP_PORT = '8100'
-
-        env.SONAR_HOME = sonarHome
 
         env.DOCKER_CONFIG = "${env.WORKSPACE}/.docker-config-${env.BUILD_NUMBER}"
 
@@ -143,6 +252,8 @@ timestamps {
                 // =================================================
 
                 stage('SonarQube Analysis') {
+
+                    env.SONAR_HOME = tool 'SonarScanner'
 
                     withSonarQubeEnv('SonarQube') {
 
@@ -958,6 +1069,28 @@ echo "Ayurvedaa UI image cleanup completed."
 
 
             // =====================================================
+            // RECOVERY NOTIFICATION
+            // DEV BRANCH ONLY
+            // =====================================================
+
+            if (branchName == 'dev') {
+
+                def previousResult = currentBuild.previousBuild?.result
+
+                if (previousResult == 'FAILURE' || previousResult == 'UNSTABLE') {
+
+                    echo "Previous build failed or was unstable. Sending recovery notification."
+
+                    sendTeamsNotification('RECOVERED', branchName)
+
+                } else {
+
+                    echo "No previous failed build. Recovery notification skipped."
+                }
+            }
+
+
+            // =====================================================
             // PIPELINE SUCCESS
             // =====================================================
 
@@ -993,6 +1126,15 @@ echo "Ayurvedaa UI image cleanup completed."
             echo "=========================================="
 
             currentBuild.result = 'FAILURE'
+
+            if (branchName == 'dev') {
+
+                sendTeamsNotification('FAILED', branchName)
+
+            } else {
+
+                echo "Teams notification skipped for non-dev branch."
+            }
 
             throw err
 
