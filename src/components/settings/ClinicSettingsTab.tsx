@@ -1091,9 +1091,7 @@ function TherapySection({
                 'Action',
               ]}
             />
-          </thead>
-          <tbody>
-            {/* Input Row: Add or Edit */}
+             {/* Input Row: Add or Edit */}
             <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -1158,7 +1156,8 @@ function TherapySection({
                 </div>
               </td>
             </tr>
-
+          </thead>
+          <tbody>
             {/* Therapy Records */}
             {therapies.map((therapy, index) => (
               <tr key={therapy.id} className="border-b border-[#EFF0F6]">
