@@ -920,9 +920,7 @@ export function TreatmentCategoriesSection({
             <SettingsTableHead
               columns={['S No.', 'Category Name', 'Description', 'Action']}
             />
-          </thead>
-          <tbody>
-            {/* Input Row: Used for both Adding and Editing */}
+              {/* Input Row: Used for both Adding and Editing */}
             <tr className="border-b border-[#EFF0F6]">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -961,6 +959,8 @@ export function TreatmentCategoriesSection({
                 </div>
               </td>
             </tr>
+          </thead>
+          <tbody>
 
             {/* List Rows */}
             {categories.map((category, index) => (
