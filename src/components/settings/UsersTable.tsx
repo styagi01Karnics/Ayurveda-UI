@@ -1,8 +1,6 @@
 import { Settings2 } from 'lucide-react';
 import { IconActionButton } from '@/components/ui/IconActionButton';
-import { Select } from '@/components/ui/Select';
 import { formatAuthRole } from '@/lib/auth';
-import { USER_ROLE_OPTIONS } from '@/lib/validation/settings.schema';
 import { cn } from '@/lib/utils';
 import type { SettingsUserRecord } from '@/types';
 
@@ -21,7 +19,7 @@ function formatDisplayPhone(phone: string): string {
   return phone || '—';
 }
 
-export function UsersTable({ records, onRoleChange, onEdit }: UsersTableProps) {
+export function UsersTable({ records, onEdit }: UsersTableProps) {
   return (
     <div className="w-full min-w-0 overflow-x-auto">
       <table className="w-full min-w-[900px] text-left text-sm">

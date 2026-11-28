@@ -100,9 +100,7 @@ export function ConsultationTypesSection({
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
-          </thead>
-          <tbody>
-            {/* Input Row: Add or Edit */}
+              {/* Input Row: Add or Edit */}
             <tr className="border-b border-gray-50 bg-cream/30">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -135,7 +133,8 @@ export function ConsultationTypesSection({
                 </div>
               </td>
             </tr>
-
+          </thead>
+          <tbody>
             {/* List Rows */}
             {records.map((record, index) => (
               <tr key={record.id} className="border-b border-gray-50">
@@ -236,9 +235,7 @@ export function TreatmentPlanMastersSection({
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
-          </thead>
-          <tbody>
-            {/* Input Row: Add or Edit */}
+              {/* Input Row: Add or Edit */}
             <tr className="border-b border-gray-50 bg-cream/30">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -271,7 +268,8 @@ export function TreatmentPlanMastersSection({
                 </div>
               </td>
             </tr>
-
+          </thead>
+          <tbody>
             {/* List Rows */}
             {records.map((record, index) => (
               <tr key={record.id} className="border-b border-gray-50">
@@ -373,9 +371,7 @@ export function PackageMastersSection({
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
-          </thead>
-          <tbody>
-            {/* Input Row: Add or Edit */}
+              {/* Input Row: Add or Edit */}
             <tr className="border-b border-gray-50 bg-cream/30">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -415,7 +411,8 @@ export function PackageMastersSection({
                 </div>
               </td>
             </tr>
-
+          </thead>
+          <tbody>
             {/* List Rows */}
             {records.map((record, index) => (
               <tr key={record.id} className="border-b border-gray-50">
@@ -551,9 +548,7 @@ export function DoshasSection({
               <th className="w-24 px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Action</th>
             </tr>
-          </thead>
-          <tbody>
-            {/* Input Row: Add or Edit */}
+              {/* Input Row: Add or Edit */}
             <tr className="border-b border-gray-50 bg-cream/30">
               <td className="px-4 py-3" />
               <td className="px-4 py-3">
@@ -600,7 +595,8 @@ export function DoshasSection({
                 </div>
               </td>
             </tr>
-
+          </thead>
+          <tbody>
             {/* List Rows */}
             {records.length === 0 ? (
               <tr>

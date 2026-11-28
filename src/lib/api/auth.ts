@@ -7,6 +7,8 @@ const ep = apiEndpoints.auth;
 const tenants = apiEndpoints.tenants;
 
 export interface UserResponse {
+  doctor: any;
+  doctorEmail: string;
   id: string;
   tenantId?: string;
   tenantCode?: string;
