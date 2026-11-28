@@ -223,16 +223,17 @@ export function AddUserModal({
             options={doctorEmails}
             value={watch('email') ?? ''}
             error={'email' in errors ? errors.email?.message : undefined}
-            onChange={(e) => {
-              setValue('email', e.target.value, { shouldValidate: true });
-              // find doctor id from the fetched doctors
-              const doc = doctors.find((d: any) => (d.email ?? d.emailId ?? d.doctorEmail) === e.target.value);
-              setValue('doctorId', doc?.id ?? '');
-              if (doc) {
-                setValue('fullName', doc.name ?? doc.doctorName ?? '');
-                setValue('mobileNumber', String(doc.mobileNumber ?? '').replace(/\D/g, '').slice(-10));
-              }
-            }}
+            {...register('email', {
+              onChange: (e) => {
+                // find doctor id from the fetched doctors
+                const doc = doctors.find((d: any) => (d.email ?? d.emailId ?? d.doctorEmail) === e.target.value);
+                setValue('doctorId', doc?.id ?? '');
+                if (doc) {
+                  setValue('fullName', doc.name ?? doc.doctorName ?? '');
+                  setValue('mobileNumber', String(doc.mobileNumber ?? '').replace(/\D/g, '').slice(-10));
+                }
+              },
+            })}
           />
         ) : (
           <Input

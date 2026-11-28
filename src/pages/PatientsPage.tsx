@@ -20,8 +20,10 @@ import {
   type PatientListTab,
 } from '@/lib/api/appointments';
 import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
+import { resolveLoginDoctorId } from '@/lib/api/doctors';
 import { getInvoices } from '@/lib/api/billing';
 import { mapPatientAppointmentListItemToPatientRecord } from '@/lib/api/mappers';
+import { getStoredUser } from '@/lib/auth';
 import { resolveErrorMessage, UI_MESSAGES } from '@/lib/uiMessages';
 import type { PatientRecord, PatientStatus, VisitType } from '@/types';
 
@@ -73,20 +75,28 @@ export function PatientsPage() {
     reload,
   } = useAsyncData(
     async () => {
+      const currentUser = getStoredUser();
+      const isDoctorLogin = (currentUser?.apiRole ?? '').toUpperCase() === 'DOCTOR';
+      const loginDoctorId = isDoctorLogin
+        ? await resolveLoginDoctorId(currentUser?.userCode, currentUser?.email)
+        : undefined;
       const consultationTypes = await getActiveConsultationTypes().catch(() => []);
       const [rows, doshas] = await Promise.all([
-        getAppointmentPatients({
-          statusTab,
-          search: patientIdQuery.trim() || undefined,
-          bookingStatus: toApiBookingStatus(statusFilter),
-          consultationTypeId: toApiConsultationTypeId(
-            visitTypeFilter,
-            consultationTypes,
-          ),
-          doshaId: doshaFilter || undefined,
-          page: 0,
-          size: 100,
-        }),
+        isDoctorLogin && !loginDoctorId
+          ? Promise.resolve([])
+          : getAppointmentPatients({
+              statusTab,
+              search: patientIdQuery.trim() || undefined,
+              bookingStatus: toApiBookingStatus(statusFilter),
+              consultationTypeId: toApiConsultationTypeId(
+                visitTypeFilter,
+                consultationTypes,
+              ),
+              doshaId: doshaFilter || undefined,
+              doctorId: isDoctorLogin ? loginDoctorId : undefined,
+              page: 0,
+              size: 100,
+            }),
         getBookingDoshas().catch(() => []),
       ]);
 

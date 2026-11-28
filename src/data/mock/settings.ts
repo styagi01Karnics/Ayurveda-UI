@@ -41,6 +41,7 @@ export const initialClinicTherapists: ClinicTherapistRecord[] = [
     name: 'Dr. Narendra Jain',
     status: 'Active',
     assignedTherapies: ['Panchakarma'],
+    assignedTherapyIds: ['therapy-1'],
   },
 ];
 
@@ -52,7 +53,7 @@ export const initialSettingsUsers: SettingsUserRecord[] = [
     phone: '+91 9876543210',
     email: 'rahul@ganeshaayurvedaa.com',
     status: 'Active',
-    assignedRole: 'ADMIN',
+    tenantRoleName: 'Hospital Admin',
   },
   {
     id: 'user-2',
@@ -61,7 +62,7 @@ export const initialSettingsUsers: SettingsUserRecord[] = [
     phone: '+91 9876543211',
     email: 'khushi@ganeshaayurvedaa.com',
     status: 'Active',
-    assignedRole: 'MANAGER',
+    tenantRoleName: 'Senior Receptionist',
   },
   {
     id: 'user-3',
@@ -70,7 +71,7 @@ export const initialSettingsUsers: SettingsUserRecord[] = [
     phone: '+91 9876543212',
     email: 'meera@ganeshaayurvedaa.com',
     status: 'Inactive',
-    assignedRole: 'RECEPTIONIST',
+    tenantRoleName: 'Receptionist',
   },
 ];
 

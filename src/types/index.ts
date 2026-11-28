@@ -466,6 +466,8 @@ export interface AuthUser {
   tenantRoleName?: string;
   /** Raw API UserRole enum, e.g. SUPER_ADMIN */
   apiRole?: string;
+  /** Login user code; matches Doctor.userCode for DOCTOR logins */
+  userCode?: string;
   /** UiPageSeeder codes controlling sidebar + routes. Empty = full access. */
   pageCodes?: string[];
   status?: string;

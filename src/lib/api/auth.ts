@@ -250,6 +250,13 @@ export function getTenant() {
   return apiRequest<TenantResponse>(url(ep.tenant));
 }
 
+export function updateTenantLogo(logoUrl: string) {
+  return apiRequest<TenantResponse>(url(ep.tenantLogo), {
+    method: 'PUT',
+    body: { logoUrl },
+  });
+}
+
 export interface PublicTenantDto {
   tenantCode: string;
   name?: string;

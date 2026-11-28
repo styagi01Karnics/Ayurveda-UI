@@ -8,10 +8,6 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { TodayScheduleCard } from '@/components/dashboard/TodayScheduleCard';
 import { PageShell } from '@/components/layout/PageShell';
 import { AsyncStatus } from '@/components/ui/AsyncStatus';
-import {
-  patientTrendsData,
-  patientTrendsFullYear,
-} from '@/data/mock/dashboard';
 import { useAsyncData } from '@/hooks/useAsyncData';
 import { getAppointmentPatients } from '@/lib/api/appointments';
 import {
@@ -21,15 +17,18 @@ import {
 import {
   getAppointmentStats,
   getDashboardMedicineStock,
+  getDoctorPatientCount,
   getPatientTrends,
   getTodaysSchedule,
 } from '@/lib/api/dashboard';
 import { getPatientCount } from '@/lib/api/patients';
+import { resolveLoginDoctorId } from '@/lib/api/doctors';
 import {
   buildDashboardStats,
   mapPatientAppointmentListItemToPatientRecord,
   mapScheduleAppointment,
 } from '@/lib/api/mappers';
+import { getStoredUser } from '@/lib/auth';
 import type { DashboardStats } from '@/types';
 
 const EMPTY_STATS: DashboardStats = {
@@ -80,6 +79,13 @@ export function DashboardPage() {
   // Base dashboard data — independent of period filters (no full remount on change).
   const { data, loading, error, reload } = useAsyncData(
     async () => {
+      const currentUser = getStoredUser();
+      const isDoctorLogin = (currentUser?.apiRole ?? '').toUpperCase() === 'DOCTOR';
+      const scopeDoctorId = isDoctorLogin
+        ? await resolveLoginDoctorId(currentUser?.userCode, currentUser?.email)
+        : undefined;
+      const doctorBlocked = isDoctorLogin && !scopeDoctorId;
+
       const [
         medStock,
         schedule,
@@ -89,11 +95,23 @@ export function DashboardPage() {
         trends,
       ] = await Promise.all([
         getDashboardMedicineStock().catch(() => null),
-        getTodaysSchedule().catch(() => null),
-        getAppointmentStats().catch(() => null),
-        getPatientCount().catch(() => null),
-        getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
-        getPatientTrends().catch(() => []),
+        doctorBlocked ? null : getTodaysSchedule(scopeDoctorId).catch(() => null),
+        doctorBlocked ? null : getAppointmentStats(undefined, scopeDoctorId).catch(() => null),
+        doctorBlocked
+          ? null
+          : scopeDoctorId
+            ? getDoctorPatientCount(scopeDoctorId)
+                .then((c) => ({
+                  totalPatients: c.totalPatients,
+                  activePatients: c.totalPatients,
+                  inactivePatients: 0,
+                }))
+                .catch(() => null)
+            : getPatientCount().catch(() => null),
+        doctorBlocked
+          ? []
+          : getAppointmentPatients({ statusTab: 'ACTIVE', doctorId: scopeDoctorId }).catch(() => []),
+        doctorBlocked ? [] : getPatientTrends(scopeDoctorId).catch(() => []),
       ]);
 
       const nextStats = buildDashboardStats({
@@ -116,6 +134,8 @@ export function DashboardPage() {
         baseStats: nextStats,
         recentPatients,
         patientTrends,
+        scopeDoctorId,
+        doctorBlocked,
       };
     },
     {
@@ -130,9 +150,13 @@ export function DashboardPage() {
         newPatients: number;
         followUps: number;
       }>,
+      scopeDoctorId: undefined as string | undefined,
+      doctorBlocked: false,
     },
     [],
   );
+
+  const isDoctorView = Boolean(data.scopeDoctorId || data.doctorBlocked);
 
   useEffect(() => {
     if (!loading) setHasLoadedOnce(true);
@@ -152,7 +176,7 @@ export function DashboardPage() {
 
   // Period filter: refresh billing card only — page stays mounted.
   useEffect(() => {
-    if (!hasLoadedOnce) return;
+    if (!hasLoadedOnce || isDoctorView) return;
 
     let active = true;
     setBillingLoading(true);
@@ -177,7 +201,64 @@ export function DashboardPage() {
     return () => {
       active = false;
     };
-  }, [billingPeriod, hasLoadedOnce]);
+  }, [billingPeriod, hasLoadedOnce, isDoctorView]);
+
+  // Period filter: refresh patient card only. Doctors get new patients for the selected period.
+  useEffect(() => {
+    if (!hasLoadedOnce || data.doctorBlocked) return;
+
+    let active = true;
+    const request = data.scopeDoctorId
+      ? getDoctorPatientCount(data.scopeDoctorId, patientsPeriod).then((c) => ({
+          totalPatients: c.totalPatients,
+          activePatients: c.totalPatients,
+          inactivePatients: 0,
+        }))
+      : getPatientCount(patientsPeriod);
+    request
+      .then((counts) => {
+        if (!active || !counts) return;
+        setStats((prev) => ({
+          ...prev,
+          totalPatients: counts.totalPatients ?? 0,
+          activePatients: counts.activePatients ?? 0,
+          inactivePatients: counts.inactivePatients ?? 0,
+        }));
+      })
+      .catch(() => {
+        /* keep previous patient numbers */
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [patientsPeriod, hasLoadedOnce, data.scopeDoctorId, data.doctorBlocked]);
+
+  // Period filter: refresh appointment card only.
+  useEffect(() => {
+    if (!hasLoadedOnce || data.doctorBlocked) return;
+
+    let active = true;
+    getAppointmentStats(appointmentsPeriod, data.scopeDoctorId)
+      .then((appt) => {
+        if (!active || !appt) return;
+        const mapped = buildDashboardStats({ appointmentStats: appt });
+        setStats((prev) => ({
+          ...prev,
+          totalAppointments: mapped.totalAppointments,
+          appointmentsConfirmed: mapped.appointmentsConfirmed,
+          appointmentsCancelled: mapped.appointmentsCancelled,
+          appointmentsFollowUp: mapped.appointmentsFollowUp,
+        }));
+      })
+      .catch(() => {
+        /* keep previous appointment numbers */
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [appointmentsPeriod, hasLoadedOnce, data.scopeDoctorId, data.doctorBlocked]);
 
   const medStock = data.medStock;
   const breakdown = medStock?.statusBreakdown;
@@ -230,8 +311,7 @@ export function DashboardPage() {
   const ongoing = mapScheduleAppointment(data.schedule?.ongoingAppointment);
   const next = mapScheduleAppointment(data.schedule?.nextAppointment);
 
-  const trendData =
-    data.patientTrends.length > 0 ? data.patientTrends : patientTrendsData;
+  const trendData = data.patientTrends;
 
   return (
     <PageShell className="w-full space-y-5">
@@ -264,6 +344,7 @@ export function DashboardPage() {
             period={appointmentsPeriod}
             onPeriodChange={setAppointmentsPeriod}
           />
+          {!isDoctorView && (
           <div
             className={
               billingLoading
@@ -279,6 +360,7 @@ export function DashboardPage() {
               onPeriodChange={setBillingPeriod}
             />
           </div>
+          )}
           <MedicineStockCard
             totalStock={medStock?.totalStock ?? 0}
             tablets={medStock?.tablets ?? 0}
@@ -309,11 +391,7 @@ export function DashboardPage() {
       <ChartModal
         open={chartOpen}
         onClose={() => setChartOpen(false)}
-        data={
-          data.patientTrends.length > 0
-            ? data.patientTrends
-            : patientTrendsFullYear
-        }
+        data={data.patientTrends}
       />
     </PageShell>
   );

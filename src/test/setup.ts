@@ -1,5 +1,6 @@
 import { beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import * as appointmentsApi from '@/lib/api/appointments';
 import { mockPatientDtos } from './fixtures';
 import { initialAppointments, initialFollowUps } from '@/data/mock/appointments';
 import { initialTreatments } from '@/data/mock/treatments';
@@ -265,6 +266,25 @@ vi.mock('@/lib/api/appointments', () => ({
       );
     }
     return rows;
+  }),
+  getAppointmentsPageByStatus: vi.fn(async (query: { search?: string }) => {
+    const search = (query.search ?? '').trim().toLowerCase();
+    const all = await appointmentsApi.getAppointmentsByStatus();
+    const rows = search
+      ? all.filter((row) => {
+          const p = row.patient;
+          return [p?.patientCode, p?.patientDisplayId, p?.fullName]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(search));
+        })
+      : all;
+    return {
+      content: rows,
+      totalElements: rows.length,
+      totalPages: 1,
+      page: 0,
+      size: rows.length,
+    };
   }),
   getAppointmentsByStatus: vi.fn(async () => [
     {

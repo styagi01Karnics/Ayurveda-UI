@@ -26,6 +26,7 @@ const validStep1 = {
   consultationTypeIds: ['ct-consultation'],
   registrationDate: futureIsoDate,
   assignedDoctor: 'doc-1',
+  appointmentTime: '10:00',
 };
 
 describe('patientStep1BookingSchema', () => {

@@ -1,7 +1,6 @@
 import {
   Bar,
   ComposedChart,
-  LabelList,
   Line,
   ResponsiveContainer,
   Tooltip,
@@ -85,7 +84,7 @@ export function PatientTrendsChart({
 
       <div className={cn('relative min-h-0 w-full', tall ? 'min-h-[220px] flex-1' : 'h-80')}>
         <div className={tall ? 'absolute inset-0' : 'h-full'}>
-        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} initialDimension={{ width: 1, height: 1 }}>
           <ComposedChart
             data={chartData}
             margin={{ top: 20, right: 4, left: 4, bottom: 0 }}
@@ -145,38 +144,7 @@ export function PatientTrendsChart({
               activeDot={{ r: 4, fill: '#3d8f5a', stroke: '#fff', strokeWidth: 2 }}
               name="New Patients"
               isAnimationActive={false}
-            >
-              <LabelList
-                dataKey="newPatients"
-                content={({ x, y, index, value }) => {
-                  const month = data[index ?? -1]?.month;
-                  if (month !== 'Oct' || x == null || y == null) return null;
-                  return (
-                    <g>
-                      <rect
-                        x={Number(x) - 78}
-                        y={Number(y) - 28}
-                        width={156}
-                        height={20}
-                        rx={4}
-                        fill="white"
-                        stroke="#e8e0d4"
-                      />
-                      <text
-                        x={Number(x)}
-                        y={Number(y) - 14}
-                        textAnchor="middle"
-                        fill="#3d8f5a"
-                        fontSize={10}
-                        fontWeight={500}
-                      >
-                        {value}: New Patients in October
-                      </text>
-                    </g>
-                  );
-                }}
-              />
-            </Line>
+            />
             <Line
               type="natural"
               dataKey="followUps"

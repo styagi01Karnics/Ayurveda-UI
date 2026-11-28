@@ -16,6 +16,20 @@ export function getAllDoctorsPaged(
   );
 }
 
+export async function resolveLoginDoctorId(
+  userCode?: string,
+  email?: string,
+): Promise<string | undefined> {
+  if (!userCode && !email) return undefined;
+  const doctors = await getAllDoctors().catch(() => []);
+  const byCode = userCode
+    ? doctors.find((doctor) => doctor.userCode?.toLowerCase() === userCode.toLowerCase())
+    : undefined;
+  if (byCode) return byCode.id;
+  if (!email) return undefined;
+  return doctors.find((doctor) => doctor.email?.toLowerCase() === email.toLowerCase())?.id;
+}
+
 export function getAllDoctors(page = 0, size = 100) {
   return getAllDoctorsPaged(page, size).then((result) => result.content);
 }

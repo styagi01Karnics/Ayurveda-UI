@@ -1,5 +1,5 @@
 import { apiConfig } from './config';
-import { ApiError, apiRequest, apiRequestFormData, apiRequestList } from './client';
+import { ApiError, apiRequest, apiRequestFormData, apiRequestList, apiRequestPage } from './client';
 import { apiEndpoints } from './endpoints';
 import type {
   AppointmentDto,
@@ -177,9 +177,34 @@ export function getAppointmentById(bookingId: string) {
   return apiRequest<AppointmentDto>(url(ep.bookings.getByBookingId(bookingId)));
 }
 
-export function getAppointmentsByStatus(bookingStatus = 'ALL') {
+export function getAppointmentsByStatus(bookingStatus = 'ALL', doctorId?: string) {
+  const path = url(ep.bookings.getByStatus(bookingStatus));
   return apiRequestList<AppointmentDto>(
-    url(ep.bookings.getByStatus(bookingStatus)),
+    doctorId ? `${path}?doctorId=${encodeURIComponent(doctorId)}` : path,
+  );
+}
+
+export interface AppointmentPageQuery {
+  bookingStatus?: string;
+  search?: string;
+  visitType?: string;
+  date?: string;
+  doctorId?: string;
+  page: number;
+  size: number;
+}
+
+/** Server-paged appointment list with filters applied on the backend. */
+export function getAppointmentsPageByStatus(query: AppointmentPageQuery) {
+  const params = new URLSearchParams();
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.visitType) params.set('visitType', query.visitType);
+  if (query.date) params.set('date', query.date);
+  if (query.doctorId) params.set('doctorId', query.doctorId);
+  params.set('page', String(query.page));
+  params.set('size', String(query.size));
+  return apiRequestPage<AppointmentDto>(
+    `${url(ep.bookings.getByStatus(query.bookingStatus ?? 'ALL'))}?${params.toString()}`,
   );
 }
 
@@ -199,8 +224,11 @@ export function getAppointmentsByDate(registrationDate: string) {
   );
 }
 
-export function getAppointmentStats() {
-  return apiRequest<AppointmentStatsDto>(url(ep.bookings.getStats));
+export function getAppointmentStats(doctorId?: string) {
+  const path = doctorId
+    ? `${ep.bookings.getStats}?doctorId=${encodeURIComponent(doctorId)}`
+    : ep.bookings.getStats;
+  return apiRequest<AppointmentStatsDto>(url(path));
 }
 
 export function getCancelledAppointments() {
@@ -208,7 +236,7 @@ export function getCancelledAppointments() {
 }
 
 export function getDoctorTodayAppointments(doctorId: string) {
-  return apiRequestList<AppointmentDto>(
+  return apiRequest<TodayAppointmentsResponseDto>(
     url(ep.bookings.getDoctorToday(doctorId)),
   );
 }

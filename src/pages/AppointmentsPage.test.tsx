@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
@@ -31,7 +31,9 @@ describe('AppointmentsPage', () => {
     renderAppointments();
     await screen.findAllByText('Khushi Shroff');
     await user.type(screen.getByPlaceholderText('Patient Code'), 'PT458653');
-    expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText('Khushi Shroff')).not.toBeInTheDocument(),
+    );
   });
 
   it('switches to follow ups tab', async () => {

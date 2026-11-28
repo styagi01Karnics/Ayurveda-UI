@@ -10,10 +10,11 @@ import {
 describe('settings.schema', () => {
   it('validates clinic doctor form', () => {
     const result = clinicDoctorSchema.safeParse({
-      name: 'Dr. Shweta Arya',
+      name: 'Shweta Arya',
       specialization: 'Panchakarma',
       qualification: ' BAMS ',
       status: 'Active',
+      email: 'shweta@example.com',
       mobileNumber: ' 9876543210 ',
       consultationFees: '500',
       followUpFees: '500',
@@ -82,6 +83,8 @@ describe('settings.schema', () => {
     const result = addUserSchema.safeParse({
       tenantRoleId: 'role-uuid-1',
       fullName: 'Test User',
+      userCode: 'testuser1',
+      profession: 'OTHERS',
       mobileNumber: '9876543210',
       email: 'test@example.com',
       password: 'Password1',

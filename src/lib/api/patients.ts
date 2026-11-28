@@ -42,8 +42,9 @@ export interface PatientCountDto {
   inactivePatients: number;
 }
 
-export function getPatientCount() {
-  return apiRequest<PatientCountDto>(url(apiEndpoints.patients.getCount));
+export function getPatientCount(period?: string) {
+  const qs = period ? `?period=${encodeURIComponent(period)}` : '';
+  return apiRequest<PatientCountDto>(url(`${apiEndpoints.patients.getCount}${qs}`));
 }
 
 export interface NewPatientsByMonthDto {

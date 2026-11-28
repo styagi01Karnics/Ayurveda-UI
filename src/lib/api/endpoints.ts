@@ -19,6 +19,7 @@ export const apiEndpoints = {
     userById: (userId: string) => `/api/v1/auth/users/${userId}`,
     userStatus: (userId: string) => `/api/v1/auth/users/${userId}/status`,
     tenant: '/api/v1/auth/tenant',
+    tenantLogo: '/api/v1/auth/tenant/logo',
   },
   tenants: {
     register: '/api/v1/tenants/register',
@@ -239,6 +240,7 @@ export const apiEndpoints = {
     billingSummary: '/api/v1/dashboard/billing-summary',
     newPatientsByMonth: '/api/v1/dashboard/new-patients-by-month',
     patientTrends: '/api/v1/dashboard/patient-trends',
+    doctorPatientCount: '/api/v1/dashboard/doctor-patient-count',
   },
 
   /** Billing-service :8109 */

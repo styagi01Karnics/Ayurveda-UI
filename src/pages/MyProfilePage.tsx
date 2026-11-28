@@ -15,17 +15,19 @@ import {
   getTenant,
   getUserById,
   updateMe,
+  updateTenantLogo,
   type TenantResponse,
   type UserResponse,
 } from '@/lib/api/auth';
 import { ApiError } from '@/lib/api/client';
-import { getStoredUser, isHospitalAdmin } from '@/lib/auth';
+import { getStoredUser, isHospitalAdmin, setStoredTenant } from '@/lib/auth';
 import { assets } from '@/lib/assets';
 import {
   CITIES_BY_STATE,
   CLINIC_TYPES,
   INDIAN_STATES,
 } from '@/lib/validation/signup.schema';
+import { fileToDataUrl } from '@/lib/validation/onboardHospital.schema';
 import {
   emptyProfileValues,
   profileSchema,
@@ -147,6 +149,39 @@ export function MyProfilePage() {
     reset(mapped);
   }, [data.user, data.tenant, reset]);
 
+  const [logoError, setLogoError] = useState<string | null>(null);
+  const [logoSaving, setLogoSaving] = useState(false);
+
+  const onLogoChange = async (file: File | undefined) => {
+    setLogoError(null);
+    if (!file) return;
+    if (file.type !== 'image/png') {
+      setLogoError('Logo must be a PNG image');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoError('File must be under 5MB');
+      return;
+    }
+    setLogoSaving(true);
+    try {
+      const tenant = await updateTenantLogo(await fileToDataUrl(file));
+      setStoredTenant(tenant);
+      reload();
+      showToast({
+        title: 'Logo Updated',
+        message: 'Clinic logo has been saved.',
+        time: 'Just now',
+      });
+    } catch (err) {
+      setLogoError(
+        err instanceof ApiError ? err.message : 'Could not save logo. Please try again.',
+      );
+    } finally {
+      setLogoSaving(false);
+    }
+  };
+
   const onSubmit = async (values: ProfileFormValues) => {
     try {
       if (storedUser?.id || data.user?.id) {
@@ -262,9 +297,11 @@ export function MyProfilePage() {
               <FileUpload
                 label="Your Logo"
                 editOnly
-                disabled
+                accept="image/png"
+                disabled={!canEditClinic || logoSaving}
+                error={logoError ?? undefined}
                 previewUrl={data.tenant?.logoUrl?.trim() || assets.brandLogo}
-                onChange={() => undefined}
+                onChange={onLogoChange}
               />
             </div>
           </Card>

@@ -18,16 +18,19 @@ import { useClientPagination } from '@/hooks/useClientPagination';
 import {
   cancelAppointment,
   getAppointmentStats,
+  getDoctorTodayAppointments,
   getTodayAppointments,
   markAppointmentInConsultation,
 } from '@/lib/api/appointments';
 import { ApiError } from '@/lib/api/client';
+import { resolveLoginDoctorId } from '@/lib/api/doctors';
 import {
   mapAppointmentStatsToDoctorStats,
   mapTodayAppointmentToScheduleItem,
 } from '@/lib/api/mappers';
 import { isConsultationNotStartedError } from '@/lib/appointmentAlerts';
 import { assets } from '@/lib/assets';
+import { getStoredUser } from '@/lib/auth';
 import type { DoctorScheduleItem, VisitType } from '@/types';
 
 export function DoctorsPage() {
@@ -46,16 +49,37 @@ export function DoctorsPage() {
   const [localSchedule, setLocalSchedule] = useState<DoctorScheduleItem[]>([]);
 
   const { data, loading, error, reload } = useAsyncData(async () => {
-    const [stats, today] = await Promise.all([
-      getAppointmentStats().catch(() => null),
-      getTodayAppointments().catch(() => ({ appointments: [] })),
-    ]);
+    const currentUser = getStoredUser();
+    const isDoctorLogin = (currentUser?.apiRole ?? '').toUpperCase() === 'DOCTOR';
+    const loginDoctorId = isDoctorLogin
+      ? await resolveLoginDoctorId(currentUser?.userCode, currentUser?.email)
+      : undefined;
 
-    const schedule = (today.appointments ?? []).map(mapTodayAppointmentToScheduleItem);
+    if (isDoctorLogin && !loginDoctorId) {
+      return {
+        stats: mapAppointmentStatsToDoctorStats(null),
+        schedule: [] as DoctorScheduleItem[],
+      };
+    }
+
+    const [stats, today] = await Promise.all([
+      getAppointmentStats(loginDoctorId).catch(() => null),
+      loginDoctorId
+        ? getDoctorTodayAppointments(loginDoctorId)
+            .then((res) => ({
+              appointments: (res.appointments ?? []).map(mapTodayAppointmentToScheduleItem),
+            }))
+            .catch(() => ({ appointments: [] as DoctorScheduleItem[] }))
+        : getTodayAppointments()
+            .then((res) => ({
+              appointments: (res.appointments ?? []).map(mapTodayAppointmentToScheduleItem),
+            }))
+            .catch(() => ({ appointments: [] as DoctorScheduleItem[] })),
+    ]);
 
     return {
       stats: mapAppointmentStatsToDoctorStats(stats),
-      schedule,
+      schedule: today.appointments,
     };
   }, {
     stats: mapAppointmentStatsToDoctorStats(null),

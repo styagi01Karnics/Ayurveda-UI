@@ -161,13 +161,6 @@ export function UserManagementTab({
     resetPage();
   }, [searchQuery, statusFilter, resetPage]);
 
-  const isRoleAlreadyAssigned = (role: string, exceptUserId?: string) =>
-    users.some(
-      (user) =>
-        user.tenantRoleName === role &&
-        user.id !== exceptUserId &&
-        user.status === 'Active',
-    );
 
   const handleCloseUserModal = () => {
     setEditUser(null);
@@ -244,22 +237,6 @@ export function UserManagementTab({
     }
   };
 
-  const handleRoleChangeRequest = (userId: string, newRole: string) => {
-    if (isRoleAlreadyAssigned(newRole, userId)) {
-      const holder = users.find(
-        (user) => user.tenantRoleName === newRole && user.id !== userId,
-      );
-      showToast({
-        title: 'Role already assigned',
-        message: holder
-          ? `Only one user can have the ${formatAuthRole(newRole)} role. It is already assigned to ${holder.fullName}.`
-          : `Only one user can have the ${formatAuthRole(newRole)} role.`,
-      });
-      return;
-    }
-    setRoleChange({ userId, newRole });
-  };
-
   const handleRoleChangeConfirm = async () => {
     if (!roleChange) return;
     try {
@@ -318,7 +295,6 @@ export function UserManagementTab({
       <AsyncStatus loading={loading} error={error} onRetry={() => void loadUsers()}>
         <UsersTable
           records={pageItems}
-          onRoleChange={handleRoleChangeRequest}
           onEdit={setEditUser}
         />
         <div className="border-t border-[#EFF0F6] px-5 py-3">

@@ -34,13 +34,19 @@ import {
   getAllTreatmentCategories,
   getAppointmentPatients,
   getAppointmentsByStatus,
+  getAppointmentsPageByStatus,
   getBookingDoshas,
   rescheduleAppointment,
 } from '@/lib/api/appointments';
 import { getActiveConsultationTypes } from '@/lib/api/consultationTypes';
 import type { BookAppointmentResult } from '@/lib/api/booking';
 import { ApiError } from '@/lib/api/client';
-import { getActiveDoctors, getAllDoctors } from '@/lib/api/doctors';
+import {
+  getActiveDoctors,
+  getAllDoctors,
+  resolveLoginDoctorId,
+} from '@/lib/api/doctors';
+import { getStoredUser } from '@/lib/auth';
 import {
   cancelFollowUp,
   createFollowUp,
@@ -74,12 +80,39 @@ import type {
 type AppointmentTab = 'appointments' | 'followUps';
 type ViewMode = 'list' | 'calendar';
 
+const APPOINTMENT_PAGE_SIZE = 10;
+
+function toApiBookingStatus(status: string): string {
+  switch (status) {
+    case 'Scheduled':
+      return 'SCHEDULED';
+    case 'Completed':
+      return 'COMPLETED';
+    case 'Cancelled':
+      return 'CANCELLED';
+    default:
+      return 'ALL';
+  }
+}
+
+function errorText(value: string | Error | null | undefined): string | null {
+  if (!value) return null;
+  return typeof value === 'string' ? value : value.message;
+}
+
+function toApiVisitType(visitType: string): string | undefined {
+  if (visitType === 'Therapy') return 'THERAPY';
+  if (visitType === 'Consultation') return 'CONSULTATION';
+  return undefined;
+}
+
 export function AppointmentsPage() {
   const { showToast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AppointmentTab>('appointments');
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [patientIdQuery, setPatientIdQuery] = useState('');
+  const [debouncedPatientQuery, setDebouncedPatientQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [visitTypeFilter, setVisitTypeFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -108,6 +141,15 @@ export function AppointmentsPage() {
   const [recordsOverride, setRecordsOverride] = useState<
     AppointmentRecord[] | null
   >(null);
+  const [tablePage, setTablePage] = useState(0);
+  const [tableRecords, setTableRecords] = useState<AppointmentRecord[]>([]);
+  const [tableTotals, setTableTotals] = useState({
+    totalElements: 0,
+    totalPages: 0,
+  });
+  const [tableLoading, setTableLoading] = useState(false);
+  const [tableError, setTableError] = useState<Error | null>(null);
+  const [tableReloadKey, setTableReloadKey] = useState(0);
 
   const {
     data,
@@ -115,6 +157,12 @@ export function AppointmentsPage() {
     error,
     reload: reloadAll,
   } = useAsyncData(async () => {
+    const currentUser = getStoredUser();
+    const scopeDoctorId =
+      (currentUser?.apiRole ?? '').toUpperCase() === 'DOCTOR'
+        ? await resolveLoginDoctorId(currentUser?.userCode, currentUser?.email)
+        : undefined;
+    const doctorBlocked = (currentUser?.apiRole ?? '').toUpperCase() === 'DOCTOR' && !scopeDoctorId;
     const [doctors, therapists, categories, therapies, doshas, consultationTypes, appointments, patients, followUpDtos] =
       await Promise.all([
         getActiveDoctors().catch(() => getAllDoctors().catch(() => [])),
@@ -123,9 +171,9 @@ export function AppointmentsPage() {
         getAllTherapies().catch(() => []),
         getBookingDoshas().catch(() => []),
         getActiveConsultationTypes().catch(() => []),
-        getAppointmentsByStatus('ALL').catch(() => []),
+        doctorBlocked ? Promise.resolve([]) : getAppointmentsByStatus('ALL', scopeDoctorId).catch(() => []),
         getAppointmentPatients({ statusTab: 'ACTIVE' }).catch(() => []),
-        getAllFollowUps().catch(() => []),
+        doctorBlocked ? Promise.resolve([]) : getAllFollowUps(scopeDoctorId).catch(() => []),
       ]);
 
     const doctorsById = new Map(doctors.map((d) => [d.id, d]));
@@ -168,7 +216,7 @@ export function AppointmentsPage() {
     };
 
     const followUpRecords = followUpDtos.map(mapFollowUpDtoToRecord);
-    return { records, lookupOptions, doctors, followUpRecords };
+    return { records, lookupOptions, doctors, followUpRecords, scopeDoctorId, doctorBlocked };
   }, {
     records: [] as AppointmentRecord[],
     lookupOptions: {
@@ -182,11 +230,14 @@ export function AppointmentsPage() {
     },
     doctors: [],
     followUpRecords: [] as FollowUpRecord[],
+    scopeDoctorId: undefined as string | undefined,
+    doctorBlocked: false,
   });
 
   const reload = () => {
     setRecordsOverride(null);
     setLocalAppointments([]);
+    setTableReloadKey((key) => key + 1);
     reloadAll();
   };
 
@@ -201,7 +252,7 @@ export function AppointmentsPage() {
 
   /** Refresh appointments list once (avoids reloading all masters). */
   const refreshAppointmentsOnce = async () => {
-    const appointmentsList = await getAppointmentsByStatus('ALL');
+    const appointmentsList = data.doctorBlocked ? [] : await getAppointmentsByStatus('ALL', data.scopeDoctorId);
     const doctorsById = new Map(
       (data.doctors.length ? data.doctors : []).map((d) => [d.id, d]),
     );
@@ -210,6 +261,7 @@ export function AppointmentsPage() {
     );
     setRecordsOverride(records);
     setLocalAppointments([]);
+    setTableReloadKey((key) => key + 1);
   };
 
   const followUps = data.followUpRecords;
@@ -255,21 +307,6 @@ export function AppointmentsPage() {
     [activeTab],
   );
 
-  const filteredAppointments = useMemo(() => {
-    return appointments.filter((item) => {
-      const matchesId =
-        !patientIdQuery ||
-        item.uhid.toLowerCase().includes(patientIdQuery.toLowerCase()) ||
-        item.patient.toLowerCase().includes(patientIdQuery.toLowerCase());
-      const matchesStatus = !statusFilter || item.status === statusFilter;
-      const matchesVisit =
-        !visitTypeFilter ||
-        item.visitType === (visitTypeFilter as VisitType);
-      const matchesDate = !dateFilter || item.dateCreated === dateFilter;
-      return matchesId && matchesStatus && matchesVisit && matchesDate;
-    });
-  }, [appointments, patientIdQuery, statusFilter, visitTypeFilter, dateFilter]);
-
   const filteredFollowUps = useMemo(() => {
     return followUps.filter((item) => {
       const matchesId =
@@ -285,19 +322,86 @@ export function AppointmentsPage() {
     });
   }, [followUps, patientIdQuery, statusFilter, visitTypeFilter, dateFilter]);
 
-  const appointmentsPaging = useClientPagination(filteredAppointments);
   const followUpsPaging = useClientPagination(filteredFollowUps);
 
   useEffect(() => {
-    appointmentsPaging.resetPage();
+    if (activeTab !== 'appointments' || viewMode !== 'list') return;
+    if (loading) return;
+
+    let cancelled = false;
+    setTableLoading(true);
+    setTableError(null);
+    if (data.doctorBlocked) {
+      setTableRecords([]);
+      setTableTotals({ totalElements: 0, totalPages: 0 });
+      setTableLoading(false);
+      return;
+    }
+    getAppointmentsPageByStatus({
+      bookingStatus: toApiBookingStatus(statusFilter),
+      search: debouncedPatientQuery,
+      visitType: toApiVisitType(visitTypeFilter),
+      date: dateFilter || undefined,
+      doctorId: data.scopeDoctorId,
+      page: tablePage,
+      size: APPOINTMENT_PAGE_SIZE,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        const doctorsById = new Map(data.doctors.map((d) => [d.id, d]));
+        setTableRecords(
+          result.content.map((item) => mapAppointmentToRecord(item, doctorsById)),
+        );
+        setTableTotals({
+          totalElements: result.totalElements,
+          totalPages: result.totalPages,
+        });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setTableError(
+          err instanceof Error ? err : new Error('Failed to load appointments.'),
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setTableLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeTab,
+    viewMode,
+    statusFilter,
+    debouncedPatientQuery,
+    visitTypeFilter,
+    dateFilter,
+    tablePage,
+    tableReloadKey,
+    data.doctors,
+    data.scopeDoctorId,
+    data.doctorBlocked,
+    loading,
+  ]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setDebouncedPatientQuery(patientIdQuery.trim()),
+      400,
+    );
+    return () => window.clearTimeout(timer);
+  }, [patientIdQuery]);
+
+  useEffect(() => {
+    setTablePage(0);
     followUpsPaging.resetPage();
   }, [
     activeTab,
-    patientIdQuery,
+    debouncedPatientQuery,
     statusFilter,
     visitTypeFilter,
     dateFilter,
-    appointmentsPaging.resetPage,
     followUpsPaging.resetPage,
   ]);
 
@@ -681,26 +785,26 @@ export function AppointmentsPage() {
         {viewMode === 'list' ? (
           activeTab === 'appointments' ? (
             <AsyncStatus
-              loading={loading}
-              error={error}
+              loading={loading || tableLoading}
+              error={errorText(error ?? tableError)}
               onRetry={reload}
-              empty={!loading && !error && filteredAppointments.length === 0}
+              empty={!loading && !tableLoading && !error && !tableError && tableRecords.length === 0}
               emptyMessage="No appointments found."
             >
               <AppointmentsTable
                 embedded
-                items={appointmentsPaging.pageItems}
+                items={tableRecords}
                 onCancel={handleCancelRequest}
                 onReschedule={handleRescheduleRequest}
                 onRowClick={handleAppointmentRowClick}
               />
               <Pagination
-                page={appointmentsPaging.page}
-                totalPages={appointmentsPaging.totalPages}
-                totalElements={appointmentsPaging.totalElements}
-                pageSize={appointmentsPaging.pageSize}
-                onPageChange={appointmentsPaging.setPage}
-                disabled={loading}
+                page={tablePage}
+                totalPages={tableTotals.totalPages}
+                totalElements={tableTotals.totalElements}
+                pageSize={APPOINTMENT_PAGE_SIZE}
+                onPageChange={setTablePage}
+                disabled={loading || tableLoading}
               />
             </AsyncStatus>
           ) : (

@@ -10,8 +10,9 @@ import type {
 const url = (path: string) => `${apiConfig.appointment}${path}`;
 const ep = apiEndpoints.appointments.followUps;
 
-export function getAllFollowUps() {
-  return apiRequestList<FollowUpDto>(url(ep.getAll));
+export function getAllFollowUps(doctorId?: string) {
+  const query = doctorId ? `?doctorId=${encodeURIComponent(doctorId)}` : '';
+  return apiRequestList<FollowUpDto>(`${url(ep.getAll)}${query}`);
 }
 
 export function getFollowUpsByPatientId(patientId: string) {

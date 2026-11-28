@@ -1,7 +1,7 @@
 import { apiConfig } from './config';
-import { apiRequest, apiRequestList } from './client';
+import { apiRequest } from './client';
 import { apiEndpoints } from './endpoints';
-import { getDashboardBillingSummary } from './billing';
+import { getDashboardBillingSummary, type BillingPeriod } from './billing';
 
 const medicineUrl = (path: string) => `${apiConfig.medicine}${path}`;
 const appointmentUrl = (path: string) => `${apiConfig.appointment}${path}`;
@@ -72,9 +72,13 @@ export function getTodaysSchedule(doctorId?: string) {
   );
 }
 
-export function getAppointmentStats() {
+export function getAppointmentStats(period?: string, doctorId?: string) {
+  const params = new URLSearchParams();
+  if (period) params.set('period', period);
+  if (doctorId) params.set('doctorId', doctorId);
+  const qs = params.toString() ? `?${params.toString()}` : '';
   return apiRequest<AppointmentStatsDto>(
-    appointmentUrl(apiEndpoints.appointments.bookings.getStats),
+    appointmentUrl(`${apiEndpoints.appointments.bookings.getStats}${qs}`),
   );
 }
 
@@ -86,9 +90,18 @@ export interface PatientTrendPointDto {
   [key: string]: unknown;
 }
 
-export function getPatientTrends() {
-  return apiRequestList<PatientTrendPointDto>(
-    appointmentUrl(apiEndpoints.dashboard.patientTrends),
+export function getPatientTrends(doctorId?: string) {
+  const qs = doctorId ? `?doctorId=${encodeURIComponent(doctorId)}` : '';
+  return apiRequest<{ points?: PatientTrendPointDto[] }>(
+    appointmentUrl(`${apiEndpoints.dashboard.patientTrends}${qs}`),
+  ).then((res) => res?.points ?? []);
+}
+
+export function getDoctorPatientCount(doctorId: string, period?: BillingPeriod) {
+  const params = new URLSearchParams({ doctorId });
+  if (period) params.set('period', period);
+  return apiRequest<{ totalPatients: number }>(
+    appointmentUrl(`${apiEndpoints.dashboard.doctorPatientCount}?${params.toString()}`),
   );
 }
 
