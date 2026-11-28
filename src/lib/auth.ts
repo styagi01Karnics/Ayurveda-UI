@@ -190,7 +190,7 @@ export function mapUserResponseToAuthUser(
     id: user.id,
     fullName: formatPersonName(user.fullName) || user.fullName,
     role: formatAuthRole(user.role),
-    apiRole: user.role,
+    apiRole: user.role ?? undefined,
     email: user.email,
     username: user.username,
     tenantId: user.tenantId,
@@ -198,7 +198,7 @@ export function mapUserResponseToAuthUser(
     city: tenant?.city,
     schemaName: user.schemaName,
     mobileNumber: user.mobileNumber,
-    tenantRoleId: user.tenantRoleId,
+    tenantRoleId: user.tenantRoleId ?? undefined,
     tenantRoleCode: user.tenantRoleCode,
     tenantRoleName: user.tenantRoleName,
     // Super Admin gets full Admin page access in the clinic console.
